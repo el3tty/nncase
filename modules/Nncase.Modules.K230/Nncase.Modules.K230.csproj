@@ -1,0 +1,76 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Converted from old .NET Framework csproj exported by dotPeek. -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Nncase.Modules.K230</AssemblyName>
+    <RootNamespace>Nncase</RootNamespace>
+    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+
+    <!-- Keep existing AssemblyInfo.cs from the exported project. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!-- SDK-style projects include **/*.cs automatically. -->
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+
+    <!-- Avoid changing semantics during migration. Enable later if desired. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+
+    <Platforms>AnyCPU;x64</Platforms>
+
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OrtKISharp" />
+    <ProjectReference Include="..\..\src\Nncase.Core\Nncase.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nncase.Evaluator\Nncase.Evaluator.csproj" />
+    <ProjectReference Include="..\..\src\Nncase.IO\Nncase.IO.csproj" />
+    <ProjectReference Include="..\..\src\Nncase.Quantization\Nncase.Quantization.csproj" />
+    <ProjectReference Include="..\Nncase.Modules.StackVM\Nncase.Modules.StackVM.csproj" />
+  </ItemGroup>
+
+  <!-- Old framework/System.* references were removed: net9.0 provides them through the target framework. -->
+
+  <!--
+    Add ProjectReference/PackageReference entries for Nncase.* assemblies used by the source.
+    The original dotPeek-exported project only contained assembly names, not paths/packages.
+  -->
+
+</Project>
