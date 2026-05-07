@@ -72,7 +72,7 @@ public class PadEvaluator : IEvaluator<Pad>, ITypeInferencer<Pad>, ICostEvaluato
         }
         else
         {
-            return OrtKI.Pad(input, ToOnnxPadFormat(pads), constValue, mode).ToValue();
+            return OrtKI.Pad(input, ToOnnxPadFormat(pads), constValue, null, mode).ToValue();
         }
     }
 
@@ -144,8 +144,8 @@ public class PadEvaluator : IEvaluator<Pad>, ITypeInferencer<Pad>, ICostEvaluato
             }
         }
 
-        var paddedInput = OrtKI.Pad(input, incPads, constValue, "constant");
-        var output = OrtKI.Pad(paddedInput, pads, constValue, "reflect");
+        var paddedInput = OrtKI.Pad(input, incPads, constValue, null, "constant");
+        var output = OrtKI.Pad(paddedInput, pads, constValue, null, "reflect");
         foreach (var axis in nonZeroAxes)
         {
             var originLen = (int)input.Shape[axis];

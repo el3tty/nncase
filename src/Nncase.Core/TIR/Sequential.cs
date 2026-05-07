@@ -70,7 +70,7 @@ public sealed class Sequential : Expr
         switch (exprOrBuilder)
         {
             case Sequential sub:
-                exprs.AddRange(Flatten(sub.Fields).Fields);
+                System.Collections.Generic.CollectionExtensions.AddRange(exprs, Flatten(sub.Fields).Fields);
                 break;
             case Expr expr:
                 if (expr is not Call { Target: Nop })

@@ -25,10 +25,10 @@ public class QuantizeEvaluator : IEvaluator<Quantize>, ITypeInferencer<Quantize>
         // only support qint8 in onnx
         if (input.DataType == OrtDataType.Float && target.TargetType == DataTypes.Int16)
         {
-            return OrtKI.Cast((input / quantParam.Scale) + (float)quantParam.ZeroPoint, (int)OrtDataType.Int16).ToValue();
+            return OrtKI.Cast((input / quantParam.Scale) + (float)quantParam.ZeroPoint, 1, (int)OrtDataType.Int16).ToValue();
         }
 
-        return OrtKI.QuantizeLinear(input, quantParam.Scale, zeroPoint.ToOrtTensor(), 0).ToValue();
+        return OrtKI.QuantizeLinear(input, quantParam.Scale, zeroPoint.ToOrtTensor(), 0, 1).ToValue();
     }
 
     /// <inheritdoc/>

@@ -21,7 +21,7 @@ public class ProdEvaluator : IEvaluator<Prod>, ITypeInferencer<Prod>, ICostEvalu
         return OrtKI.ReduceProd(
             input,
             Enumerable.Range(0, input.Shape.Length).Select(x => (long)x).ToArray(),
-            0).ToValue();
+            0, 0).ToValue();
     }
 
     /// <inheritdoc/>

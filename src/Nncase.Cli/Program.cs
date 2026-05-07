@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Nncase.Hosting;
+using Nncase.IR;
 
 namespace Nncase.Cli;
 

@@ -58,7 +58,7 @@ public class SpaceToBatchEvaluator : IEvaluator<SpaceToBatch>, ITypeInferencer<S
         }
 
         var newPaddingsTensor = (OrtKISharp.Tensor)newPaddings;
-        var p = OrtKI.Pad(input, newPaddingsTensor, OrtKISharp.Tensor.FromScalar(0f), "constant");
+        var p = OrtKI.Pad(input, newPaddingsTensor, OrtKISharp.Tensor.FromScalar(0f), null, "constant");
 
         var batchShape1 = new long[] { p.Shape[0] };
         var spatialShape1 = RangeExec(

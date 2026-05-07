@@ -2,6 +2,7 @@
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using Nncase.CostModel;
 using Nncase.IR;
 using Nncase.IR.Random;
@@ -28,7 +29,6 @@ public class NormalEvaluator : IEvaluator<Normal>, ITypeInferencer<Normal>, ICos
             var f = OrtKI.RandomNormal(1, mean, scale, seed, new long[] { 1 }).ToArray<float>()[0];
             return Value.FromTensor(Tensor.FromScalar(f).CastTo(random.Type));
         }
-
         var t = OrtKI.RandomNormal(1, mean, scale, seed, shape);
         return Value.FromTensor(t.ToTensor().CastTo(random.Type));
     }

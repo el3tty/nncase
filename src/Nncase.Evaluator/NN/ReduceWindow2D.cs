@@ -57,10 +57,10 @@ public class ReduceWindow2DEvaluator : IEvaluator<ReduceWindow2D>, ITypeInferenc
                 input = OrtKISharp.Tensor.MakeTensor(inputFloat, input.Shape);
             }
         }
-
+        var dilations = Enumerable.Repeat(1L, kernelSize.Length).ToArray();
         return (r.ReduceOp switch
         {
-            ReduceOp.Mean => OrtKI.AveragePool(input, "NOTSET", ceilMode, countIncludePad, kernelSize, onnxPads, stride),
+            ReduceOp.Mean => OrtKI.AveragePool(input, "NOTSET", ceilMode, countIncludePad, dilations, kernelSize, onnxPads, stride),
             ReduceOp.Max => OrtKI.MaxPool(input, "NOTSET", ceilMode, dilation, kernelSize, onnxPads, countIncludePad, stride)[0],
             _ => throw new ArgumentOutOfRangeException(nameof(r)),
         }).ToValue();

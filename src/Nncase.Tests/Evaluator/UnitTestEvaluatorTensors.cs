@@ -61,7 +61,7 @@ public class UnitTestEvaluatorTensors : TestClassBase
     {
         var shape = new[] { 1, 3, 16, 16 };
         var input = Tensor.Ones<float>(new Shape(shape));
-        var expect = OrtKI.Cast(input.ToOrtTensor(), (long)OrtDataType.Int32);
+        var expect = OrtKI.Cast(input.ToOrtTensor(), 1, (long)OrtDataType.Int32);
 
         var expr = IR.F.Tensors.Cast(input, DataTypes.Int32);
         CompilerServices.InferenceType(expr);
@@ -206,7 +206,7 @@ public class UnitTestEvaluatorTensors : TestClassBase
         var shape = new long[] { 1, 3, 16, 16 };
         var input = OrtKI.Random(shape);
 
-        var expect = OrtKI.ReduceProd(input, new long[] { 0, 1, 2, 3 }, 0);
+        var expect = OrtKI.ReduceProd(input, new long[] { 0, 1, 2, 3 }, 0, 0);
         var expr = IR.F.Tensors.Prod(input.ToTensor());
         CompilerServices.InferenceType(expr);
         Assert.Equal(expect, expr.Evaluate().AsTensor().ToOrtTensor());

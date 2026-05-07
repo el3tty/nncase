@@ -478,7 +478,7 @@ public class UnitTestEvaluatorMath : TestClassBase
         var scale = 0.05F;
 
         var input1 = OrtKISharp.Tensor.MakeTensor(input, new long[] { 2, 4 });
-        var expect = OrtKI.QuantizeLinear(input1, scale, zero_point, axis);
+        var expect = OrtKI.QuantizeLinear(input1, scale, zero_point, axis, 1);
 
         var quantParam = new QuantParam(zero_point, scale);
         var input2 = Tensor.From(input, new[] { 2, 4 });
@@ -499,7 +499,7 @@ public class UnitTestEvaluatorMath : TestClassBase
 
         // onnxruntime does not support quantize to i16, result of kernel is i8
         var expect = OrtKI.Cast(
-            OrtKI.QuantizeLinear(input1, scale, zeroPoint, axis),
+            OrtKI.QuantizeLinear(input1, scale, zeroPoint, axis, 1), 1,
             (int)DataTypes.Int16.ToOrtType());
 
         var quantParam = new QuantParam(zeroPoint, scale);
@@ -647,10 +647,10 @@ public class UnitTestEvaluatorMath : TestClassBase
         {
             var expect = op switch
             {
-                ReduceOp.Max => OrtKI.ReduceMax(ort_a, axes, keepDims),
-                ReduceOp.Min => OrtKI.ReduceMin(ort_a, axes, keepDims),
-                ReduceOp.Mean => OrtKI.ReduceMean(ort_a, axes, keepDims),
-                ReduceOp.Prod => OrtKI.ReduceProd(ort_a, axes, keepDims),
+                ReduceOp.Max => OrtKI.ReduceMax(ort_a, axes, keepDims, 0),
+                ReduceOp.Min => OrtKI.ReduceMin(ort_a, axes, keepDims, 0),
+                ReduceOp.Mean => OrtKI.ReduceMean(ort_a, axes, keepDims, 0),
+                ReduceOp.Prod => OrtKI.ReduceProd(ort_a, axes, keepDims, 0),
                 ReduceOp.Sum => OrtKI.ReduceSum(ort_a, axes, keepDims, 0L),
                 _ => throw new ArgumentOutOfRangeException(nameof(op)),
             };

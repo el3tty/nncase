@@ -483,7 +483,7 @@ public class UnitTestEvaluatorNN : TestClassBase
         var input = OrtKI.Random(new long[] { 1, 3, 16, 16 });
         var ortPads = OrtKISharp.Tensor.MakeTensor(new long[] { 0, 0, 1, 1, 0, 0, 1, 1 }, new long[] { 8 });
         var constant = OrtKISharp.Tensor.FromScalar(1F);
-        var expect = OrtKI.Pad(input, ortPads, constant, "constant");
+        var expect = OrtKI.Pad(input, ortPads, constant, null, "constant");
 
         var nncaesPads = Tensor.From<long>(new long[] { 0, 0, 0, 0, 1, 1, 1, 1 }, new Shape(4, 2));
         var expr = NN.Pad(input.ToTensor(), nncaesPads, Nncase.PadMode.Constant, constant.ToTensor());
@@ -497,7 +497,7 @@ public class UnitTestEvaluatorNN : TestClassBase
         var input = OrtKI.Random(new long[] { 1, 3, 16, 16 });
         var ortPads = OrtKISharp.Tensor.MakeTensor(new long[] { 0, 0, 1, 1, 0, 0, 1, 1 }, new long[] { 8 });
         var constant = OrtKISharp.Tensor.FromScalar(1F);
-        var expect = OrtKI.Pad(input, ortPads, constant, "reflect");
+        var expect = OrtKI.Pad(input, ortPads, constant, null, "reflect");
 
         var nncasePads = Tensor.From<long>(new long[] { 0, 0, 0, 0, 1, 1, 1, 1 }, new Shape(4, 2));
         var expr = NN.Pad(input.ToTensor(), nncasePads, Nncase.PadMode.Reflect, constant.ToTensor());
@@ -537,7 +537,7 @@ public class UnitTestEvaluatorNN : TestClassBase
         var input = OrtKI.Random(new long[] { 1, 3, 16, 16 });
         var ortPads = OrtKISharp.Tensor.MakeTensor(new long[] { 0, 0, 1, 1, 0, 0, 1, 1 }, new long[] { 8 });
         var constant = OrtKISharp.Tensor.FromScalar(1F);
-        var expect = OrtKI.Pad(input, ortPads, constant, "edge");
+        var expect = OrtKI.Pad(input, ortPads, constant, null, "edge");
 
         var nncaePads = Tensor.From<long>(new long[] { 0, 0, 0, 0, 1, 1, 1, 1 }, new Shape(4, 2));
         var expr = NN.Pad(input.ToTensor(), nncaePads, Nncase.PadMode.Edge, constant.ToTensor());
@@ -569,6 +569,7 @@ public class UnitTestEvaluatorNN : TestClassBase
             "NOTSET",
             ceilMode ? 1 : 0,
             countIncludePad ? 1 : 0,
+            dilations,
             filter,
             onnxPads,
             stride);

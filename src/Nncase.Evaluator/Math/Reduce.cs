@@ -54,13 +54,12 @@ public class ReduceEvaluator : IEvaluator<Reduce>, ITypeInferencer<Reduce>, ICos
                 input = OrtKISharp.Tensor.MakeTensor(inputFloat, input.Shape);
             }
         }
-
         return (reduce.ReduceOp switch
         {
-            ReduceOp.Mean => OrtKI.ReduceMean(input, axis, keepDims),
-            ReduceOp.Max => OrtKI.ReduceMax(input, axis, keepDims),
-            ReduceOp.Min => OrtKI.ReduceMin(input, axis, keepDims),
-            ReduceOp.Prod => OrtKI.ReduceProd(input, axis, keepDims),
+            ReduceOp.Mean => OrtKI.ReduceMean(input, axis, keepDims, 0),
+            ReduceOp.Max => OrtKI.ReduceMax(input, axis, keepDims, 0),
+            ReduceOp.Min => OrtKI.ReduceMin(input, axis, keepDims, 0),
+            ReduceOp.Prod => OrtKI.ReduceProd(input, axis, keepDims, 0),
             ReduceOp.Sum => OrtKI.ReduceSum(
                 input,
                 context.GetInt64OrtTensorArgumentValue(reduce, Reduce.Axis),
