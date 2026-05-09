@@ -7,9 +7,11 @@ namespace Nncase.Passes.Rules.K230;
 
 internal sealed class GNNELSTMFusion : ComplexFusion<GNNELSTM, GNNELoad, GNNEStore>
 {
-	public override (ParameterInfo, CallPattern)[] InputPatterns { get; } = ComplexFusion<GNNELSTM, GNNELoad, GNNEStore>.GenerateInputPatterns(GNNELSTM.Input, GNNELSTM.InitialH, GNNELSTM.InitialC);
+    public override (ParameterInfo, CallPattern)[] InputPatterns { get; } =
+        ComplexFusion<GNNELSTM, GNNELoad, GNNEStore>.GenerateInputPatterns(GNNELSTM.Input, GNNELSTM.InitialH,
+            GNNELSTM.InitialC);
 
-	public override string Name { get; } = "TileLSTMCase";
+    public override string Name { get; } = "TileLSTMCase";
 
-	public override string ModuleKind { get; } = "k230";
+    public override string ModuleKind { get; } = "k230";
 }

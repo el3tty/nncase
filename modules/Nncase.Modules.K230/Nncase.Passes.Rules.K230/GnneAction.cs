@@ -2,15 +2,15 @@
 
 public class GnneAction
 {
-	public GnneActionName Name { get; }
+    public GnneActionName Name { get; }
 
-	public GnneAction(GnneActionName name)
-	{
-		Name = name;
-	}
+    public GnneAction(GnneActionName name)
+    {
+        Name = name;
+    }
 
-	public int ToGlbAddr(int mmuItem, int addr)
-	{
-		return (mmuItem << 28) + addr;
-	}
+    public int ToGlbAddr(int mmuItem, int addr)
+    {
+        return (mmuItem << 28) + addr;
+    }
 }

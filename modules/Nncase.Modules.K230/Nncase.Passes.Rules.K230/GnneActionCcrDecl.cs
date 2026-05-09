@@ -2,11 +2,11 @@
 
 public class GnneActionCcrDecl : GnneAction
 {
-	public Gpr Num { get; }
+    public Gpr Num { get; }
 
-	public GnneActionCcrDecl(Gpr num)
-		: base(GnneActionName.CcrDecl)
-	{
-		Num = num;
-	}
+    public GnneActionCcrDecl(Gpr num)
+        : base(GnneActionName.CcrDecl)
+    {
+        Num = num;
+    }
 }

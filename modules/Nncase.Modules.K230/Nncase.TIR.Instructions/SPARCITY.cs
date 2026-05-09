@@ -2,6 +2,6 @@
 
 public enum SPARCITY : uint
 {
-	dense,
-	sparse
+    dense,
+    sparse
 }

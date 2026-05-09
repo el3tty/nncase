@@ -2,9 +2,9 @@
 
 public enum LOAD_FUNCTION : uint
 {
-	lw,
-	lh,
-	lhu,
-	lb,
-	lbu
+    lw,
+    lh,
+    lhu,
+    lb,
+    lbu
 }

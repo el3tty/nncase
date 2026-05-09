@@ -2,6 +2,6 @@
 
 public enum GlbSearchStrategy
 {
-	IfFirst,
-	WFirst
+    IfFirst,
+    WFirst
 }

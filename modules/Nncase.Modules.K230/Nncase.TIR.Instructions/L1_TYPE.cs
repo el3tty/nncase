@@ -2,7 +2,7 @@
 
 public enum L1_TYPE : uint
 {
-	if_,
-	w,
-	psum
+    if_,
+    w,
+    psum
 }

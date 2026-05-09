@@ -2,14 +2,14 @@
 
 public class GnneActionCcrSet : GnneAction
 {
-	public int Ccr { get; }
+    public int Ccr { get; }
 
-	public int Value { get; }
+    public int Value { get; }
 
-	public GnneActionCcrSet(int ccr, int value)
-		: base(GnneActionName.CcrSet)
-	{
-		Ccr = ccr;
-		Value = value;
-	}
+    public GnneActionCcrSet(int ccr, int value)
+        : base(GnneActionName.CcrSet)
+    {
+        Ccr = ccr;
+        Value = value;
+    }
 }

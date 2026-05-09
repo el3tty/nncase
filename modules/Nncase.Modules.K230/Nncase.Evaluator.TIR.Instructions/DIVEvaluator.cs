@@ -5,13 +5,13 @@ namespace Nncase.Evaluator.TIR.Instructions;
 
 internal sealed class DIVEvaluator : ITypeInferencer<DIV>, ITypeInferencer, IOpPrinter<DIV>, IOpPrinter
 {
-	public IRType Visit(ITypeInferenceContext context, DIV target)
-	{
-		return TupleType.Void;
-	}
+    public IRType Visit(ITypeInferenceContext context, DIV target)
+    {
+        return TupleType.Void;
+    }
 
-	public string Visit(IIRPrinterContext context, DIV target, bool ILmode)
-	{
-		return $"I.DIV(rd: {target.rd}, rs1: {target.rs1}, rs2: {target.rs2}, funct5: {target.funct5})";
-	}
+    public string Visit(IIRPrinterContext context, DIV target, bool ILmode)
+    {
+        return $"I.DIV(rd: {target.rd}, rs1: {target.rs1}, rs2: {target.rs2}, funct5: {target.funct5})";
+    }
 }

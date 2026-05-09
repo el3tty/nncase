@@ -2,6 +2,6 @@
 
 public enum ScheduleStrategy
 {
-	IfFirstSchedule,
-	WFirstSchedule
+    IfFirstSchedule,
+    WFirstSchedule
 }

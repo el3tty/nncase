@@ -2,13 +2,13 @@
 
 internal class DdrRegionStartInfo
 {
-	public uint input;
+    public uint input;
 
-	public uint output;
+    public uint output;
 
-	public uint rdata;
+    public uint rdata;
 
-	public uint data;
+    public uint data;
 
-	public uint text;
+    public uint text;
 }

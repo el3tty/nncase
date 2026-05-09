@@ -2,8 +2,8 @@
 
 public class GnneActionAi2dCompute : GnneAction
 {
-	public GnneActionAi2dCompute()
-		: base(GnneActionName.Ai2dCompute)
-	{
-	}
+    public GnneActionAi2dCompute()
+        : base(GnneActionName.Ai2dCompute)
+    {
+    }
 }

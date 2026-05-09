@@ -6,5 +6,5 @@ namespace Nncase.Passes.Rules.K230;
 
 public class GNNESingleInputFusion<T> : SingleInputFusion<T, GNNELoad, GNNEStore> where T : Op
 {
-	public override string ModuleKind { get; } = "k230";
+    public override string ModuleKind { get; } = "k230";
 }

@@ -2,8 +2,8 @@
 
 public enum QUANT_TYPE : uint
 {
-	disable,
-	u8,
-	i8,
-	i16
+    disable,
+    u8,
+    i8,
+    i16
 }

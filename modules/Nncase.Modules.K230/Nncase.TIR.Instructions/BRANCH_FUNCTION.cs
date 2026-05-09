@@ -2,10 +2,10 @@
 
 public enum BRANCH_FUNCTION : uint
 {
-	beq,
-	bne,
-	blt,
-	bltu,
-	bge,
-	bgeu
+    beq,
+    bne,
+    blt,
+    bltu,
+    bge,
+    bgeu
 }

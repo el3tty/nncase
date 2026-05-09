@@ -2,9 +2,9 @@
 
 public enum TcuComputeMode
 {
-	NormalConv2d,
-	DwConv2d,
-	TransposeConv2d,
-	MatMul,
-	Activation
+    NormalConv2d,
+    DwConv2d,
+    TransposeConv2d,
+    MatMul,
+    Activation
 }

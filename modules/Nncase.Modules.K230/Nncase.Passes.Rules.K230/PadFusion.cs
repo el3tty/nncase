@@ -4,5 +4,5 @@ namespace Nncase.Passes.Rules.K230;
 
 public sealed class PadFusion : GNNESingleInputFusion<GNNEPad>
 {
-	public override string Name { get; } = "TilePadCase";
+    public override string Name { get; } = "TilePadCase";
 }

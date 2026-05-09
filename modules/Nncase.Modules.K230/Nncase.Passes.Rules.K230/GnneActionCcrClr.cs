@@ -2,11 +2,11 @@
 
 public class GnneActionCcrClr : GnneAction
 {
-	public int Ccr { get; }
+    public int Ccr { get; }
 
-	public GnneActionCcrClr(int ccr)
-		: base(GnneActionName.CcrClr)
-	{
-		Ccr = ccr;
-	}
+    public GnneActionCcrClr(int ccr)
+        : base(GnneActionName.CcrClr)
+    {
+        Ccr = ccr;
+    }
 }

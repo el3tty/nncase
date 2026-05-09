@@ -6,36 +6,40 @@ using OrtKISharp;
 namespace Nncase.Evaluator.K230;
 
 [TypeInferGenerator]
-public class GNNEPadEvaluator : IEvaluator<GNNEPad>, IEvaluator, ITypeInferencer<GNNEPad>, ITypeInferencer, ICostEvaluator<GNNEPad>, ICostEvaluator
+public class GNNEPadEvaluator : IEvaluator<GNNEPad>, IEvaluator, ITypeInferencer<GNNEPad>, ITypeInferencer,
+    ICostEvaluator<GNNEPad>, ICostEvaluator
 {
-	public Cost Visit(ICostEvaluateContext context, GNNEPad target)
-	{
-		return new Cost { [CostFactorNames.CPUCycles] = (byte)1 };
-	}
+    public Cost Visit(ICostEvaluateContext context, GNNEPad target)
+    {
+        return new Cost { [CostFactorNames.CPUCycles] = (byte)1 };
+    }
 
-	public IValue Visit(IEvaluateContext context, GNNEPad p)
-	{
-		OrtKISharp.Tensor tensor = context.GetArgumentValue(p, GNNEPad.Input).AsTensor().Cast<float>()
-			.ToOrtTensor();
-		OrtKISharp.Tensor int64OrtTensorArgumentValue = context.GetInt64OrtTensorArgumentValue(p, GNNEPad.Pads);
-		OrtKISharp.Tensor tensor2 = context.GetArgumentValue(p, GNNEPad.Value).AsTensor().Cast<float>()
-			.ToOrtTensor();
-		return OrtKI.Cast(OrtKI.Pad(tensor, (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue), tensor2, null, "constant"), 1, 10L).ToValue();
-	}
+    public IValue Visit(IEvaluateContext context, GNNEPad p)
+    {
+        OrtKISharp.Tensor tensor = context.GetArgumentValue(p, GNNEPad.Input).AsTensor().Cast<float>()
+            .ToOrtTensor();
+        OrtKISharp.Tensor int64OrtTensorArgumentValue = context.GetInt64OrtTensorArgumentValue(p, GNNEPad.Pads);
+        OrtKISharp.Tensor tensor2 = context.GetArgumentValue(p, GNNEPad.Value).AsTensor().Cast<float>()
+            .ToOrtTensor();
+        return OrtKI
+            .Cast(
+                OrtKI.Pad(tensor, (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue),
+                    tensor2, null, "constant"), 1, 10L).ToValue();
+    }
 
-	private IRType Visit(ITypeInferenceContext context, GNNEPad target, TensorType input)
-	{
-		Expr argument = context.GetArgument(target, GNNEPad.Pads);
-		Expr argument2 = context.GetArgument(target, GNNEPad.Value);
-		return TypeInference.PadType(input, argument, argument2);
-	}
+    private IRType Visit(ITypeInferenceContext context, GNNEPad target, TensorType input)
+    {
+        Expr argument = context.GetArgument(target, GNNEPad.Pads);
+        Expr argument2 = context.GetArgument(target, GNNEPad.Value);
+        return TypeInference.PadType(input, argument, argument2);
+    }
 
-	public IRType Visit(ITypeInferenceContext context, GNNEPad target)
-	{
-		TensorType input = context.CheckArgumentType<TensorType>(target, GNNEPad.Input);
-		context.CheckArgumentType<IRType>(target, GNNEPad.Input);
-		context.CheckArgumentType<IRType>(target, GNNEPad.Pads);
-		context.CheckArgumentType<IRType>(target, GNNEPad.Value);
-		return Visit(context, target, input);
-	}
+    public IRType Visit(ITypeInferenceContext context, GNNEPad target)
+    {
+        TensorType input = context.CheckArgumentType<TensorType>(target, GNNEPad.Input);
+        context.CheckArgumentType<IRType>(target, GNNEPad.Input);
+        context.CheckArgumentType<IRType>(target, GNNEPad.Pads);
+        context.CheckArgumentType<IRType>(target, GNNEPad.Value);
+        return Visit(context, target, input);
+    }
 }

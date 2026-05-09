@@ -6,8 +6,8 @@ namespace Nncase.Transform;
 
 public static class K230Mutator
 {
-	public static Func<ExprRewriter> FoldBufferSlot()
-	{
-		return () => new FoldBufferSlot();
-	}
+    public static Func<ExprRewriter> FoldBufferSlot()
+    {
+        return () => new FoldBufferSlot();
+    }
 }

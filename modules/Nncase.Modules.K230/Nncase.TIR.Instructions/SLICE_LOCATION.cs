@@ -2,6 +2,6 @@
 
 public enum SLICE_LOCATION : uint
 {
-	l1,
-	l2
+    l1,
+    l2
 }

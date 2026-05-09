@@ -2,11 +2,11 @@
 
 public class GnneActionIntr : GnneAction
 {
-	public Gpr IntrNum { get; }
+    public Gpr IntrNum { get; }
 
-	public GnneActionIntr(Gpr intrNum)
-		: base(GnneActionName.Intr)
-	{
-		IntrNum = intrNum;
-	}
+    public GnneActionIntr(Gpr intrNum)
+        : base(GnneActionName.Intr)
+    {
+        IntrNum = intrNum;
+    }
 }

@@ -2,7 +2,7 @@
 
 public enum GnneActivationType
 {
-	Add,
-	Mul,
-	Uninitialized
+    Add,
+    Mul,
+    Uninitialized
 }

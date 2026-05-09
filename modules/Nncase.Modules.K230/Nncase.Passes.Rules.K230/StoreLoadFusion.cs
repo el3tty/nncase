@@ -5,5 +5,5 @@ namespace Nncase.Passes.Rules.K230;
 
 public sealed class StoreLoadFusion : DataTransferFusion<GNNELoad, GNNEStore>
 {
-	public override string ModuleKind { get; } = "k230";
+    public override string ModuleKind { get; } = "k230";
 }

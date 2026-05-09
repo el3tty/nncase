@@ -2,6 +2,6 @@
 
 public enum GLB_LOAD_STORE_FUNCTION : uint
 {
-	load,
-	store
+    load,
+    store
 }

@@ -2,7 +2,7 @@
 
 public enum STORE_FUNCTION : uint
 {
-	sw,
-	sh,
-	sb
+    sw,
+    sh,
+    sb
 }

@@ -5,8 +5,8 @@ namespace Nncase;
 
 public sealed class K230Plugin : IPlugin, IApplicationPart
 {
-	public void ConfigureServices(IRegistrator registrator)
-	{
-		registrator.AddK230();
-	}
+    public void ConfigureServices(IRegistrator registrator)
+    {
+        registrator.AddK230();
+    }
 }

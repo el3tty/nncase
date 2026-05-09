@@ -2,8 +2,8 @@
 
 public class GnneActionEnd : GnneAction
 {
-	public GnneActionEnd()
-		: base(GnneActionName.End)
-	{
-	}
+    public GnneActionEnd()
+        : base(GnneActionName.End)
+    {
+    }
 }

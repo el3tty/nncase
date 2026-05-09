@@ -2,6 +2,6 @@
 
 public enum ACT1_SOURCE_TYPE : uint
 {
-	l2,
-	psum
+    l2,
+    psum
 }

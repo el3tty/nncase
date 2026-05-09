@@ -2,13 +2,13 @@
 
 public class CcrSet
 {
-	public int Ccr { get; set; }
+    public int Ccr { get; set; }
 
-	public int Value { get; set; }
+    public int Value { get; set; }
 
-	public CcrSet(int ccr, int value)
-	{
-		Ccr = ccr;
-		Value = value;
-	}
+    public CcrSet(int ccr, int value)
+    {
+        Ccr = ccr;
+        Value = value;
+    }
 }

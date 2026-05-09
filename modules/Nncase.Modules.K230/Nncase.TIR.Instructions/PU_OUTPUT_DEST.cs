@@ -2,6 +2,6 @@
 
 public enum PU_OUTPUT_DEST : uint
 {
-	psum,
-	act0
+    psum,
+    act0
 }

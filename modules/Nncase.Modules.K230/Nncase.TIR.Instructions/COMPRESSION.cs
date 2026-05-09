@@ -2,6 +2,6 @@
 
 public enum COMPRESSION : uint
 {
-	uncompressed,
-	compressed
+    uncompressed,
+    compressed
 }

@@ -2,11 +2,11 @@
 
 public enum ARITHMETIC_FUNCTION : uint
 {
-	add,
-	sub,
-	mul,
-	div,
-	divu,
-	rem,
-	remu
+    add,
+    sub,
+    mul,
+    div,
+    divu,
+    rem,
+    remu
 }

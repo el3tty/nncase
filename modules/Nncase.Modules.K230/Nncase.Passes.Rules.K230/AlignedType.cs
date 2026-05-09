@@ -2,8 +2,8 @@
 
 public enum AlignedType
 {
-	NoAligned,
-	EAligned,
-	FAligned,
-	EXFAligned
+    NoAligned,
+    EAligned,
+    FAligned,
+    EXFAligned
 }

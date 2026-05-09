@@ -2,6 +2,6 @@
 
 public enum ACT0_CHANNEL : uint
 {
-	pu,
-	pdp0
+    pu,
+    pdp0
 }

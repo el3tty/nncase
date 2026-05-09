@@ -2,8 +2,8 @@
 
 public class GnneActionFence : GnneAction
 {
-	public GnneActionFence()
-		: base(GnneActionName.Fence)
-	{
-	}
+    public GnneActionFence()
+        : base(GnneActionName.Fence)
+    {
+    }
 }
