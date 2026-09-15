@@ -48,6 +48,10 @@ internal partial class Program
             {
                 compileOptions.QuantizeOptions.CalibrationDataset = new Quantization.PytestCalibrationDatasetProvider(((IR.Function)module.Entry!).Parameters.ToArray(), dataset);
             }
+            else if (datasetFormat == DatasetFormat.Image)
+            {
+                compileOptions.QuantizeOptions.CalibrationDataset = new Quantization.ImageCalibrationDatasetProvider(((IR.Function)module.Entry!).Parameters.ToArray(), dataset);
+            }
             else
             {
                 throw new NotSupportedException(datasetFormat.ToString());
