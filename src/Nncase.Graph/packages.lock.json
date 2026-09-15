@@ -14,7 +14,7 @@
       "libortki": {
         "type": "Transitive",
         "resolved": "0.0.2",
-        "contentHash": "bO/DdGP3iHPooVYvp9VV6D+/JhBWMISclJyWa9RqDyLDWiiDdL68XYS98f+oyssXVhB2dqct54tcMpKA+GiWJw==",
+        "contentHash": "4bKmzh0iIRpXKtZywW3rbWLRtscFKKn9waL96Obd2+BHLHbWd3vun/QC6wm1rqH0y+AOXgf8kCGxGjbxlYvsaA==",
         "dependencies": {
           "libortki-win": "0.0.2"
         }
@@ -22,7 +22,7 @@
       "libortki-win": {
         "type": "Transitive",
         "resolved": "0.0.2",
-        "contentHash": "4M+TJaK1sF0y88newLA+3taP4WPlnpiPf1jK74VrD5ReqLnlh+XXzHuBmmRe9RbCwqQcsjjdj1PHoC4YYdSAdw=="
+        "contentHash": "XvVhmbz8n/Oin0jJj6JLd+rUf++qFhA3+RkE0wp37u40AL6X9LoPFuYoI/H8xuLvwANYGs0IrXvYg91+j5vtMQ=="
       },
       "Microsoft.Extensions.Configuration.Abstractions": {
         "type": "Transitive",
@@ -151,7 +151,7 @@
         "type": "CentralTransitive",
         "requested": "[0.0.2, )",
         "resolved": "0.0.2",
-        "contentHash": "XH1sIdf6r63u5gGOz7H2izFCO7YwS4simKlj/aKHb7/SkCN/I3dm43I050gvREQQg1nFiLIG85f+3LXV5kI/tg==",
+        "contentHash": "Y+kihuAPKdLvjwwExGJBzV2hxlU35rmwkHwIZv/4kfkddqosjvsd37gTsvUSCN1RIU8JFJgvBqpAnon6YATmhg==",
         "dependencies": {
           "libortki": "0.0.2"
         }

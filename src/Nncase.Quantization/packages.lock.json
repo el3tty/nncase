@@ -12,9 +12,18 @@
         "type": "Direct",
         "requested": "[0.0.2, )",
         "resolved": "0.0.2",
-        "contentHash": "XH1sIdf6r63u5gGOz7H2izFCO7YwS4simKlj/aKHb7/SkCN/I3dm43I050gvREQQg1nFiLIG85f+3LXV5kI/tg==",
+        "contentHash": "Y+kihuAPKdLvjwwExGJBzV2hxlU35rmwkHwIZv/4kfkddqosjvsd37gTsvUSCN1RIU8JFJgvBqpAnon6YATmhg==",
         "dependencies": {
           "libortki": "0.0.2"
+        }
+      },
+      "SixLabors.ImageSharp": {
+        "type": "Direct",
+        "requested": "[4.1.2, )",
+        "resolved": "4.1.2",
+        "contentHash": "AQ0oouhH/6qmXJC70/k50iVt7SiZRjCgd4tXXiC5ZrB5CvyBwA81HTqb5twcXz8CvTAFxUNV0TAcL83OhyRA1g==",
+        "dependencies": {
+          "System.IO.Hashing": "8.0.0"
         }
       },
       "StyleCop.Analyzers": {
@@ -63,7 +72,7 @@
       "libortki": {
         "type": "Transitive",
         "resolved": "0.0.2",
-        "contentHash": "bO/DdGP3iHPooVYvp9VV6D+/JhBWMISclJyWa9RqDyLDWiiDdL68XYS98f+oyssXVhB2dqct54tcMpKA+GiWJw==",
+        "contentHash": "4bKmzh0iIRpXKtZywW3rbWLRtscFKKn9waL96Obd2+BHLHbWd3vun/QC6wm1rqH0y+AOXgf8kCGxGjbxlYvsaA==",
         "dependencies": {
           "libortki-win": "0.0.2"
         }
@@ -71,7 +80,7 @@
       "libortki-win": {
         "type": "Transitive",
         "resolved": "0.0.2",
-        "contentHash": "4M+TJaK1sF0y88newLA+3taP4WPlnpiPf1jK74VrD5ReqLnlh+XXzHuBmmRe9RbCwqQcsjjdj1PHoC4YYdSAdw=="
+        "contentHash": "XvVhmbz8n/Oin0jJj6JLd+rUf++qFhA3+RkE0wp37u40AL6X9LoPFuYoI/H8xuLvwANYGs0IrXvYg91+j5vtMQ=="
       },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
@@ -118,6 +127,11 @@
         "type": "Transitive",
         "resolved": "4.5.1",
         "contentHash": "Rw7ijyl1qqRS0YQD/WycNst8hUUMgrMH4FCn1nNm27M4VxchZ1js3fVjQaANHO5f3sN4isvP4a+Met9Y4YomAg=="
+      },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "8.0.0",
+        "contentHash": "ne1843evDugl0md7Fjzy6QjJrzsjh46ZKbhf8GwBXb5f/gw97J4bxMs0NQKifDuThh/f0bZ0e62NPl1jzTuRqA=="
       },
       "System.Runtime.CompilerServices.Unsafe": {
         "type": "Transitive",
