@@ -21,13 +21,15 @@ public class CalibrationEvaluator : IDisposable
     private readonly Dictionary<ENode, IValue> _values = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<EClass, IValue> _eclassValues = new();
     private readonly StreamWriter? _dumpWriter;
+    private static int _counter = 0;
 
     public CalibrationEvaluator(IReadOnlyDictionary<Var, IValue> inputs, IEnumerable<ENode> awareEnodes)
     {
         _inputs = inputs;
         _awareEnodes = awareEnodes;
+        var value = Interlocked.Increment(ref _counter);
         _dumpWriter = DumpScope.Current.IsEnabled(DumpFlags.Calibration)
-            ? new StreamWriter(DumpScope.Current.OpenFile("calibration_evaluator.il")) { AutoFlush = true }
+            ? new StreamWriter(DumpScope.Current.OpenFile("calibration_evaluator" + value.ToString() + ".il")) { AutoFlush = true }
             : null;
     }
 
