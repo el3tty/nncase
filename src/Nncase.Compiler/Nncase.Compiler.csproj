@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\modules\Nncase.Modules.K230\Nncase.Modules.K230.csproj" />
         <ProjectReference Include="..\Nncase.CodeGen\Nncase.CodeGen.csproj" />
         <ProjectReference Include="..\Nncase.Core\Nncase.Core.csproj" />
         <ProjectReference Include="..\Nncase.Diagnostics\Nncase.Diagnostics.csproj" />

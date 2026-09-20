@@ -8,28 +8,44 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="System.CommandLine.Hosting" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\modules\Nncase.Modules.K230\Nncase.Modules.K230.csproj" />
+    <ProjectReference Include="..\..\modules\Nncase.Modules.StackVM\Nncase.Modules.StackVM.csproj" />
     <ProjectReference Include="..\Nncase.Compiler\Nncase.Compiler.csproj" />
     <ProjectReference Include="..\Nncase.EGraph\Nncase.EGraph.csproj" />
     <ProjectReference Include="..\Nncase.Graph\Nncase.Graph.csproj" />
     <ProjectReference Include="..\Nncase.Importer\Nncase.Importer.csproj" />
     <ProjectReference Include="..\Nncase.IO\Nncase.IO.csproj" />
     <ProjectReference Include="..\Nncase.CodeGen\Nncase.CodeGen.csproj" />
+    <ProjectReference Include="..\Nncase.Passes\Nncase.Passes.csproj" />
+    <ProjectReference Include="..\Nncase.Quantization\Nncase.Quantization.csproj" />
     <ProjectReference Include="..\Nncase.Schedule\Nncase.Schedule.csproj" />
     <ProjectReference Include="..\Nncase.Targets\Nncase.Targets.csproj" />
     <ProjectReference Include="..\Nncase.Simulator\Nncase.Simulator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
