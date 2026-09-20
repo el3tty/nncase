@@ -33,6 +33,7 @@ internal sealed class LinkableFunction : ILinkableFunction
     {
         K230DeSerializerVisitor k230DeSerializerVisitor = new K230DeSerializerVisitor();
         using MemoryStream memoryStream = new MemoryStream();
+        Text.Seek(0, SeekOrigin.Begin);
         Text.CopyTo(memoryStream);
         k230DeSerializerVisitor.DeSerialize(asmWriter, bwWriter, memoryStream.ToArray(), SourceFunction.Name);
     }
