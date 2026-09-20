@@ -69,4 +69,10 @@ public enum DumpFlags
     /// Dump codegen.
     /// </summary>
     CodeGen = 1 << 10,
+
+    /// <summary>
+    /// Dump codegen.
+    /// </summary>
+    All = ~0,
+
 }
