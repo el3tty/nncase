@@ -11,6 +11,11 @@ namespace Nncase.CodeGen
     {
         public static void DumpIdMap(Dictionary<BaseFunction, FunctionId> ids)
         {
+            if (!Directory.Exists(DumpScope.Current.Directory))
+            {
+                Directory.CreateDirectory(DumpScope.Current.Directory);
+            }
+
             var idInfo = ids.Select(pair => $"{pair.Value.ModuleId} {pair.Value.Id} {pair.Key.Name}").ToArray();
             DumpUtility.WriteResult(Path.Join(DumpScope.Current.Directory, "ids.txt"), idInfo);
         }

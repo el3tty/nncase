@@ -308,6 +308,8 @@ internal class Compiler : ICompiler
 
     public void Gencode(Stream output)
     {
+        var subDumper = _dumpper.CreateSubDummper("gencode", _compileSession.CompileOptions.DumpFlags);
+        DumpScope scope = new(subDumper);
         var linkedModel = _modelBuilder.Build(Module);
         linkedModel.Serialize(output);
     }
