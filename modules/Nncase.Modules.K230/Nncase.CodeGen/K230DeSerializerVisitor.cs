@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using Nncase.IO;
 using Nncase.TIR.Instructions;
+using static Nncase.CodeGen.K230.FunctionBuilder;
 
 namespace Nncase.CodeGen;
 
@@ -3614,4 +3615,41 @@ public class K230DeSerializerVisitor
 
         WriteBandWidth(bwWriter, functionName);
     }
+
+    public void DeSerializeDesc(Stream descStream, TextWriter descWriter)
+    {
+        // Implementation for deserializing description
+        using var reader = new BinaryReader(descStream, System.Text.Encoding.UTF8, leaveOpen: true);
+
+        var hdr = new DescHeader
+        {
+            InputPoolSize  = reader.ReadUInt32(),
+            OutputPoolSize = reader.ReadUInt32(),
+            Inputs         = reader.ReadUInt32(),
+            Outputs        = reader.ReadUInt32()
+        };
+        descWriter.WriteLine($"InputPoolSize: {hdr.InputPoolSize}");
+        descWriter.WriteLine($"OutputPoolSize: {hdr.OutputPoolSize}");
+        descWriter.WriteLine($"Inputs: {hdr.Inputs}");
+        descWriter.WriteLine($"Outputs: {hdr.Outputs}");
+        for (uint input = 0; input < hdr.Inputs; input++)
+        {
+            var inputDesc = new MemoryRange
+            {
+                Start = reader.ReadUInt32(),
+                Size = reader.ReadUInt32()
+            };
+            descWriter.WriteLine($"Input {input}: Start={inputDesc.Start}, Size={inputDesc.Size}");
+        }
+        for (uint output = 0; output < hdr.Outputs; output++)
+        {
+            var outputDesc = new MemoryRange
+            {
+                Start = reader.ReadUInt32(),
+                Size = reader.ReadUInt32()
+            };
+            descWriter.WriteLine($"Output {output}: Start={outputDesc.Start}, Size={outputDesc.Size}");
+        }
+    }
+
 }

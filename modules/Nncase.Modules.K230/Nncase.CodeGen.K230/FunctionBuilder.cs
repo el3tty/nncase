@@ -9,14 +9,14 @@ namespace Nncase.CodeGen.K230;
 
 internal class FunctionBuilder : IDisposable
 {
-    private struct MemoryRange
+    internal struct MemoryRange
     {
         public uint Start;
 
         public uint Size;
     }
 
-    private struct DescHeader
+    internal struct DescHeader
     {
         public uint InputPoolSize;
 

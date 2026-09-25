@@ -58,8 +58,10 @@ public sealed class ModuleBuilder : IModuleBuilder, IDisposable
 
         using FileStream stream = File.OpenWrite(Path.Join(text, "compile.text.asm"));
         using FileStream stream2 = File.OpenWrite(Path.Join(text, "ddr_bandwidth.csv"));
+        using FileStream streamDesc = File.OpenWrite(Path.Join(text, "desc.txt"));
         using StreamWriter asmWriter = new StreamWriter(stream);
         using StreamWriter bwWriter = new StreamWriter(stream2);
-        function.DeCompile(asmWriter, bwWriter);
+        using StreamWriter descWriter = new StreamWriter(streamDesc);
+        function.DeCompile(asmWriter, bwWriter, descWriter);
     }
 }

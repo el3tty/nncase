@@ -29,12 +29,17 @@ internal sealed class LinkableFunction : ILinkableFunction
         Sections = new LinkedSection[1] { new LinkedSection(_desc, ".desc", 0u, 8u, (uint)_desc.Length) };
     }
 
-    public void DeCompile(TextWriter asmWriter, TextWriter bwWriter)
+    public void DeCompile(TextWriter asmWriter, TextWriter bwWriter, TextWriter descWriter)
     {
         K230DeSerializerVisitor k230DeSerializerVisitor = new K230DeSerializerVisitor();
         using MemoryStream memoryStream = new MemoryStream();
         Text.Seek(0, SeekOrigin.Begin);
         Text.CopyTo(memoryStream);
         k230DeSerializerVisitor.DeSerialize(asmWriter, bwWriter, memoryStream.ToArray(), SourceFunction.Name);
+        MemoryStream descStream = new MemoryStream();
+        Sections[0].Serialize(descStream);
+        descStream.Seek(0, SeekOrigin.Begin);
+        k230DeSerializerVisitor.DeSerializeDesc(descStream, descWriter);
+
     }
 }
