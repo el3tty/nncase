@@ -159,6 +159,7 @@ public partial class ComplexFusion<TMid, TBegin, TEnd> : FusionMaker
         var fusion = new Call(
             new Fusion(FullName, ModuleKind, newOutput, newInputs.ToArray()),
             newParams.ToArray());
+        Count++;
         return fusion;
     }
 
@@ -200,6 +201,7 @@ public partial class SingleInputFusion<T, TBegin, TEnd> : FusionMaker
         var newEndCall = ReplaceCallParams(endOp, endCallParams, (midCall, newMidCall));
 
         var fusion = new Call(new Fusion(FullName, ModuleKind, newEndCall, new[] { newInput }), input);
+        Count++;
         return fusion;
     }
 }
@@ -250,6 +252,7 @@ public partial class DoubleInputFusion<T, TBegin, TEnd> : FusionMaker
         var fusion = new Call(
             new Fusion(FullName, ModuleKind, newEndCall, newArgs.ToArray()),
             newParams.ToArray());
+        Count++;
         return fusion;
     }
 }
@@ -272,6 +275,7 @@ public partial class DataTransferFusion<TLoad, TStore> : FusionMaker
         var newLdCall = ReplaceCallParams(ldOp, ldCallParams, (input, newArg));
         var newStCall = ReplaceCallParams(stOp, stCallParams, (ldCall, newLdCall));
         var fusion = new Call(new Fusion(FullName, ModuleKind, newStCall, new[] { newArg }), input);
+        Count++;
         return fusion;
     }
 }
