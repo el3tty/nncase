@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include "gnne.h"
 
@@ -7,7 +8,7 @@ void gnne_set_base(volatile void *addr) {
     gnne_regs = (volatile gnne_reg_file_t *)((char *)addr + GNNE_ICACHE_CFG_OFFSET);
 }
 
-void gnne_ctrl_set(uint64_t value) {
+static void gnne_ctrl_set(uint64_t value) {
     gnne_regs->ctrl.data[1] = value;
 }
 
@@ -15,21 +16,19 @@ void gnne_clear_cpu_intr(void) {
     gnne_ctrl_set(GNNE_CTRL_CPU_INTR_CLEAR);
 }
 
-uint64_t gnne_disable(void) {
-    uint64_t result = gnne_ctrl_set(GNNE_CTRL_ENABLE_CLEAR);
-
+void gnne_disable(void) {
+    gnne_ctrl_set(GNNE_CTRL_ENABLE_CLEAR);
     while (gnne_regs->status.bits.reset_status)
         ;
 
-    return result;
 }
 
-uint64_t gnne_init()
+void gnne_init()
 {
-  return gnne_disable();
+  gnne_disable();
 }
 
-int gnne_enable(int32_t pc_start, int32_t pc_end, int32_t pc_breakpoint) {
+int gnne_enable(uint64_t pc_start, uint64_t pc_end, uint64_t pc_breakpoint) {
 
     if (gnne_regs->status.bits.kpu_work_status) {
         return 1;
@@ -43,7 +42,7 @@ int gnne_enable(int32_t pc_start, int32_t pc_end, int32_t pc_breakpoint) {
     return 0;
 }
 
-int gnne_resume(gnne_ctrl_function_t resume_mode, int32_t pc_start) {
+int gnne_resume(gnne_ctrl_function_t resume_mode, uint64_t pc_start) {
     if (gnne_regs->status.bits.kpu_work_status != 2) {
         return 1;
     }
