@@ -1,11 +1,15 @@
+#include <iostream>
+
 #include "nncase/runtime/allocator.h"
 #include "nncase/runtime/host_buffer.h"
 #include "mmz_allocator.h"
+#include "mmz.h"
 
+using mmz_allocator = nncase::runtime::k230::mmz_allocator;
 using namespace nncase::runtime;
+using namespace nncase;
 
 namespace {
-using mmz_allocator = nncase::runtime::k230::mmz_allocator;
 
 class host_buffer_impl: public host_buffer_node {
 public:
@@ -13,10 +17,10 @@ public:
 
     ~host_buffer_impl();
 
-    bool host_buffer_impl::has_physical_address() const noexcept
+    bool has_physical_address() const noexcept;
     result<void> unmap_core(map_access_t access);
     result<gsl::span<gsl::byte>> map_core(map_access_t access);
-    result<uintptr_t> physical_address() noexcept
+    result<uintptr_t> physical_address() noexcept;
     result<void> sync_core(sync_op_t op);
 private:
     friend class host_buffer_allocator;
@@ -27,13 +31,16 @@ private:
 };
 
 
-class host_buffer_allocator {
+class host_buffer_allocator : public buffer_allocator {
 public:
     result<buffer_t> attach(
         gsl::span<gsl::byte> data,
         const buffer_attach_options &options) noexcept override;
 
-    result<void> shrink_memory_pool() noexcept override;
+    result<buffer_t> allocate(size_t bytes,
+        const buffer_allocate_options &options) noexcept override;
+
+    void shrink_memory_pool() override;
 private:
     mmz_allocator mmz_allocator_;
 } host_allocator;
@@ -68,24 +75,17 @@ result<uintptr_t> host_buffer_impl::physical_address() noexcept {
 }
 
 result<void> host_buffer_impl::sync_core(sync_op_t op) {
-    if (op == sync_op_t::sync_invalidate) {
-        auto ret = kd_mpi_sys_mmz_flush_cache(physical_address_, vaddr_, (int)size_);
-        if (ret != 0) {
-            std::cerr << "invalidate failed: ret = " << ret << std::endl;
-            abort();
-        }
-        return ok();
-    }
-    if (op != sync_op_t::sync_flush) {
-        return ok();  // unrecognized op — silently succeeds
+    const char *op_name = (op == sync_op_t::sync_invalidate)
+                              ? "invalidate"
+                              : "write back";
+
+    if (op == sync_op_t::sync_write_back && !physical_address_) {
+        std::terminate();
     }
 
-    if (!physical_address_) {
-        std::terminate();  // flush requested on a buffer with no physical mapping
-    }
-    auto ret = kd_mpi_sys_mmz_flush_cache(physical_address_, vaddr_, (int)size_);
+    auto ret = kd_mpi_sys_mmz_flush_cache(physical_address_, vaddr_, (int)size_bytes());
     if (ret != 0) {
-        std::cerr << "write back failed: ret = " << ret << std::endl;
+        std::cerr << op_name << " failed: ret = " << ret << std::endl;
         abort();
     }
     return ok();
@@ -99,22 +99,16 @@ host_buffer_impl::~host_buffer_impl() {
     } else {
         std::__throw_bad_function_call();
     }
-    // release_callback_'s own internal teardown (std::function destructor)
-
-    if (owned_buffer_)                  // this+0x50, count at this+0x48
-        operator delete(owned_buffer_, 4 * count_);
-
-    // ~host_buffer_node() continues from here
 }
 
 result<buffer_t> host_buffer_allocator::attach(
     gsl::span<gsl::byte> data,
     const buffer_attach_options &options) noexcept {
 
-    uintptr_t phys_addr = options.has_physical_address ? options.physical_address : 0;
+    uintptr_t phys_addr = options.physical_address;
 
-    std::function<void(gsl::byte*)> callback = options.release_callback
-        ? options.release_callback
+    std::function<void(gsl::byte*)> callback = options.deleter
+        ? options.deleter
         : [](gsl::byte *) { /* default: no-op release */ };
 
     auto *buf = new host_buffer_impl(data.size(), *this, host_sync_status_t::valid);
@@ -126,8 +120,8 @@ result<buffer_t> host_buffer_allocator::attach(
 }
 
 
-result<void> host_buffer_allocator::shrink_memory_pool() noexcept {
-    return mmz_allocator_.destroy();
+void host_buffer_allocator::shrink_memory_pool() {
+    mmz_allocator_.destroy();
 }
 
 result<buffer_t> host_buffer_allocator::allocate(
@@ -138,7 +132,7 @@ result<buffer_t> host_buffer_allocator::allocate(
     uintptr_t phys_addr = 0;
 
     if (options.flags & HOST_BUFFER_ALLOCATE_SHARED) {
-        try_(mmz_allocator_.allocate(bytes, &vaddr, &phys_addr));
+        try_(mmz_allocator_.allocate(bytes, (void**)&vaddr, &phys_addr));
         deleter = [this](gsl::byte *p) { mmz_allocator_.free(p); };
     } else {
         vaddr = (gsl::byte *)::operator new[](bytes, std::nothrow);
@@ -156,8 +150,9 @@ result<buffer_t> host_buffer_allocator::allocate(
 
     return ok(buffer_t(buf));
 
-}
 
 }
+
+} // end anonymous namespace
 
 buffer_allocator &buffer_allocator::host() { return host_allocator; }
