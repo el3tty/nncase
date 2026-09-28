@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "gnne.h"
+#include <nncase/runtime/k230/gnne.h>
 
 static volatile gnne_reg_file_t *gnne_regs;
 

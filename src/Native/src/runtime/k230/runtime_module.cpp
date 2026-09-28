@@ -1,9 +1,15 @@
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <iostream>
-#include "runtime_module.h"
+
+#include <nncase/functional/k230/dynamic_gnne_matmul.h>
+#include <nncase/runtime/k230/gnne.h>
+
+#include "runtime_module_impl.h"
 #include "runtime_function.h"
 
-namespace nncase::runtime::k230 {
+BEGIN_NS_NNCASE_RT_K230
+using namespace nncase;
 
 k230_runtime_module::~k230_runtime_module() {
     if (munmap(l2_base_, l2_size_) != 0) {
@@ -67,7 +73,7 @@ k230_runtime_module::k230_runtime_module() {
 }
 
 result<void> k230_runtime_module::initialize_before_functions(
-    runtime_module_init_context &context) {
+    runtime_module_init_context &context) noexcept {
     try_var(rdata_, context.get_or_read_section(".rdata", rdata_storage_, true));
     try_var(text_, context.get_or_read_section(".text", text_storage_, true));
 
@@ -97,16 +103,16 @@ create_k230_custom_calls() {
     });
 }
 
-} // namespace nncase::runtime::k230
+END_NS_NNCASE_RT_K230
 
 
 extern "C" NNCASE_MODULES_K230_API
-void create_runtime_module(result<std::unique_ptr<nncase::runtime::runtime_module>> &out) {
+void create_runtime_module(nncase::result<std::unique_ptr<nncase::runtime::runtime_module>> &out) {
     out = nncase::runtime::k230::create_k230_runtime_module();
 }
 
 extern "C" NNCASE_MODULES_K230_API
 void collect_custom_call(
-    result<std::vector<std::pair<std::string, nncase::runtime::runtime_module::custom_call_type>>> &out) {
+    nncase::result<std::vector<std::pair<std::string, nncase::runtime::runtime_module::custom_call_type>>> &out) {
     out = nncase::runtime::k230::create_k230_custom_calls();
 }

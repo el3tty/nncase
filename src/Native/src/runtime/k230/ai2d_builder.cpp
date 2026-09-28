@@ -1,11 +1,18 @@
-#include <nncase/runtime/k230/gnne_tile_utils.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
+
+#include <nncase/runtime/k230/gnne_tile_utils.h>
+#include <nncase/functional/ai2d/ai2d_builder.h>
+#include "k230_common.h"
+
+BEGIN_NS_NNCASE_F_K230
+using namespace nncase::runtime::k230;
 
 ai2d_builder::ai2d_builder(dims_t &input_shape, dims_t &output_shape,
 	ai2d_datatype_t ai2d_dtype, ai2d_crop_param_t crop_param,
@@ -22,11 +29,6 @@ ai2d_builder::ai2d_builder(dims_t &input_shape, dims_t &output_shape,
 	, output_shape_(output_shape)
 	, dump_asm_(false)
 {
-	// NOTE: the literal path strings in the decompile ("/dev/k23/dev/d/",
-	// "/dev/mmz/") are clearly corrupted/truncated by the disassembler's
-	// string reader (they don't even null-terminate sensibly). "/dev/ai2d"
-	// and "/dev/mem" are the plausible real device nodes; treat these two
-	// names as reconstructed, not confirmed.
 	static constexpr char kAi2dDevice[] = "/dev/ai2d";
 	ai2d_fd_ = open(kAi2dDevice, O_RDWR);
 	if (ai2d_fd_ < 0)
@@ -57,7 +59,7 @@ ai2d_builder::ai2d_builder(dims_t &input_shape, dims_t &output_shape,
 	ai2d_set_base(reinterpret_cast<volatile uint8_t *>(ai2d_addr_.vaddr) + AI2D_BASE_OFFSET);
 	ai2d_set_time_out(0x1388); // 5000 (units unconfirmed — likely ms or a cycle count)
 
-	if (check_config().is_error())
+	if (check_config().is_err())
 		throw std::runtime_error("wrong ai2d configuration.");
 }
 
@@ -107,17 +109,14 @@ void ai2d_builder::ai2d_clear_cpu_intr()
     *reinterpret_cast<volatile uint32_t *>(base + 0xAC) = 0;
 }
 
-// Alternative name is '.L0_'
-_DWORD *__fastcall nncase::F::k230::ai2d_builder::ai2d_set_time_out(nncase::F::k230::ai2d_builder *this, int a2)
+void ai2d_builder::ai2d_set_time_out(uint32_t val)
 {
-  _DWORD *result; // a0
+    auto *regs = reinterpret_cast<volatile uint32_t *>(ai2d_get_base());
 
-  result = (_DWORD *)nncase::F::k230::ai2d_builder::ai2d_get_base(this);
-  result[48] = a2;
-  result[49] = 0;
-  result[50] = 0;
-  result[51] = 0;
-  return result;
+    regs[48] = val; // byte offset 0xC0: timeout value
+    regs[49] = 0;   // 0xC4
+    regs[50] = 0;   // 0xC8
+    regs[51] = 0;   // 0xCC
 }
 
 void ai2d_builder::dump_asm(bool write_all)
@@ -152,12 +151,12 @@ result<void> ai2d_builder::invoke(runtime_tensor &input, runtime_tensor &output)
             uint32_t addr_base = 0;
             if (idx == 0) // src_ch0..3_ptr: relocate by the input buffer's physical address
             {
-                auto host = input.impl()->to_host().unwrap_or_fail("get input buffer failed");
+                auto host = input.impl()->to_host().unwrap_or_throw();
                 addr_base = static_cast<uint32_t>(host->buffer().as_host().unwrap().physical_address().unwrap());
             }
             else if (idx == 4) // dst_ch0..3_ptr: relocate by the output buffer's physical address
             {
-                auto host = output.impl()->to_host().unwrap_or_fail("get output buffer failed");
+                auto host = output.impl()->to_host().unwrap_or_throw();
                 addr_base = static_cast<uint32_t>(host->buffer().as_host().unwrap().physical_address().unwrap());
             }
 
@@ -174,12 +173,12 @@ result<void> ai2d_builder::invoke(runtime_tensor &input, runtime_tensor &output)
         if (intr == AI2D_INTR_TIME_OUT)
         {
             std::cerr << "ai2d timeout!" << std::endl;
-            return err(std::error_code(ETIMEDOUT, std::generic_category()));
+            return err(std::errc::timed_out);
         }
         if (intr == AI2D_INTR_EXCEPTION)
         {
             std::cerr << "ai2d exception!" << std::endl;
-            return err(std::error_code(EINVAL, std::generic_category()));
+            return err(std::errc::invalid_argument);
         }
     }
 
@@ -578,8 +577,12 @@ result<void> ai2d_builder::build_schedule()
         }
     }
 
-    if (dump_asm_)
-        dump_gmodel();
+    if (dump_asm_) {
+        auto res = dump_gmodel();
+        assert(res.is_ok());
+    }
 
     return ok();
 }
+
+END_NS_NNCASE_F_K230

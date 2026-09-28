@@ -5,7 +5,7 @@
 
 extern "C" int pthread_key_create(pthread_key_t*, void (*)(void*)) __attribute__((weak));
 
-BEGIN_NS_NNCASE_RUNTIME_K230
+BEGIN_NS_NNCASE_RT_K230
 
 struct mmz_segment;
 struct free_heap_node;
@@ -33,4 +33,4 @@ private:
     pthread_mutex_t mutex_;
 };
 
-END_NS_NNCASE_RUNTIME_K230
+END_NS_NNCASE_RT_K230

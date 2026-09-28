@@ -1,26 +1,16 @@
-/* Copyright 2019-2021 Canaan Inc. — reconstructed from k230 dynamic_function.device.cpp */
-#include <dbg.h>
-#include <gsl/gsl>
-#include <nncase/kernels/kernel_context.h>
-#include <nncase/runtime/buffer.h>
-#include <nncase/runtime/result.h>
-#include <nncase/tensor.h>
-#include <nncase/tuple.h>
-#include <nncase/value.h>
 #include <poll.h>
+#include <nncase/functional/k230/dynamic_function.h>
+#include <nncase/runtime/k230/gnne.h>
 
-extern "C" int gnne_enable(uint64_t begin, uint64_t end, int flags);
-
+BEGIN_NS_NNCASE_FUNCTIONAL_K230
 using namespace nncase;
 using namespace nncase::runtime;
-
-namespace nncase::functional::k230 {
 
 result<void> dynamic_function_invoke_core(
     gsl::span<const gsl::byte> text,
     gsl::span<const object_t<value_node>> /*params*/,
     object_t<value_node> output,
-    const kernels::kernel_context & /*context*/) {
+    const kernels::kernel_context & /*context*/) noexcept {
 
     // 1. Enable the GNNE device with the compiled kernel text.
     //    On failure, dbg() prints "gnne_enable(...) == 0 = false (bool)" to stderr
@@ -63,4 +53,4 @@ result<void> dynamic_function_invoke_core(
     return ok();
 }
 
-} // namespace nncase::functional::k230
+END_NS_NNCASE_FUNCTIONAL_K230

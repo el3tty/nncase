@@ -3,7 +3,7 @@
 #include "mmz_allocator.h"
 #include "mmz.h"
 
-BEGIN_NS_NNCASE_RUNTIME_K230
+BEGIN_NS_NNCASE_RT_K230
 
 bool is_threaded = (&pthread_key_create == nullptr);
 
@@ -251,4 +251,4 @@ result<void> mmz_allocator::allocate(size_t bytes,
     return ok();
 }
 
-END_NS_NNCASE_RUNTIME_K230
+END_NS_NNCASE_RT_K230
