@@ -50,6 +50,7 @@ if (BUILDING_RUNTIME)
 
     configure_file(${CMAKE_CURRENT_LIST_DIR}/../../../../cmake/nncaseruntimeConfig.cmake.in nncaseruntimeConfig.cmake @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nncaseruntimeConfig.cmake DESTINATION lib/cmake/nncaseruntime)
+    add_subdirectory(k230)
 else()
     add_library(simulator OBJECT ${SRCS})
     target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
