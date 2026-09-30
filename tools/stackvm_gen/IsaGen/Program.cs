@@ -16,6 +16,7 @@ namespace IsaGen;
 
 public class IsaExtractor
 {
+    private static readonly string[] AppendedOps = { "GridSample" };
     private readonly RazorLightEngine _engine;
     private readonly List<Instruction> _insts;
     private readonly List<Type> _tensorInsts;
@@ -41,7 +42,10 @@ public class IsaExtractor
                         where !t.IsAbstract && t.IsAssignableTo(typeof(Nncase.IR.Op))
                         where t.Namespace!.StartsWith("Nncase.IR.")
                         where t.Namespace != "Nncase.IR.Buffers"
-                        select t).OrderBy(x => x.Name).ToList();
+                        select t)
+                        .OrderBy(x => Array.IndexOf(AppendedOps, x.Name) + 1)
+                        .ThenBy(x => x.Name)
+                        .ToList();
     }
 
     public IReadOnlyList<KeyValuePair<string, IReadOnlyList<InstructionInfo>>> Instructions { get; private set; } = Array.Empty<KeyValuePair<string, IReadOnlyList<InstructionInfo>>>();
