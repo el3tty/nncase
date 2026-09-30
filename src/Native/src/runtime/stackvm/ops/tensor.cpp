@@ -1411,7 +1411,7 @@ result<void> stackvm_runtime_function::visit(
     dump_input(input);
     try_var(beta, pop_value());
     dump_input(beta);
-    try_var(output, kernels::stackvm::swish(input, beta, nullptr,
+    try_var(output, kernels::stackvm::swish(input, nullptr,
                                             module().kernel_context()));
     dump_output(output);
     stack_.push(std::move(output));

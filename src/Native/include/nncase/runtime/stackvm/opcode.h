@@ -779,7 +779,7 @@ struct tensor_reduce_op_t {
 
 struct tensor_reduce_arg_op_t {
     reduce_arg_op_t reduce_arg_op;
-    prim_type_t dest_type;
+    typecode_t dest_type;
 };
 
 struct tensor_reduce_window2d_op_t {
@@ -870,7 +870,7 @@ struct tensor_where_op_t {
     bool is_tf_where;
 };
 
-inline std::string to_string(tensor_function_t tensor_funct) {
+inline const char* to_string(tensor_function_t tensor_funct) {
     switch (tensor_funct) {
     case tensor_function_t::batch_normalization:
         return "batch_normalization";
@@ -1068,7 +1068,7 @@ inline std::string to_string(tensor_function_t tensor_funct) {
     return "unknown tensor_function_t";
 }
 
-inline std::string to_string(opcode_t code) {
+inline const char* to_string(opcode_t code) {
     switch (code) {
     case opcode_t::NOP:
         return "NOP";
