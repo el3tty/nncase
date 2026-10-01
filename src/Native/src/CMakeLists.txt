@@ -35,10 +35,12 @@ set_target_properties(nethost::nethost PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${NETHOST_NATIVE_DIR}")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../../Native/include")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (MSVC)
-    add_compile_options(/std:c++20 /wd4251)
-else()
-    add_compile_options(-std=c++20)
+    add_compile_options(/wd4251)
 endif()
 
 if (WIN32)

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 #project(k230_runtime CXX C)
 
 set(COMMON_SOURCES
+    gnne.c
     dynamic_function.device.cpp
     gnne_tile_utils.cpp
     host_allocator.cpp
