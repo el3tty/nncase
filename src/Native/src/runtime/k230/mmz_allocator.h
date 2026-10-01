@@ -16,7 +16,8 @@ public:
     ~mmz_allocator();
 
     void free(void *ptr) noexcept;
-    result<void> allocate(size_t bytes, void **out_vaddr, uintptr_t *out_paddr) noexcept;
+    result<void> allocate(size_t bytes, void *&out_vaddr,
+                          uintptr_t &out_paddr) noexcept;
     void destroy() noexcept;
 private:
     result<mmz_segment *> allocate_segment(size_t pages) noexcept;

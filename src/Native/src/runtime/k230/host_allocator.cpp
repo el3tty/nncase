@@ -61,7 +61,8 @@ result<gsl::span<gsl::byte>> host_buffer_impl::map_core(map_access_t access) {
     auto size   = size_bytes();
 
     if (size && !vaddr) {
-        std::terminate();  // size claimed but no backing pointer — corrupted state
+        std::terminate(); // size claimed but no backing pointer ï¿½ corrupted
+                          // state
     }
     return ok(gsl::span<gsl::byte>(vaddr, vaddr + size));
 }
@@ -94,7 +95,7 @@ result<void> host_buffer_impl::sync_core(sync_op_t op) {
 host_buffer_impl::~host_buffer_impl() {
     auto vaddr = vaddr_;  // this+0x58
 
-    if (release_callback_) {           // this+0x78 — std::function<void(gsl::byte*)>
+    if (release_callback_) { // this+0x78 ï¿½ std::function<void(gsl::byte*)>
         release_callback_(vaddr);
     } else {
         std::__throw_bad_function_call();
@@ -132,7 +133,7 @@ result<buffer_t> host_buffer_allocator::allocate(
     uintptr_t phys_addr = 0;
 
     if (options.flags & HOST_BUFFER_ALLOCATE_SHARED) {
-        try_(mmz_allocator_.allocate(bytes, (void**)&vaddr, &phys_addr));
+        try_(mmz_allocator_.allocate(bytes, (void *&)vaddr, phys_addr));
         deleter = [this](gsl::byte *p) { mmz_allocator_.free(p); };
     } else {
         vaddr = (gsl::byte *)::operator new[](bytes, std::nothrow);

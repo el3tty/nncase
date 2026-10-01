@@ -29,12 +29,11 @@ ai2d_builder::ai2d_builder(dims_t &input_shape, dims_t &output_shape,
 	, output_shape_(output_shape)
 	, dump_asm_(false)
 {
-	static constexpr char kAi2dDevice[] = "/dev/ai2d";
-	ai2d_fd_ = open(kAi2dDevice, O_RDWR);
-	if (ai2d_fd_ < 0)
-	{
-		std::cerr << "open " << kAi2dDevice << " failed: " << strerror(errno);
-		abort();
+    static constexpr char kAi2dDevice[] = "/dev/k230-ai2d";
+    ai2d_fd_ = open(kAi2dDevice, O_RDWR);
+    if (ai2d_fd_ < 0) {
+        std::cerr << "open " << kAi2dDevice << " failed: " << strerror(errno);
+        abort();
 	}
 
 	static constexpr char kMemDevice[] = "/dev/mem";
@@ -57,9 +56,10 @@ ai2d_builder::ai2d_builder(dims_t &input_shape, dims_t &output_shape,
 	}
 
 	ai2d_set_base(reinterpret_cast<volatile uint8_t *>(ai2d_addr_.vaddr) + AI2D_BASE_OFFSET);
-	ai2d_set_time_out(0x1388); // 5000 (units unconfirmed — likely ms or a cycle count)
+        ai2d_set_time_out(
+            0x1388); // 5000 (units unconfirmed ï¿½ likely ms or a cycle count)
 
-	if (check_config().is_err())
+        if (check_config().is_err())
 		throw std::runtime_error("wrong ai2d configuration.");
 }
 

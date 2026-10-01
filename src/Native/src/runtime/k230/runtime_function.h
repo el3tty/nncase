@@ -12,9 +12,17 @@ class runtime_module;
 
 namespace nncase::runtime::k230 {
 
+struct desc_header {
+    uint32_t input_pool_size;
+    uint32_t output_pool_size;
+    uint32_t inputs;
+    uint32_t outputs;
+};
+
 struct memory_range {
     uint32_t start;
-    uint32_t size;   // or `length` — field name not confirmed, only its 4-byte size and position
+    uint32_t size; // or `length` ï¿½ field name not confirmed, only its 4-byte
+                   // size and position
 };
 
 class k230_runtime_function: public nncase::runtime::runtime_function {

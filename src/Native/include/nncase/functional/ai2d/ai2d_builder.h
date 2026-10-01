@@ -1,6 +1,7 @@
 #ifndef BUILDING_RUNTIME
 #include <filesystem>
 #endif
+
 #include <nncase/runtime/k230/gnne_tile_utils.h>
 
 namespace nncase
@@ -99,4 +100,4 @@ namespace F
         };
     }
 }
-}
+} // namespace nncase

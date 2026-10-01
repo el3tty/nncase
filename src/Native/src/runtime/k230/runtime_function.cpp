@@ -63,28 +63,27 @@ result<void> k230_runtime_function::initialize_core(
     text_begin_ = mod_text.data() + entrypoint;
     text_end_   = mod_text.data() + entrypoint + text_size;
 
-    // Stage 2 unchanged from before — see below.
-    return context.read_section(".desc", [&](auto &reader, size_t) -> result<void> {
-        auto input_count  = reader.template read<int32_t>();
-        auto output_count = reader.template read<int32_t>();
+    return context.read_section(
+        ".desc", [&](auto &reader, size_t) -> result<void> {
+            auto header = reader.template read<desc_header>();
+            if (header.inputs + header.outputs != (int32_t)parameters_size()) {
+                return err(std::errc::invalid_argument);
+            }
+            for (uint32_t i = 0; i < header.inputs; i++)
+                input_descs_.push_back(reader.template read<memory_range>());
+            for (uint32_t i = 0; i < header.outputs; i++)
+                output_descs_.push_back(reader.template read<memory_range>());
 
-        if (input_count + output_count != (int32_t)parameters_size()) {
-            return err(std::errc::invalid_argument);
-        }
-        for (int32_t i = 0; i < input_count; i++)
-            input_descs_.push_back(reader.template read<memory_range>());
-        for (int32_t i = 0; i < output_count; i++)
-            output_descs_.push_back(reader.template read<memory_range>());
-
-        return ok();
-    });
+            return ok();
+        });
 }
 
 result<value_t> k230_runtime_function::invoke_core(
     gsl::span<value_t> parameters, value_t return_value) noexcept {
 
     auto &mod = static_cast<k230_runtime_module &>(module());
-    gnne_set_base(mod.gnne_base_);   // MMIO register base — NOT l2_base_ (corrected earlier)
+    gnne_set_base(mod.gnne_base_); // MMIO register base ï¿½ NOT l2_base_
+                                   // (corrected earlier)
     gnne_init();
 
     std::vector<uint32_t> input_addrs, output_addrs;
@@ -138,7 +137,7 @@ result<value_t> k230_runtime_function::invoke_core(
     gnne_set_time_out(200000);
 
     if (gnne_enable((uint64_t)text_begin_, (uint64_t)text_end_, 0) != 0) {
-        // dbg()-logged failure — runtime_function.device.cpp:324
+        // dbg()-logged failure ï¿½ runtime_function.device.cpp:324
         return err(std::errc::device_or_resource_busy);
     }
 

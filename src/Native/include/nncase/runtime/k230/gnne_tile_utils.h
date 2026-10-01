@@ -14,8 +14,8 @@
  */
 
 #pragma once
-#include "nncase/runtime/runtime_tensor.h"
 #include <nncase/runtime/datatypes.h>
+#include <nncase/runtime/runtime_tensor.h>
 
 namespace nncase
 {

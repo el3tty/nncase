@@ -104,8 +104,8 @@ void mmz_allocator::sanity_check() noexcept {
 }
 
 void mmz_allocator::destroy() noexcept {
-    free_list_ = destroy_node(free_list_);
     sanity_check();
+    free_list_ = destroy_node(free_list_);
 }
 
 void mmz_allocator::merge_node(free_heap_node *prev, free_heap_node *node,
@@ -129,8 +129,8 @@ void mmz_allocator::merge_node(free_heap_node *prev, free_heap_node *node,
 void mmz_allocator::insert_free_node(void *ptr, mmz_segment *segment, size_t bytes) noexcept {
     assert(bytes >= sizeof(free_heap_node));
 
-    avail_bytes_ += bytes;
     sanity_check();
+    avail_bytes_ += bytes;
 
     auto *node = static_cast<free_heap_node *>(ptr);
     node->segment = segment;
@@ -165,14 +165,14 @@ void mmz_allocator::free(void *ptr) noexcept {
     insert_free_node(node, node->segment, node->freed_bytes);
 }
 
-result<void> mmz_allocator::allocate(size_t bytes,
-    void **out_vaddr, uintptr_t *out_paddr) noexcept {
+result<void> mmz_allocator::allocate(size_t bytes, void *&out_vaddr,
+                                     uintptr_t &out_paddr) noexcept {
 
     auto_lock lock(mutex_);
 
     if (bytes == 0) {
-        *out_vaddr = nullptr;
-        *out_paddr = 0;
+        out_vaddr = nullptr;
+        out_paddr = 0;
         return ok();
     }
 
@@ -202,7 +202,7 @@ result<void> mmz_allocator::allocate(size_t bytes,
                 break;
             }
             if (node->freed_bytes >= needed) {
-                // not enough leftover to split — hand out the whole node,
+                // not enough leftover to split ï¿½ hand out the whole node,
                 // absorbing the small excess rather than fragmenting
                 if (prev) prev->next = node->next; else free_list_ = node->next;
                 avail_bytes_ -= node->freed_bytes;
@@ -214,7 +214,7 @@ result<void> mmz_allocator::allocate(size_t bytes,
     }
 
     if (!found) {
-        // nothing suitable free — allocate a whole new segment
+        // nothing suitable free ï¿½ allocate a whole new segment
         constexpr size_t alloc_header_size = sizeof(mmz_segment) + fhn_offset_to_userdata;
         // minimum allocation is 1 byte in size.
         auto seg_result = allocate_segment(
@@ -242,11 +242,10 @@ result<void> mmz_allocator::allocate(size_t bytes,
         chunk = node;
     }
 
-    *out_vaddr = reinterpret_cast<uint8_t *>(chunk) + fhn_offset_to_userdata;
-    *out_paddr = reinterpret_cast<uintptr_t>(chunk)
-               + chunk->segment->physical_address
-               - reinterpret_cast<uintptr_t>(chunk->segment)
-               + fhn_offset_to_userdata;
+    out_vaddr = reinterpret_cast<uint8_t *>(chunk) + fhn_offset_to_userdata;
+    out_paddr =
+        reinterpret_cast<uintptr_t>(chunk) + chunk->segment->physical_address -
+        reinterpret_cast<uintptr_t>(chunk->segment) + fhn_offset_to_userdata;
 
     return ok();
 }

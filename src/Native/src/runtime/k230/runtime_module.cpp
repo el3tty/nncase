@@ -4,6 +4,7 @@
 
 #include <nncase/functional/k230/dynamic_gnne_matmul.h>
 #include <nncase/runtime/k230/gnne.h>
+#include <nncase/runtime/runtime_loader.h>
 
 #include "runtime_module_impl.h"
 #include "runtime_function.h"
@@ -42,7 +43,8 @@ k230_runtime_module::k230_runtime_module() {
         std::cerr << "open " << "/dev/k230-gnne" << " failed: " << strerror(errno) << std::endl;
         abort();
     }
-    gnne_fd_ = fd1;  // this+0xc8 — retained, but not visibly reused in this function
+    gnne_fd_ =
+        fd1; // this+0xc8 ï¿½ retained, but not visibly reused in this function
 
     int fd2 = open("/dev/mmz", O_RDWR | O_SYNC);        // exact path unverified
     if (fd2 < 0) {
@@ -74,8 +76,10 @@ k230_runtime_module::k230_runtime_module() {
 
 result<void> k230_runtime_module::initialize_before_functions(
     runtime_module_init_context &context) noexcept {
-    try_var(rdata_, context.get_or_read_section(".rdata", rdata_storage_, true));
-    try_var(text_, context.get_or_read_section(".text", text_storage_, true));
+    try_var(rdata, context.get_or_read_section(".rdata", rdata_storage_, true));
+    try_var(text, context.get_or_read_section(".text", text_storage_, true));
+    this->text_ = text;
+    this->rdata_ = rdata;
 
     return ok();
 }
@@ -116,3 +120,8 @@ void collect_custom_call(
     nncase::result<std::vector<std::pair<std::string, nncase::runtime::runtime_module::custom_call_type>>> &out) {
     out = nncase::runtime::k230::create_k230_custom_calls();
 }
+
+BEGIN_NS_NNCASE_RUNTIME
+runtime_registration builtin_runtimes[] = {"k230", create_runtime_module,
+                                           collect_custom_call};
+END_NS_NNCASE_RUNTIME
