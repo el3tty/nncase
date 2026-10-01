@@ -242,8 +242,9 @@ result<void> ai2d_builder::check_config()
 
     if (!pad_param_.pad_flag)
     {
-        pad_param_.paddings = {};
-        pad_param_.pad_val.clear();
+        std::fill(pad_param_.paddings.begin(), pad_param_.paddings.end(),
+                  padding::zero());
+        std::fill(pad_param_.pad_val.begin(), pad_param_.pad_val.end(), 0);
     }
 
     if (!crop_param_.crop_flag)
