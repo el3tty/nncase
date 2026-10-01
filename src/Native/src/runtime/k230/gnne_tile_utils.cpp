@@ -531,8 +531,8 @@ void ai2d_utils::inv_M(std::vector<float> &M_ori_scale, std::vector<float> &M_or
     inv_scale[1] = -ori_scale[1] / det;
     inv_scale[2] = -ori_scale[2] / det;
 
-    inv_bias[0] = inv_scale[1] * ori_bias[1] - inv_scale[0] * ori_bias[0];
-    inv_bias[1] = inv_scale[3] * ori_bias[1] - inv_scale[2] * ori_bias[0];
+    inv_bias[0] = -(inv_scale[0] * ori_bias[0] + inv_scale[1] * ori_bias[1]);
+    inv_bias[1] = -(inv_scale[2] * ori_bias[0] + inv_scale[3] * ori_bias[1]);
 }
 
 std::vector<float> ai2d_utils::M_mul_add(std::vector<float> &M_scale, std::vector<float> &M_bias,
@@ -957,7 +957,7 @@ void ai2d_utils::affine_sram_search(ai2d_config &config, tensor4d_segment &ofmap
     // recoverable, but {128,64,...,1} is the overwhelmingly likely value: it's the classic
     // binary-search halving sequence, its size (8 x int32 = 32 bytes) matches exactly, and
     // it converges any position in [1,255] starting from sram_len/2 = 128 in exactly 8 steps.
-    static const int32_t step_sizes[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
+    static const int32_t step_sizes[8] = {64, 32, 16, 8, 4, 2, 1};
 
     const int32_t ofmap_h = ofmap.dim_2.length;
     const int32_t ifmap_h = ifmap.dim_2.length;
