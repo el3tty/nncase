@@ -467,6 +467,11 @@ result<void> ai2d_builder::build_schedule()
                         // channel ranges, even if c_segs has more than one segment.
                         ifmap_sram = ifmap;
                         ofmap_sram = ofmap;
+                        // tiles are numbered from 0 inside the padding-free area; the
+                        // full ofmap starts at pad.before, which update_dynamic_param
+                        // would add a second time
+                        ofmap_sram.dim_2 = h_seg;
+                        ofmap_sram.dim_3 = w_seg;                        
                     }
                     else
                     {
