@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.13)
-#project(k230_runtime CXX C)
 
 set(COMMON_SOURCES
     gnne.c
@@ -30,3 +29,5 @@ endfunction()
 
 configure_k230_runtime_target(functional_k230)
 configure_k230_runtime_target(nncase.rt_modules.k230)
+
+add_subdirectory(ai2d_test)
