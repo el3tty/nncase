@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Nncase.Evaluator;
@@ -12,222 +12,306 @@ using Nncase.PatternMatch.F;
 
 namespace Nncase.Passes.Rules.K230;
 
+/// <summary>
+/// Rewrites a calibrated (range-of-marker wrapped) ONNX LSTM into a K230 FakeLSTM.
+/// </summary>
 [RuleGenerator]
 public class ToFakeLSTM : RewriteRule<Pattern>
 {
+    // Hardware activation tables use 15 split points and 16 linear segments.
+    private const int SplitPointCount = 15;
+    private const int SegmentCount = 16;
+
     public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsWrappedLSTM(
-        Nncase.PatternMatch.F.RNN.IsLSTM("lstm", "call", (LSTM _) => true,
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("xMarker", Nncase.PatternMatch.Utility.IsWildcard("x"),
-                    Nncase.PatternMatch.Utility.IsConst("xRange"))with
-                {
-                    TypePattern = TypePatternUtility.HasFixedShape()
-                }, Nncase.PatternMatch.Utility.IsRangeOfMarker("wMarker",
-                    Nncase.PatternMatch.Utility.IsTensorConst("w"), Nncase.PatternMatch.Utility.IsConst("wRange"))with
-                {
-                    TypePattern = TypePatternUtility.HasFixedShape()
-                }, Nncase.PatternMatch.Utility.IsRangeOfMarker("rMarker",
-                    Nncase.PatternMatch.Utility.IsTensorConst("r"), Nncase.PatternMatch.Utility.IsConst("rRange"))with
-                {
-                    TypePattern = TypePatternUtility.HasFixedShape()
-                }, Nncase.PatternMatch.Utility.IsTensorConst("b"), Nncase.PatternMatch.Utility.IsTensorConst(),
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("initHMarker", Nncase.PatternMatch.Utility.IsWildcard("initH"),
-                    Nncase.PatternMatch.Utility.IsConst("initHRange"))with
-                {
-                    TypePattern = TypePatternUtility.HasFixedShape()
-                }, Nncase.PatternMatch.Utility.IsRangeOfMarker("initCMarker",
-                    Nncase.PatternMatch.Utility.IsWildcard("initC"),
-                    Nncase.PatternMatch.Utility.IsConst("initCRange"))with
-                {
-                    TypePattern = TypePatternUtility.HasFixedShape()
-                }, Nncase.PatternMatch.Utility.IsTensorConst(), Nncase.PatternMatch.Utility.IsTensorConst(),
-            Nncase.PatternMatch.Utility.IsTensorConst(), Nncase.PatternMatch.Utility.IsTensorConst(),
-            Nncase.PatternMatch.Utility.IsTensorConst(), Nncase.PatternMatch.Utility.IsTensorConst(),
+        Nncase.PatternMatch.F.RNN.IsLSTM(
+            "lstm",
+            "call",
+            (LSTM _) => true,
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "xMarker",
+                Nncase.PatternMatch.Utility.IsWildcard("x"),
+                Nncase.PatternMatch.Utility.IsConst("xRange")) with
+            {
+                TypePattern = TypePatternUtility.HasFixedShape(),
+            },
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "wMarker",
+                Nncase.PatternMatch.Utility.IsTensorConst("w"),
+                Nncase.PatternMatch.Utility.IsConst("wRange")) with
+            {
+                TypePattern = TypePatternUtility.HasFixedShape(),
+            },
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "rMarker",
+                Nncase.PatternMatch.Utility.IsTensorConst("r"),
+                Nncase.PatternMatch.Utility.IsConst("rRange")) with
+            {
+                TypePattern = TypePatternUtility.HasFixedShape(),
+            },
+            Nncase.PatternMatch.Utility.IsTensorConst("b"),
+            Nncase.PatternMatch.Utility.IsTensorConst(), // sequence_lens
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "initHMarker",
+                Nncase.PatternMatch.Utility.IsWildcard("initH"),
+                Nncase.PatternMatch.Utility.IsConst("initHRange")) with
+            {
+                TypePattern = TypePatternUtility.HasFixedShape(),
+            },
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "initCMarker",
+                Nncase.PatternMatch.Utility.IsWildcard("initC"),
+                Nncase.PatternMatch.Utility.IsConst("initCRange")) with
+            {
+                TypePattern = TypePatternUtility.HasFixedShape(),
+            },
+            Nncase.PatternMatch.Utility.IsTensorConst(), // p
+            Nncase.PatternMatch.Utility.IsTensorConst(), // activation_alpha
+            Nncase.PatternMatch.Utility.IsTensorConst(), // activation_beta
+            Nncase.PatternMatch.Utility.IsTensorConst(), // clip
+            Nncase.PatternMatch.Utility.IsTensorConst(), // hidden_size
+            Nncase.PatternMatch.Utility.IsTensorConst(), // input_forget
             Nncase.PatternMatch.Utility.IsTensorConst("outputSize")),
-        (Pattern t, int i) =>
-            Nncase.PatternMatch.Utility.IsRangeOfMarker($"outputMarker_{i}", t,
+        (Pattern output, int index) =>
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                $"outputMarker_{index}",
+                output,
                 Nncase.PatternMatch.Utility.IsWildcard()));
 
-    private Expr? GetReplace(LSTM lstm, Call call, Expr x, TensorConst w, TensorConst r, Tensor<float> b, Expr initH,
-        Expr initC, int outputSize, Marker xMarker, Marker wMarker, Marker rMarker, Marker initHMarker,
-        Marker initCMarker, Tensor<float> xRange, Tensor<float> wRange, Tensor<float> rRange, Tensor<float> initHRange,
-        Tensor<float> initCRange, IMatchResult result)
+    /// <summary>
+    /// Replacement body. Parameter names must match the capture names used in <see cref="Pattern"/>,
+    /// because the rule generator binds them by name.
+    /// </summary>
+    private Expr? GetReplace(
+        LSTM lstm,
+        Call call,
+        Expr x,
+        TensorConst w,
+        TensorConst r,
+        Tensor<float> b,
+        Expr initH,
+        Expr initC,
+        int outputSize,
+        Marker xMarker,
+        Marker wMarker,
+        Marker rMarker,
+        Marker initHMarker,
+        Marker initCMarker,
+        Tensor<float> xRange,
+        Tensor<float> wRange,
+        Tensor<float> rRange,
+        Tensor<float> initHRange,
+        Tensor<float> initCRange,
+        IMatchResult result)
     {
+        // Per-channel activation parameters for the two matmul stages (W*x and R*h).
         int channel = b.Shape[0].FixedValue * b.Shape[1].FixedValue / 2;
-        ActParam2 actParam = new ActParam2(channel, new QuantParam(0, 1f));
-        ActParam2 actParam2 = new ActParam2(channel, new QuantParam(0, 1f));
-        int fixedValue = ((TensorType)((TupleType)call.CheckedType)[0]).Shape[1].FixedValue;
-        int num = K230Kernels.ComputeSize(b.Shape) / 2 / fixedValue;
-        List<float> list = new List<float>();
-        for (int i = 0; i < num; i++)
+        var inputBiasAct = new ActParam2(channel, new QuantParam(0, 1f));
+        var recurrentBiasAct = new ActParam2(channel, new QuantParam(0, 1f));
+
+        // Shape[1] of the first output (Y) is the number of directions.
+        int numDirections = ((TensorType)((TupleType)call.CheckedType)[0]).Shape[1].FixedValue;
+
+        // Bias layout of B per direction: [Wb (4*hidden) | Rb (4*hidden)].
+        // Flattened for two directions: fwd Wb, fwd Rb, bwd Wb, bwd Rb.
+        int biasSegmentLength = K230Kernels.ComputeSize(b.Shape) / 2 / numDirections;
+        float[] biasData = b.ToArray();
+        bool isBidirectional = lstm.Direction == LSTMDirection.Bidirectional;
+
+        List<float> inputBias = Slice(biasData, 0, biasSegmentLength);
+        List<float> recurrentBias = Slice(biasData, biasSegmentLength, biasSegmentLength);
+        if (isBidirectional)
         {
-            list.Add(b.ToArray()[i]);
+            inputBias.AddRange(Slice(biasData, biasSegmentLength * 2, biasSegmentLength));
+            recurrentBias.AddRange(Slice(biasData, biasSegmentLength * 3, biasSegmentLength));
         }
 
-        if (lstm.Direction == LSTMDirection.Bidirectional)
+        for (int i = 0; i < inputBias.Count; i++)
         {
-            for (int j = num * 2; j < num * 3; j++)
-            {
-                list.Add(b.ToArray()[j]);
-            }
+            inputBiasAct.Bs[0, i] = inputBias[i];
+            inputBiasAct.Bs[1, i] = inputBias[i];
         }
 
-        float[] array = new float[list.Count];
-        Array.Copy(list.ToArray(), 0, array, 0, array.Length);
-        List<float> list2 = new List<float>();
-        for (int k = num; k < num * 2; k++)
+        for (int i = 0; i < recurrentBias.Count; i++)
         {
-            list2.Add(b.ToArray()[k]);
+            recurrentBiasAct.Bs[0, i] = recurrentBias[i];
+            recurrentBiasAct.Bs[1, i] = recurrentBias[i];
         }
 
-        if (lstm.Direction == LSTMDirection.Bidirectional)
-        {
-            for (int l = num * 3; l < num * 4; l++)
-            {
-                list2.Add(b.ToArray()[l]);
-            }
-        }
+        // Piecewise-linear activation tables for the gates (sigmoid) and cell/output (tanh).
+        var sigmoidParam = new ActParam16(1);
+        var tanhParam = new ActParam16(1);
 
-        float[] array2 = new float[list2.Count];
-        Array.Copy(list2.ToArray(), 0, array2, 0, array2.Length);
-        for (int m = 0; m < array.Length; m++)
+        var sigmoidFunc = new ActFun
         {
-            actParam.Bs[0, m] = array[m];
-            actParam.Bs[1, m] = array[m];
-        }
+            SplitPoint0 = -8f,
+            SplitPoint14 = 8f,
+            SplitPointCenter = 0f,
+            CenterPoint = 7,
+            MinParam = new List<float> { 0f, 0f },
+            MaxParam = new List<float> { 0f, 1f },
+            Func = v => 1f / (MathF.Exp(-v) + 1f),
+        };
 
-        for (int n = 0; n < array2.Length; n++)
+        var tanhFunc = new ActFun
         {
-            actParam2.Bs[0, n] = array2[n];
-            actParam2.Bs[1, n] = array2[n];
-        }
+            SplitPoint0 = -4f,
+            SplitPoint14 = 4f,
+            SplitPointCenter = 0f,
+            CenterPoint = 7,
+            MinParam = new List<float> { 0f, -1f },
+            MaxParam = new List<float> { 0f, 1f },
+            Func = v => MathF.Tanh(v),
+        };
 
-        ActParam16 actParam3 = new ActParam16(1);
-        ActParam16 actParam4 = new ActParam16(1);
-        ActFun actFun = new ActFun();
-        actFun.SplitPoint0 = -8f;
-        actFun.SplitPoint14 = 8f;
-        actFun.SplitPointCenter = 0f;
-        actFun.CenterPoint = 7;
-        actFun.MinParam = new List<float> { 0f, 0f };
-        actFun.MaxParam = new List<float> { 0f, 1f };
-        actFun.Func = (float num2) => 1f / (MathF.Exp(0f - num2) + 1f);
-        ActFun actFun2 = new ActFun();
-        actFun2.SplitPoint0 = -4f;
-        actFun2.SplitPoint14 = 4f;
-        actFun2.SplitPointCenter = 0f;
-        actFun2.CenterPoint = 7;
-        actFun2.MinParam = new List<float> { 0f, -1f };
-        actFun2.MaxParam = new List<float> { 0f, 1f };
-        actFun2.Func = (float x2) => MathF.Tanh(x2);
-        SetSegFittingParamSigmoid(actParam3, actFun);
-        SetSegFittingParamTanh(actParam4, actFun2);
-        int[] sourceArray = x.CheckedShape.ToValueArray();
-        int[] array3 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(sourceArray, 0, array3, 1, 3);
-        Marker input = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(x, array3), xRange).With(null, null,
-            null, adaQuantInfo: xMarker.AdaQuantInfo, mixQuantInfo: xMarker.MixQuantInfo);
-        int[] array4 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(w.CheckedShape.ToValueArray(), 0, array4, 1, 3);
-        Marker wXc = Nncase.IR.F.Math
-            .RangeOfMarker(Tensor.FromBytes(w.CheckedDataType, w.Value.BytesBuffer.ToArray(), array4), wRange)
-            .With(null, null, null, adaQuantInfo: wMarker.AdaQuantInfo, mixQuantInfo: wMarker.MixQuantInfo);
-        int[] array5 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(r.CheckedShape.ToValueArray(), 0, array5, 1, 3);
-        Marker wRc = Nncase.IR.F.Math
-            .RangeOfMarker(Tensor.FromBytes(r.CheckedDataType, r.Value.BytesBuffer.ToArray(), array5), rRange)
-            .With(null, null, null, adaQuantInfo: rMarker.AdaQuantInfo, mixQuantInfo: rMarker.MixQuantInfo);
-        int[] array6 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(initH.CheckedShape.ToValueArray(), 0, array6, 1, 3);
-        Marker marker;
-        if (initH is TensorConst tensorConst)
-        {
-            Tensor value = tensorConst.Value;
-            if (value != null)
-            {
-                marker = Nncase.IR.F.Math
-                    .RangeOfMarker(Tensor.FromBytes(value.ElementType, value.BytesBuffer.ToArray(), array6), initHRange)
-                    .With(null, null, null, adaQuantInfo: initHMarker.AdaQuantInfo,
-                        mixQuantInfo: initHMarker.MixQuantInfo);
-                goto IL_05b5;
-            }
-        }
+        SetSegFittingParamSigmoid(sigmoidParam, sigmoidFunc);
+        SetSegFittingParamTanh(tanhParam, tanhFunc);
 
-        marker = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(initH, array6), initHRange).With(null, null,
-            null, adaQuantInfo: initHMarker.AdaQuantInfo, mixQuantInfo: initHMarker.MixQuantInfo);
-        goto IL_05b5;
-        IL_05b5:
-        Expr initialH = marker;
-        int[] array7 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(initC.CheckedShape.ToValueArray(), 0, array7, 1, 3);
-        if (initC is TensorConst tensorConst2)
-        {
-            Tensor value2 = tensorConst2.Value;
-            if (value2 != null)
-            {
-                marker = Nncase.IR.F.Math
-                    .RangeOfMarker(Tensor.FromBytes(value2.ElementType, value2.BytesBuffer.ToArray(), array7),
-                        initCRange).With(null, null, null, adaQuantInfo: initCMarker.AdaQuantInfo,
-                        mixQuantInfo: initCMarker.MixQuantInfo);
-                goto IL_0689;
-            }
-        }
+        // Re-wrap every quantized input as a 4D tensor, keeping the original quant info.
+        Marker fakeX = WrapWithRange(
+            Nncase.IR.F.Tensors.Reshape(x, PadTo4D(x.CheckedShape)),
+            xRange,
+            xMarker);
 
-        marker = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(initC, array7), initCRange).With(null, null,
-            null, adaQuantInfo: initCMarker.AdaQuantInfo, mixQuantInfo: initCMarker.MixQuantInfo);
-        goto IL_0689;
-        IL_0689:
-        Expr initialC = marker;
-        Memory<float> buffer = actParam.GetAct0Data;
-        int[] obj = new int[4] { 1, 1, 0, 7 };
-        obj[2] = fixedValue * w.CheckedShape[1].FixedValue;
-        Expr actXc = new Tensor<float>(buffer, obj);
-        Memory<float> buffer2 = actParam2.GetAct0Data;
-        int[] obj2 = new int[4] { 1, 1, 0, 7 };
-        obj2[2] = fixedValue * r.CheckedShape[1].FixedValue;
-        Call call2 = Nncase.IR.K230.F.Tensors.FakeLSTM(input, wXc, actXc, wRc, new Tensor<float>(buffer2, obj2),
-            initialH, initialC, new Tensor<float>(actParam3.GetAct1Data, new int[4] { 1, 1, 1, 49 }),
-            new Tensor<float>(actParam4.GetAct1Data, new int[4] { 1, 1, 1, 49 }), false, lstm.Direction, outputSize,
-            actParam, actParam2);
-        Shape[] oldShapes = ((TupleType)call.CheckedType).Select((IRType s) => ((TensorType)s).Shape).ToArray();
-        return WrapOutput(call2, outputSize, oldShapes);
+        Marker fakeW = WrapWithRange(
+            Tensor.FromBytes(w.CheckedDataType, w.Value.BytesBuffer.ToArray(), PadTo4D(w.CheckedShape)),
+            wRange,
+            wMarker);
 
-        Nncase.IR.Tuple WrapOutput(Call input2, int count, Shape[] array8)
-        {
-            Expr[] fields = (from num2 in Enumerable.Range(0, count)
-                    select Nncase.IR.F.Tensors.GetItem(input2, num2)).ToArray().Select((Call item, int num2) =>
-                    ((Marker)result[$"outputMarker_{num2}"]).With(null,
-                        Nncase.IR.F.Tensors.Reshape(item, array8[num2])))
-                .ToArray();
-            return new Nncase.IR.Tuple(fields);
-        }
+        Marker fakeR = WrapWithRange(
+            Tensor.FromBytes(r.CheckedDataType, r.Value.BytesBuffer.ToArray(), PadTo4D(r.CheckedShape)),
+            rRange,
+            rMarker);
+
+        Expr fakeInitH = WrapInitialState(initH, initHRange, initHMarker);
+        Expr fakeInitC = WrapInitialState(initC, initCRange, initCMarker);
+
+        // Activation data for the W*x and R*h stages: [1, 1, num_directions * 4 * hidden, 7].
+        Expr inputActivation = new Tensor<float>(
+            inputBiasAct.GetAct0Data,
+            new[] { 1, 1, numDirections * w.CheckedShape[1].FixedValue, 7 });
+        Expr recurrentActivation = new Tensor<float>(
+            recurrentBiasAct.GetAct0Data,
+            new[] { 1, 1, numDirections * r.CheckedShape[1].FixedValue, 7 });
+
+        Call fakeLstm = Nncase.IR.K230.F.Tensors.FakeLSTM(
+            fakeX,
+            fakeW,
+            inputActivation,
+            fakeR,
+            recurrentActivation,
+            fakeInitH,
+            fakeInitC,
+            new Tensor<float>(sigmoidParam.GetAct1Data, new[] { 1, 1, 1, 49 }),
+            new Tensor<float>(tanhParam.GetAct1Data, new[] { 1, 1, 1, 49 }),
+            false,
+            lstm.Direction,
+            outputSize,
+            inputBiasAct,
+            recurrentBiasAct);
+
+        Shape[] originalOutputShapes = ((TupleType)call.CheckedType)
+            .Select((IRType type) => ((TensorType)type).Shape)
+            .ToArray();
+
+        return WrapOutput(fakeLstm, outputSize, originalOutputShapes, result);
     }
 
-    private void SetSegFittingParamSigmoid(ActParam16 actParam, ActFun f)
+    /// <summary>
+    /// Takes each tuple field of the fake op, restores the original shape and
+    /// puts it back into the matching output marker.
+    /// </summary>
+    private static Nncase.IR.Tuple WrapOutput(Call fakeLstm, int count, Shape[] originalShapes, IMatchResult result)
     {
-        float[,] xs = actParam.Xs;
-        float[] array = new float[15]
+        var fields = new Expr[count];
+        for (int i = 0; i < count; i++)
         {
-            -7f, -4.5f, -3.5f, -2.7f, -2.1f, -1.6f, -1f, 0f, 1f, 1.6f, 2.1f, 2.7f, 3.5f, 4.5f, 7f
-        };
-        for (int i = 0; i < 15; i++)
-        {
-            xs[i, 0] = array[i];
+            Call item = Nncase.IR.F.Tensors.GetItem(fakeLstm, i);
+            fields[i] = ((Marker)result[$"outputMarker_{i}"]).With(
+                null,
+                Nncase.IR.F.Tensors.Reshape(item, originalShapes[i]));
         }
 
-        double[] array2 = new double[32]
+        return new Nncase.IR.Tuple(fields);
+    }
+
+    /// <summary>
+    /// Wraps initial hidden/cell state as a 4D range-of-marker. Constants are re-materialized
+    /// as 4D tensors, anything else is reshaped.
+    /// </summary>
+    private static Marker WrapInitialState(Expr state, Tensor<float> range, Marker source)
+    {
+        int[] shape4D = PadTo4D(state.CheckedShape);
+
+        if (state is TensorConst tensorConst && tensorConst.Value != null)
+        {
+            Tensor value = tensorConst.Value;
+            return WrapWithRange(
+                Tensor.FromBytes(value.ElementType, value.BytesBuffer.ToArray(), shape4D),
+                range,
+                source);
+        }
+
+        return WrapWithRange(Nncase.IR.F.Tensors.Reshape(state, shape4D), range, source);
+    }
+
+    private static Marker WrapWithRange(Expr data, Tensor<float> range, Marker source)
+    {
+        return Nncase.IR.F.Math.RangeOfMarker(data, range).With(
+            null,
+            null,
+            null,
+            adaQuantInfo: source.AdaQuantInfo,
+            mixQuantInfo: source.MixQuantInfo);
+    }
+
+    /// <summary>
+    /// Pads the dimensions into the trailing three slots of a [1, 1, 1, 1] shape.
+    /// </summary>
+    private static int[] PadTo4D(Shape shape)
+    {
+        int[] dims = shape.ToValueArray();
+        var padded = new[] { 1, 1, 1, 1 };
+        Array.Copy(dims, 0, padded, 1, 3);
+        return padded;
+    }
+
+    private static List<float> Slice(float[] data, int start, int length)
+    {
+        return data.Skip(start).Take(length).ToList();
+    }
+
+    // Note: the 'f' argument of both SetSegFittingParamSigmoid/Tanh is unused;
+    // the segment tables below are precomputed and hardcoded.
+    private void SetSegFittingParamSigmoid(ActParam16 actParam, ActFun f)
+    {
+        float[,] splitPoints = actParam.Xs;
+        float[] breakpoints = new float[SplitPointCount]
+        {
+            -7f, -4.5f, -3.5f, -2.7f, -2.1f, -1.6f, -1f, 0f, 1f, 1.6f, 2.1f, 2.7f, 3.5f, 4.5f, 7f,
+        };
+
+        for (int i = 0; i < SplitPointCount; i++)
+        {
+            splitPoints[i, 0] = breakpoints[i];
+        }
+
+        // (slope, intercept) pairs for each of the 16 segments.
+        double[] slopeInterceptPairs = new double[SegmentCount * 2]
         {
             0.0005523135475095087, 0.004717946782565874, 0.003582545941984816, 0.024643784893781717,
             0.017628076952972527, 0.08920121475552378, 0.04080084671519202, 0.17057512199171598,
-            0.07504241042393778, 0.2641958959068108, 0.11550039574401527, 0.35039917518496155, 0.16589656476120918,
-            0.4312276071962273, 0.23123362875892262, 0.4955178069668943, 0.23398496370676491, 0.5031840614393268,
-            0.17066333504274322, 0.5625762717242175, 0.1197647477013204, 0.6417049229131112, 0.07822321089963047,
-            0.7281582013897308, 0.04270052410967129, 0.8235195920244173, 0.01849619693381177, 0.9073131477622514,
-            0.0037644096557241102, 0.9742926548134362, 0.000567715948649905, 0.9951637114353361
+            0.07504241042393778, 0.2641958959068108, 0.11550039574401527, 0.35039917518496155,
+            0.16589656476120918, 0.4312276071962273, 0.23123362875892262, 0.4955178069668943,
+            0.23398496370676491, 0.5031840614393268, 0.17066333504274322, 0.5625762717242175,
+            0.1197647477013204, 0.6417049229131112, 0.07822321089963047, 0.7281582013897308,
+            0.04270052410967129, 0.8235195920244173, 0.01849619693381177, 0.9073131477622514,
+            0.0037644096557241102, 0.9742926548134362, 0.000567715948649905, 0.9951637114353361,
         };
-        for (int j = 0; j < 16; j++)
+
+        for (int segment = 0; segment < SegmentCount; segment++)
         {
-            actParam.Ks[j, 0] = (float)array2[j * 2];
-            actParam.Bs[j, 0] = (float)array2[j * 2 + 1];
+            actParam.Ks[segment, 0] = (float)slopeInterceptPairs[segment * 2];
+            actParam.Bs[segment, 0] = (float)slopeInterceptPairs[segment * 2 + 1];
         }
 
         actParam.SetFusedClamp(new ValueRange<float>(0f, 1f));
@@ -235,70 +319,89 @@ public class ToFakeLSTM : RewriteRule<Pattern>
 
     private void SetSegFittingParamTanh(ActParam16 actParam, ActFun f)
     {
-        float[,] xs = actParam.Xs;
-        float[] array = new float[15]
+        float[,] splitPoints = actParam.Xs;
+        float[] breakpoints = new float[SplitPointCount]
         {
             -3.1f, -2.28f, -1.76f, -1.438f, -1.122f, -0.82f, -0.51f, 0f, 0.47f, 0.81f, 1.125f, 1.432f, 1.77f, 2.28f,
-            3.1f
+            3.1f,
         };
-        for (int i = 0; i < 15; i++)
+
+        for (int i = 0; i < SplitPointCount; i++)
         {
-            xs[i, 0] = array[i];
+            splitPoints[i, 0] = breakpoints[i];
         }
 
-        double[] array2 = new double[32]
+        // (slope, intercept) pairs for each of the 16 segments.
+        double[] slopeInterceptPairs = new double[SegmentCount * 2]
         {
             0.0009063486449397695, -0.995190713545316, 0.019181480050426303, -0.9381162870143267,
-            0.06880845134681457, -0.8250607603958839, 0.1518869708683811, -0.6772576184059398, 0.27007052179269864,
-            -0.5091301547712312, 0.4374196151711459, -0.3220241963133208, 0.6540450071930701, -0.14398516081895907,
-            0.9192436825013623, -0.010453854050918476, 0.9412592709759997, 0.005250815043192469, 0.6730960939548211,
-            0.13033188197303736, 0.43741961517114625, 0.32202419631332024, 0.2700705217926983, 0.5091301547712318,
-            0.151886970868381, 0.6772576184059396, 0.0688084513468159, 0.8250607603958814, 0.01918148005042708,
-            0.9381162870143249, 0.0009063486449409908, 0.9951907135453116
+            0.06880845134681457, -0.8250607603958839, 0.1518869708683811, -0.6772576184059398,
+            0.27007052179269864, -0.5091301547712312, 0.4374196151711459, -0.3220241963133208,
+            0.6540450071930701, -0.14398516081895907, 0.9192436825013623, -0.010453854050918476,
+            0.9412592709759997, 0.005250815043192469, 0.6730960939548211, 0.13033188197303736,
+            0.43741961517114625, 0.32202419631332024, 0.2700705217926983, 0.5091301547712318,
+            0.151886970868381, 0.6772576184059396, 0.0688084513468159, 0.8250607603958814,
+            0.01918148005042708, 0.9381162870143249, 0.0009063486449409908, 0.9951907135453116,
         };
-        for (int j = 0; j < 16; j++)
+
+        for (int segment = 0; segment < SegmentCount; segment++)
         {
-            actParam.Ks[j, 0] = (float)array2[j * 2];
-            actParam.Bs[j, 0] = (float)array2[j * 2 + 1];
+            actParam.Ks[segment, 0] = (float)slopeInterceptPairs[segment * 2];
+            actParam.Bs[segment, 0] = (float)slopeInterceptPairs[segment * 2 + 1];
         }
 
         actParam.SetFusedClamp(new ValueRange<float>(-1f, 1f));
     }
 
+    /// <summary>
+    /// Generic segment fitting for an arbitrary activation function (currently unused by this rule).
+    /// </summary>
     private void SetSegFittingParam(ActParam16 actParam, ActFun f)
     {
-        float[,] xs = actParam.Xs;
-        int num = 0;
-        xs[0, num] = f.SplitPoint0;
-        xs[14, num] = f.SplitPoint14;
+        const int column = 0;
+        float[,] splitPoints = actParam.Xs;
         int centerPoint = f.CenterPoint;
-        xs[centerPoint, num] = f.SplitPointCenter;
+
+        splitPoints[0, column] = f.SplitPoint0;
+        splitPoints[14, column] = f.SplitPoint14;
+        splitPoints[centerPoint, column] = f.SplitPointCenter;
+
+        // Evenly spaced points between the left end and the center...
         for (int i = 1; i < centerPoint; i++)
         {
-            xs[i, num] = (xs[centerPoint, num] - xs[0, num]) / (float)centerPoint * (float)i + xs[0, num];
+            splitPoints[i, column] =
+                ((splitPoints[centerPoint, column] - splitPoints[0, column]) / centerPoint * i) + splitPoints[0, column];
         }
 
-        for (int j = centerPoint + 1; j < 15; j++)
+        // ...and between the center and the right end.
+        for (int i = centerPoint + 1; i < 15; i++)
         {
-            xs[j, num] = (xs[14, num] - xs[centerPoint, num]) / (float)(14 - centerPoint) * (float)(j - centerPoint) +
-                         xs[centerPoint, num];
+            splitPoints[i, column] =
+                ((splitPoints[14, column] - splitPoints[centerPoint, column]) / (14 - centerPoint) * (i - centerPoint))
+                + splitPoints[centerPoint, column];
         }
 
-        actParam.Ks[0, num] = f.MinParam[0];
-        actParam.Bs[0, num] = f.MinParam[1];
-        actParam.Ks[15, num] = f.MaxParam[0];
-        actParam.Bs[15, num] = f.MaxParam[1];
-        for (int k = 1; k < 15; k++)
+        // Outer segments are constants (slope/intercept taken from Min/MaxParam).
+        actParam.Ks[0, column] = f.MinParam[0];
+        actParam.Bs[0, column] = f.MinParam[1];
+        actParam.Ks[15, column] = f.MaxParam[0];
+        actParam.Bs[15, column] = f.MaxParam[1];
+
+        // Inner segments are secant lines through consecutive split points.
+        for (int i = 1; i < 15; i++)
         {
-            float num2 = (f.Func(xs[k, num]) - f.Func(xs[k - 1, num])) / (xs[k, num] - xs[k - 1, num]);
-            float num3 = f.Func(xs[k, num]) - num2 * xs[k, num];
-            actParam.Ks[k, num] = num2;
-            actParam.Bs[k, num] = num3;
+            float slope = (f.Func(splitPoints[i, column]) - f.Func(splitPoints[i - 1, column]))
+                          / (splitPoints[i, column] - splitPoints[i - 1, column]);
+            float intercept = f.Func(splitPoints[i, column]) - (slope * splitPoints[i, column]);
+            actParam.Ks[i, column] = slope;
+            actParam.Bs[i, column] = intercept;
         }
 
         actParam.SetFusedClamp(ValueRange<float>.Full);
     }
 
+    // Generated by [RuleGenerator]: binds captures by name and forwards to the private GetReplace above.
+    // Remove this override if you put the file back into a project that runs the generator.
     public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
     {
         LSTM lstm = (LSTM)__result["lstm"];
@@ -320,7 +423,26 @@ public class ToFakeLSTM : RewriteRule<Pattern>
         Tensor<float> rRange = ((TensorConst)__result["rRange"]).Value.Cast<float>();
         Tensor<float> initHRange = ((TensorConst)__result["initHRange"]).Value.Cast<float>();
         Tensor<float> initCRange = ((TensorConst)__result["initCRange"]).Value.Cast<float>();
-        return GetReplace(lstm, call, x, w, r, b, initH, initC, outputSize, xMarker, wMarker, rMarker, initHMarker,
-            initCMarker, xRange, wRange, rRange, initHRange, initCRange, __result);
+        return GetReplace(
+            lstm,
+            call,
+            x,
+            w,
+            r,
+            b,
+            initH,
+            initC,
+            outputSize,
+            xMarker,
+            wMarker,
+            rMarker,
+            initHMarker,
+            initCMarker,
+            xRange,
+            wRange,
+            rRange,
+            initHRange,
+            initCRange,
+            __result);
     }
 }
