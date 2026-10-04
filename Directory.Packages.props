@@ -57,7 +57,8 @@
     <PackageVersion Include="OrtKISharp" Version="0.0.2" />
     <PackageVersion Include="RazorLight" Version="2.3.0" />
     <PackageVersion Include="Singulink.Collections.Weak" Version="1.0.2" />
-    <PackageVersion Include="SixLabors.ImageSharp" Version="4.1.2" />
+    <PackageVersion Include="SkiaSharp" Version="4.153.0" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.0" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.435" />
     <PackageVersion Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
@@ -75,7 +76,6 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.0" />
     <PackageVersion Include="xunit.v3.assert" Version="0.1.1-pre.239" />
     <PackageVersion Include="Razor.Templating.Core" Version="1.9.0" />
-    <PackageVersion Include="SixLabors.ImageSharp" Version="2.1.13" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="StyleCop.Analyzers">

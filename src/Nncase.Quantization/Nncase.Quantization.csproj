@@ -14,7 +14,8 @@
     <PackageReference Include="OrtKISharp" />
     <PackageReference Include="System.Linq.Async" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
     
   <ItemGroup>

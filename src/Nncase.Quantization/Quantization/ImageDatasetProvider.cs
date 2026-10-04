@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Nncase.IR;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 
 namespace Nncase.Quantization;
 
 /// <summary>
 /// <see cref="ICalibrationDatasetProvider"/> for standard image dataset folders (JPG, PNG, BMP).
-/// Performs letterbox resizing and float32 normalization (0..1) for YOLO models.
+/// Images already at the model input resolution are used as is; others are letterboxed (gray 114 padding).
+/// Output is RGB float32 (0..1) in NCHW layout. Decoding and resizing use SkiaSharp (MIT).
 /// </summary>
 public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvider
 {
+    private const byte LetterboxGray = 114;
+
     private static readonly string[] SupportedExtensions = { ".jpg", ".jpeg", ".png", ".bmp" };
 
     public ImageCalibrationDatasetProvider(IReadOnlyList<Var> vars, string datasetPath)
@@ -40,6 +39,7 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
 
         var imageFiles = Directory.EnumerateFiles(datasetPath)
             .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+            .OrderBy(f => f, StringComparer.Ordinal)
             .ToList();
 
         Trace.Assert(imageFiles.Count > 0, $"No supported images found in directory: {datasetPath}");
@@ -49,12 +49,12 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
         Samples = imageFiles.Select(filePath =>
         {
             var values = new Dictionary<Var, IValue>();
-            float[] tensorData = ProcessImageToNchwFloat32(filePath, targetWidth, targetHeight);            
+            float[] tensorData = LoadImageToNchwFloat32(filePath, targetWidth, targetHeight);
 
             var tensor = Tensor.From<float>(tensorData, shape);
             values.Add(inputVar, Value.FromTensor(tensor));
 
-            return values;
+            return (IReadOnlyDictionary<Var, IValue>)values;
         }).ToAsyncEnumerable();
     }
 
@@ -63,46 +63,54 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
     public IAsyncEnumerable<IReadOnlyDictionary<Var, IValue>> Samples { get; }
 
     /// <summary>
-    /// Loads image, resizes it with Letterbox padding (gray 114), transforms to RGB Float32 [0..1] NCHW layout.
+    /// Loads an image, letterboxes it to the model input size if needed (gray 114 padding),
+    /// and converts it to RGB Float32 [0..1] NCHW layout.
     /// </summary>
-    private float[] ProcessImageToNchwFloat32(string imagePath, int targetWidth, int targetHeight)
+    private static float[] LoadImageToNchwFloat32(string imagePath, int targetWidth, int targetHeight)
     {
-        using var image = Image.Load<Rgb24>(imagePath);
+        using var source = SKBitmap.Decode(imagePath)
+            ?? throw new InvalidOperationException($"Failed to decode image '{imagePath}'.");
 
         // 1. Calculate Letterbox proportions
-        float scale = Math.Min((float)targetWidth / image.Width, (float)targetHeight / image.Height);
-        int newWidth = (int)Math.Round(image.Width * scale);
-        int newHeight = (int)Math.Round(image.Height * scale);
-
+        float scale = Math.Min((float)targetWidth / source.Width, (float)targetHeight / source.Height);
+        int newWidth = Math.Max(1, (int)Math.Round(source.Width * scale));
+        int newHeight = Math.Max(1, (int)Math.Round(source.Height * scale));
         int padX = (targetWidth - newWidth) / 2;
         int padY = (targetHeight - newHeight) / 2;
 
-        // 2. Resize original image
-        image.Mutate(x => x.Resize(newWidth, newHeight));
-
-        // 3. Create target canvas filled with 114 gray (YOLO standard letterbox background)
-        var conf = new SixLabors.ImageSharp.Configuration();
-        using var canvas = new Image<Rgb24>(conf, targetWidth, targetHeight, new Rgb24(114, 114, 114));
-        canvas.Mutate(x => x.DrawImage(image, new Point(padX, padY), 1f));
-
-        // 4. Convert to Float32 NCHW (R-plane, G-plane, B-plane) normalized to 0.0 - 1.0
-        float[] nchwBuffer = new float[3 * targetHeight * targetWidth];
-        int planeSize = targetHeight * targetWidth;
-
-        canvas.ProcessPixelRows(accessor =>
+        // 2. Draw (and resize, if needed) onto an opaque RGBA canvas filled with 114 gray.
+        var canvasInfo = new SKImageInfo(targetWidth, targetHeight, SKColorType.Rgba8888, SKAlphaType.Opaque);
+        using var canvasBitmap = new SKBitmap(canvasInfo);
+        using (var canvas = new SKCanvas(canvasBitmap))
         {
-            for (int y = 0; y < accessor.Height; y++)
+            canvas.Clear(new SKColor(LetterboxGray, LetterboxGray, LetterboxGray));
+
+            // Same size: plain copy, no resampling. Otherwise: linear filter with mipmaps (antialiased downscale).
+            var sampling = (newWidth == source.Width && newHeight == source.Height)
+                ? new SKSamplingOptions(SKFilterMode.Nearest)
+                : new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
+
+            using var image = SKImage.FromBitmap(source);
+            canvas.DrawImage(image, SKRect.Create(padX, padY, newWidth, newHeight), sampling);
+        }
+
+        // 3. Convert RGBA bytes to planar float (R plane, G plane, B plane) normalized to 0.0 - 1.0.
+        ReadOnlySpan<byte> pixels = canvasBitmap.GetPixelSpan();
+        int rowBytes = canvasBitmap.RowBytes;
+        int planeSize = targetHeight * targetWidth;
+        float[] nchwBuffer = new float[3 * planeSize];
+        for (int y = 0; y < targetHeight; y++)
+        {
+            int rowOffset = y * rowBytes;
+            for (int x = 0; x < targetWidth; x++)
             {
-                Span<Rgb24> pixelRow = accessor.GetRowSpan(y);
-                for (int x = 0; x < accessor.Width; x++)
-                {
-                    int pixelIndex = y * targetWidth + x;
-                    nchwBuffer[0 * planeSize + pixelIndex] = pixelRow[x].R / 255.0f; // Red channel
-                    nchwBuffer[1 * planeSize + pixelIndex] = pixelRow[x].G / 255.0f; // Green channel
-                    nchwBuffer[2 * planeSize + pixelIndex] = pixelRow[x].B / 255.0f; // Blue channel
-                }
+                int p = rowOffset + (x * 4);
+                int pixelIndex = (y * targetWidth) + x;
+                nchwBuffer[pixelIndex] = pixels[p] / 255.0f; // Red plane
+                nchwBuffer[planeSize + pixelIndex] = pixels[p + 1] / 255.0f; // Green plane
+                nchwBuffer[(2 * planeSize) + pixelIndex] = pixels[p + 2] / 255.0f; // Blue plane
             }
-        });
+        }
 
         return nchwBuffer;
     }
