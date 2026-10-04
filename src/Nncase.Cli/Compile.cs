@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 using Nncase.Diagnostics;
+using Nncase.IR;
 using Nncase.Quantization;
 
 namespace Nncase.Cli;
@@ -76,6 +77,14 @@ internal sealed class CompileCommand : Command
           name: "--calib-method",
           description: $"model quant options",
           getDefaultValue: () => Quantization.CalibMethod.Kld);
+        ExportQuantSchemePath = new Option<string>(
+          name: "--export-quant-scheme-path",
+          description: $"model quant scheme export path",
+          getDefaultValue: () => string.Empty);
+        ExportQuantScheme = new Option<bool>(
+          name: "--export-quant-scheme",
+          description: $"model quant scheme export path",
+          getDefaultValue: () => false);
         FixedVars = new Option<IEnumerable<(string, int)>>(
           name: "--fixed-vars",
           description: $"dynamic shape fixed vars, default is empty. \nset by `n:123`",
@@ -155,6 +164,8 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(DatasetFormat);
         AddGlobalOption(ModelQuantMode);
         AddGlobalOption(CalibMethod);
+        AddGlobalOption(ExportQuantScheme);
+        AddGlobalOption(ExportQuantSchemePath);
         AddGlobalOption(FixedVars);
         AddGlobalOption(PreProcess);
         AddGlobalOption(InputLayout);
@@ -190,6 +201,10 @@ internal sealed class CompileCommand : Command
     public Option<ModelQuantMode> ModelQuantMode { get; }
 
     public Option<CalibMethod> CalibMethod { get; }
+
+    public Option<bool> ExportQuantScheme { get; }
+
+    public Option<string> ExportQuantSchemePath { get; }
 
     public Option<IEnumerable<(string Name, int Value)>> FixedVars { get; }
 

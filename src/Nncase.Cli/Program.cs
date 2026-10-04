@@ -90,6 +90,7 @@ internal partial class Program
     private static CompileOptions ParseCompileOptions(System.CommandLine.Invocation.InvocationContext context, CompileCommand compilecmd)
     {
         // 1. setup the options
+        var exportQuantSchemePath = context.ParseResult.GetValueForOption(compilecmd.ExportQuantSchemePath) ?? String.Empty;
         var compileOptions = new CompileOptions
         {
             InputFile = context.ParseResult.GetValueForArgument(compilecmd.InputFile),
@@ -125,6 +126,9 @@ internal partial class Program
                     _ => throw new ArgumentException("Invalid weights quant type"),
                 },
                 ModelQuantMode = context.ParseResult.GetValueForOption(compilecmd.ModelQuantMode),
+                ExportQuantSchemePath = exportQuantSchemePath,
+                ExportQuantScheme = context.ParseResult.GetValueForOption(compilecmd.ExportQuantScheme) ||
+                                    !string.IsNullOrEmpty(exportQuantSchemePath),
             },
         };
 
