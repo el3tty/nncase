@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Nncase.IR;
 using Nncase.IR.F;
 using Nncase.IR.K230;
@@ -31,230 +30,65 @@ public class ToGNNEActivation : GNNEActLowerRule
         Tensor<int> outChannels, Expr is16Segment, Expr inputAMarker, Expr outputMarker, IMatchResult result,
         Expr outputRange)
     {
-        Call act = Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, fakeActivation.ActParam.ToAct1Data());
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(inputA.CheckedShape.ToValueArray(), 0, array, array.Length - inputA.CheckedShape.Count,
-            inputA.CheckedShape.Count);
-        int[] array2 = new int[4] { 1, 1, 1, 1 };
-        int[] array3 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(call.CheckedShape.ToValueArray(), 0, array3, array3.Length - call.CheckedShape.Count,
-            call.CheckedShape.Count);
-        bool flag = array3.Length != call.CheckedShape.Count;
-        try
+        Call activationTable = Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, fakeActivation.ActParam.ToAct1Data());
+
+        // All shapes are right-aligned into rank 4: [1, 1, 1, 1] padded on the left.
+        int[] inputAShape = PadShapeToRank4(inputA.CheckedShape);
+        int[] outputShape = PadShapeToRank4(call.CheckedShape);
+        bool needsOutputReshape = outputShape.Length != call.CheckedShape.Count;
+
+        // The second operand is optional. When the pattern matched the "none" alternative
+        // there is no "inputB" capture at all.
+        if (result.GetValueOrDefault("inputB") is not Expr inputB)
         {
-            Expr expr = (Expr)result["inputB"];
-            Expr expr2 = (Expr)result["inputBMarker"];
-            Tensor value = ((TensorConst)result["inputBRange"]).Value;
-            Call call2 = Nncase.IR.F.Tensors.Reshape(inputAMarker, array);
-            Call call3 = Nncase.IR.F.Tensors.Reshape(expr2, array2);
-            Array.Copy(expr.CheckedShape.ToValueArray(), 0, array2, array2.Length - expr.CheckedShape.Count,
-                expr.CheckedShape.Count);
-            if (expr is TensorConst)
-            {
-                MixQuantInfo mixQuantInfo = ((Marker)inputAMarker).MixQuantInfo;
-                DataType dataType = ((mixQuantInfo?.MarkerQuantType == null)
-                    ? base.QuantType
-                    : mixQuantInfo.MarkerQuantType);
-                QuantMode quantMode = ((!(dataType == DataTypes.UInt8))
-                    ? QuantMode.SignedSymmetricMode
-                    : QuantMode.UnsignedMode);
-                int bits = ((dataType == DataTypes.Int16) ? 12 : 8);
-                ValueRange<float> range =
-                    new ValueRange<float>(inputARange.ToArray<float>()[0], inputARange.ToArray<float>()[1]);
-                QuantParam quantParam =
-                    ((dataType == DataTypes.Float16 || dataType == DataTypes.Float32 || dataType == DataTypes.Int16)
-                        ? new QuantParam(0, 1f)
-                        : QuantUtility.GetQuantParam(range, bits, quantMode));
-                Call input =
-                    ((dataType == DataTypes.Float16 || dataType == DataTypes.Float32 || dataType == DataTypes.Int16)
-                        ? call2
-                        : Nncase.IR.F.Math.Quantize(call2, new QuantParam(quantParam.ZeroPoint, quantParam.Scale),
-                            dataType));
-                Call inputa =
-                    ((dataType == DataTypes.Float16 || dataType == DataTypes.Float32 || dataType == DataTypes.Int16)
-                        ? Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, call2)
-                        : Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, input));
-                if (base.InputA is TensorConst)
-                {
-                    inputa = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16,
-                        Const.FromTensor(Tensor.From(((TensorConst)base.InputA).Value.ToArray<float>(), array)));
-                }
-
-                Call inputb = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, call3);
-                if (base.InputB is TensorConst)
-                {
-                    inputb = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16,
-                        Const.FromTensor(Tensor.From(((TensorConst)base.InputB).Value.ToArray<float>(), array2)));
-                }
-
-                if (!GetReplaceHelper.ToScalar<bool>(is16Segment))
-                {
-                    Call call4 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
-                        Nncase.IR.K230.F.Tensors.GNNEActivation(inputa, inputb, act, 0, 0, 0, Tensor.FromArray(
-                                new DeQuantizeParam[1] { new DeQuantizeParam(quantParam.ZeroPoint, quantParam.Scale) }),
-                            Tensor.FromArray(new DeQuantizeParam[1] { new DeQuantizeParam(0, 1f) }), outChannels,
-                            fakeActivation.Type, is16Segment, DataTypes.Float16,
-                            fakeActivation.ActParam,
-                            array3));
-                    call4.CheckedType = new TensorType(DataTypes.Float32, array3);
-                    Call call5 = Nncase.IR.F.Tensors.Reshape(call4, call.CheckedShape);
-                    call5.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
-                    return Nncase.IR.F.Math.RangeOfMarker(flag ? call5 : call4, outputRange).With(null, null, null,
-                        adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo,
-                        mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
-                }
-
-                Call call6 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
-                    Nncase.IR.K230.F.Tensors.GNNEActivation(inputa, inputb, act, 0, 0, 0, Tensor.FromArray(
-                            new DeQuantizeParam[1] { new DeQuantizeParam(quantParam.ZeroPoint, quantParam.Scale) }),
-                        Tensor.FromArray(new DeQuantizeParam[1] { new DeQuantizeParam(0, 1f) }), outChannels,
-                        fakeActivation.Type, is16Segment, DataTypes.Float16, fakeActivation.ActParam,
-                        array3));
-                call6.CheckedType = new TensorType(DataTypes.Float32, array3);
-                Call call7 = Nncase.IR.F.Tensors.Reshape(call6, call.CheckedShape);
-                call7.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
-                return Nncase.IR.F.Math.RangeOfMarker(flag ? call7 : call6, outputRange).With(null, null, null,
-                    adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo,
-                    mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
-            }
-
-            MixQuantInfo mixQuantInfo2 = ((Marker)inputAMarker).MixQuantInfo;
-            DataType dataType2 = ((mixQuantInfo2?.MarkerQuantType == null)
-                ? base.QuantType
-                : mixQuantInfo2.MarkerQuantType);
-            QuantMode quantMode2 = ((!(dataType2 == DataTypes.UInt8))
-                ? QuantMode.SignedSymmetricMode
-                : QuantMode.UnsignedMode);
-            int bits2 = ((dataType2 == DataTypes.Int16) ? 12 : 8);
-            MixQuantInfo mixQuantInfo3 = ((Marker)expr2).MixQuantInfo;
-            DataType dataType3 = ((mixQuantInfo3?.MarkerQuantType == null)
-                ? base.QuantType
-                : mixQuantInfo3.MarkerQuantType);
-            QuantMode quantMode3 = ((!(dataType3 == DataTypes.UInt8))
-                ? QuantMode.SignedSymmetricMode
-                : QuantMode.UnsignedMode);
-            int bits3 = ((dataType3 == DataTypes.Int16) ? 12 : 8);
-            ValueRange<float> range2 =
-                new ValueRange<float>(inputARange.ToArray<float>()[0], inputARange.ToArray<float>()[1]);
-            QuantParam quantParam2 =
-                ((dataType2 == DataTypes.Float16 || dataType2 == DataTypes.Float32 || dataType2 == DataTypes.Int16)
-                    ? new QuantParam(0, 1f)
-                    : QuantUtility.GetQuantParam(range2, bits2, quantMode2));
-            Call input2 =
-                ((dataType2 == DataTypes.Float16 || dataType2 == DataTypes.Float32 || dataType2 == DataTypes.Int16)
-                    ? call2
-                    : Nncase.IR.F.Math.Quantize(call2, new QuantParam(quantParam2.ZeroPoint, quantParam2.Scale),
-                        dataType2));
-            Call inputa2 =
-                ((dataType2 == DataTypes.Float16 || dataType2 == DataTypes.Float32 || dataType2 == DataTypes.Int16)
-                    ? Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, call2)
-                    : Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType2, input2));
-            ValueRange<float> range3 = new ValueRange<float>(value.ToArray<float>()[0], value.ToArray<float>()[1]);
-            QuantParam quantParam3 =
-                ((dataType3 == DataTypes.Float16 || dataType3 == DataTypes.Float32 || dataType3 == DataTypes.Int16)
-                    ? new QuantParam(0, 1f)
-                    : QuantUtility.GetQuantParam(range3, bits3, quantMode3));
-            Call input3 =
-                ((dataType3 == DataTypes.Float16 || dataType3 == DataTypes.Float32 || dataType3 == DataTypes.Int16)
-                    ? call3
-                    : Nncase.IR.F.Math.Quantize(call3, new QuantParam(quantParam3.ZeroPoint, quantParam3.Scale),
-                        dataType3));
-            Call inputb2 =
-                ((dataType3 == DataTypes.Float16 || dataType3 == DataTypes.Float32 || dataType3 == DataTypes.Int16)
-                    ? Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, call3)
-                    : Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType3, input3));
-            if (!GetReplaceHelper.ToScalar<bool>(is16Segment))
-            {
-                Call call8 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
-                    Nncase.IR.K230.F.Tensors.GNNEActivation(inputa2, inputb2, act, 0, 0, 0, Tensor.FromArray(
-                            new DeQuantizeParam[1] { new DeQuantizeParam(quantParam2.ZeroPoint, quantParam2.Scale) }),
-                        Tensor.FromArray(new DeQuantizeParam[1]
-                        {
-                            new DeQuantizeParam(quantParam3.ZeroPoint, quantParam3.Scale)
-                        }), outChannels, fakeActivation.Type, is16Segment, DataTypes.Float16,
-                        fakeActivation.ActParam,
-                        array3));
-                call8.CheckedType = new TensorType(DataTypes.Float32, array3);
-                Call call9 = Nncase.IR.F.Tensors.Reshape(call8, call.CheckedShape);
-                call9.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
-                return Nncase.IR.F.Math.RangeOfMarker(flag ? call9 : call8, outputRange).With(null, null, null,
-                    adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo,
-                    mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
-            }
-
-            Call call10 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32, Nncase.IR.K230.F.Tensors.GNNEActivation(
-                inputa2, inputb2, act, 0, 0, 0,
-                Tensor.FromArray(new DeQuantizeParam[1]
-                {
-                    new DeQuantizeParam(quantParam2.ZeroPoint, quantParam2.Scale)
-                }),
-                Tensor.FromArray(new DeQuantizeParam[1]
-                {
-                    new DeQuantizeParam(quantParam3.ZeroPoint, quantParam3.Scale)
-                }), outChannels, fakeActivation.Type, is16Segment, DataTypes.Float16, fakeActivation.ActParam,
-                array3));
-            call10.CheckedType = new TensorType(DataTypes.Float32, array3);
-            Call call11 = Nncase.IR.F.Tensors.Reshape(call10, call.CheckedShape);
-            call11.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
-            return Nncase.IR.F.Math.RangeOfMarker(flag ? call11 : call10, outputRange).With(null, null, null,
-                adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo, mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
+            return BuildUnaryActivation(
+                fakeActivation, call, inputAMarker, inputARange, inputAShape, outputShape, needsOutputReshape,
+                outChannels, is16Segment, activationTable, outputMarker, outputRange);
         }
-        catch (KeyNotFoundException)
+
+        var inputBMarker = (Expr)result["inputBMarker"];
+        Tensor inputBRange = ((TensorConst)result["inputBRange"]).Value;
+        int[] inputBShape = PadShapeToRank4(inputB.CheckedShape);
+
+        Call reshapedInputA = Nncase.IR.F.Tensors.Reshape(inputAMarker, inputAShape);
+        Call reshapedInputB = Nncase.IR.F.Tensors.Reshape(inputBMarker, inputBShape);
+
+        Call loadedInputA;
+        Call loadedInputB;
+        DeQuantizeParam inputADequantParam;
+        DeQuantizeParam inputBDequantParam;
+
+        if (inputB is TensorConst)
         {
-            MixQuantInfo mixQuantInfo4 = ((Marker)inputAMarker).MixQuantInfo;
-            DataType dataType4 = ((mixQuantInfo4?.MarkerQuantType == null)
-                ? base.QuantType
-                : mixQuantInfo4.MarkerQuantType);
-            QuantMode quantMode4 = ((!(dataType4 == DataTypes.UInt8))
-                ? QuantMode.SignedSymmetricMode
-                : QuantMode.UnsignedMode);
-            int bits4 = ((dataType4 == DataTypes.Int16) ? 12 : 8);
-            Marker marker =
-                Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(inputAMarker, array), inputARange);
-            ValueRange<float> range4 =
-                new ValueRange<float>(inputARange.ToArray<float>()[0], inputARange.ToArray<float>()[1]);
-            QuantParam quantParam4 =
-                ((dataType4 == DataTypes.Float16 || dataType4 == DataTypes.Float32 || dataType4 == DataTypes.Int16)
-                    ? new QuantParam(0, 1f)
-                    : QuantUtility.GetQuantParam(range4, bits4, quantMode4));
-            Expr input4 =
-                ((dataType4 == DataTypes.Float16 || dataType4 == DataTypes.Float32 || dataType4 == DataTypes.Int16)
-                    ? ((Expr)marker)
-                    : ((Expr)Nncase.IR.F.Math.Quantize(marker, new QuantParam(quantParam4.ZeroPoint, quantParam4.Scale),
-                        dataType4)));
-            Call inputa3 =
-                ((dataType4 == DataTypes.Float16 || dataType4 == DataTypes.Float32 || dataType4 == DataTypes.Int16)
-                    ? Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, marker)
-                    : Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType4, input4));
-            if (!GetReplaceHelper.ToScalar<bool>(is16Segment))
+            // Constant second operand: it is always loaded as float16 without quantization.
+            (loadedInputA, inputADequantParam) = LoadQuantized(reshapedInputA, inputAMarker, inputARange);
+            if (InputA is TensorConst constInputA)
             {
-                Call call12 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
-                    Nncase.IR.K230.F.Tensors.GNNEActivation(inputa3, None.Default, act, 0, 0, 0, Tensor.FromArray(
-                            new DeQuantizeParam[1] { new DeQuantizeParam(quantParam4.ZeroPoint, quantParam4.Scale) }),
-                        Tensor.FromArray(new DeQuantizeParam[1] { new DeQuantizeParam(0, 1f) }), outChannels,
-                        fakeActivation.Type, is16Segment, DataTypes.Float16, fakeActivation.ActParam,
-                        array3));
-                call12.CheckedType = new TensorType(DataTypes.Float32, array3);
-                Call call13 = Nncase.IR.F.Tensors.Reshape(call12, call.CheckedShape);
-                call13.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
-                return Nncase.IR.F.Math.RangeOfMarker(flag ? call13 : call12, outputRange).With(null, null, null,
-                    adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo,
-                    mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
+                loadedInputA = Nncase.IR.K230.F.Tensors.GNNELoad(
+                    DataTypes.Float16,
+                    Const.FromTensor(Tensor.From(constInputA.Value.ToArray<float>(), inputAShape)));
             }
 
-            Call call14 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32, Nncase.IR.K230.F.Tensors.GNNEActivation(
-                inputa3, None.Default, act, 0, 0, 0,
-                Tensor.FromArray(new DeQuantizeParam[1]
-                {
-                    new DeQuantizeParam(quantParam4.ZeroPoint, quantParam4.Scale)
-                }), Tensor.FromArray(new DeQuantizeParam[1] { new DeQuantizeParam(0, 1f) }), outChannels,
-                fakeActivation.Type, is16Segment, DataTypes.Float16, fakeActivation.ActParam, array3));
-            call14.CheckedType = new TensorType(DataTypes.Float32, array3);
-            Call call15 = Nncase.IR.F.Tensors.Reshape(call14, call.CheckedShape);
-            call15.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
-            return Nncase.IR.F.Math.RangeOfMarker(flag ? call15 : call14, outputRange).With(null, null, null,
-                adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo, mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
+            loadedInputB = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, reshapedInputB);
+            if (InputB is TensorConst constInputB)
+            {
+                loadedInputB = Nncase.IR.K230.F.Tensors.GNNELoad(
+                    DataTypes.Float16,
+                    Const.FromTensor(Tensor.From(constInputB.Value.ToArray<float>(), inputBShape)));
+            }
+
+            inputBDequantParam = new DeQuantizeParam(0, 1f);
         }
+        else
+        {
+            // Both operands are dynamic: each one is quantized with its own marker type and range.
+            (loadedInputA, inputADequantParam) = LoadQuantized(reshapedInputA, inputAMarker, inputARange);
+            (loadedInputB, inputBDequantParam) = LoadQuantized(reshapedInputB, inputBMarker, inputBRange);
+        }
+
+        return BuildActivation(
+            fakeActivation, call, loadedInputA, loadedInputB, inputADequantParam, inputBDequantParam, outputShape,
+            needsOutputReshape, outChannels, is16Segment, activationTable, outputMarker, outputRange);
     }
 
     public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
@@ -273,5 +107,107 @@ public class ToGNNEActivation : GNNEActLowerRule
         Init();
         return GetReplace(fakeActivation, call, inputA, inputARange, outChannels, is16Segment, inputAMarker,
             outputMarker, __result, outputRange);
+    }
+
+    private static int[] PadShapeToRank4(Shape shape)
+    {
+        int[] padded = { 1, 1, 1, 1 };
+        Array.Copy(shape.ToValueArray(), 0, padded, padded.Length - shape.Count, shape.Count);
+        return padded;
+    }
+
+    /// <summary>
+    /// Float16, float32 and int16 operands are not quantized by the activation kernel;
+    /// they are loaded as float16.
+    /// </summary>
+    private static bool IsLoadedAsFloat16(DataType dataType)
+    {
+        return dataType == DataTypes.Float16 || dataType == DataTypes.Float32 || dataType == DataTypes.Int16;
+    }
+
+    private DataType GetMarkerQuantType(Expr marker)
+    {
+        MixQuantInfo? mixQuantInfo = ((Marker)marker).MixQuantInfo;
+        return mixQuantInfo?.MarkerQuantType ?? QuantType;
+    }
+
+    /// <summary>
+    /// Quantizes <paramref name="source"/> to the quant type chosen by <paramref name="typeMarker"/> and
+    /// loads it into GLB, returning the load together with the matching dequantize parameters.
+    /// </summary>
+    private (Call Load, DeQuantizeParam DequantParam) LoadQuantized(Expr source, Expr typeMarker, Tensor range)
+    {
+        DataType dataType = GetMarkerQuantType(typeMarker);
+        if (IsLoadedAsFloat16(dataType))
+        {
+            return (
+                Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, source),
+                new DeQuantizeParam(0, 1f));
+        }
+
+        QuantMode quantMode = dataType == DataTypes.UInt8 ? QuantMode.UnsignedMode : QuantMode.SignedSymmetricMode;
+        float[] rangeValues = range.ToArray<float>();
+        QuantParam quantParam = QuantUtility.GetQuantParam(new ValueRange<float>(rangeValues[0], rangeValues[1]), 8, quantMode);
+        Call quantized = Nncase.IR.F.Math.Quantize(
+            source, new QuantParam(quantParam.ZeroPoint, quantParam.Scale), dataType);
+        return (
+            Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, quantized),
+            new DeQuantizeParam(quantParam.ZeroPoint, quantParam.Scale));
+    }
+
+    /// <summary>
+    /// Activation with a single operand (no inputB).
+    /// </summary>
+    private Expr BuildUnaryActivation(
+        FakeActivation fakeActivation, Call call, Expr inputAMarker, Tensor<float> inputARange, int[] inputAShape,
+        int[] outputShape, bool needsOutputReshape, Tensor<int> outChannels, Expr is16Segment, Call activationTable,
+        Expr outputMarker, Expr outputRange)
+    {
+        // Unlike the binary case, the reshaped operand is re-marked with its own range.
+        Marker reshapedInputA =
+            Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(inputAMarker, inputAShape), inputARange);
+        (Call loadedInputA, DeQuantizeParam inputADequantParam) =
+            LoadQuantized(reshapedInputA, inputAMarker, inputARange);
+
+        return BuildActivation(
+            fakeActivation, call, loadedInputA, None.Default, inputADequantParam, new DeQuantizeParam(0, 1f),
+            outputShape, needsOutputReshape, outChannels, is16Segment, activationTable, outputMarker, outputRange);
+    }
+
+    private static Expr BuildActivation(
+        FakeActivation fakeActivation, Call call, Expr loadedInputA, Expr loadedInputB,
+        DeQuantizeParam inputADequantParam, DeQuantizeParam inputBDequantParam, int[] outputShape,
+        bool needsOutputReshape, Tensor<int> outChannels, Expr is16Segment, Call activationTable,
+        Expr outputMarker, Expr outputRange)
+    {
+        Call stored = Nncase.IR.K230.F.Tensors.GNNEStore(
+            DataTypes.Float32,
+            Nncase.IR.K230.F.Tensors.GNNEActivation(
+                loadedInputA,
+                loadedInputB,
+                activationTable,
+                0,
+                0,
+                0,
+                Tensor.FromArray(new[] { inputADequantParam }),
+                Tensor.FromArray(new[] { inputBDequantParam }),
+                outChannels,
+                fakeActivation.Type,
+                is16Segment,
+                DataTypes.Float16,
+                fakeActivation.ActParam,
+                outputShape));
+        stored.CheckedType = new TensorType(DataTypes.Float32, outputShape);
+
+        Call result = stored;
+        if (needsOutputReshape)
+        {
+            result = Nncase.IR.F.Tensors.Reshape(stored, call.CheckedShape);
+            result.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
+        }
+
+        var marker = (Marker)outputMarker;
+        return Nncase.IR.F.Math.RangeOfMarker(result, outputRange).With(
+            null, null, null, adaQuantInfo: marker.AdaQuantInfo, mixQuantInfo: marker.MixQuantInfo);
     }
 }
