@@ -129,6 +129,8 @@ internal partial class Program
                 ExportQuantSchemePath = exportQuantSchemePath,
                 ExportQuantScheme = context.ParseResult.GetValueForOption(compilecmd.ExportQuantScheme) ||
                                     !string.IsNullOrEmpty(exportQuantSchemePath),
+                DumpQuantError = context.ParseResult.GetValueForOption(compilecmd.DumpQuantError),
+                DumpQuantErrorSymmetricForSigned = context.ParseResult.GetValueForOption(compilecmd.DumpQuantErrorSymmetricForSigned),
             },
         };
 

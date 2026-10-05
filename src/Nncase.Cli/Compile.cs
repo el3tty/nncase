@@ -53,6 +53,14 @@ internal sealed class CompileCommand : Command
           name: "--dump-dir",
           description: "dump to directory.",
           getDefaultValue: () => ".");
+        DumpQuantError = new Option<bool>(
+          name: "--dump-quant-error",
+          description: $"dump quantization error",
+          getDefaultValue: () => false);
+        DumpQuantErrorSymmetricForSigned = new Option<bool>(
+          name: "--dump-quant-error-symmetric-for-signed",
+          description: $"dump quantization error using symmetric algorithm for signed values",
+          getDefaultValue: () => false);
         QuantType = new Option<QuantType>(
           name: "--quant-type",
           description: $"quant type",
@@ -158,6 +166,8 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(InputFormat);
         AddGlobalOption(DumpFlags);
         AddGlobalOption(DumpDir);
+        AddGlobalOption(DumpQuantError);
+        AddGlobalOption(DumpQuantErrorSymmetricForSigned);
         AddGlobalOption(QuantType);
         AddGlobalOption(WQuantType);
         AddGlobalOption(Dataset);
@@ -189,6 +199,10 @@ internal sealed class CompileCommand : Command
     public Option<IEnumerable<DumpFlags>> DumpFlags { get; }
 
     public Option<string> DumpDir { get; }
+
+    public Option<bool> DumpQuantError { get; }
+
+    public Option<bool> DumpQuantErrorSymmetricForSigned { get; }
 
     public Option<QuantType> QuantType { get; }
 
