@@ -24,7 +24,85 @@ internal partial class Program
         return await ConfigureCommandLine()
             .UseHost(ConfigureHost)
             .UseDefaults()
+            .UseTokenReplacer(TryReadResponseFile)
             .Build().InvokeAsync(args);
+    }
+
+    /// <summary>
+    /// Expands an <c>@file</c> argument into the tokens stored in that file.
+    /// Format: one or more arguments per line, separated by whitespace; double quotes group
+    /// an argument that contains spaces; blank lines and lines starting with '#' are ignored;
+    /// backslashes are literal, so Windows paths can be written as-is.
+    /// Relative paths in the file are resolved against the current directory, like on the command line.
+    /// </summary>
+    private static bool TryReadResponseFile(string filePath, out IReadOnlyList<string>? replacementTokens, out string? errorMessage)
+    {
+        filePath = filePath.TrimStart('@').Trim('"');
+        if (!File.Exists(filePath))
+        {
+            replacementTokens = null;
+            errorMessage = $"Response file '{filePath}' was not found.";
+            return false;
+        }
+
+        var tokens = new List<string>();
+        try
+        {
+            foreach (var rawLine in File.ReadLines(filePath))
+            {
+                var line = rawLine.Trim();
+                if (line.Length == 0 || line[0] == '#')
+                {
+                    continue;
+                }
+
+                SplitResponseFileLine(line, tokens);
+            }
+        }
+        catch (IOException ex)
+        {
+            replacementTokens = null;
+            errorMessage = $"Error reading response file '{filePath}': {ex.Message}";
+            return false;
+        }
+
+        replacementTokens = tokens;
+        errorMessage = null;
+        return true;
+    }
+
+    private static void SplitResponseFileLine(string line, List<string> tokens)
+    {
+        var current = new System.Text.StringBuilder();
+        var inQuotes = false;
+        var hasToken = false;
+        foreach (var ch in line)
+        {
+            if (ch == '"')
+            {
+                inQuotes = !inQuotes;
+                hasToken = true;
+            }
+            else if (char.IsWhiteSpace(ch) && !inQuotes)
+            {
+                if (hasToken)
+                {
+                    tokens.Add(current.ToString());
+                    current.Clear();
+                    hasToken = false;
+                }
+            }
+            else
+            {
+                current.Append(ch);
+                hasToken = true;
+            }
+        }
+
+        if (hasToken)
+        {
+            tokens.Add(current.ToString());
+        }
     }
 
     private static async Task RunAsync(string targetKind, CompileOptions compileOptions, DatasetFormat datasetFormat, string dataset, string outputFile, IHost host)
