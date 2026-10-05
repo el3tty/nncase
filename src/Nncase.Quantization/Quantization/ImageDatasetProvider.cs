@@ -11,7 +11,9 @@ namespace Nncase.Quantization;
 /// <summary>
 /// <see cref="ICalibrationDatasetProvider"/> for standard image dataset folders (JPG, PNG, BMP).
 /// Images already at the model input resolution are used as is; others are letterboxed (gray 114 padding).
-/// Output is RGB float32 (0..1) in NCHW layout. Decoding and resizing use SkiaSharp (MIT).
+/// Output is RGB in NCHW layout, in the element type of the model input:
+/// <c>uint8</c> input gives raw 0..255 bytes, <c>float32</c> input gives values normalized to 0..1.
+/// Decoding and resizing use SkiaSharp (MIT).
 /// </summary>
 public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvider
 {
@@ -37,6 +39,10 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
         int targetWidth = shape[3];
         int targetHeight = shape[2];
 
+        var dataType = tensorType.DType;
+        bool isUInt8 = dataType == DataTypes.UInt8;
+        Trace.Assert(isUInt8 || dataType == DataTypes.Float32, $"Unsupported model input type '{dataType}'. Only uint8 and float32 are supported.");
+
         var imageFiles = Directory.EnumerateFiles(datasetPath)
             .Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
             .OrderBy(f => f, StringComparer.Ordinal)
@@ -49,9 +55,24 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
         Samples = imageFiles.Select(filePath =>
         {
             var values = new Dictionary<Var, IValue>();
-            float[] tensorData = LoadImageToNchwFloat32(filePath, targetWidth, targetHeight);
+            byte[] planar = LoadImageToNchwUInt8(filePath, targetWidth, targetHeight);
 
-            var tensor = Tensor.From<float>(tensorData, shape);
+            Tensor tensor;
+            if (isUInt8)
+            {
+                tensor = Tensor.From<byte>(planar, shape);
+            }
+            else
+            {
+                var floats = new float[planar.Length];
+                for (int i = 0; i < planar.Length; i++)
+                {
+                    floats[i] = planar[i] / 255.0f;
+                }
+
+                tensor = Tensor.From<float>(floats, shape);
+            }
+
             values.Add(inputVar, Value.FromTensor(tensor));
 
             return (IReadOnlyDictionary<Var, IValue>)values;
@@ -64,9 +85,9 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
 
     /// <summary>
     /// Loads an image, letterboxes it to the model input size if needed (gray 114 padding),
-    /// and converts it to RGB Float32 [0..1] NCHW layout.
+    /// and converts it to planar RGB bytes (NCHW, 0..255).
     /// </summary>
-    private static float[] LoadImageToNchwFloat32(string imagePath, int targetWidth, int targetHeight)
+    private static byte[] LoadImageToNchwUInt8(string imagePath, int targetWidth, int targetHeight)
     {
         using var source = SKBitmap.Decode(imagePath)
             ?? throw new InvalidOperationException($"Failed to decode image '{imagePath}'.");
@@ -94,11 +115,11 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
             canvas.DrawImage(image, SKRect.Create(padX, padY, newWidth, newHeight), sampling);
         }
 
-        // 3. Convert RGBA bytes to planar float (R plane, G plane, B plane) normalized to 0.0 - 1.0.
+        // 3. Convert RGBA bytes to planar bytes (R plane, G plane, B plane).
         ReadOnlySpan<byte> pixels = canvasBitmap.GetPixelSpan();
         int rowBytes = canvasBitmap.RowBytes;
         int planeSize = targetHeight * targetWidth;
-        float[] nchwBuffer = new float[3 * planeSize];
+        byte[] nchwBuffer = new byte[3 * planeSize];
         for (int y = 0; y < targetHeight; y++)
         {
             int rowOffset = y * rowBytes;
@@ -106,9 +127,9 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
             {
                 int p = rowOffset + (x * 4);
                 int pixelIndex = (y * targetWidth) + x;
-                nchwBuffer[pixelIndex] = pixels[p] / 255.0f; // Red plane
-                nchwBuffer[planeSize + pixelIndex] = pixels[p + 1] / 255.0f; // Green plane
-                nchwBuffer[(2 * planeSize) + pixelIndex] = pixels[p + 2] / 255.0f; // Blue plane
+                nchwBuffer[pixelIndex] = pixels[p]; // Red plane
+                nchwBuffer[planeSize + pixelIndex] = pixels[p + 1]; // Green plane
+                nchwBuffer[(2 * planeSize) + pixelIndex] = pixels[p + 2]; // Blue plane
             }
         }
 
