@@ -210,6 +210,7 @@ internal partial class Program
                 DumpQuantError = context.ParseResult.GetValueForOption(compilecmd.DumpQuantError),
                 DumpQuantErrorSymmetricForSigned = context.ParseResult.GetValueForOption(compilecmd.DumpQuantErrorSymmetricForSigned),
                 SkipKldForWeights = context.ParseResult.GetValueForOption(compilecmd.SkipKldForWeights),
+                ExportWeightRangeByChannel = context.ParseResult.GetValueForOption(compilecmd.ExportWeightRangeByChannel),
             },
         };
 

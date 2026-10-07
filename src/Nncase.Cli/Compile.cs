@@ -65,6 +65,10 @@ internal sealed class CompileCommand : Command
           name: "--skip-kld-for-weights",
           description: "with --calib-method Kld, keep the true min/max range for weights instead of the KLD-clipped range (activations still use KLD).",
           getDefaultValue: () => false);
+        ExportWeightRangeByChannel = new Option<bool>(
+          name: "--export-weight-range-by-channel",
+          description: "export per-output-channel weight ranges to the quant scheme (use with --export-quant-scheme or --export-quant-scheme-path) and quantize conv weights per channel.",
+          getDefaultValue: () => false);
         QuantType = new Option<QuantType>(
           name: "--quant-type",
           description: $"quant type",
@@ -173,6 +177,7 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(DumpQuantError);
         AddGlobalOption(DumpQuantErrorSymmetricForSigned);
         AddGlobalOption(SkipKldForWeights);
+        AddGlobalOption(ExportWeightRangeByChannel);
         AddGlobalOption(QuantType);
         AddGlobalOption(WQuantType);
         AddGlobalOption(Dataset);
@@ -210,6 +215,8 @@ internal sealed class CompileCommand : Command
     public Option<bool> DumpQuantErrorSymmetricForSigned { get; }
 
     public Option<bool> SkipKldForWeights { get; }
+
+    public Option<bool> ExportWeightRangeByChannel { get; }
 
     public Option<QuantType> QuantType { get; }
 
