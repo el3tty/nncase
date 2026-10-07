@@ -1,4 +1,7 @@
-﻿namespace Nncase.Quantization.K230;
+﻿// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
+namespace Nncase.Quantization.K230;
 
 public sealed class K230QuantizeOptions : QuantizeOptions
 {
