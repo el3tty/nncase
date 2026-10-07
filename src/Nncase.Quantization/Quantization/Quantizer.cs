@@ -543,6 +543,14 @@ internal partial class Quantizer
         {
             foreach (KeyValuePair<ENode, QuantizeHistogram<float>> histogram in histograms)
             {
+                // Optional: weights are constants, and clipping their largest values can hurt accuracy, so keep their
+                // true min/max instead of the KLD-optimal clipping range (which is meant for activations).
+                if (_quantizeOptions.SkipKldForWeights && ((RangeOf)((Call)histogram.Key.Expr).Target).IsRangeOfWeight)
+                {
+                    optRanges.Add(histogram.Key, ranges[histogram.Key]);
+                    continue;
+                }
+
                 histogram.Value.SrcBin = Smooth(histogram.Value.SrcBin);
                 var minKld = float.MaxValue;
                 var r = ranges[histogram.Key].Max - ranges[histogram.Key].Min;

@@ -174,6 +174,11 @@ public class QuantizeOptions
     public bool DumpQuantErrorSymmetricForSigned { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether weights keep their true min/max range instead of the KLD-optimal clipping range.
+    /// </summary>
+    public bool SkipKldForWeights { get; set; }
+
+    /// <summary>
     /// Creates no quantization options.
     /// </summary>
     /// <returns>No quant options.</returns>

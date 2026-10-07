@@ -61,6 +61,10 @@ internal sealed class CompileCommand : Command
           name: "--dump-quant-error-symmetric-for-signed",
           description: $"dump quantization error using symmetric algorithm for signed values",
           getDefaultValue: () => false);
+        SkipKldForWeights = new Option<bool>(
+          name: "--skip-kld-for-weights",
+          description: "with --calib-method Kld, keep the true min/max range for weights instead of the KLD-clipped range (activations still use KLD).",
+          getDefaultValue: () => false);
         QuantType = new Option<QuantType>(
           name: "--quant-type",
           description: $"quant type",
@@ -168,6 +172,7 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(DumpDir);
         AddGlobalOption(DumpQuantError);
         AddGlobalOption(DumpQuantErrorSymmetricForSigned);
+        AddGlobalOption(SkipKldForWeights);
         AddGlobalOption(QuantType);
         AddGlobalOption(WQuantType);
         AddGlobalOption(Dataset);
@@ -203,6 +208,8 @@ internal sealed class CompileCommand : Command
     public Option<bool> DumpQuantError { get; }
 
     public Option<bool> DumpQuantErrorSymmetricForSigned { get; }
+
+    public Option<bool> SkipKldForWeights { get; }
 
     public Option<QuantType> QuantType { get; }
 
