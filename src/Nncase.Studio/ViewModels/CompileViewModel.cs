@@ -115,7 +115,7 @@ public partial class CompileViewModel : ViewModelBase
             return;
         }
 
-        using (var os = File.OpenWrite(KmodelPath))
+        using (var os = File.Open(KmodelPath, FileMode.Create, FileAccess.Write))
         {
             compiler.Gencode(os);
         }

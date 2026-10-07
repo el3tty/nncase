@@ -140,7 +140,7 @@ internal partial class Program
         await compiler.CompileAsync();
 
         // 5. code gen
-        using (var os = File.OpenWrite(outputFile))
+        using (var os = File.Open(outputFile, FileMode.Create, FileAccess.Write))
         {
             compiler.Gencode(os);
         }
