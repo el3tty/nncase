@@ -351,6 +351,7 @@ itlib::small_vector<TO, 8> to_vec(const gsl::byte *input, size_t size) {
     RETURN_RESULT_IMPL(bool);                                                  \
     RETURN_RESULT_IMPL(int8_t);                                                \
     RETURN_RESULT_IMPL(uint8_t);                                               \
+    RETURN_RESULT_IMPL(int16_t);                                               \
     RETURN_RESULT_IMPL(int32_t);                                               \
     RETURN_RESULT_IMPL(uint32_t);                                              \
     RETURN_RESULT_IMPL(int64_t);                                               \
