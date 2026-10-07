@@ -35,7 +35,7 @@ internal sealed class ConcatFusion : FusionMaker
             Expr[] fields = array.Select((Var i) => Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)midType, i)).ToArray();
             Call input = Nncase.IR.F.Tensors.Concat(new Nncase.IR.Tuple(fields), concat.Axis);
             Call body = Nncase.IR.K230.F.Tensors.GNNEStore(concatCall.CheckedDataType, input);
-            return new Call(new Fusion(base.FullName, ModuleKind, body, array), tupleInputs.ToArray());
+            return new Call(new Fusion(NextFullName(), ModuleKind, body, array), tupleInputs.ToArray());
         }
 
         return null;

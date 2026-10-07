@@ -37,7 +37,7 @@ internal sealed class SplitFusion : FusionMaker
         IEnumerable<Call> source = from i in Enumerable.Range(0, sections.Length)
             select Nncase.IR.K230.F.Tensors.GNNEStore(input.CheckedDataType,
                 Nncase.IR.F.Tensors.GetItem(newSplitCall, i));
-        string fullName = base.FullName;
+        string fullName = NextFullName();
         string moduleKind = ModuleKind;
         Expr[] fields = source.ToArray();
         Call call = new Call(new Fusion(fullName, moduleKind, new Tuple(fields), var), input);

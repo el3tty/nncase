@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using NetFabric.Hyperlinq;
 using Nncase.CodeGen;
 using Nncase.IR;
@@ -22,13 +24,24 @@ namespace Nncase.Passes.Rules.Neutral;
 
 public abstract class FusionMaker : RewriteRule<Pattern>
 {
-    public int Count { get; set; }
+    // One fusion counter per compile session, shared by every FusionMaker rule.
+    private static readonly ConditionalWeakTable<CompileSession, StrongBox<int>> FusionCounters = new();
 
     public virtual string Name { get; } = "FusionMaker";
 
     public virtual string ModuleKind { get; } = "StackVM";
 
-    public string FullName => $"{Name}_{Count}";
+    /// <summary>
+    /// Creates the name of a new fusion: "{Name}_{index}". The index comes from a counter shared by all
+    /// <see cref="FusionMaker"/> rules of the current <see cref="CompileSession"/>, so every fusion created
+    /// in a session gets a unique name, whichever rule creates it. Call it once per created fusion.
+    /// </summary>
+    /// <returns>The unique fusion name.</returns>
+    protected string NextFullName()
+    {
+        var counter = FusionCounters.GetOrCreateValue(CompileSession);
+        return $"{Name}_{Interlocked.Increment(ref counter.Value) - 1}";
+    }
 }
 
 /// <summary>
@@ -157,9 +170,8 @@ public partial class ComplexFusion<TMid, TBegin, TEnd> : FusionMaker
         };
 
         var fusion = new Call(
-            new Fusion(FullName, ModuleKind, newOutput, newInputs.ToArray()),
+            new Fusion(NextFullName(), ModuleKind, newOutput, newInputs.ToArray()),
             newParams.ToArray());
-        Count++;
         return fusion;
     }
 
@@ -200,8 +212,7 @@ public partial class SingleInputFusion<T, TBegin, TEnd> : FusionMaker
         var newMidCall = ReplaceCallParams(midOp, midCallParams, (beginCall, newBeginCall));
         var newEndCall = ReplaceCallParams(endOp, endCallParams, (midCall, newMidCall));
 
-        var fusion = new Call(new Fusion(FullName, ModuleKind, newEndCall, new[] { newInput }), input);
-        Count++;
+        var fusion = new Call(new Fusion(NextFullName(), ModuleKind, newEndCall, new[] { newInput }), input);
         return fusion;
     }
 }
@@ -250,9 +261,8 @@ public partial class DoubleInputFusion<T, TBegin, TEnd> : FusionMaker
         var newEndCall = ReplaceCallParams(endOp, endCallParams, (midCall, newMidCall));
 
         var fusion = new Call(
-            new Fusion(FullName, ModuleKind, newEndCall, newArgs.ToArray()),
+            new Fusion(NextFullName(), ModuleKind, newEndCall, newArgs.ToArray()),
             newParams.ToArray());
-        Count++;
         return fusion;
     }
 }
@@ -274,8 +284,7 @@ public partial class DataTransferFusion<TLoad, TStore> : FusionMaker
         var newArg = new Var(input.CheckedType!);
         var newLdCall = ReplaceCallParams(ldOp, ldCallParams, (input, newArg));
         var newStCall = ReplaceCallParams(stOp, stCallParams, (ldCall, newLdCall));
-        var fusion = new Call(new Fusion(FullName, ModuleKind, newStCall, new[] { newArg }), input);
-        Count++;
+        var fusion = new Call(new Fusion(NextFullName(), ModuleKind, newStCall, new[] { newArg }), input);
         return fusion;
     }
 }
