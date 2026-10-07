@@ -16,7 +16,7 @@
 
         <!-- Avoid changing semantics during migration. Enable later if desired. -->
         <ImplicitUsings>disable</ImplicitUsings>
-        <Nullable>disable</Nullable>
+        <Nullable>annotations</Nullable>
 
         <Platforms>AnyCPU;x64</Platforms>
 
