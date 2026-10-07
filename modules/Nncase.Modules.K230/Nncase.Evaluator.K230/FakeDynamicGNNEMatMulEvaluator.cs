@@ -15,130 +15,134 @@ namespace Nncase.Evaluator.K230;
 public sealed class FakeDynamicGNNEMatMulEvaluator : IEvaluator<FakeDynamicGNNEMatMul>, IEvaluator,
     ITypeInferencer<FakeDynamicGNNEMatMul>, ITypeInferencer, ICostEvaluator<FakeDynamicGNNEMatMul>, ICostEvaluator
 {
+    /// <summary>Divisor applied to the reduction size to get the CPU cycle factor.</summary>
+    private const float CpuCyclesDivisor = 768f;
+
+    // Positions of the marker-wrapped operands in the call's argument list.
+    private const int InputAArgumentIndex = 0;
+    private const int InputBArgumentIndex = 1;
+
     public Cost Visit(ICostEvaluateContext context, FakeDynamicGNNEMatMul target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeDynamicGNNEMatMul.InputA);
-        TensorType argumentType2 = context.GetArgumentType<TensorType>(target, FakeDynamicGNNEMatMul.InputB);
-        TensorType argumentType3 = context.GetArgumentType<TensorType>(target, FakeDynamicGNNEMatMul.Act);
+        TensorType inputAType = context.GetArgumentType<TensorType>(target, FakeDynamicGNNEMatMul.InputA);
+        TensorType inputBType = context.GetArgumentType<TensorType>(target, FakeDynamicGNNEMatMul.InputB);
+        TensorType actType = context.GetArgumentType<TensorType>(target, FakeDynamicGNNEMatMul.Act);
         TensorType returnType = context.GetReturnType<TensorType>();
-        Shape shape = argumentType.Shape;
-        int num;
-        if (!shape[shape.Count - 1].IsFixed)
+
+        // Reduction size (columns of input A); 1 when it is not statically known.
+        Shape inputAShape = inputAType.Shape;
+        int aCols;
+        if (!inputAShape[inputAShape.Count - 1].IsFixed)
         {
-            num = 1;
+            aCols = 1;
         }
         else
         {
-            Shape shape2 = argumentType.Shape;
-            num = shape2[shape2.Count - 1].FixedValue;
+            Shape shape = inputAType.Shape;
+            aCols = shape[shape.Count - 1].FixedValue;
         }
 
-        int num2 = num;
-        float num3 = 768f;
         return new Cost
         {
-            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(argumentType) +
-                                           CostUtility.GetMemoryAccess(argumentType2) +
-                                           CostUtility.GetMemoryAccess(argumentType3),
+            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputAType) +
+                                           CostUtility.GetMemoryAccess(inputBType) +
+                                           CostUtility.GetMemoryAccess(actType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)num2 / num3)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)aCols / CpuCyclesDivisor),
         };
+    }
+
+    /// <summary>Quantizes (rounding unless the parameter is the identity) and dequantizes one value.</summary>
+    private static float FakeQuantize(float value, QuantParam quantParam)
+    {
+        double quantized = (double)value / (double)quantParam.Scale + (double)quantParam.ZeroPoint;
+        if (quantParam.Scale != 1f || quantParam.ZeroPoint != 0)
+        {
+            quantized = System.Math.Round(quantized);
+        }
+
+        return (float)((quantized - (double)quantParam.ZeroPoint) * (double)quantParam.Scale);
     }
 
     private IValue Visit(IEvaluateContext context, FakeDynamicGNNEMatMul op, Tensor<float> inputA, Tensor<float> inputB,
         Tensor<float> act)
     {
-        int[] array = inputA.Dimensions.ToArray().SkipLast(2).TakeOrDefault(2, 1)
+        // Batch dimensions of each input, padded at the end with 1 up to two entries.
+        // NOTE: only the first two batch dimensions are passed to the kernel (and they are not left-aligned for
+        // broadcasting here, unlike the output shape computed below).
+        int[] aBatchDims = inputA.Dimensions.ToArray().SkipLast(2).TakeOrDefault(2, 1)
             .ToArray();
-        ReadOnlySpan<int> dimensions = inputA.Dimensions;
-        int num = dimensions[dimensions.Length - 2];
-        dimensions = inputA.Dimensions;
-        int aCols = dimensions[dimensions.Length - 1];
-        int[] array2 = inputB.Dimensions.ToArray().SkipLast(2).TakeOrDefault(2, 1)
+        ReadOnlySpan<int> inputADims = inputA.Dimensions;
+        int aRows = inputADims[inputADims.Length - 2];
+        int aCols = inputADims[inputADims.Length - 1];
+        int[] bBatchDims = inputB.Dimensions.ToArray().SkipLast(2).TakeOrDefault(2, 1)
             .ToArray();
-        dimensions = inputB.Dimensions;
-        int num2 = dimensions[dimensions.Length - 1];
-        List<int> list = inputA.Dimensions.ToArray().SkipLast(2).ToList();
-        List<int> list2 = inputB.Dimensions.ToArray().SkipLast(2).ToList();
-        while (list.Count < list2.Count)
+        ReadOnlySpan<int> inputBDims = inputB.Dimensions;
+        int bCols = inputBDims[inputBDims.Length - 1];
+
+        // Output shape: broadcast batch dimensions (left-padded with 1) followed by [aRows, bCols].
+        List<int> aBatchShape = inputA.Dimensions.ToArray().SkipLast(2).ToList();
+        List<int> bBatchShape = inputB.Dimensions.ToArray().SkipLast(2).ToList();
+        while (aBatchShape.Count < bBatchShape.Count)
         {
-            list.Insert(0, 1);
+            aBatchShape.Insert(0, 1);
         }
 
-        while (list2.Count < list.Count)
+        while (bBatchShape.Count < aBatchShape.Count)
         {
-            list2.Insert(0, 1);
+            bBatchShape.Insert(0, 1);
         }
 
-        Tensor<float> tensor = new Tensor<float>((from p in list.Zip(list2)
-            select System.Math.Max(p.First, p.Second)).Concat(new int[2] { num, num2 }).ToArray());
-        Memory<float> buffer;
+        Tensor<float> output = new Tensor<float>((from p in aBatchShape.Zip(bBatchShape)
+            select System.Math.Max(p.First, p.Second)).Concat(new int[2] { aRows, bCols }).ToArray());
+
         if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null)
         {
+            // Replace the inputs by their quantize-dequantize round trip when the markers carry mix-quant info.
             MarkerPattern markerPattern = Utility.IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard());
-            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
+            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[InputAArgumentIndex]))
             {
-                MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
-                if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
+                MixQuantInfo? mixQuantInfoA = ((Marker)context.CurrentCall.Arguments[InputAArgumentIndex]).MixQuantInfo;
+                if (mixQuantInfoA != null && mixQuantInfoA.HasBindedMixQuantInfo)
                 {
-                    List<QuantParam> quantParameter =
-                        ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
-                    Trace.Assert(quantParameter.Count == 1);
-                    float[] array3 = inputA.ToArray<float>();
-                    for (int num3 = 0; num3 < inputA.Length; num3++)
-                    {
-                        double num4 = (double)array3[num3] / (double)quantParameter[0].Scale +
-                                      (double)quantParameter[0].ZeroPoint;
-                        if (quantParameter[0].Scale != 1f || quantParameter[0].ZeroPoint != 0)
-                        {
-                            num4 = System.Math.Round(num4);
-                        }
+                    List<QuantParam> quantParamsA =
+                        ((Marker)context.CurrentCall.Arguments[InputAArgumentIndex]).MixQuantInfo.QuantParameter;
 
-                        double num5 = (num4 - (double)quantParameter[0].ZeroPoint) * (double)quantParameter[0].Scale;
-                        buffer = inputA.Buffer;
-                        buffer.Span[num3] = (float)num5;
+                    // Input A has a single per-tensor quant parameter.
+                    Trace.Assert(quantParamsA.Count == 1);
+                    Span<float> inputAValues = inputA.Buffer.Span;
+                    for (int i = 0; i < inputA.Length; i++)
+                    {
+                        inputAValues[i] = FakeQuantize(inputAValues[i], quantParamsA[0]);
                     }
                 }
             }
 
-            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[1]))
+            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[InputBArgumentIndex]))
             {
-                MixQuantInfo? mixQuantInfo2 = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
-                if (mixQuantInfo2 != null && mixQuantInfo2.HasBindedMixQuantInfo)
+                MixQuantInfo? mixQuantInfoB = ((Marker)context.CurrentCall.Arguments[InputBArgumentIndex]).MixQuantInfo;
+                if (mixQuantInfoB != null && mixQuantInfoB.HasBindedMixQuantInfo)
                 {
-                    List<QuantParam> quantParameter2 =
-                        ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo.QuantParameter;
-                    int count = quantParameter2.Count;
-                    int num6 = inputB.Length / count;
-                    float[] array4 = inputB.ToArray<float>();
-                    for (int num7 = 0; num7 < inputB.Length; num7++)
-                    {
-                        double num8 = (double)array4[num7] / (double)quantParameter2[num7 / num6].Scale +
-                                      (double)quantParameter2[num7 / num6].ZeroPoint;
-                        if (quantParameter2[num7 / num6].Scale != 1f || quantParameter2[num7 / num6].ZeroPoint != 0)
-                        {
-                            num8 = System.Math.Round(num8);
-                        }
+                    List<QuantParam> quantParamsB =
+                        ((Marker)context.CurrentCall.Arguments[InputBArgumentIndex]).MixQuantInfo.QuantParameter;
 
-                        double num9 = (num8 - (double)quantParameter2[num7 / num6].ZeroPoint) *
-                                      (double)quantParameter2[num7 / num6].Scale;
-                        buffer = inputB.Buffer;
-                        buffer.Span[num7] = (float)num9;
+                    // Input B has one quant parameter per equally sized chunk (per-channel quantization).
+                    int chunkLength = inputB.Length / quantParamsB.Count;
+                    Span<float> inputBValues = inputB.Buffer.Span;
+                    for (int i = 0; i < inputB.Length; i++)
+                    {
+                        inputBValues[i] = FakeQuantize(inputBValues[i], quantParamsB[i / chunkLength]);
                     }
                 }
             }
         }
 
-        buffer = inputA.Buffer;
-        Span<float> span = buffer.Span;
-        buffer = inputB.Buffer;
-        Span<float> span2 = buffer.Span;
-        buffer = tensor.Buffer;
-        Span<float> span3 = buffer.Span;
-        buffer = act.Buffer;
-        K230Kernels.FakeDynamicGnneMatmul(context, span, span2, span3, buffer.Span, array[0], array[1], num, aCols,
-            array2[0], array2[1], num2, op.DynamicChannel);
-        return Value.FromTensor(tensor);
+        Span<float> inputAData = inputA.Buffer.Span;
+        Span<float> inputBData = inputB.Buffer.Span;
+        Span<float> outputData = output.Buffer.Span;
+        K230Kernels.FakeDynamicGnneMatmul(context, inputAData, inputBData, outputData, act.Buffer.Span,
+            aBatchDims[0], aBatchDims[1], aRows, aCols, bBatchDims[0], bBatchDims[1], bCols, op.DynamicChannel);
+        return Value.FromTensor(output);
     }
 
     private IRType Visit(TensorType inputA, TensorType inputB, TensorType act)
@@ -153,43 +157,42 @@ public sealed class FakeDynamicGNNEMatMulEvaluator : IEvaluator<FakeDynamicGNNEM
             return new InvalidType("Rank InputA and InputB Must >= 2!");
         }
 
-        List<Dimension> list = inputA.Shape.SkipLast(2).ToList();
-        List<Dimension> list2 = inputB.Shape.SkipLast(2).ToList();
-        while (list2.Count < list.Count)
+        // Batch dimensions are left-padded with 1 and broadcast; unknown dimensions stay unknown.
+        List<Dimension> aBatchShape = inputA.Shape.SkipLast(2).ToList();
+        List<Dimension> bBatchShape = inputB.Shape.SkipLast(2).ToList();
+        while (bBatchShape.Count < aBatchShape.Count)
         {
-            list2.Insert(0, 1);
+            bBatchShape.Insert(0, 1);
         }
 
-        while (list.Count < list2.Count)
+        while (aBatchShape.Count < bBatchShape.Count)
         {
-            list.Insert(0, 1);
+            aBatchShape.Insert(0, 1);
         }
 
-        IEnumerable<Dimension> first = list.Zip(list2).Select(delegate((Dimension First, Dimension Second) p)
+        IEnumerable<Dimension> batchDims = aBatchShape.Zip(bBatchShape).Select(delegate((Dimension First, Dimension Second) p)
         {
-            var (dimension, dimension2) = p;
-            return (dimension.Kind == DimensionKind.Fixed && dimension2.Kind == DimensionKind.Fixed)
-                ? ((Dimension)System.Math.Max(dimension.FixedValue, dimension2.FixedValue))
+            var (aDim, bDim) = p;
+            return (aDim.Kind == DimensionKind.Fixed && bDim.Kind == DimensionKind.Fixed)
+                ? ((Dimension)System.Math.Max(aDim.FixedValue, bDim.FixedValue))
                 : Dimension.Unknown;
         });
-        Dimension[] array = new Dimension[2];
-        Shape shape = inputA.Shape;
-        array[0] = shape[shape.Count - 2];
-        Shape shape2 = inputB.Shape;
-        array[1] = shape2[shape2.Count - 1];
-        Dimension[] second = array;
-        return new TensorType(inputA.DType, first.Concat(second).ToArray());
+
+        // Trailing [rows of A, cols of B].
+        Dimension[] matrixDims = new Dimension[2];
+        Shape inputAShape = inputA.Shape;
+        matrixDims[0] = inputAShape[inputAShape.Count - 2];
+        Shape inputBShape = inputB.Shape;
+        matrixDims[1] = inputBShape[inputBShape.Count - 1];
+        return new TensorType(inputA.DType, batchDims.Concat(matrixDims).ToArray());
     }
 
     public IValue Visit(IEvaluateContext context, FakeDynamicGNNEMatMul target)
     {
-        Tensor<float> argumentValueAsTensor =
-            context.GetArgumentValueAsTensor<float>(target, FakeDynamicGNNEMatMul.InputA);
-        Tensor<float> argumentValueAsTensor2 =
-            context.GetArgumentValueAsTensor<float>(target, FakeDynamicGNNEMatMul.InputB);
-        Tensor<float> argumentValueAsTensor3 =
-            context.GetArgumentValueAsTensor<float>(target, FakeDynamicGNNEMatMul.Act);
-        return Visit(context, target, argumentValueAsTensor, argumentValueAsTensor2, argumentValueAsTensor3);
+        Tensor<float> inputA = context.GetArgumentValueAsTensor<float>(target, FakeDynamicGNNEMatMul.InputA);
+        Tensor<float> inputB = context.GetArgumentValueAsTensor<float>(target, FakeDynamicGNNEMatMul.InputB);
+        Tensor<float> act = context.GetArgumentValueAsTensor<float>(target, FakeDynamicGNNEMatMul.Act);
+        return Visit(context, target, inputA, inputB, act);
     }
 
     public IRType Visit(ITypeInferenceContext context, FakeDynamicGNNEMatMul target)

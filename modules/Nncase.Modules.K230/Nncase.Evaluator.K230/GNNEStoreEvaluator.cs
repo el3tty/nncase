@@ -8,6 +8,9 @@ using OrtKISharp;
 
 namespace Nncase.Evaluator.K230;
 
+/// <summary>
+/// Evaluator for <see cref="GNNEStore"/>: stores a tensor from GNNE memory, optionally widening float16 to float32.
+/// </summary>
 [EvaluatorGenerator]
 [TypeInferGenerator]
 public class GNNEStoreEvaluator : IEvaluator<GNNEStore>, IEvaluator, ITypeInferencer<GNNEStore>, ITypeInferencer,
@@ -20,89 +23,90 @@ public class GNNEStoreEvaluator : IEvaluator<GNNEStore>, IEvaluator, ITypeInfere
 
     private IValue Visit(GNNEStore target, Tensor input, Tensor strides)
     {
-        DataType elementType = input.ElementType;
+        DataType sourceType = input.ElementType;
         PrimType destType = target.DestType;
-        (DataType, PrimType) tuple = (elementType, destType);
-        Tensor tensor;
-        if (tuple.Item1 == DataTypes.Float16 && tuple.Item2 == DataTypes.Float32)
+
+        // float16 -> float32 is the only supported conversion; otherwise the types must match.
+        Tensor converted;
+        if (sourceType == DataTypes.Float16 && destType == DataTypes.Float32)
         {
-            tensor = input.Cast<float>();
+            converted = input.Cast<float>();
         }
         else
         {
-            (DataType, PrimType) tuple2 = tuple;
-            if (!(tuple2.Item1 == tuple2.Item2))
+            if (!(sourceType == destType))
             {
-                throw new ArgumentOutOfRangeException($"{elementType} => {destType}");
+                throw new ArgumentOutOfRangeException($"{sourceType} => {destType}");
             }
 
-            tensor = input;
+            converted = input;
         }
 
-        Tensor tensor2 = tensor;
-        return OrtKI.Slice(starts: Tensor.From(tensor2.Shape.Select((Dimension _) => 0L).ToArray()).ToOrtTensor(),
-            ends: Tensor.From(((IEnumerable<Dimension>)tensor2.Shape)
-                .Select((Func<Dimension, long>)((Dimension i) => i.FixedValue)).ToArray()).ToOrtTensor(),
-            axes: Tensor.From(((IEnumerable<Dimension>)tensor2.Shape)
-                .Select((Func<Dimension, int, long>)((Dimension _, int i) => i)).ToArray()).ToOrtTensor(),
-            data: tensor2.ToOrtTensor(), steps: strides.ToOrtTensor()).ToValue();
+        // Strided copy of the whole tensor: slice [0, dim) on every axis with step = strides[axis].
+        // The named arguments below are evaluated in this order (starts, ends, axes, data, steps).
+        return OrtKI.Slice(starts: Tensor.From(converted.Shape.Select((Dimension _) => 0L).ToArray()).ToOrtTensor(),
+            ends: Tensor.From(((IEnumerable<Dimension>)converted.Shape)
+                .Select((Func<Dimension, long>)((Dimension dim) => dim.FixedValue)).ToArray()).ToOrtTensor(),
+            axes: Tensor.From(((IEnumerable<Dimension>)converted.Shape)
+                .Select((Func<Dimension, int, long>)((Dimension _, int axis) => axis)).ToArray()).ToOrtTensor(),
+            data: converted.ToOrtTensor(), steps: strides.ToOrtTensor()).ToValue();
     }
 
     private IRType Visit(ITypeInferenceContext context, GNNEStore target, TensorType input)
     {
-        Tensor<int> tensor = ((TensorConst)context.GetArgument(target, GNNEStore.Strides)).Value.Cast<int>();
-        if (tensor.Any((int s) => s != 1))
+        Tensor<int> strides = ((TensorConst)context.GetArgument(target, GNNEStore.Strides)).Value.Cast<int>();
+        if (strides.Any((int stride) => stride != 1))
         {
             return new InvalidType("Not Support Stride != 1, Please Fix it.");
         }
 
-        if (tensor.Length != input.Shape.Rank)
+        if (strides.Length != input.Shape.Rank)
         {
-            return new InvalidType($"Stride Length {tensor.Length} != Input Rank {input.Shape.Rank}");
+            return new InvalidType($"Stride Length {strides.Length} != Input Rank {input.Shape.Rank}");
         }
 
-        DataType dType = input.DType;
+        DataType sourceType = input.DType;
         PrimType destType = target.DestType;
-        (DataType, PrimType) tuple = (dType, destType);
-        if (tuple.Item1 != DataTypes.Float16 && tuple.Item2 == DataTypes.Float32)
+        if (sourceType != DataTypes.Float16 && destType == DataTypes.Float32)
         {
             return new InvalidType("when store output is float, input should be float16");
         }
 
-        (DataType, PrimType) tuple2 = tuple;
-        if (tuple2.Item1 != tuple2.Item2 && tuple2.Item2 != DataTypes.Float32)
+        if (sourceType != destType && destType != DataTypes.Float32)
         {
             return new InvalidType("store input type and output type should be same");
         }
 
-        (DataType, PrimType) tuple3 = tuple;
-        if (tuple3.Item1 != DataTypes.Int8 && tuple3.Item1 != DataTypes.UInt8 && tuple3.Item1 != DataTypes.Int16 &&
-            tuple3.Item1 != DataTypes.Float16 && tuple3.Item1 != DataTypes.Float32)
+        if (sourceType != DataTypes.Int8 && sourceType != DataTypes.UInt8 && sourceType != DataTypes.Int16 &&
+            sourceType != DataTypes.Float16 && sourceType != DataTypes.Float32)
         {
             return new InvalidType("store input type should be one of [int8, uint8, int16, float16]");
         }
 
-        (DataType, PrimType) tuple4 = tuple;
-        if (tuple4.Item1 == DataTypes.Int8 || tuple4.Item1 == DataTypes.UInt8 || tuple4.Item1 == DataTypes.Int16 ||
-            tuple4.Item1 == DataTypes.Float16 || tuple4.Item1 == DataTypes.Float32)
+        if (sourceType == DataTypes.Int8 || sourceType == DataTypes.UInt8 || sourceType == DataTypes.Int16 ||
+            sourceType == DataTypes.Float16 || sourceType == DataTypes.Float32)
         {
-            return input with { DType = tuple4.Item2 };
+            return input with { DType = destType };
         }
 
-        return new InvalidType("Not Support Load (Input: " + dType.GetDisplayName() + " or (Output: " +
+        // NOTE: unreachable (the checks above already reject every other source type); kept for identical structure.
+        // The message below also says "Load" and has an unbalanced parenthesis; kept as-is.
+        return new InvalidType("Not Support Load (Input: " + sourceType.GetDisplayName() + " or (Output: " +
                                destType.GetDisplayName());
     }
 
     public IValue Visit(IEvaluateContext context, GNNEStore target)
     {
-        Tensor argumentValueAsTensor = context.GetArgumentValueAsTensor(target, GNNEStore.Input);
-        Tensor argumentValueAsTensor2 = context.GetArgumentValueAsTensor(target, GNNEStore.Strides);
-        return Visit(target, argumentValueAsTensor, argumentValueAsTensor2);
+        Tensor input = context.GetArgumentValueAsTensor(target, GNNEStore.Input);
+        Tensor strides = context.GetArgumentValueAsTensor(target, GNNEStore.Strides);
+        return Visit(target, input, strides);
     }
 
     public IRType Visit(ITypeInferenceContext context, GNNEStore target)
     {
         TensorType input = context.CheckArgumentType<TensorType>(target, GNNEStore.Input);
+
+        // NOTE: the Input check is redundant (result unused); kept for identical behaviour.
         context.CheckArgumentType<IRType>(target, GNNEStore.Input);
         context.CheckArgumentType<IRType>(target, GNNEStore.Strides);
         return Visit(context, target, input);

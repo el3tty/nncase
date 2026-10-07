@@ -16,13 +16,13 @@ public class FakeActivationEvaluator : IEvaluator<FakeActivation>, IEvaluator, I
 {
     public Cost Visit(ICostEvaluateContext context, FakeActivation target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeActivation.InputA);
-        IRType argumentType2 = context.GetArgumentType<IRType>(target, FakeActivation.InputB);
+        TensorType inputAType = context.GetArgumentType<TensorType>(target, FakeActivation.InputA);
+        IRType inputBType = context.GetArgumentType<IRType>(target, FakeActivation.InputB);
         TensorType returnType = context.GetReturnType<TensorType>();
         return new Cost
         {
-            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(argumentType) +
-                                           ((argumentType2 is TensorType type)
+            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputAType) +
+                                           ((inputBType is TensorType type)
                                                ? CostUtility.GetMemoryAccess(type)
                                                : ((UInt128)(byte)0)),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
@@ -32,82 +32,50 @@ public class FakeActivationEvaluator : IEvaluator<FakeActivation>, IEvaluator, I
 
     public IValue Visit(IEvaluateContext context, FakeActivation a)
     {
-        Tensor tensor = context.GetArgumentValueAsTensor(a, FakeActivation.InputA);
-        IValue value = context.GetArgumentValue(a, FakeActivation.InputB);
-        bool flag = value is NoneValue || ((TensorType)value.Type).Shape.Size == 0;
-        Tensor argumentValueAsTensor = context.GetArgumentValueAsTensor(a, FakeActivation.Act);
-        bool[] array = context.GetArgumentValueAsTensor(a, FakeActivation.Is16Segments).ToArray<bool>();
-        int[] array2 = context.GetArgumentValueAsTensor(a, FakeActivation.OutChannels).ToArray<int>();
-        Shape checkedShape = context.CurrentCall.CheckedShape;
+        Tensor inputA = context.GetArgumentValueAsTensor(a, FakeActivation.InputA);
+        IValue inputB = context.GetArgumentValue(a, FakeActivation.InputB);
+
+        // Input B is optional: either absent or an empty tensor.
+        bool hasUninitializedInput = inputB is NoneValue || ((TensorType)inputB.Type).Shape.Size == 0;
+        Tensor act = context.GetArgumentValueAsTensor(a, FakeActivation.Act);
+        bool[] is16Segments = context.GetArgumentValueAsTensor(a, FakeActivation.Is16Segments).ToArray<bool>();
+        int[] outChannels = context.GetArgumentValueAsTensor(a, FakeActivation.OutChannels).ToArray<int>();
+        Shape outputShape = context.CurrentCall.CheckedShape;
         if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null)
         {
             MarkerPattern markerPattern = Utility.IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard());
             if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
             {
-                MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
-                if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
+                MixQuantInfo? mixQuantInfoA = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
+                if (mixQuantInfoA != null && mixQuantInfoA.HasBindedMixQuantInfo)
                 {
                     List<QuantParam> quantParameter =
                         ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
                     Trace.Assert(quantParameter.Count == 1);
-                    float[] array3 = tensor.ToArray<float>();
-                    for (int i = 0; i < array3.Length; i++)
-                    {
-                        double num = (double)array3[i] / (double)quantParameter[0].Scale +
-                                     (double)quantParameter[0].ZeroPoint;
-                        if (!quantParameter[0].Scale.Equals(1f) || quantParameter[0].ZeroPoint != 0)
-                        {
-                            num = System.Math.Round(num);
-                        }
-
-                        double num2 = (num - (double)quantParameter[0].ZeroPoint) * (double)quantParameter[0].Scale;
-                        array3[i] = (float)num2;
-                    }
-
-                    tensor = Value.FromTensor(Tensor.From(array3, tensor.Shape)).AsTensor();
+                    float[] valuesA = inputA.ToArray<float>();
+                    FakeQuantizeInPlace(valuesA, quantParameter);
+                    inputA = Value.FromTensor(Tensor.From(valuesA, inputA.Shape)).AsTensor();
                 }
             }
 
             if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[1]))
             {
-                MixQuantInfo? mixQuantInfo2 = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
-                if (mixQuantInfo2 != null && mixQuantInfo2.HasBindedMixQuantInfo)
+                MixQuantInfo? mixQuantInfoB = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
+                if (mixQuantInfoB != null && mixQuantInfoB.HasBindedMixQuantInfo)
                 {
-                    List<QuantParam> quantParameter2 =
+                    List<QuantParam> quantParameter =
                         ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo.QuantParameter;
-                    Trace.Assert(quantParameter2.Count == 1);
-                    float[] array4 = value.AsTensor().ToArray<float>();
-                    for (int j = 0; j < array4.Length; j++)
-                    {
-                        double num3 = (double)array4[j] / (double)quantParameter2[0].Scale +
-                                      (double)quantParameter2[0].ZeroPoint;
-                        if (!quantParameter2[0].Scale.Equals(1f) || quantParameter2[0].ZeroPoint != 0)
-                        {
-                            num3 = System.Math.Round(num3);
-                        }
-
-                        double num4 = (num3 - (double)quantParameter2[0].ZeroPoint) * (double)quantParameter2[0].Scale;
-                        array4[j] = (float)num4;
-                    }
-
-                    value = Value.FromTensor(Tensor.From(array4, value.AsTensor().Shape));
+                    Trace.Assert(quantParameter.Count == 1);
+                    float[] valuesB = inputB.AsTensor().ToArray<float>();
+                    FakeQuantizeInPlace(valuesB, quantParameter);
+                    inputB = Value.FromTensor(Tensor.From(valuesB, inputB.AsTensor().Shape));
                 }
             }
         }
 
-        return Value.FromConst(K230Kernels.FakeGnneActivation(array[0], tensor,
-            flag ? new Tensor<float>(0) : value.AsTensor(), flag, checkedShape, argumentValueAsTensor.ToArray<float>(),
-            array2[0], a.Type));
-    }
-
-    private IRType Visit(ITypeInferenceContext context, FakeActivation target, TensorType inputA)
-    {
-        if (!(context.GetArgument(target, FakeActivation.OutChannels) is Const))
-        {
-            return new InvalidType("FakeActivation out_channels need a constant value");
-        }
-
-        return new TensorType(inputA.DType, target.OutputShape.ToArray());
+        return Value.FromConst(K230Kernels.FakeGnneActivation(is16Segments[0], inputA,
+            hasUninitializedInput ? new Tensor<float>(0) : inputB.AsTensor(), hasUninitializedInput, outputShape,
+            act.ToArray<float>(), outChannels[0], a.Type));
     }
 
     public IRType Visit(ITypeInferenceContext context, FakeActivation target)
@@ -122,5 +90,35 @@ public class FakeActivationEvaluator : IEvaluator<FakeActivation>, IEvaluator, I
         context.CheckArgumentType<IRType>(target, FakeActivation.OutShiftBits);
         context.CheckArgumentType<IRType>(target, FakeActivation.Is16Segments);
         return Visit(context, target, inputA);
+    }
+
+    /// <summary>Replaces every value by its quantize-dequantize round trip using the first quant param.</summary>
+    private static void FakeQuantizeInPlace(float[] values, List<QuantParam> quantParameter)
+    {
+        for (int i = 0; i < values.Length; i++)
+        {
+            double quantized = (double)values[i] / (double)quantParameter[0].Scale +
+                               (double)quantParameter[0].ZeroPoint;
+
+            // Rounding is skipped for the identity quant param.
+            if (!quantParameter[0].Scale.Equals(1f) || quantParameter[0].ZeroPoint != 0)
+            {
+                quantized = System.Math.Round(quantized);
+            }
+
+            double dequantized = (quantized - (double)quantParameter[0].ZeroPoint) *
+                                 (double)quantParameter[0].Scale;
+            values[i] = (float)dequantized;
+        }
+    }
+
+    private IRType Visit(ITypeInferenceContext context, FakeActivation target, TensorType inputA)
+    {
+        if (!(context.GetArgument(target, FakeActivation.OutChannels) is Const))
+        {
+            return new InvalidType("FakeActivation out_channels need a constant value");
+        }
+
+        return new TensorType(inputA.DType, target.OutputShape.ToArray());
     }
 }

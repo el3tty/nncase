@@ -17,17 +17,19 @@ public class GNNEPdp0ReduceEvaluator : IEvaluator<GNNEPdp0Reduce>, IEvaluator, I
 
     public IValue Visit(IEvaluateContext context, GNNEPdp0Reduce p)
     {
-        Tensor<Half> argumentValueAsTensor = context.GetArgumentValueAsTensor<Half>(p, GNNEPdp0Reduce.Input);
-        int[] argumentValueAsArray = context.GetArgumentValueAsArray<int>(p, GNNEPdp0Reduce.Filter);
-        int[] argumentValueAsArray2 = context.GetArgumentValueAsArray<int>(p, GNNEPdp0Reduce.Stride);
-        Tensor<int> argumentValueAsTensor2 = context.GetArgumentValueAsTensor<int>(p, GNNEPdp0Reduce.Padding);
-        bool[] argumentValueAsArray3 = context.GetArgumentValueAsArray<bool>(p, GNNEPdp0Reduce.CountIncludePad);
-        IValue argumentValue = context.GetArgumentValue(p, GNNEPdp0Reduce.DepuantParams);
-        Tensor<Half> argumentValueAsTensor3 = context.GetArgumentValueAsTensor<Half>(p, GNNEPdp0Reduce.Act);
-        int argumentValueAsScalar = context.GetArgumentValueAsScalar<int>(p, GNNEPdp0Reduce.ShiftBits);
+        Tensor<Half> input = context.GetArgumentValueAsTensor<Half>(p, GNNEPdp0Reduce.Input);
+        int[] filter = context.GetArgumentValueAsArray<int>(p, GNNEPdp0Reduce.Filter);
+        int[] stride = context.GetArgumentValueAsArray<int>(p, GNNEPdp0Reduce.Stride);
+
+        // Layout: [[heightBefore, heightAfter], [widthBefore, widthAfter]].
+        Tensor<int> padding = context.GetArgumentValueAsTensor<int>(p, GNNEPdp0Reduce.Padding);
+        bool[] countIncludePad = context.GetArgumentValueAsArray<bool>(p, GNNEPdp0Reduce.CountIncludePad);
+        IValue dequantParams = context.GetArgumentValue(p, GNNEPdp0Reduce.DepuantParams);
+        Tensor<Half> act = context.GetArgumentValueAsTensor<Half>(p, GNNEPdp0Reduce.Act);
+        int shiftBits = context.GetArgumentValueAsScalar<int>(p, GNNEPdp0Reduce.ShiftBits);
         Tensor<float> padValue = context.GetArgumentValue(p, GNNEPdp0Reduce.Value).AsTensor().Cast<float>();
-        Tensor<float> tensor = new Tensor<float>(context.CurrentCall.CheckedShape.ToValueArray());
-        (Func<float, float, float>, Func<float, int, float>) tuple = p.ReduceOp switch
+        Tensor<float> output = new Tensor<float>(context.CurrentCall.CheckedShape.ToValueArray());
+        (Func<float, float, float> BinaryOp, Func<float, int, float> WindowOp) reduceFuncs = p.ReduceOp switch
         {
             PU_PDP0_MODE.average => ((float a, float b) => a + b, (float v, int k) => v / (float)k),
             PU_PDP0_MODE.min => ((float a, float b) => System.Math.Min(a, b), (float v, int _) => v),
@@ -35,101 +37,14 @@ public class GNNEPdp0ReduceEvaluator : IEvaluator<GNNEPdp0Reduce>, IEvaluator, I
             PU_PDP0_MODE.sum => ((float a, float b) => a + b, (float v, int _) => v),
             _ => throw new ArgumentOutOfRangeException("context"),
         };
-        Pdp0Impl(argumentValueAsTensor, argumentValueAsTensor3.Buffer.Span, tensor, argumentValueAsArray[0],
-            argumentValueAsArray[1], argumentValueAsArray2[0], argumentValueAsArray2[1],
-            (Before: argumentValueAsTensor2[new int[2]], After: argumentValueAsTensor2[new int[2] { 0, 1 }]),
-            (Before: argumentValueAsTensor2[new int[2] { 1, 0 }], After: argumentValueAsTensor2[new int[2] { 1, 1 }]),
-            checked((sbyte)argumentValueAsScalar), tuple.Item1, tuple.Item2, argumentValueAsArray3[0],
-            (argumentValue is NoneValue)
+        Pdp0Impl(input, act.Buffer.Span, output, filter[0], filter[1], stride[0], stride[1],
+            (Before: padding[new int[2]], After: padding[new int[2] { 0, 1 }]),
+            (Before: padding[new int[2] { 1, 0 }], After: padding[new int[2] { 1, 1 }]),
+            checked((sbyte)shiftBits), reduceFuncs.BinaryOp, reduceFuncs.WindowOp, countIncludePad[0],
+            (dequantParams is NoneValue)
                 ? new DeQuantizeParam(0, 1f)
-                : argumentValue.AsTensor().ToScalar<DeQuantizeParam>(), padValue);
-        if (p.DestType == DataTypes.Int8)
-        {
-            return Value.FromTensor(tensor.Cast<sbyte>(CastMode.KDefault));
-        }
-
-        if (p.DestType == DataTypes.UInt8)
-        {
-            return Value.FromTensor(tensor.Cast<byte>(CastMode.KDefault));
-        }
-
-        if (p.DestType == DataTypes.Int16)
-        {
-            return Value.FromTensor(tensor.Cast<short>(CastMode.KDefault));
-        }
-
-        return Value.FromTensor(tensor.Cast<Half>(CastMode.KDefault));
-    }
-
-    private void Pdp0Impl(Tensor<Half> input, ReadOnlySpan<Half> act, Tensor<float> output, int filterH, int filterW,
-        int strideH, int strideW, (int Before, int After) paddingH, (int Before, int After) paddingW, sbyte shiftBits,
-        Func<float, float, float> binaryOp, Func<float, int, float> windowOp, bool countIncludePad,
-        DeQuantizeParam deQuantizeParam, Tensor<float> padValue)
-    {
-        int[] array = input.Shape.ToValueArray();
-        int windowedOutputSize = TypePatternUtility.GetWindowedOutputSize(array[2] + paddingH.Before + paddingH.After,
-            filterH, strideH, 1, same: false);
-        int windowedOutputSize2 = TypePatternUtility.GetWindowedOutputSize(array[3] + paddingW.Before + paddingW.After,
-            filterW, strideW, 1, same: false);
-        for (int i = 0; i < array[0]; i++)
-        {
-            for (int j = 0; j < array[1]; j++)
-            {
-                for (int k = 0; k < windowedOutputSize; k++)
-                {
-                    for (int l = 0; l < windowedOutputSize2; l++)
-                    {
-                        int num = k * strideH - paddingH.Before;
-                        int num2 = l * strideW - paddingW.Before;
-                        int num3 = System.Math.Max(0, -num);
-                        int num4 = System.Math.Min(filterH, array[2] - num);
-                        int num5 = System.Math.Max(0, -num2);
-                        int num6 = System.Math.Min(filterW, array[3] - num2);
-                        float num7 = (float)input[new int[4] { i, j, num + num3, num2 + num5 }];
-                        int num8 = 0;
-                        for (int m = num3; m < num4; m++)
-                        {
-                            for (int n = num5; n < num6; n++)
-                            {
-                                int num9 = num + m;
-                                int num10 = num2 + n;
-                                float num11 = (float)input[new int[4] { i, j, num9, num10 }];
-                                if (m != num3 || n != num5)
-                                {
-                                    num7 = binaryOp(num7 - (float)deQuantizeParam.ZeroPoint,
-                                        num11 - (float)deQuantizeParam.ZeroPoint);
-                                }
-
-                                num8++;
-                            }
-                        }
-
-                        if (countIncludePad)
-                        {
-                            for (int num12 = 0; num12 < filterH * filterW - num8; num12++)
-                            {
-                                num7 = binaryOp(num7, padValue.GetValue(0));
-                            }
-
-                            num8 = filterH * filterW;
-                        }
-
-                        Half half = (Half)num8;
-                        float value = windowOp(num7 * deQuantizeParam.Scale, (int)half);
-                        value = K230Kernels.ApplyAct0(value, act, j, shiftBits);
-                        output[new int[4] { i, j, k, l }] = value;
-                    }
-                }
-            }
-        }
-    }
-
-    private IRType Visit(ITypeInferenceContext context, GNNEPdp0Reduce target, TensorType input)
-    {
-        Expr[] arguments =
-            context.GetArguments(target, GNNEPdp0Reduce.Filter, GNNEPdp0Reduce.Stride, GNNEPdp0Reduce.Padding);
-        IRType iRType = TypeInference.ReduceWindow2DType(input, arguments[0], arguments[1], arguments[2], false);
-        return new TensorType(target.DestType, ((TensorType)iRType).Shape);
+                : dequantParams.AsTensor().ToScalar<DeQuantizeParam>(), padValue);
+        return CastOutput(output, p.DestType);
     }
 
     public IRType Visit(ITypeInferenceContext context, GNNEPdp0Reduce target)
@@ -145,5 +60,115 @@ public class GNNEPdp0ReduceEvaluator : IEvaluator<GNNEPdp0Reduce>, IEvaluator, I
         context.CheckArgumentType<IRType>(target, GNNEPdp0Reduce.CountIncludePad);
         context.CheckArgumentType<IRType>(target, GNNEPdp0Reduce.Act);
         return Visit(context, target, input);
+    }
+
+    /// <summary>Converts the float result to the destination element type (anything unlisted becomes float16).</summary>
+    private static IValue CastOutput(Tensor<float> output, PrimType destType)
+    {
+        if (destType == DataTypes.Int8)
+        {
+            return Value.FromTensor(output.Cast<sbyte>(CastMode.KDefault));
+        }
+
+        if (destType == DataTypes.UInt8)
+        {
+            return Value.FromTensor(output.Cast<byte>(CastMode.KDefault));
+        }
+
+        if (destType == DataTypes.Int16)
+        {
+            return Value.FromTensor(output.Cast<short>(CastMode.KDefault));
+        }
+
+        return Value.FromTensor(output.Cast<Half>(CastMode.KDefault));
+    }
+
+    private void Pdp0Impl(Tensor<Half> input, ReadOnlySpan<Half> act, Tensor<float> output, int filterH, int filterW,
+        int strideH, int strideW, (int Before, int After) paddingH, (int Before, int After) paddingW, sbyte shiftBits,
+        Func<float, float, float> binaryOp, Func<float, int, float> windowOp, bool countIncludePad,
+        DeQuantizeParam deQuantizeParam, Tensor<float> padValue)
+    {
+        int[] inputShape = input.Shape.ToValueArray();
+        int batch = inputShape[0];
+        int channels = inputShape[1];
+        int inputH = inputShape[2];
+        int inputW = inputShape[3];
+        int outputH = TypePatternUtility.GetWindowedOutputSize(inputH + paddingH.Before + paddingH.After, filterH,
+            strideH, 1, same: false);
+        int outputW = TypePatternUtility.GetWindowedOutputSize(inputW + paddingW.Before + paddingW.After, filterW,
+            strideW, 1, same: false);
+        for (int n = 0; n < batch; n++)
+        {
+            for (int c = 0; c < channels; c++)
+            {
+                for (int oy = 0; oy < outputH; oy++)
+                {
+                    for (int ox = 0; ox < outputW; ox++)
+                    {
+                        // Window origin in input coordinates (may be negative inside the padding).
+                        int windowTop = oy * strideH - paddingH.Before;
+                        int windowLeft = ox * strideW - paddingW.Before;
+
+                        // Window range clipped to the real (unpadded) input.
+                        int firstRow = System.Math.Max(0, -windowTop);
+                        int endRow = System.Math.Min(filterH, inputH - windowTop);
+                        int firstCol = System.Math.Max(0, -windowLeft);
+                        int endCol = System.Math.Min(filterW, inputW - windowLeft);
+
+                        // NOTE: the first valid element seeds the accumulator (not zero-point adjusted); there is
+                        // no guard for windows that contain no valid element.
+                        float accumulator =
+                            (float)input[new int[4] { n, c, windowTop + firstRow, windowLeft + firstCol }];
+                        int validCount = 0;
+                        for (int row = firstRow; row < endRow; row++)
+                        {
+                            for (int col = firstCol; col < endCol; col++)
+                            {
+                                int inputY = windowTop + row;
+                                int inputX = windowLeft + col;
+                                float value = (float)input[new int[4] { n, c, inputY, inputX }];
+
+                                // The first element is already in the accumulator.
+                                if (row != firstRow || col != firstCol)
+                                {
+                                    // NOTE: the zero point is subtracted from the running accumulator at every
+                                    // step, not only from the new value.
+                                    accumulator = binaryOp(accumulator - (float)deQuantizeParam.ZeroPoint,
+                                        value - (float)deQuantizeParam.ZeroPoint);
+                                }
+
+                                validCount++;
+                            }
+                        }
+
+                        // Padded positions contribute the pad value and count towards the divisor.
+                        if (countIncludePad)
+                        {
+                            for (int padIndex = 0; padIndex < filterH * filterW - validCount; padIndex++)
+                            {
+                                accumulator = binaryOp(accumulator, padValue.GetValue(0));
+                            }
+
+                            validCount = filterH * filterW;
+                        }
+
+                        // NOTE: the window size is round-tripped through float16 before being passed to windowOp.
+                        Half windowSize = (Half)validCount;
+                        float result = windowOp(accumulator * deQuantizeParam.Scale, (int)windowSize);
+                        result = K230Kernels.ApplyAct0(result, act, c, shiftBits);
+                        output[new int[4] { n, c, oy, ox }] = result;
+                    }
+                }
+            }
+        }
+    }
+
+    private IRType Visit(ITypeInferenceContext context, GNNEPdp0Reduce target, TensorType input)
+    {
+        Expr[] windowArgs =
+            context.GetArguments(target, GNNEPdp0Reduce.Filter, GNNEPdp0Reduce.Stride, GNNEPdp0Reduce.Padding);
+        IRType windowedType = TypeInference.ReduceWindow2DType(input, windowArgs[0], windowArgs[1], windowArgs[2],
+            false);
+        return new TensorType(target.DestType, ((TensorType)windowedType).Shape);
     }
 }

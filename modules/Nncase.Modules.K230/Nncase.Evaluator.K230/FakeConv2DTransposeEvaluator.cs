@@ -18,158 +18,147 @@ public class FakeConv2DTransposeEvaluator : IEvaluator<FakeConv2DTranspose>, IEv
 {
     public Cost Visit(ICostEvaluateContext context, FakeConv2DTranspose target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeConv2DTranspose.Input);
-        TensorType argumentType2 = context.GetArgumentType<TensorType>(target, FakeConv2DTranspose.Weights);
-        Shape shape = argumentType2.Shape;
+        TensorType inputType = context.GetArgumentType<TensorType>(target, FakeConv2DTranspose.Input);
+        TensorType weightsType = context.GetArgumentType<TensorType>(target, FakeConv2DTranspose.Weights);
+        Shape weightsShape = weightsType.Shape;
         TensorType returnType = context.GetReturnType<TensorType>();
-        Dimension dimension = shape[1] * shape[2] * shape[3];
+        Dimension macsPerOutput = weightsShape[1] * weightsShape[2] * weightsShape[3];
         return new Cost
         {
             [CostFactorNames.MemoryLoad] =
-                CostUtility.GetMemoryAccess(argumentType) + CostUtility.GetMemoryAccess(argumentType2),
+                CostUtility.GetMemoryAccess(inputType) + CostUtility.GetMemoryAccess(weightsType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)(dimension.FixedValue * 2) / 768f)
+            [CostFactorNames.CPUCycles] =
+                CostUtility.GetCPUCycles(returnType, (float)(macsPerOutput.FixedValue * 2) / 768f)
         };
     }
 
     public IValue Visit(IEvaluateContext context, FakeConv2DTranspose conv)
     {
-        OrtKISharp.Tensor tensor = context.GetOrtArgumentValue(conv, FakeConv2DTranspose.Input);
-        OrtKISharp.Tensor tensor2 = context.GetOrtArgumentValue(conv, FakeConv2DTranspose.Weights);
-        long[] argumentValueAsArray = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.Stride);
+        OrtKISharp.Tensor input = context.GetOrtArgumentValue(conv, FakeConv2DTranspose.Input);
+        OrtKISharp.Tensor weights = context.GetOrtArgumentValue(conv, FakeConv2DTranspose.Weights);
+        long[] stride = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.Stride);
+
+        // NOTE: the value is fetched and dropped (padding is read again as a plain array below); kept so
+        // that any exception from this conversion is preserved.
         context.GetOrtArgumentValue(conv, FakeConv2DTranspose.Padding);
-        long[] argumentValueAsArray2 = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.Dilation);
-        long argumentValueAsScalar = context.GetArgumentValueAsScalar<long>(conv, FakeConv2DTranspose.Groups);
-        long[] argumentValueAsArray3 = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.OutputShape);
-        context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.OutputPadding);
-        long[] shape = tensor2.Shape;
-        long[] array = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.Padding).ToArray();
-        long[] shape2 = tensor.Shape;
-        long[] argumentValueAsArray4 = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.OutputPadding);
-        long[] shape3 = tensor2.Shape;
+        long[] dilation = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.Dilation);
+        long groups = context.GetArgumentValueAsScalar<long>(conv, FakeConv2DTranspose.Groups);
+
+        // [N, C, H, W] of the result.
+        long[] outputShape = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.OutputShape);
+        long[] weightsShape = weights.Shape;
+
+        // [top, bottom, left, right].
+        long[] padding = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.Padding);
+        long[] inputShape = input.Shape;
+
+        // [h, w].
+        long[] outputPadding = context.GetArgumentValueAsArray<long>(conv, FakeConv2DTranspose.OutputPadding);
+
+        // The input must be what a regular conv over the (padded) output would produce.
+        // NOTE: the exception type is odd (InvalidOleVariantTypeException) but kept as is.
         if (K230Kernels.GetWindowedOutputSize(
-                (int)argumentValueAsArray3[2] + (int)array[0] + (int)array[1] - (int)argumentValueAsArray4[0],
-                (int)shape3[2], (int)argumentValueAsArray[0], (int)argumentValueAsArray2[0], same: false) !=
-            shape2[2] || K230Kernels.GetWindowedOutputSize(
-                (int)argumentValueAsArray3[3] + (int)array[2] + (int)array[3] - (int)argumentValueAsArray4[1],
-                (int)shape3[3], (int)argumentValueAsArray[1], (int)argumentValueAsArray2[1], same: false) != shape2[3])
+                (int)outputShape[2] + (int)padding[0] + (int)padding[1] - (int)outputPadding[0],
+                (int)weightsShape[2], (int)stride[0], (int)dilation[0], same: false) !=
+            inputShape[2] || K230Kernels.GetWindowedOutputSize(
+                (int)outputShape[3] + (int)padding[2] + (int)padding[3] - (int)outputPadding[1],
+                (int)weightsShape[3], (int)stride[1], (int)dilation[1], same: false) != inputShape[3])
         {
             throw new InvalidOleVariantTypeException("Invalid conv2d transpose shape");
         }
 
-        Tensor argumentValueAsTensor = context.GetArgumentValueAsTensor(conv, FakeConv2DTranspose.Act);
+        Tensor act = context.GetArgumentValueAsTensor(conv, FakeConv2DTranspose.Act);
+
+        // Mixed-precision search: simulate the quantization of the (marker wrapped) input and weights.
         if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null)
         {
             MarkerPattern markerPattern = Utility.IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard());
             if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
             {
-                MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
-                if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
+                MixQuantInfo? inputMixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
+                if (inputMixQuantInfo != null && inputMixQuantInfo.HasBindedMixQuantInfo)
                 {
-                    List<QuantParam> list = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo?.QuantParameter;
-                    Trace.Assert(list.Count == 1);
-                    float[] array2 = tensor.ToArray<float>();
-                    for (int i = 0; i < array2.Length; i++)
-                    {
-                        double num = (double)array2[i] / (double)list[0].Scale + (double)list[0].ZeroPoint;
-                        if (!list[0].Scale.Equals(1f) || list[0].ZeroPoint != 0)
-                        {
-                            num = System.Math.Round(num);
-                        }
-
-                        double num2 = (num - (double)list[0].ZeroPoint) * (double)list[0].Scale;
-                        array2[i] = (float)num2;
-                    }
-
-                    tensor = OrtKISharp.Tensor.MakeTensor(array2, tensor.Shape);
+                    List<QuantParam> inputQuantParams = inputMixQuantInfo.QuantParameter;
+                    Trace.Assert(inputQuantParams.Count == 1);
+                    input = FakeQuantizePerTensor(input, inputQuantParams[0]);
                 }
             }
 
             if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[1]))
             {
-                MixQuantInfo? mixQuantInfo2 = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
-                if (mixQuantInfo2 != null && mixQuantInfo2.HasBindedMixQuantInfo)
+                MixQuantInfo? weightsMixQuantInfo = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
+                if (weightsMixQuantInfo != null && weightsMixQuantInfo.HasBindedMixQuantInfo)
                 {
-                    List<QuantParam> list2 = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo?.QuantParameter;
-                    float[] array3 = tensor2.ToArray<float>();
-                    int count = list2.Count;
-                    int num3 = array3.Length / count;
-                    for (int j = 0; j < array3.Length; j++)
-                    {
-                        double num4 = (double)array3[j] / (double)list2[j / num3].Scale +
-                                      (double)list2[j / num3].ZeroPoint;
-                        if (!list2[j / num3].Scale.Equals(1f) || list2[j / num3].ZeroPoint != 0)
-                        {
-                            num4 = System.Math.Round(num4);
-                        }
-
-                        double num5 = (num4 - (double)list2[j / num3].ZeroPoint) * (double)list2[j / num3].Scale;
-                        array3[j] = (float)num5;
-                    }
-
-                    tensor2 = OrtKISharp.Tensor.MakeTensor(array3, tensor2.Shape);
+                    List<QuantParam> weightsQuantParams = weightsMixQuantInfo.QuantParameter;
+                    weights = FakeQuantizePerChannel(weights, weightsQuantParams);
                 }
             }
         }
 
-        tensor.ToArray<float>();
-        tensor2.ToArray<float>();
-        long num6 = argumentValueAsArray3[0] * argumentValueAsArray3[1] * argumentValueAsArray3[2] *
-                    argumentValueAsArray3[3];
-        float[] array4 = new float[num6];
-        Array.Clear(array4, 0, (int)num6);
-        long num7 = shape2[1] / argumentValueAsScalar;
-        long num8 = argumentValueAsArray3[1] / argumentValueAsScalar;
-        float[] array5 = tensor2.ToArray<float>();
-        float[] array6 = tensor.ToArray<float>();
-        int num9 = 0;
-        for (int k = 0; k < shape2[0]; k++)
+        long outputElementCount = outputShape[0] * outputShape[1] * outputShape[2] * outputShape[3];
+        float[] outputValues = new float[outputElementCount];
+        Array.Clear(outputValues, 0, (int)outputElementCount);
+        long inChannelsPerGroup = inputShape[1] / groups;
+        long outChannelsPerGroup = outputShape[1] / groups;
+        float[] weightsValues = weights.ToArray<float>();
+        float[] inputValues = input.ToArray<float>();
+
+        // Flat (n, c, y, x) read position in the input.
+        int inputIndex = 0;
+
+        // Scatter every input pixel, scaled by the kernel, into the output (the transpose of a convolution).
+        // NOTE: the weights are indexed as [outChannel, inChannelInGroup, kh, kw] inside each group.
+        for (int batch = 0; batch < inputShape[0]; batch++)
         {
-            Span<float> span = array4.AsSpan();
-            Span<float> span2 = span.Slice(k * (int)argumentValueAsArray3[1] * (int)argumentValueAsArray3[2] *
-                                           (int)argumentValueAsArray3[3]);
-            for (int l = 0; l < argumentValueAsScalar; l++)
+            Span<float> outputSpan = outputValues.AsSpan();
+            Span<float> batchOutput = outputSpan.Slice(batch * (int)outputShape[1] * (int)outputShape[2] *
+                                                       (int)outputShape[3]);
+            for (int groupIndex = 0; groupIndex < groups; groupIndex++)
             {
-                Span<float> span3 =
-                    span2.Slice(l * (int)num8 * (int)argumentValueAsArray3[2] * (int)argumentValueAsArray3[3]);
-                span = array5.AsSpan();
-                Span<float> span4 = span.Slice(l * (int)num8 * (int)num7 * (int)shape[2] * (int)shape[3]);
-                for (int m = 0; m < num7; m++)
+                Span<float> groupOutput =
+                    batchOutput.Slice(groupIndex * (int)outChannelsPerGroup * (int)outputShape[2] * (int)outputShape[3]);
+                Span<float> weightsSpan = weightsValues.AsSpan();
+                Span<float> groupWeights = weightsSpan.Slice(groupIndex * (int)outChannelsPerGroup *
+                                                             (int)inChannelsPerGroup * (int)weightsShape[2] *
+                                                             (int)weightsShape[3]);
+                for (int inChannel = 0; inChannel < inChannelsPerGroup; inChannel++)
                 {
-                    for (int n = 0; n < shape2[2]; n++)
+                    for (int inY = 0; inY < inputShape[2]; inY++)
                     {
-                        for (int num10 = 0; num10 < shape2[3]; num10++)
+                        for (int inX = 0; inX < inputShape[3]; inX++)
                         {
-                            int num11 = (int)(n * argumentValueAsArray[0] - array[0]);
-                            int num12 = (int)(num10 * argumentValueAsArray[1] - array[2]);
-                            int num13 = System.Math.Max(0,
-                                (int)((-num11 + argumentValueAsArray2[0] - 1) / argumentValueAsArray2[0]));
-                            int num14 = (int)System.Math.Min(shape[2],
-                                ((int)argumentValueAsArray3[2] - num11 + argumentValueAsArray2[0] - 1) /
-                                argumentValueAsArray2[0]);
-                            int num15 = (int)System.Math.Max(0L,
-                                (-num12 + argumentValueAsArray2[1] - 1) / argumentValueAsArray2[1]);
-                            int num16 = (int)System.Math.Min(shape[3],
-                                ((int)argumentValueAsArray3[3] - num12 + argumentValueAsArray2[1] - 1) /
-                                argumentValueAsArray2[1]);
-                            float num17 = ((num10 >= 0 && num10 < shape2[3] && n >= 0 && n < shape2[2])
-                                ? array6[num9]
-                                : 0f);
-                            num9++;
-                            for (int num18 = 0; num18 < num8; num18++)
+                            // Output position of kernel tap (0, 0) and the range of taps that land inside
+                            // the output.
+                            int originY = (int)(inY * stride[0] - padding[0]);
+                            int originX = (int)(inX * stride[1] - padding[2]);
+                            int kernelYBegin = System.Math.Max(0, (int)((-originY + dilation[0] - 1) / dilation[0]));
+                            int kernelYEnd = (int)System.Math.Min(weightsShape[2],
+                                ((int)outputShape[2] - originY + dilation[0] - 1) / dilation[0]);
+                            int kernelXBegin = (int)System.Math.Max(0L, (-originX + dilation[1] - 1) / dilation[1]);
+                            int kernelXEnd = (int)System.Math.Min(weightsShape[3],
+                                ((int)outputShape[3] - originX + dilation[1] - 1) / dilation[1]);
+
+                            // NOTE: the bounds check is always true here.
+                            float inputValue = (inX >= 0 && inX < inputShape[3] && inY >= 0 && inY < inputShape[2])
+                                ? inputValues[inputIndex]
+                                : 0f;
+                            inputIndex++;
+                            for (int outChannel = 0; outChannel < outChannelsPerGroup; outChannel++)
                             {
-                                Span<float> span5 =
-                                    span3.Slice((int)(num18 * argumentValueAsArray3[2] * argumentValueAsArray3[3]));
-                                Span<float> span6 = span4.Slice((int)(num18 * num7 * shape[2] * shape[3]))
-                                    .Slice((int)(m * shape[2] * shape[3]));
-                                for (int num19 = num13; num19 < num14; num19++)
+                                Span<float> channelOutput =
+                                    groupOutput.Slice((int)(outChannel * outputShape[2] * outputShape[3]));
+                                Span<float> kernel = groupWeights
+                                    .Slice((int)(outChannel * inChannelsPerGroup * weightsShape[2] * weightsShape[3]))
+                                    .Slice((int)(inChannel * weightsShape[2] * weightsShape[3]));
+                                for (int kernelY = kernelYBegin; kernelY < kernelYEnd; kernelY++)
                                 {
-                                    for (int num20 = num15; num20 < num16; num20++)
+                                    for (int kernelX = kernelXBegin; kernelX < kernelXEnd; kernelX++)
                                     {
-                                        int num21 = (int)(num11 + argumentValueAsArray2[0] * num19);
-                                        int num22 = (int)(num12 + argumentValueAsArray2[1] * num20);
-                                        float num23 = span6[(int)(num19 * shape[3] + num20)];
-                                        span5[(int)(num21 * argumentValueAsArray3[3] + num22)] += num17 * num23;
+                                        int outY = (int)(originY + dilation[0] * kernelY);
+                                        int outX = (int)(originX + dilation[1] * kernelX);
+                                        float weight = kernel[(int)(kernelY * weightsShape[3] + kernelX)];
+                                        channelOutput[(int)(outY * outputShape[3] + outX)] += inputValue * weight;
                                     }
                                 }
                             }
@@ -179,31 +168,20 @@ public class FakeConv2DTransposeEvaluator : IEvaluator<FakeConv2DTranspose>, IEv
             }
         }
 
-        Tensor<float> tensor3 = Tensor.From(array4, (from num27 in argumentValueAsArray3.ToArray()
-            select (int)num27).ToArray());
-        float[] array7 = tensor3.ToArray<float>();
-        float[] array8 = new float[K230Kernels.ComputeSize(tensor3.Shape)];
-        int num24 = tensor3.Dimensions[2] * tensor3.Dimensions[3];
-        for (int num25 = 0; num25 < array7.Length; num25++)
+        Tensor<float> convOutput = Tensor.From(outputValues, ToIntArray(outputShape));
+
+        // Per-channel activation; the output is NCHW so the channel is the flat index / (H * W).
+        float[] convValues = convOutput.ToArray<float>();
+        float[] activated = new float[K230Kernels.ComputeSize(convOutput.Shape)];
+        int channelStride = convOutput.Dimensions[2] * convOutput.Dimensions[3];
+        for (int i = 0; i < convValues.Length; i++)
         {
-            long num26 = num25 / num24;
-            array8[num25] =
-                K230Kernels.FakeApplyAct0(array7[num25], argumentValueAsTensor.ToArray<float>(), (int)num26, 0);
+            int channel = i / channelStride;
+            activated[i] = K230Kernels.FakeApplyAct0(convValues[i], act.ToArray<float>(), channel, 0);
         }
 
-        array8.Select((float x) => (float)System.Math.Round(x)).ToArray();
-        return Value.FromTensor(Tensor.From(array8, (from num27 in argumentValueAsArray3.ToArray()
-            select (int)num27).ToArray()));
-    }
-
-    private IRType Visit(ITypeInferenceContext context, FakeConv2DTranspose target, TensorType input)
-    {
-        if (context.GetArgument(target, FakeConv2DTranspose.OutputShape) is TensorConst tensorConst)
-        {
-            return new TensorType(input.DType, new Shape(tensorConst.Value.ToArray<int>()));
-        }
-
-        return new InvalidType("Conv2dTranspose can't infer shape with dynamic outputShape");
+        // NOTE: the original rounded the activated values into a throw-away copy, so the result is NOT rounded.
+        return Value.FromTensor(Tensor.From(activated, ToIntArray(outputShape)));
     }
 
     public IRType Visit(ITypeInferenceContext context, FakeConv2DTranspose target)
@@ -220,5 +198,66 @@ public class FakeConv2DTransposeEvaluator : IEvaluator<FakeConv2DTranspose>, IEv
         context.CheckArgumentType<IRType>(target, FakeConv2DTranspose.Groups);
         context.CheckArgumentType<IRType>(target, FakeConv2DTranspose.Value);
         return Visit(context, target, input);
+    }
+
+    private static int[] ToIntArray(long[] values)
+    {
+        return (from v in values
+                select (int)v).ToArray();
+    }
+
+    /// <summary>
+    /// Fake-quantizes one value: quantize with <paramref name="param"/>, round (unless the parameter is the
+    /// identity scale 1 / zero point 0) and de-quantize back to float.
+    /// </summary>
+    private static float FakeQuantize(float value, QuantParam param)
+    {
+        double quantized = (double)value / (double)param.Scale + (double)param.ZeroPoint;
+        if (!param.Scale.Equals(1f) || param.ZeroPoint != 0)
+        {
+            quantized = System.Math.Round(quantized);
+        }
+
+        double dequantized = (quantized - (double)param.ZeroPoint) * (double)param.Scale;
+        return (float)dequantized;
+    }
+
+    /// <summary>Fake-quantizes a whole tensor with a single (per-tensor) quant parameter.</summary>
+    private static OrtKISharp.Tensor FakeQuantizePerTensor(OrtKISharp.Tensor tensor, QuantParam param)
+    {
+        float[] values = tensor.ToArray<float>();
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = FakeQuantize(values[i], param);
+        }
+
+        return OrtKISharp.Tensor.MakeTensor(values, tensor.Shape);
+    }
+
+    /// <summary>
+    /// Fake-quantizes a tensor with one quant parameter per slice along the first axis
+    /// (the flat buffer is split into equally sized chunks).
+    /// </summary>
+    private static OrtKISharp.Tensor FakeQuantizePerChannel(OrtKISharp.Tensor tensor, List<QuantParam> quantParams)
+    {
+        float[] values = tensor.ToArray<float>();
+        int paramCount = quantParams.Count;
+        int elementsPerParam = values.Length / paramCount;
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = FakeQuantize(values[i], quantParams[i / elementsPerParam]);
+        }
+
+        return OrtKISharp.Tensor.MakeTensor(values, tensor.Shape);
+    }
+
+    private IRType Visit(ITypeInferenceContext context, FakeConv2DTranspose target, TensorType input)
+    {
+        if (context.GetArgument(target, FakeConv2DTranspose.OutputShape) is TensorConst outputShape)
+        {
+            return new TensorType(input.DType, new Shape(outputShape.Value.ToArray<int>()));
+        }
+
+        return new InvalidType("Conv2dTranspose can't infer shape with dynamic outputShape");
     }
 }

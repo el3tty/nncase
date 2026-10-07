@@ -18,97 +18,116 @@ public class GNNEConv2DTransposeEvaluator : IEvaluator<GNNEConv2DTranspose>, IEv
 
     public IValue Visit(IEvaluateContext context, GNNEConv2DTranspose conv2DTranspose)
     {
-        Tensor argumentValueAsTensor = context.GetArgumentValueAsTensor(conv2DTranspose, GNNEConv2DTranspose.Input);
-        Tensor argumentValueAsTensor2 = context.GetArgumentValueAsTensor(conv2DTranspose, GNNEConv2DTranspose.Weights);
+        Tensor input = context.GetArgumentValueAsTensor(conv2DTranspose, GNNEConv2DTranspose.Input);
+        Tensor weights = context.GetArgumentValueAsTensor(conv2DTranspose, GNNEConv2DTranspose.Weights);
+
+        // Per output channel weight zero points.
         byte[] weightsBias = context.GetArgumentValueAsArray<byte>(conv2DTranspose, GNNEConv2DTranspose.WeightsBias);
-        Half[] argumentValueAsArray = context.GetArgumentValueAsArray<Half>(conv2DTranspose, GNNEConv2DTranspose.Act);
+        Half[] act = context.GetArgumentValueAsArray<Half>(conv2DTranspose, GNNEConv2DTranspose.Act);
+
+        // Input zero point.
         byte deqBias = context.GetArgumentValueAsScalar<byte>(conv2DTranspose, GNNEConv2DTranspose.DeqBias);
-        long argumentValueAsScalar =
-            context.GetArgumentValueAsScalar<long>(conv2DTranspose, GNNEConv2DTranspose.ShiftBits);
-        long[] array = context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.Padding).ToArray();
-        long[] argumentValueAsArray2 =
-            context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.Stride);
-        long[] argumentValueAsArray3 =
-            context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.Dilation);
-        long argumentValueAsScalar2 =
-            context.GetArgumentValueAsScalar<long>(conv2DTranspose, GNNEConv2DTranspose.Groups);
-        long[] array2 = context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.OutputPadding)
-            .ToArray();
-        long[] argumentValueAsArray4 =
-            context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.OutputShape);
-        int[] array3 = argumentValueAsTensor.Shape.ToValueArray();
-        int[] array4 = argumentValueAsTensor2.Shape.ToValueArray();
+        long shiftBits = context.GetArgumentValueAsScalar<long>(conv2DTranspose, GNNEConv2DTranspose.ShiftBits);
+
+        // [top, bottom, left, right].
+        long[] padding = context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.Padding);
+        long[] stride = context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.Stride);
+        long[] dilation = context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.Dilation);
+        long groups = context.GetArgumentValueAsScalar<long>(conv2DTranspose, GNNEConv2DTranspose.Groups);
+
+        // [h, w].
+        long[] outputPadding =
+            context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.OutputPadding);
+
+        // [N, C, H, W] of the result.
+        long[] outputShape = context.GetArgumentValueAsArray<long>(conv2DTranspose, GNNEConv2DTranspose.OutputShape);
+        int[] inputShape = input.Shape.ToValueArray();
+        int[] weightsShape = weights.Shape.ToValueArray();
+
+        // The input must be what a regular conv over the (padded) output would produce.
+        // NOTE: the exception type is odd (InvalidOleVariantTypeException) but kept as is.
         if (K230Kernels.GetWindowedOutputSize(
-                (int)argumentValueAsArray4[2] + (int)array[0] + (int)array[1] - (int)array2[0], array4[2],
-                (int)argumentValueAsArray2[0], (int)argumentValueAsArray3[0], same: false) != array3[2] ||
+                (int)outputShape[2] + (int)padding[0] + (int)padding[1] - (int)outputPadding[0], weightsShape[2],
+                (int)stride[0], (int)dilation[0], same: false) != inputShape[2] ||
             K230Kernels.GetWindowedOutputSize(
-                (int)argumentValueAsArray4[3] + (int)array[2] + (int)array[3] - (int)array2[1], array4[3],
-                (int)argumentValueAsArray2[1], (int)argumentValueAsArray3[1], same: false) != array3[3])
+                (int)outputShape[3] + (int)padding[2] + (int)padding[3] - (int)outputPadding[1], weightsShape[3],
+                (int)stride[1], (int)dilation[1], same: false) != inputShape[3])
         {
             throw new InvalidOleVariantTypeException("Invalid conv2d transpose shape");
         }
 
-        float[] inputDeq = argumentValueAsTensor.ToArray<float>();
+        // Remove the zero points (in place). NOTE: the side effect lives inside Select and relies on
+        // ToArray() enumerating every element; kept as is so exceptions stay wrapped like before.
+        float[] inputDeq = input.ToArray<float>();
         inputDeq.Select((float _, int i) => inputDeq[i] -= (int)deqBias).AsParallel().ToArray();
-        float[] weightsDeq = argumentValueAsTensor2.ToArray<float>();
-        int qArgPerChannel = argumentValueAsTensor2.Dimensions[1] * argumentValueAsTensor2.Dimensions[2] *
-                             argumentValueAsTensor2.Dimensions[3];
-        weightsDeq.Select((float _, int i) => weightsDeq[i] -= (int)weightsBias[i / qArgPerChannel]).AsParallel()
-            .ToArray();
-        long num = argumentValueAsArray4[0] * argumentValueAsArray4[1] * argumentValueAsArray4[2] *
-                   argumentValueAsArray4[3];
-        float[] array5 = new float[num];
-        Array.Clear(array5, 0, (int)num);
-        long num2 = array3[1] / argumentValueAsScalar2;
-        long num3 = argumentValueAsArray4[1] / argumentValueAsScalar2;
-        int num4 = 0;
-        for (int num5 = 0; num5 < array3[0]; num5++)
+        float[] weightsDeq = weights.ToArray<float>();
+        int weightsPerOutChannel = weights.Dimensions[1] * weights.Dimensions[2] * weights.Dimensions[3];
+        weightsDeq.Select((float _, int i) => weightsDeq[i] -= (int)weightsBias[i / weightsPerOutChannel])
+            .AsParallel().ToArray();
+
+        long outputElementCount = outputShape[0] * outputShape[1] * outputShape[2] * outputShape[3];
+        float[] outputValues = new float[outputElementCount];
+        Array.Clear(outputValues, 0, (int)outputElementCount);
+        long inChannelsPerGroup = inputShape[1] / groups;
+        long outChannelsPerGroup = outputShape[1] / groups;
+
+        // Flat (n, c, y, x) read position in the input.
+        int inputIndex = 0;
+
+        // Scatter every input pixel, scaled by the kernel, into the output (the transpose of a convolution).
+        // NOTE: the weights are indexed as [outChannel, inChannelInGroup, kh, kw] inside each group.
+        for (int batch = 0; batch < inputShape[0]; batch++)
         {
-            Span<float> span = array5.AsSpan();
-            Span<float> span2 = span.Slice(num5 * (int)argumentValueAsArray4[1] * (int)argumentValueAsArray4[2] *
-                                           (int)argumentValueAsArray4[3]);
-            for (int num6 = 0; num6 < argumentValueAsScalar2; num6++)
+            Span<float> outputSpan = outputValues.AsSpan();
+            Span<float> batchOutput = outputSpan.Slice(batch * (int)outputShape[1] * (int)outputShape[2] *
+                                                       (int)outputShape[3]);
+            for (int groupIndex = 0; groupIndex < groups; groupIndex++)
             {
-                Span<float> span3 =
-                    span2.Slice(num6 * (int)num3 * (int)argumentValueAsArray4[2] * (int)argumentValueAsArray4[3]);
-                span = weightsDeq.ToArray().AsSpan();
-                Span<float> span4 = span.Slice(num6 * (int)num3 * (int)num2 * array4[2] * array4[3]);
-                for (int num7 = 0; num7 < num2; num7++)
+                Span<float> groupOutput =
+                    batchOutput.Slice(groupIndex * (int)outChannelsPerGroup * (int)outputShape[2] *
+                                      (int)outputShape[3]);
+                Span<float> weightsSpan = weightsDeq.AsSpan();
+                Span<float> groupWeights = weightsSpan.Slice(groupIndex * (int)outChannelsPerGroup *
+                                                             (int)inChannelsPerGroup * weightsShape[2] *
+                                                             weightsShape[3]);
+                for (int inChannel = 0; inChannel < inChannelsPerGroup; inChannel++)
                 {
-                    for (int num8 = 0; num8 < array3[2]; num8++)
+                    for (int inY = 0; inY < inputShape[2]; inY++)
                     {
-                        for (int num9 = 0; num9 < array3[3]; num9++)
+                        for (int inX = 0; inX < inputShape[3]; inX++)
                         {
-                            int num10 = (int)(num8 * argumentValueAsArray2[0] - array[0]);
-                            int num11 = (int)(num9 * argumentValueAsArray2[1] - array[2]);
-                            int num12 = System.Math.Max(0,
-                                (int)((-num10 + argumentValueAsArray3[0] - 1) / argumentValueAsArray3[0]));
-                            int num13 = (int)System.Math.Min(array4[2],
-                                ((int)argumentValueAsArray4[2] - num10 + argumentValueAsArray3[0] - 1) /
-                                argumentValueAsArray3[0]);
-                            int num14 = (int)System.Math.Max(0L,
-                                (-num11 + argumentValueAsArray3[1] - 1) / argumentValueAsArray3[1]);
-                            int num15 = (int)System.Math.Min(array4[3],
-                                ((int)argumentValueAsArray4[3] - num11 + argumentValueAsArray3[1] - 1) /
-                                argumentValueAsArray3[1]);
-                            float num16 = ((num9 >= 0 && num9 < array3[3] && num8 >= 0 && num8 < array3[2])
-                                ? inputDeq.ToArray()[num4]
-                                : 0f);
-                            num4++;
-                            for (int num17 = 0; num17 < num3; num17++)
+                            // Output position of kernel tap (0, 0) and the range of taps that land inside
+                            // the output.
+                            int originY = (int)(inY * stride[0] - padding[0]);
+                            int originX = (int)(inX * stride[1] - padding[2]);
+                            int kernelYBegin = System.Math.Max(0, (int)((-originY + dilation[0] - 1) / dilation[0]));
+                            int kernelYEnd = (int)System.Math.Min(weightsShape[2],
+                                ((int)outputShape[2] - originY + dilation[0] - 1) / dilation[0]);
+                            int kernelXBegin = (int)System.Math.Max(0L, (-originX + dilation[1] - 1) / dilation[1]);
+                            int kernelXEnd = (int)System.Math.Min(weightsShape[3],
+                                ((int)outputShape[3] - originX + dilation[1] - 1) / dilation[1]);
+
+                            // NOTE: the bounds check is always true here.
+                            float inputValue = (inX >= 0 && inX < inputShape[3] && inY >= 0 && inY < inputShape[2])
+                                ? inputDeq[inputIndex]
+                                : 0f;
+                            inputIndex++;
+                            for (int outChannel = 0; outChannel < outChannelsPerGroup; outChannel++)
                             {
-                                Span<float> span5 =
-                                    span3.Slice((int)(num17 * argumentValueAsArray4[2] * argumentValueAsArray4[3]));
-                                Span<float> span6 = span4.Slice((int)(num17 * num2 * array4[2] * array4[3]))
-                                    .Slice(num7 * array4[2] * array4[3]);
-                                for (int num18 = num12; num18 < num13; num18++)
+                                Span<float> channelOutput =
+                                    groupOutput.Slice((int)(outChannel * outputShape[2] * outputShape[3]));
+                                Span<float> kernel = groupWeights
+                                    .Slice((int)(outChannel * inChannelsPerGroup * weightsShape[2] *
+                                                 weightsShape[3]))
+                                    .Slice(inChannel * weightsShape[2] * weightsShape[3]);
+                                for (int kernelY = kernelYBegin; kernelY < kernelYEnd; kernelY++)
                                 {
-                                    for (int num19 = num14; num19 < num15; num19++)
+                                    for (int kernelX = kernelXBegin; kernelX < kernelXEnd; kernelX++)
                                     {
-                                        int num20 = (int)(num10 + argumentValueAsArray3[0] * num18);
-                                        int num21 = (int)(num11 + argumentValueAsArray3[1] * num19);
-                                        float num22 = span6[num18 * array4[3] + num19];
-                                        span5[(int)(num20 * argumentValueAsArray4[3] + num21)] += num16 * num22;
+                                        int outY = (int)(originY + dilation[0] * kernelY);
+                                        int outX = (int)(originX + dilation[1] * kernelX);
+                                        float weight = kernel[kernelY * weightsShape[3] + kernelX];
+                                        channelOutput[(int)(outY * outputShape[3] + outX)] += inputValue * weight;
                                     }
                                 }
                             }
@@ -118,64 +137,38 @@ public class GNNEConv2DTransposeEvaluator : IEvaluator<GNNEConv2DTranspose>, IEv
             }
         }
 
-        Tensor<float> tensor = Tensor.From(array5, (from i in argumentValueAsArray4.ToArray()
-            select (int)i).ToArray());
-        float[] array6 = tensor.ToArray<float>();
-        float[] array7 = new float[K230Kernels.ComputeSize(tensor.Shape)];
-        int num23 = tensor.Dimensions[2] * tensor.Dimensions[3];
-        for (int num24 = 0; num24 < array6.Length; num24++)
+        Tensor<float> convOutput = Tensor.From(outputValues, ToIntArray(outputShape));
+
+        // Per-channel activation; the output is NCHW so the channel is the flat index / (H * W).
+        float[] convValues = convOutput.ToArray<float>();
+        float[] activated = new float[K230Kernels.ComputeSize(convOutput.Shape)];
+        int channelStride = convOutput.Dimensions[2] * convOutput.Dimensions[3];
+        for (int i = 0; i < convValues.Length; i++)
         {
-            int channel = num24 / num23;
-            array7[num24] = K230Kernels.ApplyAct0(array6[num24], argumentValueAsArray.ToArray(), channel,
-                (sbyte)argumentValueAsScalar);
+            int channel = i / channelStride;
+            activated[i] = K230Kernels.ApplyAct0(convValues[i], act.ToArray(), channel, (sbyte)shiftBits);
         }
 
-        float[] array8 = array7.Select((float x) => (float)System.Math.Round(x)).ToArray();
-        Half[] array9 = array7.Select((float x) => (Half)x).ToArray();
-        Tensor<float> tensor2 = Tensor.From(array8, tensor.Shape);
-        Tensor<Half> tensor3 = Tensor.From(array9, tensor.Shape);
+        float[] rounded = activated.Select((float x) => (float)System.Math.Round(x)).ToArray();
+        Half[] halves = activated.Select((float x) => (Half)x).ToArray();
+        Tensor<float> roundedTensor = Tensor.From(rounded, convOutput.Shape);
+        Tensor<Half> halfTensor = Tensor.From(halves, convOutput.Shape);
         if (conv2DTranspose.DestType == DataTypes.UInt8)
         {
-            return Value.FromTensor(tensor2.Cast<byte>(CastMode.KDefault));
+            return Value.FromTensor(roundedTensor.Cast<byte>(CastMode.KDefault));
         }
 
         if (conv2DTranspose.DestType == DataTypes.Int8)
         {
-            return Value.FromTensor(tensor2.Cast<sbyte>(CastMode.KDefault));
+            return Value.FromTensor(roundedTensor.Cast<sbyte>(CastMode.KDefault));
         }
 
         if (conv2DTranspose.DestType == DataTypes.Int16)
         {
-            return Value.FromTensor(tensor2.Cast<short>(CastMode.KDefault));
+            return Value.FromTensor(roundedTensor.Cast<short>(CastMode.KDefault));
         }
 
-        return Value.FromTensor(tensor3.Cast<Half>(CastMode.KDefault));
-    }
-
-    private IRType Visit(ITypeInferenceContext context, GNNEConv2DTranspose target, TensorType input,
-        TensorType weights)
-    {
-        if (input.DType != DataTypes.Int8 && input.DType != DataTypes.UInt8 && input.DType != DataTypes.Int16)
-        {
-            new InvalidType("Unsupported input_type, should be one of [int8, uint8, int16]");
-        }
-
-        if (weights.DType != DataTypes.Int8 && weights.DType != DataTypes.UInt8 && weights.DType != DataTypes.Int16)
-        {
-            new InvalidType("Unsupported w_type, should be one of [int8, uint8, int16]");
-        }
-
-        if (input.DType == DataTypes.Int16 && weights.DType == DataTypes.Int16)
-        {
-            new InvalidType("int16 for both of input_type and w_type is not supported");
-        }
-
-        if (context.GetArgument(target, GNNEConv2DTranspose.OutputShape) is Const obj)
-        {
-            return new TensorType(target.DestType, new Shape(Value.FromConst(obj).AsTensor().ToArray<int>()));
-        }
-
-        return new InvalidType("Conv2dTranspose can't infer shape with dynamic outputShape");
+        return Value.FromTensor(halfTensor.Cast<Half>(CastMode.KDefault));
     }
 
     public IRType Visit(ITypeInferenceContext context, GNNEConv2DTranspose target)
@@ -202,5 +195,39 @@ public class GNNEConv2DTransposeEvaluator : IEvaluator<GNNEConv2DTranspose>, IEv
         context.CheckArgumentType<IRType>(target, GNNEConv2DTranspose.OutputPadding);
         context.CheckArgumentType<IRType>(target, GNNEConv2DTranspose.OutputShape);
         return Visit(context, target, input, weights);
+    }
+
+    private static int[] ToIntArray(long[] values)
+    {
+        return (from v in values
+                select (int)v).ToArray();
+    }
+
+    private IRType Visit(ITypeInferenceContext context, GNNEConv2DTranspose target, TensorType input,
+        TensorType weights)
+    {
+        // NOTE: the three InvalidType objects below are created and dropped (there is no `return`), so the
+        // dtype checks have no effect; kept as is.
+        if (input.DType != DataTypes.Int8 && input.DType != DataTypes.UInt8 && input.DType != DataTypes.Int16)
+        {
+            new InvalidType("Unsupported input_type, should be one of [int8, uint8, int16]");
+        }
+
+        if (weights.DType != DataTypes.Int8 && weights.DType != DataTypes.UInt8 && weights.DType != DataTypes.Int16)
+        {
+            new InvalidType("Unsupported w_type, should be one of [int8, uint8, int16]");
+        }
+
+        if (input.DType == DataTypes.Int16 && weights.DType == DataTypes.Int16)
+        {
+            new InvalidType("int16 for both of input_type and w_type is not supported");
+        }
+
+        if (context.GetArgument(target, GNNEConv2DTranspose.OutputShape) is Const outputShape)
+        {
+            return new TensorType(target.DestType, new Shape(Value.FromConst(outputShape).AsTensor().ToArray<int>()));
+        }
+
+        return new InvalidType("Conv2dTranspose can't infer shape with dynamic outputShape");
     }
 }

@@ -14,47 +14,54 @@ namespace Nncase.Evaluator.K230;
 public class FakeLSTMEvaluator : IEvaluator<FakeLSTM>, IEvaluator, ITypeInferencer<FakeLSTM>, ITypeInferencer,
     ICostEvaluator<FakeLSTM>, ICostEvaluator
 {
+    // Positions of the marker-wrapped operands in the call's argument list.
+    private const int InputArgumentIndex = 0;
+    private const int InitialHArgumentIndex = 5;
+
     public Cost Visit(ICostEvaluateContext context, FakeLSTM target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeLSTM.Input);
-        TensorType argumentType2 = context.GetArgumentType<TensorType>(target, FakeLSTM.WXc);
-        TensorType argumentType3 = context.GetArgumentType<TensorType>(target, FakeLSTM.WRc);
+        TensorType inputType = context.GetArgumentType<TensorType>(target, FakeLSTM.Input);
+        TensorType inputWeightsType = context.GetArgumentType<TensorType>(target, FakeLSTM.WXc);
+        TensorType recurrentWeightsType = context.GetArgumentType<TensorType>(target, FakeLSTM.WRc);
         TupleType returnType = context.GetReturnType<TupleType>();
         return new Cost
         {
-            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(argumentType) +
-                                           CostUtility.GetMemoryAccess(argumentType2) +
-                                           CostUtility.GetMemoryAccess(argumentType3),
+            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType) +
+                                           CostUtility.GetMemoryAccess(inputWeightsType) +
+                                           CostUtility.GetMemoryAccess(recurrentWeightsType),
             [CostFactorNames.MemoryStore] = returnType.Select((IRType t) =>
-                (t is TensorType type) ? CostUtility.GetMemoryAccess(type) : UInt128.One).Sum()
+                (t is TensorType type) ? CostUtility.GetMemoryAccess(type) : UInt128.One).Sum(),
         };
     }
 
     public IValue Visit(IEvaluateContext context, FakeLSTM l)
     {
-        Tensor tensor = context.GetArgumentValueAsTensor(l, FakeLSTM.Input);
-        Tensor<float> argumentValueAsTensor = context.GetArgumentValueAsTensor<float>(l, FakeLSTM.WXc);
-        Tensor<Half> argumentValueAsTensor2 = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.ActXc);
-        Tensor<float> argumentValueAsTensor3 = context.GetArgumentValueAsTensor<float>(l, FakeLSTM.WRc);
-        Tensor<Half> argumentValueAsTensor4 = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.ActRc);
-        Tensor tensor2 = context.GetArgumentValueAsTensor(l, FakeLSTM.InitialH);
-        Tensor<float> argumentValueAsTensor5 = context.GetArgumentValueAsTensor<float>(l, FakeLSTM.InitialC);
-        Tensor<Half> argumentValueAsTensor6 = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.SegFittingParamFt);
-        Tensor<Half> argumentValueAsTensor7 = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.SegFittingParamGt);
-        int num = context.GetArgumentValueAsTensor<int>(l, FakeLSTM.OutputSize).ToArray()[0];
+        Tensor input = context.GetArgumentValueAsTensor(l, FakeLSTM.Input);
+        Tensor<float> inputWeights = context.GetArgumentValueAsTensor<float>(l, FakeLSTM.WXc);
+        Tensor<Half> inputActivation = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.ActXc);
+        Tensor<float> recurrentWeights = context.GetArgumentValueAsTensor<float>(l, FakeLSTM.WRc);
+        Tensor<Half> recurrentActivation = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.ActRc);
+        Tensor initialHidden = context.GetArgumentValueAsTensor(l, FakeLSTM.InitialH);
+        Tensor<float> initialCell = context.GetArgumentValueAsTensor<float>(l, FakeLSTM.InitialC);
+        Tensor<Half> sigmoidFit = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.SegFittingParamFt);
+        Tensor<Half> tanhFit = context.GetArgumentValueAsTensor<Half>(l, FakeLSTM.SegFittingParamGt);
+        int outputSize = context.GetArgumentValueAsTensor<int>(l, FakeLSTM.OutputSize).ToArray()[0];
+
+        // Output buffers (Y, last hidden, last cell) are shaped after the call's tuple type; the hidden / cell
+        // buffers fall back to the Y shape when that output is not requested.
         Tensor<float> output =
             new Tensor<float>(((TensorType)((TupleType)context.CurrentCall.CheckedType)[0]).Shape.ToValueArray());
         Tensor<float> outputH =
             new Tensor<float>(((TensorType)((TupleType)context.CurrentCall.CheckedType)[0]).Shape.ToValueArray());
         Tensor<float> outputC =
             new Tensor<float>(((TensorType)((TupleType)context.CurrentCall.CheckedType)[0]).Shape.ToValueArray());
-        if (num >= 2)
+        if (outputSize >= 2)
         {
             outputH = new Tensor<float>(
                 ((TensorType)((TupleType)context.CurrentCall.CheckedType)[1]).Shape.ToValueArray());
         }
 
-        if (num >= 3)
+        if (outputSize >= 3)
         {
             outputC = new Tensor<float>(
                 ((TensorType)((TupleType)context.CurrentCall.CheckedType)[2]).Shape.ToValueArray());
@@ -62,89 +69,100 @@ public class FakeLSTMEvaluator : IEvaluator<FakeLSTM>, IEvaluator, ITypeInferenc
 
         if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null)
         {
+            // Replace the input / initial hidden state by their quantize-dequantize round trip when the markers
+            // carry mix-quant info.
             MarkerPattern markerPattern = Utility.IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard());
-            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
+            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[InputArgumentIndex]))
             {
-                MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
-                if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
+                MixQuantInfo? inputMixQuantInfo = ((Marker)context.CurrentCall.Arguments[InputArgumentIndex]).MixQuantInfo;
+                if (inputMixQuantInfo != null && inputMixQuantInfo.HasBindedMixQuantInfo)
                 {
-                    List<QuantParam> list = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo?.QuantParameter;
-                    Trace.Assert(list.Count == 1);
-                    float[] array = tensor.ToArray<float>();
-                    for (int i = 0; i < array.Length; i++)
+                    List<QuantParam> inputQuantParams =
+                        ((Marker)context.CurrentCall.Arguments[InputArgumentIndex]).MixQuantInfo?.QuantParameter;
+                    Trace.Assert(inputQuantParams.Count == 1);
+                    float[] inputValues = input.ToArray<float>();
+                    for (int i = 0; i < inputValues.Length; i++)
                     {
-                        double num2 = (double)array[i] / (double)list[0].Scale + (double)list[0].ZeroPoint;
-                        if (list[0].Scale != 1f || list[0].ZeroPoint != 0)
-                        {
-                            num2 = System.Math.Round(num2);
-                        }
-
-                        double num3 = (num2 - (double)list[0].ZeroPoint) * (double)list[0].Scale;
-                        array[i] = (float)num3;
+                        inputValues[i] = FakeQuantize(inputValues[i], inputQuantParams[0]);
                     }
 
-                    tensor = Value.FromTensor(Tensor.From(array, tensor.Shape)).AsTensor();
+                    input = Tensor.From(inputValues, input.Shape);
                 }
             }
 
-            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[5]))
+            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[InitialHArgumentIndex]))
             {
-                MixQuantInfo? mixQuantInfo2 = ((Marker)context.CurrentCall.Arguments[5]).MixQuantInfo;
-                if (mixQuantInfo2 != null && mixQuantInfo2.HasBindedMixQuantInfo &&
-                    ((Tensor<float>)tensor2).ToScalar() == 0f)
-                {
-                    List<QuantParam> list2 = ((Marker)context.CurrentCall.Arguments[5]).MixQuantInfo?.QuantParameter;
-                    Trace.Assert(list2.Count == 1);
-                    float[] array2 = tensor2.ToArray<float>();
-                    for (int j = 0; j < array2.Length; j++)
-                    {
-                        double num4 = (double)array2[j] / (double)list2[0].Scale + (double)list2[0].ZeroPoint;
-                        if (list2[0].Scale != 1f || list2[0].ZeroPoint != 0)
-                        {
-                            num4 = System.Math.Round(num4);
-                        }
+                MixQuantInfo? initialHMixQuantInfo =
+                    ((Marker)context.CurrentCall.Arguments[InitialHArgumentIndex]).MixQuantInfo;
 
-                        double num5 = (num4 - (double)list2[0].ZeroPoint) * (double)list2[0].Scale;
-                        array2[j] = (float)num5;
+                // Only a (scalar) zero initial state is quantized.
+                if (initialHMixQuantInfo != null && initialHMixQuantInfo.HasBindedMixQuantInfo &&
+                    ((Tensor<float>)initialHidden).ToScalar() == 0f)
+                {
+                    List<QuantParam> initialHQuantParams =
+                        ((Marker)context.CurrentCall.Arguments[InitialHArgumentIndex]).MixQuantInfo?.QuantParameter;
+                    Trace.Assert(initialHQuantParams.Count == 1);
+                    float[] initialHValues = initialHidden.ToArray<float>();
+                    for (int i = 0; i < initialHValues.Length; i++)
+                    {
+                        initialHValues[i] = FakeQuantize(initialHValues[i], initialHQuantParams[0]);
                     }
 
-                    tensor2 = Value.FromTensor(Tensor.From(array2, tensor2.Shape)).AsTensor();
+                    initialHidden = Tensor.From(initialHValues, initialHidden.Shape);
                 }
             }
         }
 
-        Tensor[] tensors = K230Kernels.FakeGnneLstm((Tensor<float>)tensor, argumentValueAsTensor,
-            argumentValueAsTensor2, argumentValueAsTensor3, argumentValueAsTensor4, (Tensor<float>)tensor2,
-            argumentValueAsTensor5, argumentValueAsTensor6, argumentValueAsTensor7, output, outputH, outputC,
-            l.Direction, num).ToArray();
-        return Value.FromTensors(tensors);
+        Tensor[] outputs = K230Kernels.FakeGnneLstm((Tensor<float>)input, inputWeights,
+            inputActivation, recurrentWeights, recurrentActivation, (Tensor<float>)initialHidden,
+            initialCell, sigmoidFit, tanhFit, output, outputH, outputC,
+            l.Direction, outputSize).ToArray();
+        return Value.FromTensors(outputs);
+    }
+
+    /// <summary>Quantizes (rounding unless the parameter is the identity) and dequantizes one value.</summary>
+    private static float FakeQuantize(float value, QuantParam quantParam)
+    {
+        double quantized = (double)value / (double)quantParam.Scale + (double)quantParam.ZeroPoint;
+        if (quantParam.Scale != 1f || quantParam.ZeroPoint != 0)
+        {
+            quantized = System.Math.Round(quantized);
+        }
+
+        return (float)((quantized - (double)quantParam.ZeroPoint) * (double)quantParam.Scale);
     }
 
     private IRType Visit(ITypeInferenceContext context, FakeLSTM target, TensorType input, TensorType initialH,
         TensorType initialC)
     {
-        int numDirections = ((target.Direction != LSTMDirection.Bidirectional) ? 1 : 2);
+        int numDirections = (target.Direction != LSTMDirection.Bidirectional) ? 1 : 2;
         int seqLenIndex = 1;
-        if (context.GetArgument(target, FakeLSTM.OutputSize) is TensorConst tensorConst)
+        if (context.GetArgument(target, FakeLSTM.OutputSize) is TensorConst outputSizeConst)
         {
-            TensorType tensorType = InferYType(context, target, input, seqLenIndex, numDirections);
-            IRType[] subArray =
-                (new TensorType[3] { tensorType, initialH, initialC })[..tensorConst.Value.ToScalar<int>()];
-            return new TupleType(subArray);
+            TensorType yType = InferYType(context, target, input, seqLenIndex, numDirections);
+
+            // Outputs: Y, last hidden, last cell; keep the first OutputSize of them.
+            IRType[] outputTypes =
+                (new TensorType[3] { yType, initialH, initialC })[..outputSizeConst.Value.ToScalar<int>()];
+            return new TupleType(outputTypes);
         }
 
         return new InvalidType("LSTM OutputSize Must be known");
     }
 
+    /// <summary>
+    /// Y type: the input shape with the sequence dimension split off and the direction count inserted; the last
+    /// dimension becomes the hidden size of the recurrent weights.
+    /// </summary>
     private TensorType InferYType(ITypeInferenceContext context, FakeLSTM target, TensorType x, int seqLenIndex,
         int numDirections)
     {
-        List<Dimension> list = x.Shape.ToList();
-        list.Insert(seqLenIndex + 1, numDirections);
-        int fixedValue = context.GetArgument(target, FakeLSTM.WRc).CheckedShape[3].FixedValue;
-        list.RemoveAt(0);
-        list[list.Count - 1] = fixedValue;
-        return x with { Shape = list.ToArray() };
+        List<Dimension> dims = x.Shape.ToList();
+        dims.Insert(seqLenIndex + 1, numDirections);
+        int hiddenSize = context.GetArgument(target, FakeLSTM.WRc).CheckedShape[3].FixedValue;
+        dims.RemoveAt(0);
+        dims[dims.Count - 1] = hiddenSize;
+        return x with { Shape = dims.ToArray() };
     }
 
     public IRType Visit(ITypeInferenceContext context, FakeLSTM target)

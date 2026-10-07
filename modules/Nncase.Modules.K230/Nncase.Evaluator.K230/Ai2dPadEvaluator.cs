@@ -12,73 +12,51 @@ namespace Nncase.Evaluator.K230;
 public class Ai2dPadEvaluator : IEvaluator<Ai2dPad>, IEvaluator, ITypeInferencer<Ai2dPad>, ITypeInferencer,
     ICostEvaluator<Ai2dPad>, ICostEvaluator
 {
+    // ONNX TensorProto data type codes used as the target of the final Cast.
+    private const long OnnxUInt8 = 2L;
+    private const long OnnxInt8 = 3L;
+    private const long OnnxInt16 = 5L;
+    private const long OnnxFloat16 = 10L;
+
     public IValue Visit(IEvaluateContext context, Ai2dPad r)
     {
-        Tensor tensor = context.GetArgumentValue(r, Ai2dPad.Input).AsTensor();
-        OrtKISharp.Tensor int64OrtTensorArgumentValue = context.GetInt64OrtTensorArgumentValue(r, Ai2dPad.Padding);
-        Tensor tensor2 = context.GetArgumentValue(r, Ai2dPad.Value).AsTensor();
-        float[] array = tensor.ToArray<float>();
-        float[] array2 = tensor2.ToArray<float>();
+        Tensor input = context.GetArgumentValue(r, Ai2dPad.Input).AsTensor();
+        OrtKISharp.Tensor padding = context.GetInt64OrtTensorArgumentValue(r, Ai2dPad.Padding);
+        Tensor padValue = context.GetArgumentValue(r, Ai2dPad.Value).AsTensor();
+        float[] inputData = input.ToArray<float>();
+        float[] padValueData = padValue.ToArray<float>();
+
+        // The pad is always done in float; the result is cast to the output type (float16 when not listed).
+        long onnxOutputType;
         if (r.OutputType == DataTypes.UInt8)
         {
-            return OrtKI
-                .Cast(
-                    OrtKI.Pad(
-                        OrtKISharp.Tensor.MakeTensor(array,
-                            ((IEnumerable<int>)tensor.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                            .ToArray()), (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue),
-                        OrtKISharp.Tensor.MakeTensor(array2,
-                            ((IEnumerable<int>)tensor2.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                            .ToArray()), null, r.Mode.ToString().ToLower(null)), 1, 2L).ToValue();
+            onnxOutputType = OnnxUInt8;
         }
-
-        if (r.OutputType == DataTypes.Int8)
+        else if (r.OutputType == DataTypes.Int8)
         {
-            return OrtKI
-                .Cast(
-                    OrtKI.Pad(
-                        OrtKISharp.Tensor.MakeTensor(array,
-                            ((IEnumerable<int>)tensor.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                            .ToArray()), (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue),
-                        OrtKISharp.Tensor.MakeTensor(array2,
-                            ((IEnumerable<int>)tensor2.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                            .ToArray()), null, r.Mode.ToString().ToLower(null)), 1, 3L).ToValue();
+            onnxOutputType = OnnxInt8;
         }
-
-        if (r.OutputType == DataTypes.Int16)
+        else if (r.OutputType == DataTypes.Int16)
         {
-            return OrtKI
-                .Cast(
-                    OrtKI.Pad(
-                        OrtKISharp.Tensor.MakeTensor(array,
-                            ((IEnumerable<int>)tensor.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                            .ToArray()), (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue),
-                        OrtKISharp.Tensor.MakeTensor(array2,
-                            ((IEnumerable<int>)tensor2.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                            .ToArray()), null, r.Mode.ToString().ToLower(null)), 1, 5L).ToValue();
+            onnxOutputType = OnnxInt16;
+        }
+        else
+        {
+            onnxOutputType = OnnxFloat16;
         }
 
+        // NOTE: string.ToLower(null) is kept as decompiled (it looks like it should be ToLower()).
         return OrtKI
             .Cast(
                 OrtKI.Pad(
-                    OrtKISharp.Tensor.MakeTensor(array,
-                        ((IEnumerable<int>)tensor.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                        .ToArray()), (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue),
-                    OrtKISharp.Tensor.MakeTensor(array2,
-                        ((IEnumerable<int>)tensor2.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i))
-                        .ToArray()), null, r.Mode.ToString().ToLower(null)), 1, 10L).ToValue();
+                    MakeOrtTensor(inputData, input), (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(padding),
+                    MakeOrtTensor(padValueData, padValue), null, r.Mode.ToString().ToLower(null)), 1,
+                onnxOutputType).ToValue();
     }
 
     public Cost Visit(ICostEvaluateContext context, Ai2dPad target)
     {
         return new Cost { [CostFactorNames.CPUCycles] = (byte)1 };
-    }
-
-    private IRType Visit(ITypeInferenceContext context, Ai2dPad target, TensorType input)
-    {
-        Expr argument = context.GetArgument(target, Ai2dPad.Padding);
-        Expr argument2 = context.GetArgument(target, Ai2dPad.Value);
-        return TypeInference.PadType(input, argument, argument2);
     }
 
     public IRType Visit(ITypeInferenceContext context, Ai2dPad target)
@@ -90,5 +68,20 @@ public class Ai2dPadEvaluator : IEvaluator<Ai2dPad>, IEvaluator, ITypeInferencer
         context.CheckArgumentType<IRType>(target, Ai2dPad.InDeqBias);
         context.CheckArgumentType<IRType>(target, Ai2dPad.OutQuantParam);
         return Visit(context, target, input);
+    }
+
+    /// <summary>Wraps float data into an ORT tensor with the dimensions of <paramref name="shapeSource"/>.</summary>
+    private static OrtKISharp.Tensor MakeOrtTensor(float[] data, Tensor shapeSource)
+    {
+        return OrtKISharp.Tensor.MakeTensor(
+            data,
+            ((IEnumerable<int>)shapeSource.Dimensions.ToArray()).Select((Func<int, long>)((int i) => i)).ToArray());
+    }
+
+    private IRType Visit(ITypeInferenceContext context, Ai2dPad target, TensorType input)
+    {
+        Expr padding = context.GetArgument(target, Ai2dPad.Padding);
+        Expr padValue = context.GetArgument(target, Ai2dPad.Value);
+        return TypeInference.PadType(input, padding, padValue);
     }
 }

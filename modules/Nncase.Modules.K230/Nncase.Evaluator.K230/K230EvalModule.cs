@@ -4,10 +4,14 @@ using Nncase.Hosting;
 
 namespace Nncase.Evaluator.K230;
 
+/// <summary>
+/// Registers all K230 evaluators (the registration order is significant and must be kept).
+/// </summary>
 internal sealed class K230EvalModule : IApplicationPart
 {
     public void ConfigureServices(IRegistrator registrator)
     {
+        // Fake (float reference) evaluators.
         registrator.RegisterManyInterface<FakeDynamicGNNEMatMulEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<FakeActivationEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<FakeConv2DEvaluator>(Reuse.Singleton);
@@ -17,6 +21,8 @@ internal sealed class K230EvalModule : IApplicationPart
         registrator.RegisterManyInterface<FakeAi2dPadEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<FakeAi2dResizeEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<FakeMatMulEvaluator>(Reuse.Singleton);
+
+        // GNNE (hardware simulation) evaluators.
         registrator.RegisterManyInterface<DynamicGNNEMatMulEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<GNNEPdp1Evaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<GNNEPdp0DWEvaluator>(Reuse.Singleton);
@@ -33,6 +39,8 @@ internal sealed class K230EvalModule : IApplicationPart
         registrator.RegisterManyInterface<Ai2dResizeEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<GNNEMatMulEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<GNNEPdp0ReduceEvaluator>(Reuse.Singleton);
+
+        // Instruction-level evaluators (scalar RISC-V style instructions first, then GNNE/MFU/PU instructions).
         registrator.RegisterManyInterface<LoadImmEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<LoadDdrAddrEvaluator>(Reuse.Singleton);
         registrator.RegisterManyInterface<LUIEvaluator>(Reuse.Singleton);

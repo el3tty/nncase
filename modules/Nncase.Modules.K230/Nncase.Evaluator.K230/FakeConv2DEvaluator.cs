@@ -17,154 +17,32 @@ public class FakeConv2DEvaluator : IEvaluator<FakeConv2D>, IEvaluator, ITypeInfe
 {
     public Cost Visit(ICostEvaluateContext context, FakeConv2D target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeConv2D.Input);
-        TensorType argumentType2 = context.GetArgumentType<TensorType>(target, FakeConv2D.Weights);
+        TensorType inputType = context.GetArgumentType<TensorType>(target, FakeConv2D.Input);
+        TensorType weightsType = context.GetArgumentType<TensorType>(target, FakeConv2D.Weights);
         TensorType returnType = context.GetReturnType<TensorType>();
-        Shape shape = argumentType2.Shape;
-        Dimension dimension = 2 * shape[1] * shape[2] * shape[3] - 1;
+        Shape weightsShape = weightsType.Shape;
+
+        // Multiply-accumulate count per output element: 2 * (C/g * kh * kw) - 1.
+        Dimension opsPerOutput = 2 * weightsShape[1] * weightsShape[2] * weightsShape[3] - 1;
         return new Cost
         {
             [CostFactorNames.MemoryLoad] =
-                CostUtility.GetMemoryAccess(argumentType) + CostUtility.GetMemoryAccess(argumentType2),
+                CostUtility.GetMemoryAccess(inputType) + CostUtility.GetMemoryAccess(weightsType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)dimension.FixedValue / 768f)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)opsPerOutput.FixedValue / 768f)
         };
-    }
-
-    private Const Visit(IEvaluateContext context, OrtKISharp.Tensor input, OrtKISharp.Tensor weights, Tensor act,
-        Tensor<long> stride, OrtKISharp.Tensor padding, Tensor<long> dilation, long groups)
-    {
-        MarkerPattern markerPattern = Utility.IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard());
-        if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null)
-        {
-            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
-            {
-                MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
-                if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
-                {
-                    List<QuantParam> quantParameter =
-                        ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
-                    Trace.Assert(quantParameter.Count == 1);
-                    float[] array = input.ToArray<float>();
-                    for (int i = 0; i < array.Length; i++)
-                    {
-                        double num = (double)array[i] / (double)quantParameter[0].Scale +
-                                     (double)quantParameter[0].ZeroPoint;
-                        if (quantParameter[0].Scale != 1f || quantParameter[0].ZeroPoint != 0)
-                        {
-                            num = System.Math.Round(num);
-                        }
-
-                        double num2 = (num - (double)quantParameter[0].ZeroPoint) * (double)quantParameter[0].Scale;
-                        array[i] = (float)num2;
-                    }
-
-                    input = OrtKISharp.Tensor.MakeTensor(array, input.Shape);
-                }
-            }
-
-            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[1]))
-            {
-                MixQuantInfo? mixQuantInfo2 = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
-                if (mixQuantInfo2 != null && mixQuantInfo2.HasBindedMixQuantInfo)
-                {
-                    List<QuantParam> quantParameter2 =
-                        ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo.QuantParameter;
-                    float[] array2 = weights.ToArray<float>();
-                    int count = quantParameter2.Count;
-                    int num3 = array2.Length / count;
-                    for (int j = 0; j < array2.Length; j++)
-                    {
-                        double num4 = (double)array2[j] / (double)quantParameter2[j / num3].Scale +
-                                      (double)quantParameter2[j / num3].ZeroPoint;
-                        if (quantParameter2[j / num3].Scale != 1f || quantParameter2[j / num3].ZeroPoint != 0)
-                        {
-                            num4 = System.Math.Round(num4);
-                        }
-
-                        double num5 = (num4 - (double)quantParameter2[j / num3].ZeroPoint) *
-                                      (double)quantParameter2[j / num3].Scale;
-                        array2[j] = (float)num5;
-                    }
-
-                    weights = OrtKISharp.Tensor.MakeTensor(array2, weights.Shape);
-                }
-            }
-        }
-
-        if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
-        {
-            AdaQuantInfo? adaQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo;
-            if (adaQuantInfo != null)
-            {
-                _ = adaQuantInfo.InputQuantParameter;
-                if (true)
-                {
-                    QuantParam inputQuantParameter =
-                        ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo.InputQuantParameter;
-                    float[] array3 = input.ToArray<float>();
-                    for (int k = 0; k < array3.Length; k++)
-                    {
-                        double num6 = (double)array3[k] / (double)inputQuantParameter.Scale +
-                                      (double)inputQuantParameter.ZeroPoint;
-                        if (inputQuantParameter.Scale != 1f || inputQuantParameter.ZeroPoint != 0)
-                        {
-                            num6 = System.Math.Round(num6);
-                        }
-
-                        double num7 = (num6 - (double)inputQuantParameter.ZeroPoint) *
-                                      (double)inputQuantParameter.Scale;
-                        array3[k] = (float)num7;
-                    }
-
-                    input = OrtKISharp.Tensor.MakeTensor(array3, input.Shape);
-                }
-            }
-        }
-
-        Tensor tensor = OrtKI.Conv(input, weights, K230Kernels.Proc((int)weights.Shape[0]), "NOTSET",
-            dilation.ToArray(), groups, new long[2] { weights.Shape[2], weights.Shape[3] },
-            EvaluatorUtil.ToOnnxPadFormat(padding), stride.ToArray()).ToTensor();
-        if (context.CurrentCall.Arguments[0] is Marker)
-        {
-            if (((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo == null)
-            {
-                ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo = new AdaQuantInfo();
-            }
-
-            ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo.AdaRoundRefTensor = tensor;
-        }
-
-        float[] array4 = tensor.ToArray<float>();
-        float[] array5 = new float[K230Kernels.ComputeSize(tensor.Shape)];
-        int num8 = tensor.Shape[2].FixedValue * tensor.Shape[3].FixedValue;
-        for (int l = 0; l < array4.Length; l++)
-        {
-            int channel = l / num8;
-            array5[l] = K230Kernels.FakeApplyAct0(array4[l], act.ToArray<float>(), channel, 0);
-        }
-
-        return Const.FromTensor(Tensor.From(array5, tensor.Shape));
-    }
-
-    private IRType Visit(ITypeInferenceContext context, FakeConv2D target, TensorType input, TensorType weights)
-    {
-        Expr[] arguments = context.GetArguments(target, FakeConv2D.Stride, FakeConv2D.Padding, FakeConv2D.Dilation,
-            FakeConv2D.Groups);
-        return TypeInference.Conv2DType(input, weights, arguments[0], arguments[1], arguments[2], arguments[3]);
     }
 
     public IValue Visit(IEvaluateContext context, FakeConv2D target)
     {
-        OrtKISharp.Tensor ortArgumentValue = context.GetOrtArgumentValue(target, FakeConv2D.Input);
-        OrtKISharp.Tensor ortArgumentValue2 = context.GetOrtArgumentValue(target, FakeConv2D.Weights);
-        Tensor argumentValueAsTensor = context.GetArgumentValueAsTensor(target, FakeConv2D.Act);
-        Tensor<long> argumentValueAsTensor2 = context.GetArgumentValueAsTensor<long>(target, FakeConv2D.Stride);
-        OrtKISharp.Tensor ortArgumentValue3 = context.GetOrtArgumentValue(target, FakeConv2D.Padding);
-        Tensor<long> argumentValueAsTensor3 = context.GetArgumentValueAsTensor<long>(target, FakeConv2D.Dilation);
-        long argumentValueAsScalar = context.GetArgumentValueAsScalar<long>(target, FakeConv2D.Groups);
-        return Value.FromConst(Visit(context, ortArgumentValue, ortArgumentValue2, argumentValueAsTensor,
-            argumentValueAsTensor2, ortArgumentValue3, argumentValueAsTensor3, argumentValueAsScalar));
+        OrtKISharp.Tensor input = context.GetOrtArgumentValue(target, FakeConv2D.Input);
+        OrtKISharp.Tensor weights = context.GetOrtArgumentValue(target, FakeConv2D.Weights);
+        Tensor act = context.GetArgumentValueAsTensor(target, FakeConv2D.Act);
+        Tensor<long> stride = context.GetArgumentValueAsTensor<long>(target, FakeConv2D.Stride);
+        OrtKISharp.Tensor padding = context.GetOrtArgumentValue(target, FakeConv2D.Padding);
+        Tensor<long> dilation = context.GetArgumentValueAsTensor<long>(target, FakeConv2D.Dilation);
+        long groups = context.GetArgumentValueAsScalar<long>(target, FakeConv2D.Groups);
+        return Value.FromConst(Visit(context, input, weights, act, stride, padding, dilation, groups));
     }
 
     public IRType Visit(ITypeInferenceContext context, FakeConv2D target)
@@ -180,5 +58,130 @@ public class FakeConv2DEvaluator : IEvaluator<FakeConv2D>, IEvaluator, ITypeInfe
         context.CheckArgumentType<IRType>(target, FakeConv2D.Groups);
         context.CheckArgumentType<IRType>(target, FakeConv2D.Value);
         return Visit(context, target, input, weights);
+    }
+
+    /// <summary>
+    /// Fake-quantizes one value: quantize with <paramref name="param"/>, round (unless the parameter is the
+    /// identity scale 1 / zero point 0) and de-quantize back to float.
+    /// </summary>
+    private static float FakeQuantize(float value, QuantParam param)
+    {
+        double quantized = (double)value / (double)param.Scale + (double)param.ZeroPoint;
+        if (param.Scale != 1f || param.ZeroPoint != 0)
+        {
+            quantized = System.Math.Round(quantized);
+        }
+
+        double dequantized = (quantized - (double)param.ZeroPoint) * (double)param.Scale;
+        return (float)dequantized;
+    }
+
+    /// <summary>Fake-quantizes a whole tensor with a single (per-tensor) quant parameter.</summary>
+    private static OrtKISharp.Tensor FakeQuantizePerTensor(OrtKISharp.Tensor tensor, QuantParam param)
+    {
+        float[] values = tensor.ToArray<float>();
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = FakeQuantize(values[i], param);
+        }
+
+        return OrtKISharp.Tensor.MakeTensor(values, tensor.Shape);
+    }
+
+    /// <summary>
+    /// Fake-quantizes a tensor with one quant parameter per slice along the first axis
+    /// (the flat buffer is split into equally sized chunks).
+    /// </summary>
+    private static OrtKISharp.Tensor FakeQuantizePerChannel(OrtKISharp.Tensor tensor, List<QuantParam> quantParams)
+    {
+        float[] values = tensor.ToArray<float>();
+        int paramCount = quantParams.Count;
+        int elementsPerParam = values.Length / paramCount;
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = FakeQuantize(values[i], quantParams[i / elementsPerParam]);
+        }
+
+        return OrtKISharp.Tensor.MakeTensor(values, tensor.Shape);
+    }
+
+    private Const Visit(IEvaluateContext context, OrtKISharp.Tensor input, OrtKISharp.Tensor weights, Tensor act,
+        Tensor<long> stride, OrtKISharp.Tensor padding, Tensor<long> dilation, long groups)
+    {
+        MarkerPattern markerPattern = Utility.IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard());
+
+        // Mixed-precision search: simulate the quantization of the (marker wrapped) input and weights.
+        if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null)
+        {
+            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
+            {
+                MixQuantInfo? inputMixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
+                if (inputMixQuantInfo != null && inputMixQuantInfo.HasBindedMixQuantInfo)
+                {
+                    List<QuantParam> inputQuantParams =
+                        ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
+                    Trace.Assert(inputQuantParams.Count == 1);
+                    input = FakeQuantizePerTensor(input, inputQuantParams[0]);
+                }
+            }
+
+            if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[1]))
+            {
+                MixQuantInfo? weightsMixQuantInfo = ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo;
+                if (weightsMixQuantInfo != null && weightsMixQuantInfo.HasBindedMixQuantInfo)
+                {
+                    List<QuantParam> weightsQuantParams =
+                        ((Marker)context.CurrentCall.Arguments[1]).MixQuantInfo.QuantParameter;
+                    weights = FakeQuantizePerChannel(weights, weightsQuantParams);
+                }
+            }
+        }
+
+        // Adaptive-round quantization: fake-quantize the input with the marker's input quant parameter.
+        if (markerPattern.MatchLeaf(context.CurrentCall.Arguments[0]))
+        {
+            AdaQuantInfo? adaQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo;
+            if (adaQuantInfo != null)
+            {
+                QuantParam inputQuantParam =
+                    ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo.InputQuantParameter;
+                input = FakeQuantizePerTensor(input, inputQuantParam);
+            }
+        }
+
+        // The bias is always zero; the fake activation below applies the real per-channel bias.
+        Tensor convOutput = OrtKI.Conv(input, weights, K230Kernels.ZeroBias((int)weights.Shape[0]), "NOTSET",
+            dilation.ToArray(), groups, new long[2] { weights.Shape[2], weights.Shape[3] },
+            EvaluatorUtil.ToOnnxPadFormat(padding), stride.ToArray()).ToTensor();
+
+        // Remember the float conv result as the reference tensor for adaptive rounding.
+        if (context.CurrentCall.Arguments[0] is Marker)
+        {
+            if (((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo == null)
+            {
+                ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo = new AdaQuantInfo();
+            }
+
+            ((Marker)context.CurrentCall.Arguments[0]).AdaQuantInfo.AdaRoundRefTensor = convOutput;
+        }
+
+        // Per-channel activation; the output is NCHW so the channel is the flat index / (H * W).
+        float[] convValues = convOutput.ToArray<float>();
+        float[] activated = new float[K230Kernels.ComputeSize(convOutput.Shape)];
+        int channelStride = convOutput.Shape[2].FixedValue * convOutput.Shape[3].FixedValue;
+        for (int i = 0; i < convValues.Length; i++)
+        {
+            int channel = i / channelStride;
+            activated[i] = K230Kernels.FakeApplyAct0(convValues[i], act.ToArray<float>(), channel, 0);
+        }
+
+        return Const.FromTensor(Tensor.From(activated, convOutput.Shape));
+    }
+
+    private IRType Visit(ITypeInferenceContext context, FakeConv2D target, TensorType input, TensorType weights)
+    {
+        Expr[] arguments = context.GetArguments(target, FakeConv2D.Stride, FakeConv2D.Padding, FakeConv2D.Dilation,
+            FakeConv2D.Groups);
+        return TypeInference.Conv2DType(input, weights, arguments[0], arguments[1], arguments[2], arguments[3]);
     }
 }

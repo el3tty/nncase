@@ -16,11 +16,11 @@ public class FakeAi2dResizeEvaluator : IEvaluator<FakeAi2dResize>, IEvaluator, I
 {
     public Cost Visit(ICostEvaluateContext context, FakeAi2dResize target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeAi2dResize.Input);
+        TensorType inputType = context.GetArgumentType<TensorType>(target, FakeAi2dResize.Input);
         TensorType returnType = context.GetReturnType<TensorType>();
         return new Cost
         {
-            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(argumentType),
+            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
             [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType)
         };
@@ -28,8 +28,36 @@ public class FakeAi2dResizeEvaluator : IEvaluator<FakeAi2dResize>, IEvaluator, I
 
     public IValue Visit(IEvaluateContext context, FakeAi2dResize r)
     {
-        Tensor tensor = context.GetArgumentValueAsTensor(r, FakeAi2dResize.Input);
-        int[] argumentValueAsArray = context.GetArgumentValueAsArray<int>(r, FakeAi2dResize.NewSize);
+        Tensor input = context.GetArgumentValueAsTensor(r, FakeAi2dResize.Input);
+
+        // [height, width]
+        int[] newSize = context.GetArgumentValueAsArray<int>(r, FakeAi2dResize.NewSize);
+        input = FakeQuantizeInput(context, input);
+
+        if (r.ResizeMethod == MFU_CROP_RESIZE.BILINER)
+        {
+            return Value.FromTensor(K230Kernels.FakeAi2dResizeBilinear(input, newSize, r.AlignCorners,
+                r.HalfPixelCenters));
+        }
+
+        return Value.FromTensor(K230Kernels.FakeAi2dResizeNearestNeighbor(input, newSize, r.AlignCorners,
+            r.HalfPixelCenters));
+    }
+
+    public IRType Visit(ITypeInferenceContext context, FakeAi2dResize target)
+    {
+        TensorType input = context.CheckArgumentType<TensorType>(target, FakeAi2dResize.Input);
+        context.CheckArgumentType<IRType>(target, FakeAi2dResize.Input);
+        context.CheckArgumentType<IRType>(target, FakeAi2dResize.NewSize);
+        return Visit(context, target, input);
+    }
+
+    /// <summary>
+    /// Replaces the input by its quantize-dequantize round trip when the producing marker carries bound mixed
+    /// quantization info; otherwise returns the input unchanged.
+    /// </summary>
+    private static Tensor FakeQuantizeInput(IEvaluateContext context, Tensor input)
+    {
         if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null && Utility
                 .IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard())
                 .MatchLeaf(context.CurrentCall.Arguments[0]))
@@ -40,32 +68,28 @@ public class FakeAi2dResizeEvaluator : IEvaluator<FakeAi2dResize>, IEvaluator, I
                 List<QuantParam> quantParameter =
                     ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
                 Trace.Assert(quantParameter.Count == 1);
-                float[] array = tensor.ToArray<float>();
-                for (int i = 0; i < array.Length; i++)
+                float[] values = input.ToArray<float>();
+                for (int i = 0; i < values.Length; i++)
                 {
-                    double num = (double)array[i] / (double)quantParameter[0].Scale +
-                                 (double)quantParameter[0].ZeroPoint;
+                    double quantized = (double)values[i] / (double)quantParameter[0].Scale +
+                                       (double)quantParameter[0].ZeroPoint;
+
+                    // Rounding is skipped for the identity quant param.
                     if (!quantParameter[0].Scale.Equals(1f) || quantParameter[0].ZeroPoint != 0)
                     {
-                        num = System.Math.Round(num);
+                        quantized = System.Math.Round(quantized);
                     }
 
-                    double num2 = (num - (double)quantParameter[0].ZeroPoint) * (double)quantParameter[0].Scale;
-                    array[i] = (float)num2;
+                    double dequantized = (quantized - (double)quantParameter[0].ZeroPoint) *
+                                         (double)quantParameter[0].Scale;
+                    values[i] = (float)dequantized;
                 }
 
-                tensor = Value.FromTensor(Tensor.From(array, tensor.Shape)).AsTensor();
+                input = Value.FromTensor(Tensor.From(values, input.Shape)).AsTensor();
             }
         }
 
-        if (r.ResizeMethod == MFU_CROP_RESIZE.BILINER)
-        {
-            return Value.FromTensor(K230Kernels.FakeAi2dResizeBilinear(tensor, argumentValueAsArray, r.AlignCorners,
-                r.HalfPixelCenters));
-        }
-
-        return Value.FromTensor(K230Kernels.FakeAi2dResizeNearestNeighbor(tensor, argumentValueAsArray, r.AlignCorners,
-            r.HalfPixelCenters));
+        return input;
     }
 
     private IRType Visit(ITypeInferenceContext context, FakeAi2dResize target, TensorType input)
@@ -75,15 +99,7 @@ public class FakeAi2dResizeEvaluator : IEvaluator<FakeAi2dResize>, IEvaluator, I
             return new InvalidType("FakeAi2dResize doesn't support 1x1 input");
         }
 
-        Expr argument = context.GetArgument(target, FakeAi2dResize.NewSize);
-        return TypeInference.ResizeType(input, argument, null);
-    }
-
-    public IRType Visit(ITypeInferenceContext context, FakeAi2dResize target)
-    {
-        TensorType input = context.CheckArgumentType<TensorType>(target, FakeAi2dResize.Input);
-        context.CheckArgumentType<IRType>(target, FakeAi2dResize.Input);
-        context.CheckArgumentType<IRType>(target, FakeAi2dResize.NewSize);
-        return Visit(context, target, input);
+        Expr newSize = context.GetArgument(target, FakeAi2dResize.NewSize);
+        return TypeInference.ResizeType(input, newSize, null);
     }
 }

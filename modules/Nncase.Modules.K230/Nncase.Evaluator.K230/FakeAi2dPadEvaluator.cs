@@ -14,13 +14,56 @@ namespace Nncase.Evaluator.K230;
 public class FakeAi2dPadEvaluator : IEvaluator<FakeAi2dPad>, IEvaluator, ITypeInferencer<FakeAi2dPad>, ITypeInferencer,
     ICostEvaluator<FakeAi2dPad>, ICostEvaluator
 {
+    // ONNX TensorProto data type code of float32, the target of the final Cast.
+    private const long OnnxFloat32 = 1L;
+
     public IValue Visit(IEvaluateContext context, FakeAi2dPad r)
     {
-        OrtKISharp.Tensor tensor = context.GetArgumentValue(r, FakeAi2dPad.Input).AsTensor().Cast<float>()
+        OrtKISharp.Tensor input = context.GetArgumentValue(r, FakeAi2dPad.Input).AsTensor().Cast<float>()
             .ToOrtTensor();
-        OrtKISharp.Tensor int64OrtTensorArgumentValue = context.GetInt64OrtTensorArgumentValue(r, FakeAi2dPad.Padding);
-        OrtKISharp.Tensor tensor2 = context.GetArgumentValue(r, FakeAi2dPad.Value).AsTensor().Cast<float>()
+        OrtKISharp.Tensor padding = context.GetInt64OrtTensorArgumentValue(r, FakeAi2dPad.Padding);
+        OrtKISharp.Tensor padValue = context.GetArgumentValue(r, FakeAi2dPad.Value).AsTensor().Cast<float>()
             .ToOrtTensor();
+        input = FakeQuantizeInput(context, input);
+
+        if (r.Mode == PadMode.Symmetric)
+        {
+            throw new NotImplementedException();
+        }
+
+        // NOTE: string.ToLower(null) is kept as decompiled (it looks like it should be ToLower()).
+        return OrtKI
+            .Cast(
+                OrtKI.Pad(input, (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(padding), padValue, null,
+                    r.Mode.ToString().ToLower(null)), 1, OnnxFloat32).ToValue();
+    }
+
+    public Cost Visit(ICostEvaluateContext context, FakeAi2dPad target)
+    {
+        TensorType inputType = context.GetArgumentType<TensorType>(target, FakeAi2dPad.Input);
+        TensorType returnType = context.GetReturnType<TensorType>();
+        return new Cost
+        {
+            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType) / (byte)2,
+            [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType) / (byte)2
+        };
+    }
+
+    public IRType Visit(ITypeInferenceContext context, FakeAi2dPad target)
+    {
+        TensorType input = context.CheckArgumentType<TensorType>(target, FakeAi2dPad.Input);
+        context.CheckArgumentType<IRType>(target, FakeAi2dPad.Input);
+        context.CheckArgumentType<IRType>(target, FakeAi2dPad.Padding);
+        context.CheckArgumentType<IRType>(target, FakeAi2dPad.Value);
+        return Visit(context, target, input);
+    }
+
+    /// <summary>
+    /// Replaces the input by its quantize-dequantize round trip when the producing marker carries bound mixed
+    /// quantization info; otherwise returns the input unchanged.
+    /// </summary>
+    private static OrtKISharp.Tensor FakeQuantizeInput(IEvaluateContext context, OrtKISharp.Tensor input)
+    {
         if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null && Utility
                 .IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard())
                 .MatchLeaf(context.CurrentCall.Arguments[0]))
@@ -31,59 +74,34 @@ public class FakeAi2dPadEvaluator : IEvaluator<FakeAi2dPad>, IEvaluator, ITypeIn
                 List<QuantParam> quantParameter =
                     ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
                 Trace.Assert(quantParameter.Count == 1);
-                float[] array = tensor.ToArray<float>();
-                for (int i = 0; i < array.Length; i++)
+                float[] values = input.ToArray<float>();
+                for (int i = 0; i < values.Length; i++)
                 {
-                    double num = (double)array[i] / (double)quantParameter[0].Scale +
-                                 (double)quantParameter[0].ZeroPoint;
+                    double quantized = (double)values[i] / (double)quantParameter[0].Scale +
+                                       (double)quantParameter[0].ZeroPoint;
+
+                    // Rounding is skipped for the identity quant param.
                     if (!quantParameter[0].Scale.Equals(1f) || quantParameter[0].ZeroPoint != 0)
                     {
-                        num = System.Math.Round(num);
+                        quantized = System.Math.Round(quantized);
                     }
 
-                    double num2 = (num - (double)quantParameter[0].ZeroPoint) * (double)quantParameter[0].Scale;
-                    array[i] = (float)num2;
+                    double dequantized = (quantized - (double)quantParameter[0].ZeroPoint) *
+                                         (double)quantParameter[0].Scale;
+                    values[i] = (float)dequantized;
                 }
 
-                tensor = OrtKISharp.Tensor.MakeTensor(array, tensor.Shape);
+                input = OrtKISharp.Tensor.MakeTensor(values, input.Shape);
             }
         }
 
-        if (r.Mode == PadMode.Symmetric)
-        {
-            throw new NotImplementedException();
-        }
-
-        return OrtKI
-            .Cast(
-                OrtKI.Pad(tensor, (OrtKISharp.Tensor)EvaluatorUtil.ToOnnxPadFormat(int64OrtTensorArgumentValue),
-                    tensor2, null, r.Mode.ToString().ToLower(null)), 1, 1L).ToValue();
-    }
-
-    public Cost Visit(ICostEvaluateContext context, FakeAi2dPad target)
-    {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakeAi2dPad.Input);
-        TensorType returnType = context.GetReturnType<TensorType>();
-        return new Cost
-        {
-            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(argumentType) / (byte)2,
-            [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType) / (byte)2
-        };
+        return input;
     }
 
     private IRType Visit(ITypeInferenceContext context, FakeAi2dPad target, TensorType input)
     {
-        Expr argument = context.GetArgument(target, FakeAi2dPad.Padding);
-        Expr argument2 = context.GetArgument(target, FakeAi2dPad.Value);
-        return TypeInference.PadType(input, argument, argument2);
-    }
-
-    public IRType Visit(ITypeInferenceContext context, FakeAi2dPad target)
-    {
-        TensorType input = context.CheckArgumentType<TensorType>(target, FakeAi2dPad.Input);
-        context.CheckArgumentType<IRType>(target, FakeAi2dPad.Input);
-        context.CheckArgumentType<IRType>(target, FakeAi2dPad.Padding);
-        context.CheckArgumentType<IRType>(target, FakeAi2dPad.Value);
-        return Visit(context, target, input);
+        Expr padding = context.GetArgument(target, FakeAi2dPad.Padding);
+        Expr padValue = context.GetArgument(target, FakeAi2dPad.Value);
+        return TypeInference.PadType(input, padding, padValue);
     }
 }

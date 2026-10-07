@@ -18,70 +18,42 @@ public class FakePdpEvaluator : IEvaluator<FakePdp>, IEvaluator, ITypeInferencer
 {
     public Cost Visit(ICostEvaluateContext context, FakePdp target)
     {
-        TensorType argumentType = context.GetArgumentType<TensorType>(target, FakePdp.Input);
+        TensorType inputType = context.GetArgumentType<TensorType>(target, FakePdp.Input);
         TensorType returnType = context.GetReturnType<TensorType>();
-        float num = 1f;
-        float num2 = 5f;
+        float cpuCycleNumerator = 1f;
+        float cpuCycleDenominator = 5f;
         return new Cost
         {
-            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(argumentType),
+            [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, num / num2)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, cpuCycleNumerator / cpuCycleDenominator)
         };
     }
 
     public IValue Visit(IEvaluateContext context, FakePdp r)
     {
-        OrtKISharp.Tensor tensor = context.GetOrtArgumentValue(r, FakePdp.Input);
-        long[] argumentValueAsArray = context.GetArgumentValueAsArray<long>(r, FakePdp.Filter);
-        long[] argumentValueAsArray2 = context.GetArgumentValueAsArray<long>(r, FakePdp.Stride);
-        long[] argumentValueAsArray3 = context.GetArgumentValueAsArray<long>(r, FakePdp.Padding);
-        if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null && Utility
-                .IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard())
-                .MatchLeaf(context.CurrentCall.Arguments[0]))
-        {
-            MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
-            if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
-            {
-                List<QuantParam> quantParameter =
-                    ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
-                Trace.Assert(quantParameter.Count == 1);
-                float[] array = tensor.ToArray<float>();
-                for (int i = 0; i < array.Length; i++)
-                {
-                    double num = (double)array[i] / (double)quantParameter[0].Scale +
-                                 (double)quantParameter[0].ZeroPoint;
-                    if (!quantParameter[0].Scale.Equals(1f) || quantParameter[0].ZeroPoint != 0)
-                    {
-                        num = System.Math.Round(num);
-                    }
+        OrtKISharp.Tensor input = context.GetOrtArgumentValue(r, FakePdp.Input);
+        long[] filter = context.GetArgumentValueAsArray<long>(r, FakePdp.Filter);
+        long[] stride = context.GetArgumentValueAsArray<long>(r, FakePdp.Stride);
+        long[] padding = context.GetArgumentValueAsArray<long>(r, FakePdp.Padding);
+        input = FakeQuantizeInput(context, input);
 
-                    double num2 = (num - (double)quantParameter[0].ZeroPoint) * (double)quantParameter[0].Scale;
-                    array[i] = (float)num2;
-                }
+        long[] dilations = Enumerable.Repeat(1L, filter.Length).ToArray();
 
-                tensor = OrtKISharp.Tensor.MakeTensor(array, tensor.Shape);
-            }
-        }
-
-        long[] dilations = Enumerable.Repeat(1L, argumentValueAsArray.Length).ToArray();
+        // NOTE: the count-include-pad and pad value arguments are ignored; MIN and SUM are not supported.
         return (r.ReduceOp switch
         {
             ReduceOp.Min => throw new NotSupportedException("Unsupported MFU_PDP_OP MIN"),
-            ReduceOp.Max => OrtKI.MaxPool(tensor, "NOTSET", 0L, new long[2] { 1L, 1L }, argumentValueAsArray,
-                argumentValueAsArray3, 0L, argumentValueAsArray2)[0],
-            ReduceOp.Mean => OrtKI.AveragePool(tensor, "NOTSET", 0L, 0L, dilations, argumentValueAsArray,
-                argumentValueAsArray3, argumentValueAsArray2),
+
+            // MaxPool(x, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)
+            ReduceOp.Max => OrtKI.MaxPool(input, "NOTSET", 0L, new long[2] { 1L, 1L }, filter, padding, 0L,
+                stride)[0],
+
+            // AveragePool(x, auto_pad, ceil_mode, count_include_pad, dilations, kernel_shape, pads, strides)
+            ReduceOp.Mean => OrtKI.AveragePool(input, "NOTSET", 0L, 0L, dilations, filter, padding, stride),
             ReduceOp.Sum => throw new NotSupportedException("Unsupported MFU_PDP_OP SUM"),
             _ => throw new ArgumentOutOfRangeException("r"),
         }).ToValue();
-    }
-
-    private IRType Visit(ITypeInferenceContext context, FakePdp target, TensorType input)
-    {
-        Expr[] arguments = context.GetArguments(target, FakePdp.Filter, FakePdp.Stride, FakePdp.Padding);
-        IRType iRType = TypeInference.ReduceWindow2DType(input, arguments[0], arguments[1], arguments[2], false);
-        return new TensorType(DataTypes.Float32, ((TensorType)iRType).Shape);
     }
 
     public IRType Visit(ITypeInferenceContext context, FakePdp target)
@@ -94,5 +66,53 @@ public class FakePdpEvaluator : IEvaluator<FakePdp>, IEvaluator, ITypeInferencer
         context.CheckArgumentType<IRType>(target, FakePdp.Padding);
         context.CheckArgumentType<IRType>(target, FakePdp.CountIncludePad);
         return Visit(context, target, input);
+    }
+
+    /// <summary>
+    /// Replaces the input by its quantize-dequantize round trip when the producing marker carries bound mixed
+    /// quantization info; otherwise returns the input unchanged.
+    /// </summary>
+    private static OrtKISharp.Tensor FakeQuantizeInput(IEvaluateContext context, OrtKISharp.Tensor input)
+    {
+        if (context.CurrentCall.EnodeBestQuantConfigWithCosine != null && Utility
+                .IsRangeOfMarker(Utility.IsWildcard(), Utility.IsWildcard())
+                .MatchLeaf(context.CurrentCall.Arguments[0]))
+        {
+            MixQuantInfo? mixQuantInfo = ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo;
+            if (mixQuantInfo != null && mixQuantInfo.HasBindedMixQuantInfo)
+            {
+                List<QuantParam> quantParameter =
+                    ((Marker)context.CurrentCall.Arguments[0]).MixQuantInfo.QuantParameter;
+                Trace.Assert(quantParameter.Count == 1);
+                float[] values = input.ToArray<float>();
+                for (int i = 0; i < values.Length; i++)
+                {
+                    double quantized = (double)values[i] / (double)quantParameter[0].Scale +
+                                       (double)quantParameter[0].ZeroPoint;
+
+                    // Rounding is skipped for the identity quant param.
+                    if (!quantParameter[0].Scale.Equals(1f) || quantParameter[0].ZeroPoint != 0)
+                    {
+                        quantized = System.Math.Round(quantized);
+                    }
+
+                    double dequantized = (quantized - (double)quantParameter[0].ZeroPoint) *
+                                         (double)quantParameter[0].Scale;
+                    values[i] = (float)dequantized;
+                }
+
+                input = OrtKISharp.Tensor.MakeTensor(values, input.Shape);
+            }
+        }
+
+        return input;
+    }
+
+    private IRType Visit(ITypeInferenceContext context, FakePdp target, TensorType input)
+    {
+        Expr[] windowArgs = context.GetArguments(target, FakePdp.Filter, FakePdp.Stride, FakePdp.Padding);
+        IRType windowedType = TypeInference.ReduceWindow2DType(input, windowArgs[0], windowArgs[1], windowArgs[2],
+            false);
+        return new TensorType(DataTypes.Float32, ((TensorType)windowedType).Shape);
     }
 }

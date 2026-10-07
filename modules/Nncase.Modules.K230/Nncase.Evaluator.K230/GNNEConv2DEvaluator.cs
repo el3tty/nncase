@@ -19,166 +19,76 @@ public class GNNEConv2DEvaluator : IEvaluator<GNNEConv2D>, IEvaluator, ITypeInfe
 
     public IValue Visit(IEvaluateContext context, GNNEConv2D conv)
     {
-        Tensor argumentValueAsTensor = context.GetArgumentValueAsTensor(conv, GNNEConv2D.Input);
-        Tensor argumentValueAsTensor2 = context.GetArgumentValueAsTensor(conv, GNNEConv2D.Weights);
+        Tensor input = context.GetArgumentValueAsTensor(conv, GNNEConv2D.Input);
+        Tensor weights = context.GetArgumentValueAsTensor(conv, GNNEConv2D.Weights);
+
+        // Per output channel weight zero points.
         byte[] weightsBias = context.GetArgumentValueAsArray<byte>(conv, GNNEConv2D.WeightsBias);
-        Half[] argumentValueAsArray = context.GetArgumentValueAsArray<Half>(conv, GNNEConv2D.Act);
+        Half[] act = context.GetArgumentValueAsArray<Half>(conv, GNNEConv2D.Act);
+
+        // Input zero point.
         byte deqBias = context.GetArgumentValueAsScalar<byte>(conv, GNNEConv2D.DeqBias);
-        long argumentValueAsScalar = context.GetArgumentValueAsScalar<long>(conv, GNNEConv2D.ShiftBits);
-        long[] argumentValueAsArray2 = context.GetArgumentValueAsArray<long>(conv, GNNEConv2D.Padding);
-        long[] argumentValueAsArray3 = context.GetArgumentValueAsArray<long>(conv, GNNEConv2D.Stride);
-        long[] argumentValueAsArray4 = context.GetArgumentValueAsArray<long>(conv, GNNEConv2D.Dilation);
-        long argumentValueAsScalar2 = context.GetArgumentValueAsScalar<long>(conv, GNNEConv2D.Groups);
-        long num = argumentValueAsTensor.Shape[1].FixedValue / argumentValueAsScalar2 *
-                   argumentValueAsTensor2.Shape[2].FixedValue * argumentValueAsTensor2.Shape[3].FixedValue *
-                   argumentValueAsTensor2.ElementType.SizeInBytes;
-        byte[] array = new byte[argumentValueAsTensor2.Shape[0].FixedValue * num];
-        for (int i = 0; i < argumentValueAsTensor2.Shape[0].FixedValue; i++)
+        long shiftBits = context.GetArgumentValueAsScalar<long>(conv, GNNEConv2D.ShiftBits);
+        long[] padding = context.GetArgumentValueAsArray<long>(conv, GNNEConv2D.Padding);
+        long[] stride = context.GetArgumentValueAsArray<long>(conv, GNNEConv2D.Stride);
+        long[] dilation = context.GetArgumentValueAsArray<long>(conv, GNNEConv2D.Dilation);
+        long groups = context.GetArgumentValueAsScalar<long>(conv, GNNEConv2D.Groups);
+
+        // Re-pack the weights so that the input channel dimension is C / groups: every output channel keeps
+        // only its first (C / groups * kh * kw) elements.
+        long bytesPerOutputChannel = input.Shape[1].FixedValue / groups * weights.Shape[2].FixedValue *
+                                     weights.Shape[3].FixedValue * weights.ElementType.SizeInBytes;
+        byte[] packedWeightsBytes = new byte[weights.Shape[0].FixedValue * bytesPerOutputChannel];
+        for (int outChannel = 0; outChannel < weights.Shape[0].FixedValue; outChannel++)
         {
-            Array.Copy(argumentValueAsTensor2.BytesBuffer.ToArray(),
-                (long)i * (long)argumentValueAsTensor2.BytesBuffer.Length / argumentValueAsTensor2.Shape[0].FixedValue,
-                array, i * num, num);
+            Array.Copy(weights.BytesBuffer.ToArray(),
+                (long)outChannel * (long)weights.BytesBuffer.Length / weights.Shape[0].FixedValue,
+                packedWeightsBytes, outChannel * bytesPerOutputChannel, bytesPerOutputChannel);
         }
 
-        Dimension[] array2 = argumentValueAsTensor2.Shape.ToArray();
-        array2[1] = (int)(argumentValueAsTensor.Shape[1].FixedValue / argumentValueAsScalar2);
-        Tensor tensor = Tensor.FromBytes(new TensorType(argumentValueAsTensor2.ElementType, array2), array);
-        float[] inputDeq = argumentValueAsTensor.ToArray<float>();
-        inputDeq.Select((float _, int num4) => inputDeq[num4] -= (int)deqBias).AsParallel().ToArray();
-        float[] weightsDeq = tensor.ToArray<float>();
-        int qArgPerChannel = tensor.Dimensions[1] * tensor.Dimensions[2] * tensor.Dimensions[3];
-        weightsDeq.Select((float _, int num4) => weightsDeq[num4] -= (int)weightsBias[num4 / qArgPerChannel])
+        Dimension[] packedWeightsDims = weights.Shape.ToArray();
+        packedWeightsDims[1] = (int)(input.Shape[1].FixedValue / groups);
+        Tensor packedWeights =
+            Tensor.FromBytes(new TensorType(weights.ElementType, packedWeightsDims), packedWeightsBytes);
+
+        // Remove the zero points (in place). NOTE: the side effect lives inside Select and relies on
+        // ToArray() enumerating every element; kept as is so exceptions stay wrapped like before.
+        float[] inputDeq = input.ToArray<float>();
+        inputDeq.Select((float _, int i) => inputDeq[i] -= (int)deqBias).AsParallel().ToArray();
+        float[] weightsDeq = packedWeights.ToArray<float>();
+        int weightsPerOutChannel = packedWeights.Dimensions[1] * packedWeights.Dimensions[2] *
+                                   packedWeights.Dimensions[3];
+        weightsDeq.Select((float _, int i) => weightsDeq[i] -= (int)weightsBias[i / weightsPerOutChannel])
             .AsParallel().ToArray();
-        Tensor tensor2 = OrtKI.Conv(
-            OrtKISharp.Tensor.MakeTensor(inputDeq,
-                ((IEnumerable<int>)argumentValueAsTensor.Dimensions.ToArray())
-                .Select((Func<int, long>)((int num4) => num4)).ToArray()),
-            OrtKISharp.Tensor.MakeTensor(weightsDeq,
-                ((IEnumerable<int>)tensor.Dimensions.ToArray()).Select((Func<int, long>)((int num4) => num4))
-                .ToArray()), K230Kernels.Proc(tensor.Dimensions[0]), "NOTSET", argumentValueAsArray4,
-            argumentValueAsScalar2, new long[2] { tensor.Dimensions[2], tensor.Dimensions[3] },
-            new long[4]
-            {
-                argumentValueAsArray2[0], argumentValueAsArray2[2], argumentValueAsArray2[1],
-                argumentValueAsArray2[3]
-            }, argumentValueAsArray3).ToTensor();
-        float[] array3 = tensor2.ToArray<float>();
-        float[] array4 = new float[K230Kernels.ComputeSize(tensor2.Shape)];
-        int num2 = tensor2.Dimensions[2] * tensor2.Dimensions[3];
-        for (int num3 = 0; num3 < array3.Length; num3++)
+
+        OrtKISharp.Tensor ortInput = OrtKISharp.Tensor.MakeTensor(inputDeq, ToLongArray(input.Dimensions));
+        OrtKISharp.Tensor ortWeights =
+            OrtKISharp.Tensor.MakeTensor(weightsDeq, ToLongArray(packedWeights.Dimensions));
+
+        // Padding is [top, bottom, left, right]; ONNX wants [top, left, bottom, right].
+        long[] onnxPads = new long[4] { padding[0], padding[2], padding[1], padding[3] };
+        Tensor convOutput = OrtKI.Conv(
+            ortInput,
+            ortWeights,
+            K230Kernels.ZeroBias(packedWeights.Dimensions[0]),
+            "NOTSET",
+            dilation,
+            groups,
+            new long[2] { packedWeights.Dimensions[2], packedWeights.Dimensions[3] },
+            onnxPads,
+            stride).ToTensor();
+
+        // Per-channel activation; the output is NCHW so the channel is the flat index / (H * W).
+        float[] convValues = convOutput.ToArray<float>();
+        float[] activated = new float[K230Kernels.ComputeSize(convOutput.Shape)];
+        int channelStride = convOutput.Dimensions[2] * convOutput.Dimensions[3];
+        for (int i = 0; i < convValues.Length; i++)
         {
-            int channel = num3 / num2;
-            array4[num3] = K230Kernels.ApplyAct0(array3[num3], argumentValueAsArray.ToArray(), channel,
-                (sbyte)argumentValueAsScalar);
+            int channel = i / channelStride;
+            activated[i] = K230Kernels.ApplyAct0(convValues[i], act.ToArray(), channel, (sbyte)shiftBits);
         }
 
-        float[] array5 = array4.Select((float x) => (float)System.Math.Round(x)).ToArray();
-        Half[] array6 = array4.Select((float x) => (Half)x).ToArray();
-        Tensor<float> tensor3 = Tensor.From(array5, tensor2.Shape);
-        Tensor<Half> tensor4 = Tensor.From(array6, tensor2.Shape);
-        if (conv.DestType == DataTypes.UInt8)
-        {
-            return Value.FromTensor(tensor3.Cast<byte>(CastMode.KDefault));
-        }
-
-        if (conv.DestType == DataTypes.Int8)
-        {
-            return Value.FromTensor(tensor3.Cast<sbyte>(CastMode.KDefault));
-        }
-
-        if (conv.DestType == DataTypes.Int16)
-        {
-            return Value.FromTensor(tensor3.Cast<short>(CastMode.KDefault));
-        }
-
-        return Value.FromTensor(tensor4.Cast<Half>(CastMode.KDefault));
-    }
-
-    private static IRType Conv2DTypeFp16(TensorType input, TensorType weights, Expr stride, Expr padding, Expr dilation,
-        Expr groups, DataType target)
-    {
-        List<Dimension> list = input.Shape.ToList();
-        list[1] = weights.Shape[0];
-        if (stride is TensorConst tensorConst && padding is TensorConst tensorConst2 &&
-            dilation is TensorConst tensorConst3 && groups is TensorConst tensorConst4 && input.Shape[2].IsFixed &&
-            input.Shape[3].IsFixed && weights.Shape[2].IsFixed && weights.Shape[3].IsFixed)
-        {
-            Tensor<int> tensor = tensorConst.Value.Cast<int>();
-            Tensor<int> tensor2 = tensorConst2.Value.Cast<int>();
-            Tensor<int> tensor3 = tensorConst3.Value.Cast<int>();
-            int num = tensorConst4.Value.ToScalar<int>();
-            if (input.Shape[1].FixedValue < num || input.Shape[1].FixedValue % num != 0)
-            {
-                return new InvalidType($"The Input Channel / Groups Error ({input.Shape[1].FixedValue}/{num})");
-            }
-
-            list[2] = TypePatternUtility.GetWindowedOutputSize(
-                input.Shape[2].FixedValue + tensor2[new int[2]] + tensor2[new int[2] { 0, 1 }],
-                weights.Shape[2].FixedValue, tensor[new int[1]], tensor3[new int[1]], same: false);
-            list[3] = TypePatternUtility.GetWindowedOutputSize(
-                input.Shape[3].FixedValue + tensor2[new int[2] { 1, 0 }] + tensor2[new int[2] { 1, 1 }],
-                weights.Shape[3].FixedValue, tensor[new int[1] { 1 }], tensor3[new int[1] { 1 }], same: false);
-        }
-        else
-        {
-            Dimension value = (list[3] = Dimension.Unknown);
-            list[2] = value;
-        }
-
-        return new TensorType(target, new Shape(list));
-    }
-
-    private IRType Visit(ITypeInferenceContext context, GNNEConv2D target, TensorType input, TensorType weights)
-    {
-        int num = ((TensorConst)context.GetArgument(target, GNNEConv2D.Groups)).Value.ToScalar<int>();
-        TensorType tensorType = weights;
-        if (input.Shape[1] / num != weights.Shape[1])
-        {
-            tensorType = weights with
-            {
-                Shape = new Shape(weights.Shape[0].FixedValue, input.Shape[1].FixedValue / num,
-                    weights.Shape[2].FixedValue, weights.Shape[3].FixedValue)
-            };
-        }
-
-        if (input.DType != DataTypes.Int8 && input.DType != DataTypes.UInt8 && input.DType != DataTypes.Int16)
-        {
-            return new InvalidType("Unsupported input_type, should be one of [int8, uint8, int16]");
-        }
-
-        if (tensorType.DType != DataTypes.Int8 && tensorType.DType != DataTypes.UInt8 &&
-            tensorType.DType != DataTypes.Int16)
-        {
-            return new InvalidType("Unsupported w_type, should be one of [int8, uint8, int16]");
-        }
-
-        if (input.DType == DataTypes.Int16 && tensorType.DType == DataTypes.Int16)
-        {
-            return new InvalidType("int16 for both of input_type and w_type is not supported");
-        }
-
-        _ = input.DType;
-        PrimType destType = target.DestType;
-        Expr[] arguments = context.GetArguments(target, GNNEConv2D.Stride, GNNEConv2D.Padding, GNNEConv2D.Dilation,
-            GNNEConv2D.Groups);
-        if (destType == DataTypes.Int8 || destType == DataTypes.UInt8 || destType == DataTypes.Int16)
-        {
-            IRType iRType = TypeInference.Conv2DType(input, tensorType, arguments[0], arguments[1], arguments[2],
-                arguments[3]);
-            if (iRType is TensorType tensorType2)
-            {
-                return tensorType2 with { DType = destType };
-            }
-
-            return iRType;
-        }
-
-        if (destType == DataTypes.Float16)
-        {
-            return Conv2DTypeFp16(input, tensorType, arguments[0], arguments[1], arguments[2], arguments[3], destType);
-        }
-
-        return new InvalidType("Conv2d output type should be one of [int8, int16, float16, uint8]");
+        return ToDestTypeValue(conv.DestType, activated, convOutput.Shape);
     }
 
     public IRType Visit(ITypeInferenceContext context, GNNEConv2D target)
@@ -203,5 +113,137 @@ public class GNNEConv2DEvaluator : IEvaluator<GNNEConv2D>, IEvaluator, ITypeInfe
         context.CheckArgumentType<IRType>(target, GNNEConv2D.PadValue);
         context.CheckArgumentType<IRType>(target, GNNEConv2D.WeightsQInt8);
         return Visit(context, target, input, weights);
+    }
+
+    private static long[] ToLongArray(ReadOnlySpan<int> values)
+    {
+        long[] result = new long[values.Length];
+        for (int i = 0; i < values.Length; i++)
+        {
+            result[i] = values[i];
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Converts the activated float values to the destination type: integer types are rounded first,
+    /// every other destination type (float16) is a plain float to Half conversion.
+    /// </summary>
+    private static IValue ToDestTypeValue(PrimType destType, float[] activated, Shape shape)
+    {
+        float[] rounded = activated.Select((float x) => (float)System.Math.Round(x)).ToArray();
+        Half[] halves = activated.Select((float x) => (Half)x).ToArray();
+        Tensor<float> roundedTensor = Tensor.From(rounded, shape);
+        Tensor<Half> halfTensor = Tensor.From(halves, shape);
+        if (destType == DataTypes.UInt8)
+        {
+            return Value.FromTensor(roundedTensor.Cast<byte>(CastMode.KDefault));
+        }
+
+        if (destType == DataTypes.Int8)
+        {
+            return Value.FromTensor(roundedTensor.Cast<sbyte>(CastMode.KDefault));
+        }
+
+        if (destType == DataTypes.Int16)
+        {
+            return Value.FromTensor(roundedTensor.Cast<short>(CastMode.KDefault));
+        }
+
+        return Value.FromTensor(halfTensor.Cast<Half>(CastMode.KDefault));
+    }
+
+    private static IRType Conv2DTypeFp16(TensorType input, TensorType weights, Expr stride, Expr padding,
+        Expr dilation, Expr groups, DataType target)
+    {
+        List<Dimension> outputShape = input.Shape.ToList();
+        outputShape[1] = weights.Shape[0];
+        if (stride is TensorConst strideConst && padding is TensorConst paddingConst &&
+            dilation is TensorConst dilationConst && groups is TensorConst groupsConst && input.Shape[2].IsFixed &&
+            input.Shape[3].IsFixed && weights.Shape[2].IsFixed && weights.Shape[3].IsFixed)
+        {
+            // stride / dilation: [h, w]; padding: [[top, bottom], [left, right]].
+            Tensor<int> strideValue = strideConst.Value.Cast<int>();
+            Tensor<int> paddingValue = paddingConst.Value.Cast<int>();
+            Tensor<int> dilationValue = dilationConst.Value.Cast<int>();
+            int groupCount = groupsConst.Value.ToScalar<int>();
+            if (input.Shape[1].FixedValue < groupCount || input.Shape[1].FixedValue % groupCount != 0)
+            {
+                return new InvalidType(
+                    $"The Input Channel / Groups Error ({input.Shape[1].FixedValue}/{groupCount})");
+            }
+
+            outputShape[2] = TypePatternUtility.GetWindowedOutputSize(
+                input.Shape[2].FixedValue + paddingValue[new int[2] { 0, 0 }] + paddingValue[new int[2] { 0, 1 }],
+                weights.Shape[2].FixedValue, strideValue[new int[1] { 0 }], dilationValue[new int[1] { 0 }],
+                same: false);
+            outputShape[3] = TypePatternUtility.GetWindowedOutputSize(
+                input.Shape[3].FixedValue + paddingValue[new int[2] { 1, 0 }] + paddingValue[new int[2] { 1, 1 }],
+                weights.Shape[3].FixedValue, strideValue[new int[1] { 1 }], dilationValue[new int[1] { 1 }],
+                same: false);
+        }
+        else
+        {
+            outputShape[3] = Dimension.Unknown;
+            outputShape[2] = Dimension.Unknown;
+        }
+
+        return new TensorType(target, new Shape(outputShape));
+    }
+
+    private IRType Visit(ITypeInferenceContext context, GNNEConv2D target, TensorType input, TensorType weights)
+    {
+        int groups = ((TensorConst)context.GetArgument(target, GNNEConv2D.Groups)).Value.ToScalar<int>();
+
+        // The weights hold C / groups input channels; fix the shape up if it does not.
+        TensorType effectiveWeights = weights;
+        if (input.Shape[1] / groups != weights.Shape[1])
+        {
+            effectiveWeights = weights with
+            {
+                Shape = new Shape(weights.Shape[0].FixedValue, input.Shape[1].FixedValue / groups,
+                    weights.Shape[2].FixedValue, weights.Shape[3].FixedValue)
+            };
+        }
+
+        if (input.DType != DataTypes.Int8 && input.DType != DataTypes.UInt8 && input.DType != DataTypes.Int16)
+        {
+            return new InvalidType("Unsupported input_type, should be one of [int8, uint8, int16]");
+        }
+
+        if (effectiveWeights.DType != DataTypes.Int8 && effectiveWeights.DType != DataTypes.UInt8 &&
+            effectiveWeights.DType != DataTypes.Int16)
+        {
+            return new InvalidType("Unsupported w_type, should be one of [int8, uint8, int16]");
+        }
+
+        if (input.DType == DataTypes.Int16 && effectiveWeights.DType == DataTypes.Int16)
+        {
+            return new InvalidType("int16 for both of input_type and w_type is not supported");
+        }
+
+        PrimType destType = target.DestType;
+        Expr[] arguments = context.GetArguments(target, GNNEConv2D.Stride, GNNEConv2D.Padding, GNNEConv2D.Dilation,
+            GNNEConv2D.Groups);
+        if (destType == DataTypes.Int8 || destType == DataTypes.UInt8 || destType == DataTypes.Int16)
+        {
+            IRType convType = TypeInference.Conv2DType(input, effectiveWeights, arguments[0], arguments[1],
+                arguments[2], arguments[3]);
+            if (convType is TensorType convTensorType)
+            {
+                return convTensorType with { DType = destType };
+            }
+
+            return convType;
+        }
+
+        if (destType == DataTypes.Float16)
+        {
+            return Conv2DTypeFp16(input, effectiveWeights, arguments[0], arguments[1], arguments[2], arguments[3],
+                destType);
+        }
+
+        return new InvalidType("Conv2d output type should be one of [int8, int16, float16, uint8]");
     }
 }
