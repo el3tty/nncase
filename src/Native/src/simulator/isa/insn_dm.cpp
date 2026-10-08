@@ -29,11 +29,11 @@ DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 1
   inst.taken_  = 0;
   inst.flag_   = 0;
   inst.opcode_ = bits(raw, 0, 7);
-  inst.fld_b7_    = bits(raw, 7, 3);
-  inst.fld_b10_   = bits(raw, 10, 1);
-  inst.fld_b11_   = bits(raw, 11, 1);
-  inst.fld_b12_   = bits(raw, 12, 1);
-  inst.fld_13_3b_ = bits(raw, 13, 3);
+  inst.tcu_id_    = bits(raw, 7, 3);
+  inst.broadcast_if_   = bits(raw, 10, 1);
+  inst.broadcast_w_   = bits(raw, 11, 1);
+  inst.psum_cascade_   = bits(raw, 12, 1);
+  inst.reserved0_ = bits(raw, 13, 3);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;

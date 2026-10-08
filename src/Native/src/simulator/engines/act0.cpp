@@ -231,7 +231,7 @@ std::shared_ptr<Act0Compute> Act0::GetAct0Compute() const
   compute->out_type_ = out_type_;        // +32 (overwritten by Act0ComputeInstruction)
   compute->per_channel_ = per_channel_;  // +36 (overwritten by Act0ComputeInstruction)
   // The second PSUM buffer belongs to PDP0 (engine != 0).
-  compute->psum_ = engine_ ? psum1_ : psum0_;   // +40: this + 0x20000 or this
+  compute->psum_ = const_cast<uint32_t *>(engine_ ? psum1_ : psum0_);   // +40: this + 0x20000 or this
   return compute;
 }
 

@@ -300,10 +300,10 @@ SbInstruction Simulator::InstParser<SbInstruction, 32>(uint8_t ** pc)
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
-  inst.rs1_ = kinst_bits(raw, 7, 5);
-  inst.rs2_ = kinst_bits(raw, 12, 5);
+  inst.rd_ = kinst_bits(raw, 7, 5);
+  inst.rs_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -322,16 +322,16 @@ void SbInstruction::get_next_pc()
 // SbInstruction2.cpp  @0x420e30
 void SbInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
-  int32_t simm = imm_;
-  if (imm_ & 0x800)   // sign-extend the 12-bit offset
+  rd_val_ = g_gp_reg[rd_];
+  rs_val_ = g_gp_reg[rs_];
+  int32_t simm = offset_;
+  if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
-  uint32_t addr = simm + rs1_val_;
+  uint32_t addr = simm + rd_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
   uint8_t *glb = g_GLB[seg];            // base pointer wrapped by MemAccessor(g_GLB[seg])
-  glb[off + 0] = (uint8_t)(rs2_val_ >> 0);   // little-endian store
+  glb[off + 0] = (uint8_t)(rs_val_ >> 0);   // little-endian store
   mem_addr_ = off + 32 * MMU_MMUItem[2 * seg];
 }
 
@@ -354,10 +354,10 @@ ShInstruction Simulator::InstParser<ShInstruction, 32>(uint8_t ** pc)
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
-  inst.rs1_ = kinst_bits(raw, 7, 5);
-  inst.rs2_ = kinst_bits(raw, 12, 5);
+  inst.rd_ = kinst_bits(raw, 7, 5);
+  inst.rs_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -376,17 +376,17 @@ void ShInstruction::get_next_pc()
 // ShInstruction2.cpp  @0x420d80
 void ShInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
-  int32_t simm = imm_;
-  if (imm_ & 0x800)   // sign-extend the 12-bit offset
+  rd_val_ = g_gp_reg[rd_];
+  rs_val_ = g_gp_reg[rs_];
+  int32_t simm = offset_;
+  if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
-  uint32_t addr = simm + rs1_val_;
+  uint32_t addr = simm + rd_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
   uint8_t *glb = g_GLB[seg];            // base pointer wrapped by MemAccessor(g_GLB[seg])
-  glb[off + 0] = (uint8_t)(rs2_val_ >> 0);
-  glb[off + 1] = (uint8_t)(rs2_val_ >> 8);   // little-endian store
+  glb[off + 0] = (uint8_t)(rs_val_ >> 0);
+  glb[off + 1] = (uint8_t)(rs_val_ >> 8);   // little-endian store
   mem_addr_ = off + 32 * MMU_MMUItem[2 * seg];
 }
 
@@ -409,10 +409,10 @@ SwInstruction Simulator::InstParser<SwInstruction, 32>(uint8_t ** pc)
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
-  inst.rs1_ = kinst_bits(raw, 7, 5);
-  inst.rs2_ = kinst_bits(raw, 12, 5);
+  inst.rd_ = kinst_bits(raw, 7, 5);
+  inst.rs_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -431,19 +431,19 @@ void SwInstruction::get_next_pc()
 // SwInstruction2.cpp  @0x420cb0
 void SwInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
-  int32_t simm = imm_;
-  if (imm_ & 0x800)   // sign-extend the 12-bit offset
+  rd_val_ = g_gp_reg[rd_];
+  rs_val_ = g_gp_reg[rs_];
+  int32_t simm = offset_;
+  if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
-  uint32_t addr = simm + rs1_val_;
+  uint32_t addr = simm + rd_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
   uint8_t *glb = g_GLB[seg];            // base pointer wrapped by MemAccessor(g_GLB[seg])
-  glb[off + 0] = (uint8_t)(rs2_val_ >> 0);
-  glb[off + 1] = (uint8_t)(rs2_val_ >> 8);
-  glb[off + 2] = (uint8_t)(rs2_val_ >> 16);
-  glb[off + 3] = (uint8_t)(rs2_val_ >> 24);   // little-endian store
+  glb[off + 0] = (uint8_t)(rs_val_ >> 0);
+  glb[off + 1] = (uint8_t)(rs_val_ >> 8);
+  glb[off + 2] = (uint8_t)(rs_val_ >> 16);
+  glb[off + 3] = (uint8_t)(rs_val_ >> 24);   // little-endian store
   mem_addr_ = off + 32 * MMU_MMUItem[2 * seg];
 }
 

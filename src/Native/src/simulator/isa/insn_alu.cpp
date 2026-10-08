@@ -391,7 +391,7 @@ AddiInstruction Simulator::InstParser<AddiInstruction, 32>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.funct5_ = kinst_bits(raw, 17, 3);
   inst.imm_ = kinst_bits(raw, 20, 12);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;

@@ -9,7 +9,7 @@
 
 // ---- Ai2dComputeInstruction ----
 struct Ai2dComputeInstruction : public KInstruction {
-    uint16_t imm9_;  // +50 raw[15:7] 9-bit field
+    uint16_t reserved0_;  // +50 raw[15:7] 9-bit field
     void get_next_pc() override;   // pc + 2
     ~Ai2dComputeInstruction() override;
 };

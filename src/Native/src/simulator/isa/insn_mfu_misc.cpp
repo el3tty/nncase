@@ -66,17 +66,17 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.rd_ = field(raw, 7, 5);
-    inst.rs1_ = field(raw, 12, 5);
-    inst.shape_a_idx_ = field(raw, 17, 3);
-    inst.shape_b_idx_ = field(raw, 20, 3);
-    inst.shape_c_idx_ = field(raw, 23, 3);
+    inst.raddr_d_ = field(raw, 7, 5);
+    inst.raddr_s_ = field(raw, 12, 5);
+    inst.rstride_d_ = field(raw, 17, 3);
+    inst.rstride_s_ = field(raw, 20, 3);
+    inst.rshape_ = field(raw, 23, 3);
     inst.reserved_26_ = field(raw, 26, 6);
-    inst.rd_val_ = g_gp_reg[inst.rd_];
-    inst.rs1_val_ = g_gp_reg[inst.rs1_];
-    inst.shape_a_ = g_shape_reg[inst.shape_a_idx_];
-    inst.shape_b_ = g_shape_reg[inst.shape_b_idx_];
-    inst.shape_c_ = g_shape_reg[inst.shape_c_idx_];
+    inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
+    inst.raddr_s_val_ = g_gp_reg[inst.raddr_s_];
+    inst.shape_a_ = g_shape_reg[inst.rstride_d_];
+    inst.shape_b_ = g_shape_reg[inst.rstride_s_];
+    inst.shape_c_ = g_shape_reg[inst.rshape_];
     // (IDA also computed MMU-translated rs1_val here, but the result was discarded.)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
@@ -99,8 +99,8 @@ void MfuMemcpyInstruction::operation()
     uint32_t *mfu_words = reinterpret_cast<uint32_t *>(mfu);
 
     // Hand the operands to the MFU (TODO(layout): MFU object offsets 4, 8, 32..38, 2208).
-    mfu_words[1] = rs1_val_;
-    mfu_words[2] = rd_val_;
+    mfu_words[1] = raddr_s_val_;
+    mfu_words[2] = raddr_d_val_;
     mfu[kMfuBusyFlagOffset] = 1;
     store_shape_halfwords(mfu, shape_c_);
     reinterpret_cast<MFU *>(mfu)->Memcpy();
@@ -110,8 +110,8 @@ void MfuMemcpyInstruction::operation()
     // verified against asm @0x423420: the 208-bit bitset is zero-initialised (vpxor + 2x vmovdqu to the stack), so unset bits 193..207 are 0
     ConfigBits cfg;
     put_bits(cfg, 0, 7, opcode_ & 0x7F);
-    put_bits(cfg, 7, 21, rd_val_);
-    put_bits(cfg, 28, 21, rs1_val_);
+    put_bits(cfg, 7, 21, raddr_d_val_);
+    put_bits(cfg, 28, 21, raddr_s_val_);
     put_bits(cfg, 49, 48, shape_a_);
     put_bits(cfg, 97, 48, shape_b_);
     put_bits(cfg, 145, 48, shape_c_);
@@ -139,18 +139,18 @@ MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** 
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.rd_ = field(raw, 7, 5);
-    inst.rs1_ = field(raw, 12, 5);
-    inst.shape_a_idx_ = field(raw, 17, 3);
-    inst.shape_b_idx_ = field(raw, 20, 3);
-    inst.mode_ = field(raw, 23, 2);
+    inst.raddr_d_ = field(raw, 7, 5);
+    inst.rv_ = field(raw, 12, 5);
+    inst.rstride_ = field(raw, 17, 3);
+    inst.rshape_ = field(raw, 20, 3);
+    inst.l2_datatype_ = field(raw, 23, 2);
     inst.reserved_25_ = field(raw, 25, 7);
-    inst.rd_val_ = g_gp_reg[inst.rd_];
-    inst.rs1_val_ = g_gp_reg[inst.rs1_];
-    inst.shape_a_ = g_shape_reg[inst.shape_a_idx_];
-    inst.shape_b_ = g_shape_reg[inst.shape_b_idx_];
+    inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
+    inst.rv_val_ = g_gp_reg[inst.rv_];
+    inst.shape_a_ = g_shape_reg[inst.rstride_];
+    inst.shape_b_ = g_shape_reg[inst.rshape_];
     // MMU translation: 28-bit offset + 32 * table[addr >> 28].
-    inst.rd_addr_ = (inst.rd_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.rd_val_ >> 28)];
+    inst.rd_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -171,9 +171,9 @@ void MfuMemsetInstruction::operation()
     uint8_t *mfu = static_cast<uint8_t *>(MFU::GetMFU());
 
     // Hand the operands to the MFU (TODO(layout): MFU object offsets 8, 64, 72, 98, 32..38, 2208).
-    *reinterpret_cast<uint32_t *>(mfu + 8) = rd_val_;
-    *reinterpret_cast<uint16_t *>(mfu + 98) = static_cast<uint16_t>(rs1_val_);
-    mfu[72] = mode_;
+    *reinterpret_cast<uint32_t *>(mfu + 8) = raddr_d_val_;
+    *reinterpret_cast<uint16_t *>(mfu + 98) = static_cast<uint16_t>(rv_val_);
+    mfu[72] = l2_datatype_;
     *reinterpret_cast<uint64_t *>(mfu + 64) = shape_a_;
     mfu[kMfuBusyFlagOffset] = 1;
     store_shape_halfwords(mfu, shape_b_);
@@ -184,11 +184,11 @@ void MfuMemsetInstruction::operation()
     // verified against asm @0x423b60: the 208-bit bitset is zero-initialised (vpxor + 2x vmovdqu to the stack), so unset bits 157..207 are 0
     ConfigBits cfg;
     put_bits(cfg, 0, 7, opcode_ & 0x7F);
-    put_bits(cfg, 7, 21, rd_val_);
-    put_bits(cfg, 28, 8, rs1_);      // low 8 bits of the rs1 field
+    put_bits(cfg, 7, 21, raddr_d_val_);
+    put_bits(cfg, 28, 8, rv_);      // low 8 bits of the rs1 field
     put_bits(cfg, 43, 48, shape_a_);
     put_bits(cfg, 91, 64, shape_b_);
-    put_bits(cfg, 155, 2, mode_);
+    put_bits(cfg, 155, 2, l2_datatype_);
     log_config_bits(*reinterpret_cast<std::ofstream *>(mfu + kMfuLogStreamOffset), cfg);
 }
 

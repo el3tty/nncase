@@ -102,7 +102,7 @@ Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8
   inst.funct3_  = bits(raw, 13, 3);
   inst.channel_   = bits(raw, 16, 1);
   inst.rshape_   = bits(raw, 17, 3);
-  inst.src1_param_ = bits(raw, 20, 5);
+  inst.rshift_bits_ = bits(raw, 20, 5);
   inst.reserved_25_  = bits(raw, 25, 7);
   inst.rshape_val_      = g_shape_reg[inst.rshape_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
@@ -128,7 +128,7 @@ void Act0Src1ConfInstruction::operation()
   act0->channels_ = (rshape_val_ >> 32) & 0xFFFF;
   act0->height_   = (rshape_val_ >> 16) & 0xFFFF;
   act0->width_    = rshape_val_ & 0xFFFF;
-  act0->shift_    = src1_param_;          // PSUM scale: 2^-shift
+  act0->shift_    = rshift_bits_;          // PSUM scale: 2^-shift
   act0->engine_   = channel_;             // target engine (0: Conv2D, 1: PDP0)
 
   // Install a fresh Act0Compute descriptor as the "current" one of the selected engine

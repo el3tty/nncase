@@ -402,11 +402,11 @@ PuForward_psumInstruction Simulator::InstParser<PuForward_psumInstruction, 32>(u
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_ = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.rs1_ = pu::bits(raw, 13, 5);
-    inst.rs2_ = pu::bits(raw, 18, 5);
+    inst.raddr_ = pu::bits(raw, 13, 5);
+    inst.rlen_ = pu::bits(raw, 18, 5);
     inst.reserved_21_ = pu::bits(raw, 21, 9) & 0x1FD;   // verified against asm @0x4172c0: raw[29:21] with bit 1 (raw[22]) not copied
-    inst.rs1_val_ = g_gp_reg[inst.rs1_];
-    inst.rs2_val_ = g_gp_reg[inst.rs2_];
+    inst.raddr_val_ = g_gp_reg[inst.raddr_];
+    inst.rlen_val_ = g_gp_reg[inst.rlen_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -429,11 +429,11 @@ void PuForward_psumInstruction::operation()
     // Act0::GetAct0() singleton lazy-init elided by the decompiler.
     // verified against asm @0x41e5d0: row count is the int at Act0+0x40004 (0x5CC764); src index = (int)((rs1>>2) + row*1024), copy size 4*rs2_val bytes
     const int num_rows = static_cast<int>(reinterpret_cast<const Act0*>(Act0_act0)->channels_);
-    const uint64_t src_word_off = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(rs1_val_))) >> 2;
+    const uint64_t src_word_off = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(raddr_val_))) >> 2;
     for (int row = 0; row < num_rows; ++row) {
         // Each row is 4096 bytes (1024 words) in both PSUM_L1 and Act0_act0.
         const int src = static_cast<int>(src_word_off + static_cast<uint64_t>(row) * 1024);
-        std::memcpy(Act0_act0 + static_cast<size_t>(row) * 1024, PSUM_L1 + src, 4 * rs2_val_);
+        std::memcpy(Act0_act0 + static_cast<size_t>(row) * 1024, PSUM_L1 + src, 4 * rlen_val_);
     }
     conv->Activate();
 }

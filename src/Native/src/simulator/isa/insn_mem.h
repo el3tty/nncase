@@ -102,12 +102,12 @@ template <> LwInstruction Simulator::InstParser<LwInstruction, 32>(unsigned char
 
 // ---- SbInstruction ----
 struct SbInstruction : public KInstruction {
-    uint8_t rs1_;  // +49 raw[11:7] base register
-    uint8_t rs2_;  // +50 raw[16:12] data register
+    uint8_t rd_;  // +49 raw[11:7] base register
+    uint8_t rs_;  // +50 raw[16:12] data register
     uint8_t funct3_;  // +51 raw[19:17] store width select (dispatch field of main)
-    uint16_t imm_;  // +52 raw[31:20] 12-bit signed offset (raw)
-    uint32_t rs1_val_;  // +56 value of rs1 (trace)
-    uint32_t rs2_val_;  // +60 value of rs2 (trace)
+    uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
+    uint32_t rd_val_;  // +56 value of rs1 (trace)
+    uint32_t rs_val_;  // +60 value of rs2 (trace)
     uint32_t mem_addr_;  // +64 MMU-translated address (trace)
     void get_next_pc() override;
     void parser_operation();
@@ -117,12 +117,12 @@ template <> SbInstruction Simulator::InstParser<SbInstruction, 32>(unsigned char
 
 // ---- ShInstruction ----
 struct ShInstruction : public KInstruction {
-    uint8_t rs1_;  // +49 raw[11:7] base register
-    uint8_t rs2_;  // +50 raw[16:12] data register
+    uint8_t rd_;  // +49 raw[11:7] base register
+    uint8_t rs_;  // +50 raw[16:12] data register
     uint8_t funct3_;  // +51 raw[19:17] store width select (dispatch field of main)
-    uint16_t imm_;  // +52 raw[31:20] 12-bit signed offset (raw)
-    uint32_t rs1_val_;  // +56 value of rs1 (trace)
-    uint32_t rs2_val_;  // +60 value of rs2 (trace)
+    uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
+    uint32_t rd_val_;  // +56 value of rs1 (trace)
+    uint32_t rs_val_;  // +60 value of rs2 (trace)
     uint32_t mem_addr_;  // +64 MMU-translated address (trace)
     void get_next_pc() override;
     void parser_operation();
@@ -132,12 +132,12 @@ template <> ShInstruction Simulator::InstParser<ShInstruction, 32>(unsigned char
 
 // ---- SwInstruction ----
 struct SwInstruction : public KInstruction {
-    uint8_t rs1_;  // +49 raw[11:7] base register
-    uint8_t rs2_;  // +50 raw[16:12] data register
+    uint8_t rd_;  // +49 raw[11:7] base register
+    uint8_t rs_;  // +50 raw[16:12] data register
     uint8_t funct3_;  // +51 raw[19:17] store width select (dispatch field of main)
-    uint16_t imm_;  // +52 raw[31:20] 12-bit signed offset (raw)
-    uint32_t rs1_val_;  // +56 value of rs1 (trace)
-    uint32_t rs2_val_;  // +60 value of rs2 (trace)
+    uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
+    uint32_t rd_val_;  // +56 value of rs1 (trace)
+    uint32_t rs_val_;  // +60 value of rs2 (trace)
     uint32_t mem_addr_;  // +64 MMU-translated address (trace)
     void get_next_pc() override;
     void parser_operation();

@@ -36,7 +36,7 @@ struct Act0Src1ConfInstruction : public KInstruction {
     uint8_t  funct3_;  // +51 raw[15:13] act0_conf variant select, not an assembly operand
     uint8_t  channel_;  // +52 raw[16] 1: pdp0, 0: pu (Conv2D); also stored in the Act0 singleton
     uint8_t  rshape_;  // +53 raw[19:17] shape register index
-    uint8_t  src1_param_;  // +54 raw[24:20] no operand in the dumps; stored in the Act0 singleton
+    uint8_t  rshift_bits_;  // +54 raw[24:20] no operand in the dumps; stored in the Act0 singleton
     uint16_t reserved_25_;  // +56 raw[31:25] reserved, unused
     uint64_t rshape_val_;         // +64  g_shape_reg[rshape]: four 16-bit dims, dim0 = [63:48] ... dim3 = [15:0]
     void get_next_pc() override;

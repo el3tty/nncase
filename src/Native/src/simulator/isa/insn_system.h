@@ -4,9 +4,9 @@
 // asm: (not in compiler dumps) fence ...
 // asm: (not in compiler dumps) fence_i ...
 // asm: (not in compiler dumps) intr ...
-// asm: ccr_clr ccr   (bit position of ccr inferred: [10:7])
+// asm: ccr_clr ccr   (ccr [11:7], verified vs main() decoder and TIR)
 // asm: ccr_decl rnum
-// asm: ccr_set ccr, value   (bit positions inferred: ccr [10:7], value [12:11])
+// asm: ccr_set ccr, value   (ccr [11:7], value [15:12], verified vs main() decoder and TIR)
 // asm: mmu_conf rstart, rdepth, mmu_id
 // asm: (not in compiler dumps) mmu_setid ...
 // asm: ss_pack_shape rn, rc, rh, rw, rss
@@ -49,7 +49,7 @@ template <> EndInstruction Simulator::InstParser<EndInstruction, 16>(unsigned ch
 
 // ---- FenceInstruction ----
 struct FenceInstruction : public KInstruction {
-    uint16_t imm9_;  // +50 raw[15:7] 9-bit field
+    uint16_t reserved0_;  // +50 raw[15:7] 9-bit field
     void get_next_pc() override;
     ~FenceInstruction() override;
 };
@@ -57,7 +57,7 @@ template <> FenceInstruction Simulator::InstParser<FenceInstruction, 16>(unsigne
 
 // ---- FenceIInstruction ----
 struct FenceIInstruction : public KInstruction {
-    uint16_t imm9_;  // +50 raw[15:7] 9-bit field
+    uint16_t reserved0_;  // +50 raw[15:7] 9-bit field
     void get_next_pc() override;
     ~FenceIInstruction() override;
 };
@@ -65,8 +65,8 @@ template <> FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(unsig
 
 // ---- IntrInstruction ----
 struct IntrInstruction : public KInstruction {
-    uint8_t reg_;  // +49 raw[11:7] register index
-    uint8_t sel_;  // +50 raw[15:12] 4-bit field
+    uint8_t rs_;  // +49 raw[11:7] register index
+    uint8_t reserved0_;  // +50 raw[15:12] 4-bit field
     uint32_t value_;  // +52 g_gp_reg[reg] sampled at decode time
     void get_next_pc() override;
     ~IntrInstruction() override;
@@ -75,8 +75,8 @@ template <> IntrInstruction Simulator::InstParser<IntrInstruction, 16>(unsigned 
 
 // ---- CcrClrInstruction ----
 struct CcrClrInstruction : public KInstruction {
-    uint8_t ccr_;  // +49 raw[10:7] CCR index (compiler range 0..13)
-    uint8_t reserved_11_;  // +50 raw[15:11] reserved
+    uint8_t ccr_;  // +49 raw[11:7] CCR index (compiler range 0..13)
+    uint8_t reserved_12_;  // +50 raw[15:12] reserved
     void get_next_pc() override;
     ~CcrClrInstruction() override;
 };
@@ -94,9 +94,8 @@ template <> CcrDeclInstruction Simulator::InstParser<CcrDeclInstruction, 16>(uns
 
 // ---- CcrSetInstruction ----
 struct CcrSetInstruction : public KInstruction {
-    uint8_t ccr_;  // +49 raw[10:7] CCR index (compiler range 0..13)
-    uint8_t value_;  // +50 raw[12:11] value (compiler range 1..2)
-    uint8_t reserved_13_;  // +51 raw[15:13] reserved
+    uint8_t ccr_;  // +49 raw[11:7] CCR index (compiler range 0..13)
+    uint8_t value_;  // +50 raw[15:12] value (compiler range 1..2)
     void get_next_pc() override;
     ~CcrSetInstruction() override;
 };
@@ -118,7 +117,7 @@ template <> MmuConfInstruction Simulator::InstParser<MmuConfInstruction, 32>(uns
 
 // ---- MmuSetidInstruction ----
 struct MmuSetidInstruction : public KInstruction {
-    uint8_t reg_;  // +49 raw[11:7] register whose bits [31:28] are replaced
+    uint8_t rd_;  // +49 raw[11:7] register whose bits [31:28] are replaced
     uint8_t mmu_id_;  // +50 raw[15:12] new 4-bit MMU/GLB segment id
     uint32_t result_;  // +52 new register value (trace)
     void get_next_pc() override;
@@ -167,9 +166,9 @@ template <> SsPackStrideInstruction Simulator::InstParser<SsPackStrideInstructio
 
 // ---- ExtrwInstruction ----
 struct ExtrwInstruction : public KInstruction {
-    uint16_t reg_addr_;  // +50 raw[16:7] AI2D register byte address
+    uint16_t extrd_;  // +50 raw[16:7] AI2D register byte address
     uint8_t rs_;  // +52 raw[21:17] register holding the value
-    uint16_t imm22_;  // +54 raw[31:22] decoded but unused
+    uint16_t imm_;  // +54 raw[31:22] decoded but unused
     uint32_t reg_value_;     // +56  value to write
     void get_next_pc() override;
     void operation() override;
@@ -179,9 +178,9 @@ template <> ExtrwInstruction Simulator::InstParser<ExtrwInstruction, 32>(unsigne
 
 // ---- ExtrawInstruction ----
 struct ExtrawInstruction : public KInstruction {
-    uint16_t reg_addr_;  // +50 raw[16:7] AI2D register byte address
+    uint16_t extrd_;  // +50 raw[16:7] AI2D register byte address
     uint8_t rs_;  // +52 raw[21:17] register holding the value
-    uint16_t imm22_;  // +54 raw[31:22] decoded but unused
+    uint16_t imm_;  // +54 raw[31:22] decoded but unused
     uint32_t reg_value_;     // +56  value to write
     void get_next_pc() override;
     void operation() override;

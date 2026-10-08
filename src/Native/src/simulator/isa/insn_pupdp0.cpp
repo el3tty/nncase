@@ -51,9 +51,9 @@ PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruction, 16>(uin
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
   inst.tcu_id_ = kinst_bits(raw, 7, 3);
-  inst.rs_ = kinst_bits(raw, 10, 5);
+  inst.raddr_s_ = kinst_bits(raw, 10, 5);
   inst.reserved_15_ = kinst_bits(raw, 15, 1);
-  inst.compute_param_ = g_gp_reg[inst.rs_];
+  inst.compute_param_ = g_gp_reg[inst.raddr_s_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000003LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -76,10 +76,10 @@ PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstruction, 32>(u
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.rs1_ = pu::bits(raw, 17, 5);
-    inst.unsigned_flag_ = pu::bits(raw, 22, 2);
+    inst.rbx_ = pu::bits(raw, 17, 5);
+    inst.quant_type_ = pu::bits(raw, 22, 2);
     inst.reserved_24_ = pu::bits(raw, 24, 8);
-    inst.rs1_val_ = g_gp_reg[inst.rs1_];
+    inst.rbx_val_ = g_gp_reg[inst.rbx_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -100,8 +100,8 @@ void PuPdp0Conf_deqInstruction::operation()
 {
     // verified against asm @0x422a50: one qword store at PDP0+0x10030 = {rs1_val, unsigned_flag}
     PDP0 *pdp0 = static_cast<PDP0 *>(PDP0::GetPDP0());
-    pdp0->regs_.in_zero_point_ = rs1_val_;
-    pdp0->regs_.unsigned_flag_ = unsigned_flag_;
+    pdp0->regs_.in_zero_point_ = rbx_val_;
+    pdp0->regs_.unsigned_flag_ = quant_type_;
 }
 
 // PuPdp0Conf_deqInstruction3.cpp  @0x4256d0
@@ -124,8 +124,8 @@ PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifConf1Instructio
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.imm17_ = pu::bits(raw, 17, 5);
-    inst.imm22_ = pu::bits(raw, 22, 5);
+    inst.stride_w_ = pu::bits(raw, 17, 5);
+    inst.stride_h_ = pu::bits(raw, 22, 5);
     inst.reserved_27_ = pu::bits(raw, 27, 5);
 
     inst.pc_ = cur;
@@ -146,8 +146,8 @@ void PuPdp0FetchifConf1Instruction::get_next_pc()
 void PuPdp0FetchifConf1Instruction::operation()
 {
     uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16385] = imm17_;  // PDP0 + 65540
-    regs[16386] = imm22_;  // PDP0 + 65544
+    regs[16385] = stride_w_;  // PDP0 + 65540
+    regs[16386] = stride_h_;  // PDP0 + 65544
 }
 
 // PuPdp0FetchifConf1Instruction3.cpp  @0x425810
@@ -170,11 +170,11 @@ PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifConf2Instructio
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.rs1_ = pu::bits(raw, 17, 5);
-    inst.rs2_ = pu::bits(raw, 22, 5);
+    inst.rgic_ = pu::bits(raw, 17, 5);
+    inst.rgic_last_ = pu::bits(raw, 22, 5);
     inst.reserved_27_ = pu::bits(raw, 27, 5);
-    inst.rs1_val_ = g_gp_reg[inst.rs1_];
-    inst.rs2_val_ = g_gp_reg[inst.rs2_];
+    inst.rgic_val_ = g_gp_reg[inst.rgic_];
+    inst.rgic_last_val_ = g_gp_reg[inst.rgic_last_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -218,9 +218,9 @@ PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifConf3Instructio
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
     inst.reserved_17_ = pu::bits(raw, 17, 10);
-    inst.shape_idx_ = pu::bits(raw, 27, 3);
+    inst.rshape_ = pu::bits(raw, 27, 3);
     inst.reserved_30_ = pu::bits(raw, 30, 2);
-    inst.shape_ = g_shape_reg[inst.shape_idx_];
+    inst.shape_ = g_shape_reg[inst.rshape_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -266,11 +266,11 @@ PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifConf4Instructio
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.rs1_ = pu::bits(raw, 17, 5);
-    inst.shape_idx_ = pu::bits(raw, 22, 3);
+    inst.rpad_value_ = pu::bits(raw, 17, 5);
+    inst.sspad_ = pu::bits(raw, 22, 3);
     inst.reserved_25_ = pu::bits(raw, 25, 7);
-    inst.rs1_val_ = g_gp_reg[inst.rs1_];
-    inst.shape_ = g_shape_reg[inst.shape_idx_];
+    inst.rpad_value_val_ = g_gp_reg[inst.rpad_value_];
+    inst.shape_ = g_shape_reg[inst.sspad_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -290,7 +290,7 @@ void PuPdp0FetchifConf4Instruction::get_next_pc()
 void PuPdp0FetchifConf4Instruction::operation()
 {
     uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16391] = rs1_val_;
+    regs[16391] = rpad_value_val_;
     regs[16392] = pu::shape_word(shape_, 2);
     regs[16393] = pu::shape_word(shape_, 3);
     regs[16394] = pu::shape_word(shape_, 1);
@@ -361,11 +361,11 @@ PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstruction, 32>(uint8
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.shape_idx0_ = pu::bits(raw, 17, 3);
-    inst.shape_idx1_ = pu::bits(raw, 20, 3);
+    inst.rstride_d_ = pu::bits(raw, 17, 3);
+    inst.rshape_d_ = pu::bits(raw, 20, 3);
     inst.reserved_23_ = pu::bits(raw, 23, 9);
-    inst.shape0_ = g_shape_reg[inst.shape_idx0_];
-    inst.shape1_ = g_shape_reg[inst.shape_idx1_];
+    inst.shape0_ = g_shape_reg[inst.rstride_d_];
+    inst.shape1_ = g_shape_reg[inst.rshape_d_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -415,8 +415,8 @@ PuPdp0WConfInstruction Simulator::InstParser<PuPdp0WConfInstruction, 32>(uint8_t
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
     inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.imm17_ = pu::bits(raw, 17, 5);
-    inst.imm22_ = pu::bits(raw, 22, 5);
+    inst.kernel_h_ = pu::bits(raw, 17, 5);
+    inst.kernel_w_ = pu::bits(raw, 22, 5);
     inst.reserved_27_ = pu::bits(raw, 27, 5);
 
     inst.pc_ = cur;
@@ -437,8 +437,8 @@ void PuPdp0WConfInstruction::get_next_pc()
 void PuPdp0WConfInstruction::operation()
 {
     uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16398] = imm22_;  // PDP0 + 65592
-    regs[16399] = imm17_;  // PDP0 + 65596
+    regs[16398] = kernel_w_;  // PDP0 + 65592
+    regs[16399] = kernel_h_;  // PDP0 + 65596
 }
 
 // PuPdp0WConfInstruction3.cpp  @0x425680

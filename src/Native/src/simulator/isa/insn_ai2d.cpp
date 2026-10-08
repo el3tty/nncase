@@ -24,7 +24,7 @@ Ai2dComputeInstruction Simulator::InstParser<Ai2dComputeInstruction, 16>(uint8_t
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.imm9_ = kinst_bits(raw, 7, 9);
+  inst.reserved0_ = kinst_bits(raw, 7, 9);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   // verified against asm: inst.info is not written by the decoder (left as constructed)
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)

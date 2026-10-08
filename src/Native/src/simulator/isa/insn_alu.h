@@ -144,7 +144,7 @@ template <> RemuInstruction Simulator::InstParser<RemuInstruction, 32>(unsigned 
 struct AddiInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] source register
-    uint8_t funct3_;  // +51 raw[19:17] must be 0 (dispatch field of main), not an assembly operand
+    uint8_t funct5_;  // +51 raw[19:17] must be 0 (dispatch field of main), not an assembly operand
     uint16_t imm_;  // +52 raw[31:20] 12-bit signed immediate (raw)
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)

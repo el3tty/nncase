@@ -27,7 +27,7 @@ BeqInstruction Simulator::InstParser<BeqInstruction, 32>(uint8_t ** pc)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = g_gp_reg[inst.rs1_];
   inst.rs2_val_ = g_gp_reg[inst.rs2_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
@@ -41,8 +41,8 @@ BeqInstruction Simulator::InstParser<BeqInstruction, 32>(uint8_t ** pc)
 // BeqInstruction1.cpp  @0x41d830
 void BeqInstruction::operation()
 {
-  int32_t offset = imm_;
-  if (imm_ >> 11)   // sign-extend
+  int32_t offset = offset_;
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
   if (rs1_val_ == rs2_val_) {
     taken_ = 1;
@@ -81,7 +81,7 @@ BneInstruction Simulator::InstParser<BneInstruction, 32>(uint8_t ** pc)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = g_gp_reg[inst.rs1_];
   inst.rs2_val_ = g_gp_reg[inst.rs2_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
@@ -95,8 +95,8 @@ BneInstruction Simulator::InstParser<BneInstruction, 32>(uint8_t ** pc)
 // BneInstruction1.cpp  @0x41d860
 void BneInstruction::operation()
 {
-  int32_t offset = imm_;
-  if (imm_ >> 11)   // sign-extend
+  int32_t offset = offset_;
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
   if (rs1_val_ != rs2_val_) {
     taken_ = 1;
@@ -135,7 +135,7 @@ BltInstruction Simulator::InstParser<BltInstruction, 32>(uint8_t ** pc)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = g_gp_reg[inst.rs1_];
   inst.rs2_val_ = g_gp_reg[inst.rs2_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
@@ -149,8 +149,8 @@ BltInstruction Simulator::InstParser<BltInstruction, 32>(uint8_t ** pc)
 // BltInstruction1.cpp  @0x41d8a0
 void BltInstruction::operation()
 {
-  int32_t offset = imm_;
-  if (imm_ >> 11)   // sign-extend
+  int32_t offset = offset_;
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
   if ((int32_t)rs1_val_ < (int32_t)rs2_val_) {
     taken_ = 1;
@@ -190,7 +190,7 @@ BltuInstruction Simulator::InstParser<BltuInstruction, 32>(uint8_t ** pc)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = g_gp_reg[inst.rs1_];
   inst.rs2_val_ = g_gp_reg[inst.rs2_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
@@ -204,8 +204,8 @@ BltuInstruction Simulator::InstParser<BltuInstruction, 32>(uint8_t ** pc)
 // BltuInstruction1.cpp  @0x41d8e0
 void BltuInstruction::operation()
 {
-  int32_t offset = imm_;
-  if (imm_ >> 11)   // sign-extend
+  int32_t offset = offset_;
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
   if (rs1_val_ < rs2_val_) {
     taken_ = 1;
@@ -244,7 +244,7 @@ BgeInstruction Simulator::InstParser<BgeInstruction, 32>(uint8_t ** pc)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = g_gp_reg[inst.rs1_];
   inst.rs2_val_ = g_gp_reg[inst.rs2_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
@@ -258,8 +258,8 @@ BgeInstruction Simulator::InstParser<BgeInstruction, 32>(uint8_t ** pc)
 // BgeInstruction1.cpp  @0x41d920
 void BgeInstruction::operation()
 {
-  int32_t offset = imm_;
-  if (imm_ >> 11)   // sign-extend
+  int32_t offset = offset_;
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
   if ((int32_t)rs1_val_ >= (int32_t)rs2_val_) {
     taken_ = 1;
@@ -299,7 +299,7 @@ BgeuInstruction Simulator::InstParser<BgeuInstruction, 32>(uint8_t ** pc)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = g_gp_reg[inst.rs1_];
   inst.rs2_val_ = g_gp_reg[inst.rs2_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
@@ -313,8 +313,8 @@ BgeuInstruction Simulator::InstParser<BgeuInstruction, 32>(uint8_t ** pc)
 // BgeuInstruction1.cpp  @0x41d960
 void BgeuInstruction::operation()
 {
-  int32_t offset = imm_;
-  if (imm_ >> 11)   // sign-extend
+  int32_t offset = offset_;
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
   if (rs1_val_ >= rs2_val_) {
     taken_ = 1;
@@ -342,7 +342,7 @@ BgeuInstruction::~BgeuInstruction()
 // ---- JalInstruction ----
 void JalInstruction::operation()
 {
-  uint32_t offset = imm_;
+  uint32_t offset = offset_;
   taken_ = 1;
   if (offset >> 19)   // sign-extend 20-bit offset
     offset -= 0x100000;
@@ -381,7 +381,7 @@ JalInstruction Simulator::InstParser<JalInstruction, 32>(uint8_t ** pc)
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
   inst.rd_ = kinst_bits(raw, 7, 5);
-  inst.imm_ = kinst_bits(raw, 12, 20);   // bit-by-bit copy loop of raw[31:12]
+  inst.offset_ = kinst_bits(raw, 12, 20);   // bit-by-bit copy loop of raw[31:12]
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x100000006LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -403,9 +403,9 @@ JalrInstruction Simulator::InstParser<JalrInstruction, 32>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
-  inst.rs1_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
-  inst.imm_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
+  inst.rs_ = kinst_bits(raw, 12, 5);
+  inst.reserved0_ = kinst_bits(raw, 17, 3);
+  inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -418,11 +418,11 @@ JalrInstruction Simulator::InstParser<JalrInstruction, 32>(uint8_t ** pc)
 // JalrInstruction1.cpp  @0x41d9c0
 void JalrInstruction::operation()
 {
-  int32_t offset = imm_;
+  int32_t offset = offset_;
   taken_ = 1;
-  if (imm_ >> 11)   // sign-extend
+  if (offset_ >> 11)   // sign-extend
     offset -= 4096;
-  next_pc_ = rs1_val_ + offset;   // verified against asm @0x41d9c0: taken=1, next_pc = rs1_val + sext12(imm), no "& ~1"
+  next_pc_ = rs_val_ + offset;   // verified against asm @0x41d9c0: taken=1, next_pc = rs1_val + sext12(imm), no "& ~1"
 }
 
 // JalrInstruction2.cpp  @0x41db70
@@ -436,7 +436,7 @@ void JalrInstruction::parser_operation()
 {
   // verified against asm @0x420ef0: stores {pc+4, g_gp_reg[rs1]} as one qword at +56/+60, then set_g_gp_reg(rd, pc+4)
   link_val_ = pc_ + 4;
-  rs1_val_ = g_gp_reg[rs1_];
+  rs_val_ = g_gp_reg[rs_];
   set_g_gp_reg(rd_, link_val_);
 }
 

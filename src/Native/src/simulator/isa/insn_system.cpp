@@ -78,7 +78,7 @@ FenceInstruction Simulator::InstParser<FenceInstruction, 16>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.imm9_ = kinst_bits(raw, 7, 9);
+  inst.reserved0_ = kinst_bits(raw, 7, 9);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000000LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -111,7 +111,7 @@ FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.imm9_ = kinst_bits(raw, 7, 9);
+  inst.reserved0_ = kinst_bits(raw, 7, 9);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000000LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -144,9 +144,9 @@ IntrInstruction Simulator::InstParser<IntrInstruction, 16>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.reg_ = kinst_bits(raw, 7, 5);
-  inst.sel_ = kinst_bits(raw, 12, 4);
-  inst.value_ = g_gp_reg[inst.reg_];
+  inst.rs_ = kinst_bits(raw, 7, 5);
+  inst.reserved0_ = kinst_bits(raw, 12, 4);
+  inst.value_ = g_gp_reg[inst.rs_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x200000006LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -179,8 +179,8 @@ CcrClrInstruction Simulator::InstParser<CcrClrInstruction, 16>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.ccr_ = kinst_bits(raw, 7, 4);
-  inst.reserved_11_ = kinst_bits(raw, 11, 5);
+  inst.ccr_ = kinst_bits(raw, 7, 5);
+  inst.reserved_12_ = kinst_bits(raw, 12, 4);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000000LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -248,9 +248,8 @@ CcrSetInstruction Simulator::InstParser<CcrSetInstruction, 16>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.ccr_ = kinst_bits(raw, 7, 4);
-  inst.value_ = kinst_bits(raw, 11, 2);
-  inst.reserved_13_ = kinst_bits(raw, 13, 3);
+  inst.ccr_ = kinst_bits(raw, 7, 5);
+  inst.value_ = kinst_bits(raw, 12, 4);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000000LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -319,16 +318,16 @@ void MmuSetidInstruction::get_next_pc()
 // MmuSetidInstruction2.cpp  @0x41fc80
 void MmuSetidInstruction::operation()
 {
-  set_g_gp_reg(reg_, (g_gp_reg[reg_] & 0xFFFFFFF) | (mmu_id_ << 28));
-  result_ = g_gp_reg[reg_];
+  set_g_gp_reg(rd_, (g_gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28));
+  result_ = g_gp_reg[rd_];
 }
 
 // MmuSetidInstruction3.cpp  @0x420f20
 void MmuSetidInstruction::parser_operation()
 {
   // Same effect as operation(), but writes g_gp_reg directly (bypasses set_g_gp_reg).
-  result_ = (g_gp_reg[reg_] & 0xFFFFFFF) | (mmu_id_ << 28);
-  g_gp_reg[reg_] = result_;
+  result_ = (g_gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28);
+  g_gp_reg[rd_] = result_;
 }
 
 // MmuSetidInstruction4.cpp  @0x4261c0
@@ -349,7 +348,7 @@ MmuSetidInstruction Simulator::InstParser<MmuSetidInstruction, 16>(uint8_t ** pc
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.reg_ = kinst_bits(raw, 7, 5);
+  inst.rd_ = kinst_bits(raw, 7, 5);
   inst.mmu_id_ = kinst_bits(raw, 12, 4);
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000006LL;
@@ -492,8 +491,8 @@ void ExtrwInstruction::operation()
   uint32_t *ai2d = AI2D_Ai2dInst;
   const uint32_t v = reg_value_;
 
-  if (reg_addr_ <= 0x8F) {
-    switch (reg_addr_ >> 2) {
+  if (extrd_ <= 0x8F) {
+    switch (extrd_ >> 2) {
       case 0:  ai2d[34] = v; break;                          // AI2D+136
       case 1:  ai2d[35] = v; break;                          // AI2D+140
       case 2:  ai2d[36] = v; break;                          // AI2D+144
@@ -573,7 +572,7 @@ void ExtrwInstruction::operation()
   }
 
   // Only register 35 (byte address 140) ever reaches this: writing it starts the AI2D engine.
-  if (reg_addr_ == 140)
+  if (extrd_ == 140)
     reinterpret_cast<AI2D *>(AI2D_Ai2dInst)->ai2d_proc();
 }
 
@@ -590,9 +589,9 @@ ExtrwInstruction Simulator::InstParser<ExtrwInstruction, 32>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.reg_addr_ = kinst_bits(raw, 7, 10);
+  inst.extrd_ = kinst_bits(raw, 7, 10);
   inst.rs_ = kinst_bits(raw, 17, 5);
-  inst.imm22_ = kinst_bits(raw, 22, 10);
+  inst.imm_ = kinst_bits(raw, 22, 10);
   inst.reg_value_ = g_gp_reg[inst.rs_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0;
@@ -616,10 +615,10 @@ void ExtrawInstruction::operation()
   // TODO(layout): name the AI2D registers (ai2d.h has them as fNNN members).
   uint32_t *ai2d = AI2D_Ai2dInst;
 
-  if (reg_addr_ <= 0x1F) {
+  if (extrd_ <= 0x1F) {
     // verified against asm @0x41ec50: jump table (0x48046c) is indexed by reg_addr >> 2 (16-bit), the stored
     // value is reg_value (+0x38); targets map to AI2D+0x88,0x8c,0x90,0x94,0xa0,0xa4,0xa8,0xac.
-    switch (reg_addr_ >> 2) {
+    switch (extrd_ >> 2) {
       case 0: ai2d[34] = reg_value_; break;   // AI2D+136
       case 1: ai2d[35] = reg_value_; break;   // AI2D+140
       case 2: ai2d[36] = reg_value_; break;   // AI2D+144
@@ -645,9 +644,9 @@ ExtrawInstruction Simulator::InstParser<ExtrawInstruction, 32>(uint8_t ** pc)
   inst.taken_ = 0;
   inst.flag_ = 0;
   inst.opcode_ = raw & 0x7F;
-  inst.reg_addr_ = kinst_bits(raw, 7, 10);
+  inst.extrd_ = kinst_bits(raw, 7, 10);
   inst.rs_ = kinst_bits(raw, 17, 5);
-  inst.imm22_ = kinst_bits(raw, 22, 10);
+  inst.imm_ = kinst_bits(raw, 22, 10);
   inst.reg_value_ = g_gp_reg[inst.rs_];
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0;

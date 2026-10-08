@@ -129,11 +129,11 @@ template <> PuFetchifConf_deqInstruction Simulator::InstParser<PuFetchifConf_deq
 struct PuForward_psumInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id
     uint8_t pu_id_;  // +50 raw[12:10] PU id
-    uint8_t rs1_;  // +51 raw[17:13] register: source byte offset in PSUM_L1
-    uint8_t rs2_;  // +52 raw[22:18] register: words copied per row
+    uint8_t raddr_;  // +51 raw[17:13] register: source byte offset in PSUM_L1
+    uint8_t rlen_;  // +52 raw[22:18] register: words copied per row
     uint16_t reserved_21_;  // +54 raw[29:21] decoded, unused (overlaps rs2; bit 22 masked out)
-    uint32_t rs1_val_;  // +56 g_gp_reg[rs1]: source byte offset in PSUM_L1
-    uint64_t rs2_val_;  // +64 g_gp_reg[rs2]: words copied per row
+    uint32_t raddr_val_;  // +56 g_gp_reg[rs1]: source byte offset in PSUM_L1
+    uint64_t rlen_val_;  // +64 g_gp_reg[rs2]: words copied per row
     void get_next_pc() override;
     void operation() override;
     ~PuForward_psumInstruction() override;

@@ -22,11 +22,11 @@
 
 // ---- DmConf_broadcastInstruction ----
 struct DmConf_broadcastInstruction : public KInstruction {
-    uint8_t fld_b7_;  // +49 raw[9:7] unknown
-    uint8_t fld_b10_;  // +50 raw[10:10] unknown
-    uint8_t fld_b11_;  // +51 raw[11:11] unknown
-    uint8_t fld_b12_;  // +52 raw[12:12] unknown
-    uint8_t fld_13_3b_;  // +53 raw[15:13] unknown
+    uint8_t tcu_id_;  // +49 raw[9:7] unknown
+    uint8_t broadcast_if_;  // +50 raw[10:10] unknown
+    uint8_t broadcast_w_;  // +51 raw[11:11] unknown
+    uint8_t psum_cascade_;  // +52 raw[12:12] unknown
+    uint8_t reserved0_;  // +53 raw[15:13] unknown
     void get_next_pc() override;   // pc + 2 (compressed encoding)
     ~DmConf_broadcastInstruction() override;
 };

@@ -42,7 +42,7 @@ struct Pdp1Config {
     uint8_t  pad_left_;          // +196 0x54AA04  Conf3 shape bits 31..16
     uint8_t  pad_right_;         // +197 0x54AA05  Conf3 shape bits 15..0 (low byte; 0x54AA06 is its high byte)
     uint8_t  reserved_198_;      // +198 0x54AA06
-    uint8_t  pool_mode_;         // +199 0x54AA07  Conf1 mode: 0 min, 1 max, 2 average by 1/count, 3 average by avg_scale
+    uint8_t  pool_mode_;         // +199 0x54AA07  Conf1 mode: 0 min, 1 max, 2 average by 1/count, 3 sum scaled by avg_scale (TIR PDP_FUNCTION min/max/average/sum)
     uint8_t  reserved_200_[8];   // +200 0x54AA08
     uint16_t src_pitch_;         // +208 0x54AA10  Conf1 shape_a: source row pitch (elements, multiple of 16/32 bytes)
     uint16_t src_plane_rows_;    // +210 0x54AA12  source rows per plane

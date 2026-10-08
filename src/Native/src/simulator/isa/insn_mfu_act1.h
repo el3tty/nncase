@@ -53,7 +53,7 @@ struct MfuAct1Conf_deqInstruction : public KInstruction {
     uint8_t rbias_;  // +51 raw[21:17] register: dequant bias
     uint8_t quant_type_;  // +52 raw[23:22] dequant type (low byte of the 16-bit config)
     uint8_t sid_;  // +53 raw[24] source id: 0 -> source 1, 1 -> source 2 register bank
-    uint8_t cfg_hi_;  // +54 raw[29:25] no operand in the dumps (shift, high byte of the 16-bit config)
+    uint8_t rshift_bits_;  // +54 raw[29:25] no operand in the dumps (shift, high byte of the 16-bit config)
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
     uint32_t rscale_val_;  // +56 g_gp_reg[rscale]
     uint32_t rbias_val_;  // +60 g_gp_reg[rbias]

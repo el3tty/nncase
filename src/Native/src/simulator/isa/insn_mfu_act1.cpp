@@ -96,7 +96,7 @@ MfuAct1Conf_deqInstruction Simulator::InstParser<MfuAct1Conf_deqInstruction, 32>
     inst.rbias_ = field(raw, 17, 5);
     inst.quant_type_ = field(raw, 22, 2);
     inst.sid_ = field(raw, 24, 1);
-    inst.cfg_hi_ = field(raw, 25, 5);
+    inst.rshift_bits_ = field(raw, 25, 5);
     inst.reserved_30_ = field(raw, 30, 2);
     inst.rscale_val_ = g_gp_reg[inst.rscale_];
     inst.rbias_val_ = g_gp_reg[inst.rbias_];
@@ -125,12 +125,12 @@ void MfuAct1Conf_deqInstruction::operation()
         mn->a1_s2_scale_ = static_cast<uint16_t>(rscale_val_);
         mn->a1_s2_zero_ = static_cast<uint16_t>(rbias_val_);
         mn->a1_s2_type_ = quant_type_;
-        mn->a1_s2_shift_ = cfg_hi_;
+        mn->a1_s2_shift_ = rshift_bits_;
     } else {
         mn->a1_s1_scale_ = static_cast<uint16_t>(rscale_val_);
         mn->a1_s1_zero_ = static_cast<uint16_t>(rbias_val_);
         mn->a1_s1_type_ = quant_type_;
-        mn->a1_s1_shift_ = cfg_hi_;
+        mn->a1_s1_shift_ = rshift_bits_;
     }
 }
 
