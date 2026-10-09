@@ -99,8 +99,6 @@ int k230_runtime_function::dump_gmodel(gsl::span<value_t> &parameters)
 
 result<value_t> k230_runtime_function::invoke_core(gsl::span<value_t> parameters, value_t return_value) noexcept
 {
-    dump_gmodel(parameters);
-
     auto mem_name = get_random_file_name();
     auto ctrl_name = get_random_file_name();
     k230::shared_memory mem(mem_name, 0x80000000ull, k230::shared_memory_openmode::create);

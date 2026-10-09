@@ -12,3 +12,6 @@ add_library(nncase.simulator.k230 SHARED
 target_link_libraries(nncase.simulator.k230 PUBLIC gsl::gsl-lite)
 target_link_libraries(nncase.simulator.k230 PUBLIC nncaseruntime)
 target_compile_definitions(nncase.simulator.k230 PRIVATE NNCASE_MODULES_K230_DLL)
+if(K230_SIMULATOR_DLL)
+    target_compile_definitions(nncase.simulator.k230 PRIVATE K230_SIMULATOR_DLL)
+endif()
