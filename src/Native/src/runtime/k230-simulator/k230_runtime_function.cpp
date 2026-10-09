@@ -1,7 +1,7 @@
+#include <nncase/runtime/k230/shared_memory.h>
 #include "k230_runtime_function.h"
 #include "gmodel_builder.h"
 #include "platform.h"
-#include "shared_memory.h"
 #include <cstring>
 #include <iostream>
 #include <nncase/runtime/interpreter.h>

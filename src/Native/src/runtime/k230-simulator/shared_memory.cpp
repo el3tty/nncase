@@ -1,4 +1,4 @@
-#include "shared_memory.h"
+#include <nncase/runtime/k230/shared_memory.h>
 #include <cerrno>
 #include <cstring>
 #include <stdexcept>

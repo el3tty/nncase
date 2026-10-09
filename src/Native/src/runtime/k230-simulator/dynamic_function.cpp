@@ -1,14 +1,14 @@
-#include "gmodel_builder.h"
-#include "platform.h"
-#include "shared_memory.h"
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
 #include <nncase/functional/k230/dynamic_function.h>
 #include <nncase/kernels/kernel_context.h>
 #include <nncase/runtime/dump_manager.h>
 #include <nncase/runtime/util.h>
+#include <nncase/runtime/k230/shared_memory.h>
+#include "gmodel_builder.h"
+#include "platform.h"
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
 #include <sstream>
 
 using namespace nncase;
