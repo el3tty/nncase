@@ -1,5 +1,4 @@
 #pragma once
-#define NNCASE_MODULES_K230_DLL
 
 #include <nncase/runtime/k230/runtime_module.h>
 #include <nncase/runtime/runtime_module.h>
