@@ -83,6 +83,7 @@ if (NOT BUILDING_RUNTIME)
 
     add_executable(nncasetest_cli test_cli.cpp)
     target_link_libraries(nncasetest_cli PRIVATE nncaseruntime)
+    target_link_libraries(nncasetest_cli PRIVATE nncase.simulator.k230)
 
     add_executable(nncasetest_dynamic_cli test_dynamic_cli.cpp)
     target_link_libraries(nncasetest_dynamic_cli PRIVATE nncaseruntime)

@@ -93,6 +93,8 @@ else()
 
     configure_file(${CMAKE_CURRENT_LIST_DIR}/../../../../cmake/nncaseConfig.cmake.in nncaseConfig.cmake @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nncaseConfig.cmake DESTINATION lib/cmake/nncase)
+
+    add_subdirectory(k230-simulator)
 endif()
 
 add_subdirectory(stackvm)
