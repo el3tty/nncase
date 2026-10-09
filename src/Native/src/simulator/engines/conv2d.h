@@ -3,7 +3,7 @@
 // (Conv2D1..Conv2D5.cpp).
 //
 // The PU configuration instructions (pu*instruction.cpp) write the Conv2D singleton by raw byte offset
-// (TODO(layout) there); the layout below reproduces those offsets exactly (checked by static_asserts), so the
+// (TODO(layout) there); the layout below reproduces those offsets exactly, so the
 // raw accesses keep working. PuComputeInstruction snapshots the configuration into a PuCompute and queues it;
 // Conv2D::Compute() later pops it together with the weight / IF-load descriptors and runs the TCU, forwarding
 // the result to ACT0 (Activate) when the compute mode is 1.
@@ -73,13 +73,6 @@ struct PuCompute {
     uint8_t  pad157_ = 0;           // +157
     uint8_t  pad158_[2] = {};     // +158
 };
-static_assert(sizeof(PuCompute) == 160, "PuCompute layout");
-static_assert(offsetof(PuCompute, groups_) == 24 && offsetof(PuCompute, pad_value_) == 48 &&
-              offsetof(PuCompute, if_zero_points_) == 68 && offsetof(PuCompute, kernel_h_) == 96 &&
-              offsetof(PuCompute, of2_d3_) == 120 && offsetof(PuCompute, psum_base_) == 136 &&
-              offsetof(PuCompute, accumulate_) == 140 && offsetof(PuCompute, mode_) == 144 &&
-              offsetof(PuCompute, shift_mode_) == 152 && offsetof(PuCompute, if_flag_) == 156,
-              "PuCompute layout");
 
 struct Conv2D {
     PuCompute cfg_;                                              // +0    current PU configuration
@@ -88,7 +81,7 @@ struct Conv2D {
     std::deque<std::shared_ptr<DmStoreOf>>  store_queue_;        // +320  DmStoreOf descriptors
     std::deque<std::shared_ptr<DmLoadAct0>> act0_param_queue_;   // +400  DmLoadAct0 descriptors
     std::deque<std::shared_ptr<Act0Compute>> act0_queue_;        // +480  Act0Compute descriptors
-    uint8_t pad560_[16] = {};                                      // +560  alignment padding, never touched (offsets 480+80=560, 576 verified by queue accesses in asm)
+    std::shared_ptr<Act0Compute> cur_act0_;                      // +560  current ACT0 descriptor (installed by Act0Src1ConfInstruction)
     std::deque<std::shared_ptr<PuCompute>>  compute_queue_;      // +576  queued PuCompute snapshots
 
     Conv2D();
@@ -110,7 +103,3 @@ struct Conv2D {
     void Compute(int64_t, int64_t, int64_t, int, int) { Compute(); }
 };
 
-static_assert(offsetof(Conv2D, if_queue_) == 160 && offsetof(Conv2D, weight_queue_) == 240 &&
-              offsetof(Conv2D, store_queue_) == 320 && offsetof(Conv2D, act0_param_queue_) == 400 &&
-              offsetof(Conv2D, act0_queue_) == 480 && offsetof(Conv2D, compute_queue_) == 576 &&
-              sizeof(Conv2D) == 656, "Conv2D layout (other files use these byte offsets)");

@@ -32,7 +32,7 @@
 #include <stdexcept>
 #include <filesystem>
 
-#include "engines/shared_memory.h"
+#include <nncase/runtime/k230/shared_memory.h>
 #include "globals.h"
 #include "engines/simulator.h"
 #include "isa/kinstruction.h"
@@ -52,6 +52,7 @@
 
 
 using nncase::runtime::k230::shared_memory;
+using nncase::runtime::k230::shared_memory_openmode;
 
 // Opcode = raw & 0x7F (verified against the compare chain at main @0x40bb02..0x40f8ed).
 // 32-bit encodings have an even opcode >= 2 with bit0 == 0 ... except where noted; 16-bit encodings are listed as such.
@@ -111,7 +112,7 @@ static inline void step(Simulator & sim, uint8_t *& pc)
 
 static std::string g_sim_name;   // see Simulator::insn_name (holds the mnemonic string copied into every decoded insn)
 
-int main(int argc, const char ** argv)
+static int simulator_run(int argc, const char ** argv)
 {
     // verified against asm @0x40b801 / main.cold @0x4062ee: std::invalid_argument("The Argument Count != 5")
     if (argc != 5)
@@ -120,21 +121,29 @@ int main(int argc, const char ** argv)
     srand(0x14);   // verified @0x40b817: srand(20)
 
     // argv[1] -> DDR image (2 GiB), argv[2] -> GLB region (4 MiB); openmode == 1 (attach to the existing object)
-    shared_memory ddr_mem(std::filesystem::path(std::string(argv[1])), 0x80000000ULL, shared_memory::open);  // @0x40b85d
-    shared_memory glb_mem(std::filesystem::path(std::string(argv[2])), 0x400000, shared_memory::open);       // @0x40b8b0
+    shared_memory ddr_mem(std::filesystem::path(std::string(argv[1])), 0x80000000ULL, shared_memory_openmode::open);  // @0x40b85d
+    shared_memory glb_mem(std::filesystem::path(std::string(argv[2])), 0x400000, shared_memory_openmode::open);       // @0x40b8b0
 
-    // Bank table: bank 0 = the mapped 4 MiB region, banks 1..15 = zero-filled new[0x400000] (@0x40b8d5..0x40b8fa)
+    uint8_t * const ddr_base = static_cast<uint8_t *>(ddr_mem.data());
+
+    // Bank table: bank 0 = the mapped 4 MiB region, banks 1..15 = zero-filled new[0x400000] (@0x40b8d5..0x40b8fa).
+    // The original leaks them until process exit; here they are released when the run ends (the simulator may be
+    // started repeatedly from one process when built as a DLL).
     uint8_t * banks[16];
-    banks[0] = glb_mem.data();
+    std::vector<std::unique_ptr<uint8_t[]>> bank_storage;
+    banks[0] = static_cast<uint8_t *>(glb_mem.data());
     for (int i = 1; i < 16; ++i)
-        banks[i] = static_cast<uint8_t *>(memset(new uint8_t[0x400000], 0, 0x400000));
+    {
+        bank_storage.emplace_back(new uint8_t[0x400000]());
+        banks[i] = bank_storage.back().get();
+    }
 
-    SimulatorInit(ddr_mem.data(), banks);     // @0x40b907, publishes g_DDR / g_GLB
+    SimulatorInit(ddr_base, banks);     // @0x40b907, publishes g_DDR / g_GLB
 
     // Simulator object is built inline in main (@0x40b90c..0x40ba1d): ddr pointer, copy of the bank table, empty
     // name string, bit_offset = 0, has_base = 0, empty trace vectors, start_pc = 0.
     Simulator sim;
-    sim.ddr_ = ddr_mem.data();
+    sim.ddr_ = ddr_base;
     memcpy(sim.glb_banks_, banks, sizeof(banks));
     sim.insn_name_ = (uint64_t)&g_sim_name;         // TODO(layout): in the binary insn_name is the (empty) COW string itself
     sim.bit_offset_ = 0;
@@ -335,3 +344,84 @@ int main(int argc, const char ** argv)
         }
     }
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Entry points
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Runs the simulator and turns exceptions into an error code (they must not cross the DLL boundary, and a plain
+// terminate() is of little help when debugging).
+static int simulator_guarded_run(int argc, const char ** argv)
+{
+    try
+    {
+        return simulator_run(argc, argv);
+    }
+    catch (const std::exception & e)
+    {
+        std::cerr << "simulator: " << e.what() << std::endl;
+        return 1;
+    }
+}
+
+#ifdef K230_SIMULATOR_DLL
+
+#ifdef _WIN32
+#define K230_SIMULATOR_API __declspec(dllexport)
+#else
+#define K230_SIMULATOR_API __attribute__((visibility("default")))
+#endif
+
+// Splits a command line into arguments: separated by white space, double quotes group (and are removed),
+// no escape characters (backslashes are kept, so Windows paths work).
+static std::vector<std::string> split_commandline(const char * cmdline)
+{
+    std::vector<std::string> args;
+    std::string cur;
+    bool in_quotes = false, have = false;
+    for (const char * p = cmdline ? cmdline : ""; *p; ++p)
+    {
+        const char c = *p;
+        if (c == '"')
+        {
+            in_quotes = !in_quotes;
+            have = true;
+        }
+        else if (!in_quotes && (c == ' ' || c == '\t' || c == '\r' || c == '\n'))
+        {
+            if (have)
+                args.push_back(std::move(cur)), cur.clear(), have = false;
+        }
+        else
+        {
+            cur.push_back(c);
+            have = true;
+        }
+    }
+    if (have)
+        args.push_back(std::move(cur));
+    return args;
+}
+
+// The only function exported by the DLL build. `commandline` holds the arguments of the executable
+// (without the program name):  <ddr_shm> <glb_shm> <pc_offset> <argv4>
+// Returns 0 on success and non-zero on failure (the reason is printed to stderr).
+extern "C" K230_SIMULATOR_API int SimulatorMain(const char * commandline)
+{
+    std::vector<std::string> args = split_commandline(commandline);
+    args.insert(args.begin(), "SimulatorMain");
+    std::vector<const char *> argv;
+    for (const auto & a : args)
+        argv.push_back(a.c_str());
+    return simulator_guarded_run(static_cast<int>(argv.size()), argv.data());
+}
+
+#else
+
+int main(int argc, const char ** argv)
+{
+    return simulator_guarded_run(argc, argv);
+}
+
+#endif

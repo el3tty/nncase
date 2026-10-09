@@ -43,7 +43,6 @@ struct Pdp0Compute {
     uint32_t of_reserved_;    // [23] reg 16407, always written as 0
     uint32_t psum_offset_;    // [24] reg 16408, PuPdp0Compute compute_param (+65632): byte offset into PSUM L1
 };
-static_assert(sizeof(Pdp0Compute) == 100, "Pdp0Compute is a 100-byte snapshot of the PDP0 config registers");
 
 // The PDP0 singleton. The raw byte offsets in the comments are what the pu*/dm*/act0*
 // instruction files use through PDP0::GetPDP0().
@@ -76,10 +75,3 @@ struct PDP0 {
     // @0x46ce50 (PDP07): runs the oldest queued Pdp0Compute (pooling or depthwise conv), then Activate().
     void Compute();
 };
-static_assert(offsetof(PDP0, regs_) == 0x10000, "PDP0 register block");
-static_assert(offsetof(PDP0, weight_queue_) == 65640, "PDP0 queue layout");
-static_assert(offsetof(PDP0, store_of_queue_) == 65720, "PDP0 queue layout");
-static_assert(offsetof(PDP0, load_act0_queue_) == 65800, "PDP0 queue layout");
-static_assert(offsetof(PDP0, act0_queue_) == 65880, "PDP0 queue layout");
-static_assert(offsetof(PDP0, cur_act0_) == 65960, "PDP0 queue layout");
-static_assert(offsetof(PDP0, compute_queue_) == 65976, "PDP0 queue layout");

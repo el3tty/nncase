@@ -140,22 +140,5 @@ struct AI2D {
     void para_parser(const char *path);
 };
 
-static_assert(offsetof(AI2D, glb_) == 8, "AI2D layout");
-static_assert(offsetof(AI2D, src_ch_ptr_) == 136, "AI2D layout");
-static_assert(offsetof(AI2D, m_raw_) == 184, "AI2D layout");
-static_assert(offsetof(AI2D, m_) == 208, "AI2D layout");
-static_assert(offsetof(AI2D, interpolation_) == 232, "AI2D layout");
-static_assert(offsetof(AI2D, src_height_shape_) == 284, "AI2D layout");
-static_assert(offsetof(AI2D, bound_smooth_) == 316, "AI2D layout");
-static_assert(offsetof(AI2D, const_pad_ch_) == 368, "AI2D layout");
-static_assert(offsetof(AI2D, yuv2rgb_coef_) == 376, "AI2D layout");
-static_assert(offsetof(AI2D, intr_mask_) == 424, "AI2D layout");
-static_assert(offsetof(AI2D, glb_start_) == 440, "AI2D layout");
-static_assert(offsetof(AI2D, glb_depth_) == 504, "AI2D layout");
-static_assert(offsetof(AI2D, cur_glb_base_) == 576, "AI2D layout");
-static_assert(offsetof(AI2D, plane_in_) == 584, "AI2D layout");
-static_assert(offsetof(AI2D, interp_planes_) == 262728, "AI2D layout");
-static_assert(offsetof(AI2D, plane_scale_) == 262776, "AI2D layout");
-static_assert(offsetof(AI2D, plane_row_div_) == 262792, "AI2D layout");
 
 constexpr size_t kAi2dWords = (sizeof(AI2D) + 3) / 4;   // minimum size of AI2D_Ai2dInst

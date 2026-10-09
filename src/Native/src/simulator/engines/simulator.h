@@ -13,7 +13,7 @@ public:
     // Decode the instruction word at *pc into an instruction object of class T and advance *pc by N/8 bytes.
     // Only the primary template is declared here; every ISA class provides its own specialisation in
     // <class>instruction.cpp.
-    template <class T, unsigned long N>
+    template <class T, uint32_t N>
     T InstParser(uint8_t ** pc);
 
     // TODO(layout): the parsers read these two members through raw names, so the original

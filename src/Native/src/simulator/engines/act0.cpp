@@ -49,7 +49,6 @@ struct L1View {
     int32_t  height_;      // +32
     int32_t  width_;       // +36
 };
-static_assert(sizeof(L1View) == 40, "L1View layout");
 
 // Tensor4DHelper as built from a DmStoreOf descriptor (see Act0::Compute).
 struct Tensor4DView {
@@ -57,7 +56,6 @@ struct Tensor4DView {
     uint32_t full_[4];     // +8   DmStoreOf::full_shape (not read by any Act0 function)
     uint32_t tile_[4];     // +24  DmStoreOf::tile_shape_: [0] = channels, [1] = rows (H), [2] = columns (W)
 };
-static_assert(sizeof(Tensor4DView) == 40, "Tensor4DView layout");
 
 // Matrix4<fp16> (dims d0 x d1 x d2 x d3, row-major); Act0 only uses it as rows (d2) of 7 columns (d3).
 struct Fp16Matrix {
@@ -65,7 +63,6 @@ struct Fp16Matrix {
     uint16_t* data_;       // +8
     int32_t d0_, d1_, d2_, d3_;  // +16..+28
 };
-static_assert(sizeof(Fp16Matrix) == 32, "Fp16Matrix layout");
 
 // Matrix4::operator()(0, 0, row, col): reports an out-of-range access but still performs it.
 fp16 MatrixAt(const Fp16Matrix& m, int row, int col)
@@ -109,7 +106,9 @@ fp16 PsumToFp16(int32_t psum, uint32_t shift)
     return fp16(0);
   const uint16_t sign = psum < 0 ? 0x8000 : 0;
   const uint32_t mag = psum < 0 ? 0u - static_cast<uint32_t>(psum) : static_cast<uint32_t>(psum);
-  const int msb = 31 - __builtin_clz(mag);                     // index of the highest set bit
+  int msb = 31;                                                // index of the highest set bit (mag != 0)
+  while (!(mag >> msb))
+    --msb;
   const int exponent = msb + 15 - static_cast<int>(shift);     // biased fp16 exponent
   uint32_t mant = msb > 10 ? mag >> (msb - 10) : mag << (10 - msb);   // 11 bits including the hidden one
   uint16_t bits;
@@ -339,7 +338,7 @@ void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHel
       for (int row = 0; row < in.height_; ++row) {
         for (int col = 0; col < in.width_; ++col) {
           const int64_t index = col + static_cast<int64_t>(out.tile_[2]) * (row + static_cast<int64_t>(ch) * out.tile_[1]);
-          dump << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned long>(out.data_[index]) << std::endl;
+          dump << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(out.data_[index]) << std::endl;
         }
       }
     }

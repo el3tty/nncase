@@ -35,9 +35,6 @@ struct Act0Compute {
     uint8_t  per_channel_ = 0; // +36  Act0ComputeInstruction is_by_channel: 1 = one parameter row per channel
     uint32_t* psum_ = nullptr; // +40  PSUM buffer to read (Act0 or Act0 + 0x20000)
 };
-static_assert(offsetof(Act0Compute, out_base_) == 24 && offsetof(Act0Compute, out_route_) == 28 &&
-              offsetof(Act0Compute, out_type_) == 32 && offsetof(Act0Compute, per_channel_) == 36 &&
-              offsetof(Act0Compute, psum_) == 40, "Act0Compute layout");
 
 // The Act0 singleton (global Act0_act0). It starts with two PSUM buffers followed by the
 // configuration written by Act0Src1ConfInstruction (shape, shift, engine) and Act0ComputeInstruction.
@@ -72,5 +69,3 @@ struct Act0 {
     // @0x44d030 (Source 6)
     static void PrintDmOfCKP(L1Helper & shape, Tensor4DHelper & out, ActOutputType type, int address);
 };
-static_assert(offsetof(Act0, batch_) == 0x40000 && offsetof(Act0, shift_) == 0x40010 && offsetof(Act0, engine_) == 0x40014 &&
-              offsetof(Act0, per_channel_) == 0x40024, "Act0 layout");

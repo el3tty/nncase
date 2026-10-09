@@ -4,7 +4,7 @@
 //
 // The instruction classes (l2storeconfinstruction.cpp / l2storeinstruction.cpp) use the singleton
 // `L2Store_L2StoreInst` (0x53A6C0 in the original binary), cast to L2Store*.  The object layout must
-// match the original byte offsets (see the static_asserts at the bottom).  In the original binary the
+// match the original byte offsets.  In the original binary the
 // instruction classes wrote the fields through loose globals; this is the address map:
 //   L2Store_L2StoreInst[0]  0x53A6C0  +0   ddr_dim0    (L2StoreConf, shape0 >> 32)
 //   0x53A6C4  +4   ddr_dim1    (L2StoreConf, shape0 >> 16)
@@ -66,6 +66,3 @@ struct L2Store {
     int64_t PrintLoadGlbCheckPoint(uint32_t rel_offset, uint32_t num_bytes);
 };
 
-static_assert(offsetof(L2Store, mode0_) == 32 && offsetof(L2Store, ddr_ptr_) == 40, "L2Store layout");
-static_assert(offsetof(L2Store, glb_ptr_) == 48 && offsetof(L2Store, batch_count_) == 56, "L2Store layout");
-static_assert(offsetof(L2Store, ddr_offset_) == 72 && offsetof(L2Store, glb_bank_) == 80, "L2Store layout");

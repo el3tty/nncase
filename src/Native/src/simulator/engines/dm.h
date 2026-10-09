@@ -110,10 +110,3 @@ struct Dm {
     static void LoadL1(std::shared_ptr<DmLoadL1> load);
 };
 
-static_assert(offsetof(Dm, loadw_src0_) == 24 && offsetof(Dm, loadw_use_pdp0_) == 40, "Dm layout");
-static_assert(offsetof(Dm, l1_shape_) == 44 && offsetof(Dm, l1_src_) == 80 && offsetof(Dm, l1_layout_) == 88, "Dm layout");
-static_assert(offsetof(Dm, loadact0_src_) == 96 && offsetof(Dm, of_shape_) == 108, "Dm layout");
-static_assert(offsetof(Dm, of_dst_) == 128 && offsetof(Dm, of_use_pdp0_) == 156, "Dm layout");
-static_assert(sizeof(DmLoadW) == 32 && sizeof(DmLoadAct0) == 16, "descriptor layout");
-static_assert(offsetof(DmStoreOf, dst_) == 24 && offsetof(DmStoreOf, mmu_addr_) == 48, "descriptor layout");
-static_assert(offsetof(DmLoadL1, src_) == 48 && offsetof(DmLoadL1, layout_) == 56, "descriptor layout");

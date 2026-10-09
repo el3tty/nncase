@@ -30,15 +30,13 @@ void log_config_bits(std::ofstream &log, const ConfigBits &cfg)
 {
     const std::string bits = cfg.to_string();  // 209 characters, MSB first
     for (size_t pos = 0; pos < 208; pos += 4) {
-        const unsigned long nibble = std::bitset<4>(bits, pos, 4).to_ulong();
+        const uint64_t nibble = std::bitset<4>(bits, pos, 4).to_ulong();
         log << std::hex << std::setw(1) << std::setfill('0') << nibble;
     }
     log << std::endl;
 }
 
 // TODO(layout): the MFU singleton is accessed by raw byte offset (storage is MFU_MFUInst).
-constexpr size_t kMfuLogStreamOffset = 1688;  // 4th std::ofstream inside the MFU object (.rodata 0x54C198)
-constexpr size_t kMfuBusyFlagOffset = 2208;   // byte set to 1 while Memcpy/Memset runs
 
 // Splits a 64-bit shape register into the four halfwords the MFU expects at byte offsets 32..38.
 void store_shape_halfwords(uint8_t *mfu, uint64_t shape)
@@ -101,10 +99,10 @@ void MfuMemcpyInstruction::operation()
     // Hand the operands to the MFU (TODO(layout): MFU object offsets 4, 8, 32..38, 2208).
     mfu_words[1] = raddr_s_val_;
     mfu_words[2] = raddr_d_val_;
-    mfu[kMfuBusyFlagOffset] = 1;
+    reinterpret_cast<MFU *>(mfu)->busy_ = 1;
     store_shape_halfwords(mfu, shape_c_);
     reinterpret_cast<MFU *>(mfu)->Memcpy();
-    mfu[kMfuBusyFlagOffset] = 0;
+    reinterpret_cast<MFU *>(mfu)->busy_ = 0;
 
     // Checkpoint log of the configuration that was used.
     // verified against asm @0x423420: the 208-bit bitset is zero-initialised (vpxor + 2x vmovdqu to the stack), so unset bits 193..207 are 0
@@ -115,7 +113,7 @@ void MfuMemcpyInstruction::operation()
     put_bits(cfg, 49, 48, shape_a_);
     put_bits(cfg, 97, 48, shape_b_);
     put_bits(cfg, 145, 48, shape_c_);
-    log_config_bits(*reinterpret_cast<std::ofstream *>(mfu + kMfuLogStreamOffset), cfg);
+    log_config_bits(reinterpret_cast<MFU *>(mfu)->log_[3], cfg);
 }
 
 // MfuMemcpyInstruction3.cpp  @0x4254f0
@@ -175,10 +173,10 @@ void MfuMemsetInstruction::operation()
     *reinterpret_cast<uint16_t *>(mfu + 98) = static_cast<uint16_t>(rv_val_);
     mfu[72] = l2_datatype_;
     *reinterpret_cast<uint64_t *>(mfu + 64) = shape_a_;
-    mfu[kMfuBusyFlagOffset] = 1;
+    reinterpret_cast<MFU *>(mfu)->busy_ = 1;
     store_shape_halfwords(mfu, shape_b_);
     reinterpret_cast<MFU *>(mfu)->Memset();
-    mfu[kMfuBusyFlagOffset] = 0;
+    reinterpret_cast<MFU *>(mfu)->busy_ = 0;
 
     // Checkpoint log of the configuration that was used.
     // verified against asm @0x423b60: the 208-bit bitset is zero-initialised (vpxor + 2x vmovdqu to the stack), so unset bits 157..207 are 0
@@ -189,7 +187,7 @@ void MfuMemsetInstruction::operation()
     put_bits(cfg, 43, 48, shape_a_);
     put_bits(cfg, 91, 64, shape_b_);
     put_bits(cfg, 155, 2, l2_datatype_);
-    log_config_bits(*reinterpret_cast<std::ofstream *>(mfu + kMfuLogStreamOffset), cfg);
+    log_config_bits(reinterpret_cast<MFU *>(mfu)->log_[3], cfg);
 }
 
 // MfuMemsetInstruction3.cpp  @0x4254a0

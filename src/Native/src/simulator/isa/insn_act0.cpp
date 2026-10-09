@@ -63,18 +63,16 @@ void Act0ComputeInstruction::operation()
   // The "current" Act0Compute descriptor was installed by Act0Src1ConfInstruction.
   // TODO(layout): current descriptor = std::shared_ptr<Act0Compute> at PDP0+65960 / Conv2D+560,
   //               queue = std::deque<std::shared_ptr<Act0Compute>> at PDP0+65880 / Conv2D+480.
-  void *engine = channel_ ? PDP0::GetPDP0() : (void *)Conv2D::GetConv2D();
-  const size_t cur_off   = channel_ ? 65960 : 560;
-  const size_t queue_off = channel_ ? 65880 : 480;
-
-  std::shared_ptr<Act0Compute> compute = at<std::shared_ptr<Act0Compute>>(engine, cur_off);
+  Conv2D *conv = Conv2D::GetConv2D();
+  PDP0 *pdp0 = static_cast<PDP0 *>(PDP0::GetPDP0());
+  std::shared_ptr<Act0Compute> compute = channel_ ? pdp0->cur_act0_ : conv->cur_act0_;
   void *desc = compute.get();
   at<uint32_t>(desc, 24) = raddr_d_val_;   // Act0Compute+24
   at<uint8_t>(desc, 28)  = target_;    // Act0Compute+28
   at<uint32_t>(desc, 32) = dest_datatype_;    // Act0Compute+32
   at<uint8_t>(desc, 36)  = is_by_channel_;    // Act0Compute+36
 
-  at<Act0ComputeQueue>(engine, queue_off).push_back(compute);
+  (channel_ ? pdp0->act0_queue_ : conv->act0_queue_).push_back(compute);
 }
 
 // Act0ComputeInstruction3.cpp  @0x425540
@@ -134,8 +132,10 @@ void Act0Src1ConfInstruction::operation()
   // Install a fresh Act0Compute descriptor as the "current" one of the selected engine
   // (consumed later by Act0ComputeInstruction::operation()).
   // TODO(layout): std::shared_ptr<Act0Compute> at PDP0+65960 / Conv2D+560.
-  void *engine = channel_ ? PDP0::GetPDP0() : (void *)Conv2D::GetConv2D();
-  at<std::shared_ptr<Act0Compute>>(engine, channel_ ? 65960 : 560) = act0->GetAct0Compute();
+  if (channel_)
+    static_cast<PDP0 *>(PDP0::GetPDP0())->cur_act0_ = act0->GetAct0Compute();
+  else
+    Conv2D::GetConv2D()->cur_act0_ = act0->GetAct0Compute();
 }
 
 // Act0Src1ConfInstruction3.cpp  @0x425590

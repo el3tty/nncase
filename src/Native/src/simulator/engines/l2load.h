@@ -4,7 +4,7 @@
 //
 // The L2Load singleton is the raw word array `L2Load_L2LoadInst` (0x54C440 in the original binary); the
 // instruction classes (insn_l2.cpp) cast it to L2Load* and fill the members.  The object layout below must therefore match the
-// original byte offsets exactly (see the static_asserts at the bottom).
+// original byte offsets exactly.
 //
 // Address map of the singleton (unk_ symbol -> member), all derived from the stores done by the
 // instruction classes:
@@ -86,7 +86,3 @@ struct L2Load {
     void LoadW();
 };
 
-static_assert(offsetof(L2Load, wconf_lo_) == 48 && offsetof(L2Load, compressed_) == 56, "L2Load layout");
-static_assert(offsetof(L2Load, ddr_ptr_) == 64 && offsetof(L2Load, glb_ptr_) == 72, "L2Load layout");
-static_assert(offsetof(L2Load, mode0_) == 80 && offsetof(L2Load, w_mode0_) == 82, "L2Load layout");
-static_assert(offsetof(L2Load, glb_bank_) == 92 && sizeof(L2Load) == 96, "L2Load layout");

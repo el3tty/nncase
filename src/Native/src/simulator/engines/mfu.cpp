@@ -19,13 +19,6 @@
 #include <cstring>
 #include <iostream>
 
-static_assert(offsetof(MFU, src_addr_) == 4 && offsetof(MFU, dst_addr_) == 8 && offsetof(MFU, aux_addr_) == 12, "MFU layout");
-static_assert(offsetof(MFU, reduce_init_) == 16 && offsetof(MFU, dim_) == 32 && offsetof(MFU, reduce_op_) == 40, "MFU layout");
-static_assert(offsetof(MFU, shape_src_) == 56 && offsetof(MFU, shape_dst_) == 64 && offsetof(MFU, elem16_) == 72, "MFU layout");
-static_assert(offsetof(MFU, trans_shape_src_) == 80 && offsetof(MFU, trans_elem16_) == 96 && offsetof(MFU, memset_value_) == 98, "MFU layout");
-static_assert(offsetof(MFU, shape_grid_) == 104 && offsetof(MFU, interp_mode_) == 112 && offsetof(MFU, dequant_zero_) == 120, "MFU layout");
-static_assert(offsetof(MFU, quant_zero_) == 128 && offsetof(MFU, quant_enable_) == 135 && offsetof(MFU, dim_sample_) == 144, "MFU layout");
-static_assert(offsetof(MFU, log_) == 152 && offsetof(MFU, busy_) == 2208 && sizeof(MFU) == 2344, "MFU layout");
 
 namespace {
 

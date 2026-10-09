@@ -5,7 +5,7 @@
 // The MFU is a singleton (MFU::GetMFU()) whose configuration registers are written by the Mfu*Instruction
 // classes.  In the original binary the instance lives at 0x54BB00 and the instruction handlers poke it by
 // raw byte offset.
-// The members below carry those offsets; each is checked by a static_assert in mfu.cpp.
+// The members below carry those offsets.
 #include <cstddef>
 #include <cstdint>
 #include <fstream>

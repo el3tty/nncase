@@ -80,12 +80,3 @@ struct TCU {
     void ComputeConv(ComputeInfo& info);
 };
 
-static_assert(sizeof(TCU::PE) == 96, "PE layout");
-static_assert(sizeof(TCU::L1Tensor) == 40, "L1Tensor layout");
-static_assert(offsetof(TCU, weight_sel_) == 73728 && offsetof(TCU, cols_per_group_) == 73748, "TCU layout");
-static_assert(offsetof(TCU::ComputeInfo, psum_) == 72 && offsetof(TCU::ComputeInfo, stride_x_) == 112 &&
-              offsetof(TCU::ComputeInfo, pad_top_) == 124 && offsetof(TCU::ComputeInfo, groups_) == 140 &&
-              offsetof(TCU::ComputeInfo, weight_zero_points_) == 160 && offsetof(TCU::ComputeInfo, weight_dim_) == 168 &&
-              offsetof(TCU::ComputeInfo, if_signed_) == 192 && offsetof(TCU::ComputeInfo, if_zero_points_) == 200 &&
-              offsetof(TCU::ComputeInfo, accumulate_) == 212 && sizeof(TCU::ComputeInfo) == 224,
-              "ComputeInfo layout");

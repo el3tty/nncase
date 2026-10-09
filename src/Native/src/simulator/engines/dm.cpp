@@ -207,7 +207,7 @@ void Dm::LoadL1(std::shared_ptr<DmLoadL1> load)
       for (int x = line; x != n_x + line; ++x) {
         int idx = x;
         for (int y = 0; y < n_y; ++y) {
-          dump << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned long>(IF_L1[idx]) << std::endl;
+          dump << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(IF_L1[idx]) << std::endl;
           idx += n_x;
         }
       }

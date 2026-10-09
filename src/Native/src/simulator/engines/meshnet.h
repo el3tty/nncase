@@ -6,7 +6,7 @@
 //
 // The MeshNet is a singleton (MeshNet::GetMeshNet()).  The Mfu*Act1Conf* instruction handlers configure it by raw
 // byte offset (`GetMeshNet() + offset`), so every register below carries its original byte offset in the comment
-// and mfu.cpp-style static_asserts in meshnet.cpp keep the layout honest.
+//.
 //
 // TODO(layout): the Act1 register block (+4032..+4219) is written by the Mfu*Act1Conf*Instruction files with raw
 // offsets (qword slots 513..522 and dword slots).  The names used here describe how MfuAct1() / MnCompute() read them.

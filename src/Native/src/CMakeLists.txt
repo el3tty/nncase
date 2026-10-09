@@ -87,6 +87,8 @@ if (NOT BUILDING_RUNTIME)
 
     add_executable(nncasetest_dynamic_cli test_dynamic_cli.cpp)
     target_link_libraries(nncasetest_dynamic_cli PRIVATE nncaseruntime)
+
+    add_subdirectory(simulator)
 endif()
 
 if(BUILDING_RUNTIME)

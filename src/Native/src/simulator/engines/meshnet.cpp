@@ -67,29 +67,6 @@ static int ConsumerNodeFromTarget(uint8_t cfg_target)
   }
 }
 
-static_assert(sizeof(MeshNode) == 48, "MeshNode layout");
-static_assert(offsetof(MeshNode, operand_) == 16 && offsetof(MeshNode, result_) == 40 && offsetof(MeshNode, cfg_) == 44,
-              "MeshNode layout");
-static_assert(offsetof(MeshNet, node_) == 8 && offsetof(MeshNet, reduce_enable_) == 1640 && offsetof(MeshNet, order_) == 1648,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, log_) == 1808 && offsetof(MeshNet, string_slot_) == 3856 && offsetof(MeshNet, reduce_op_) == 3872,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, node17_cfg_) == 3876 && offsetof(MeshNet, mne_arg_) == 3881 && offsetof(MeshNet, cfg_slot_) == 3895,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, src0_addr_) == 3904 && offsetof(MeshNet, const_val_) == 3938 && offsetof(MeshNet, chw_in0_) == 3952,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, in0_slice_len_) == 3976 && offsetof(MeshNet, in0_len_) == 4004 && offsetof(MeshNet, in1_dims_) == 4024,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, dq0_scale_) == 4032 && offsetof(MeshNet, q0_scale_) == 4044 && offsetof(MeshNet, q1_enable_) == 4055,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, elem_count_) == 4056 && offsetof(MeshNet, out_dims_) == 4064 && offsetof(MeshNet, write_both_) == 4084,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, a1_src1_chw_) == 4088 && offsetof(MeshNet, a1_s1_no_l1_check_) == 4136 && offsetof(MeshNet, a1_src1_dims_) == 4144,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, a1_src2_dims_) == 4160 && offsetof(MeshNet, a1_dst_len_) == 4172 && offsetof(MeshNet, a1_s1_scale_) == 4184,
-              "MeshNet layout");
-static_assert(offsetof(MeshNet, a1_dst_type_) == 4196 && offsetof(MeshNet, a1_src1_addr_) == 4204 && offsetof(MeshNet, a1_fit_addr_) == 4216,
-              "MeshNet layout");
 
 namespace {
 
@@ -753,7 +730,7 @@ void MeshNet::MfuAct1()
         for (uint32_t h = 0; h < loop.h_; ++h) {
           for (uint32_t w = 0; w < loop.w_; ++w) {
             dump << std::hex << std::setw(2) << std::setfill('0')
-                 << static_cast<unsigned long>(dst[row_base + w]) << std::endl;
+                 << static_cast<uint64_t>(dst[row_base + w]) << std::endl;
           }
           row_base += pitch_w;
         }

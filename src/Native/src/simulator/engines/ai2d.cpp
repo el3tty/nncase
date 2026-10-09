@@ -30,7 +30,7 @@ std::ofstream &Ck(CheckPoint::StreamId id)
 // formatting flags stay set on the stream afterwards.
 void PutHex(std::ostream &os, uint64_t value, int width)
 {
-  os << std::hex << std::setfill('0') << std::setw(width) << static_cast<unsigned long>(value);
+  os << std::hex << std::setfill('0') << std::setw(width) << static_cast<uint64_t>(value);
 }
 
 // Address of a plane inside the source/destination memory: `in_ddr` selects DDR (flat address),

@@ -110,10 +110,10 @@ void DmLoadAct0Instruction::operation()
   std::shared_ptr<DmLoadAct0> load = reinterpret_cast<Dm *>(dm)->GetLoadAct0();
   if (dest_channel_) {
     // TODO(layout): PDP0 + 65800 is its std::deque<std::shared_ptr<DmLoadAct0>>
-    at<LoadAct0Queue>(PDP0::GetPDP0(), 65800).push_back(load);
+    static_cast<PDP0 *>(PDP0::GetPDP0())->load_act0_queue_.push_back(load);
   } else {
     // TODO(layout): Conv2D + 400 is its std::deque<std::shared_ptr<DmLoadAct0>>
-    at<LoadAct0Queue>(Conv2D::GetConv2D(), 400).push_back(load);
+    Conv2D::GetConv2D()->act0_param_queue_.push_back(load);
   }
 }
 
@@ -425,10 +425,10 @@ void DmLoadWInstruction::operation()
   std::shared_ptr<DmLoadW> load = reinterpret_cast<Dm *>(dm)->GetLoadW();
   if (dest_type_) {
     // TODO(layout): PDP0 + 65640 is its std::deque<std::shared_ptr<DmLoadW>>
-    at<LoadWQueue>(PDP0::GetPDP0(), 65640).push_back(load);
+    static_cast<PDP0 *>(PDP0::GetPDP0())->weight_queue_.push_back(load);
   } else {
     // TODO(layout): Conv2D + 240 is its std::deque<std::shared_ptr<DmLoadW>>
-    at<LoadWQueue>(Conv2D::GetConv2D(), 240).push_back(load);
+    Conv2D::GetConv2D()->weight_queue_.push_back(load);
   }
 }
 

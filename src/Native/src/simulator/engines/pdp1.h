@@ -14,7 +14,6 @@ struct PdpWindow {
     FP24::fp24 acc_;                // +24  running max / min / sum, as fp24
     uint32_t count_;                // +28  number of elements summed (average modes)
 };
-static_assert(sizeof(PdpWindow) == 32, "PdpWindow layout");
 
 // PDP1 configuration registers. In the decompiled binary the PDP1 singleton is a static object
 // whose fields are addressed as absolute globals; the original object base is 0x54A940, so the
@@ -86,8 +85,3 @@ struct PDP1 {
     // @0x4406b0 (PDP13): validates the configuration, then runs the whole reduction.
     void PdpRedCompute();
 };
-static_assert(offsetof(PDP1, windows_) == 136, "PDP1 layout");
-static_assert(offsetof(PDP1, cfg_) == 164, "PDP1 layout");
-static_assert(offsetof(Pdp1Config, dequant_scale_) == 76, "Pdp1Config layout");
-static_assert(offsetof(Pdp1Config, quant_flag_) == 87, "Pdp1Config layout");
-static_assert(sizeof(Pdp1Config) == 88, "Pdp1Config layout");

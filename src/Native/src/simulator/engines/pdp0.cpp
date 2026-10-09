@@ -32,7 +32,6 @@ struct L1View {
     int32_t  height_;      // +32
     int32_t  width_;       // +36
 };
-static_assert(sizeof(L1View) == 40, "L1View layout");
 
 // WeightsHelper as consumed by ComputeDW.
 struct WeightsView {

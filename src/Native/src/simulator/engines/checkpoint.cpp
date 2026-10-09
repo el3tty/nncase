@@ -214,7 +214,7 @@ void CheckPoint::PrintCheckPoint(std::ofstream & os, std::vector<int> const & va
   if (width <= 7)
     mask = static_cast<uint32_t>((1 << (4 * width)) - 1);
   auto emit = [&](size_t i) {
-    os << std::setw(width) << std::setfill('0') << static_cast<unsigned long>(static_cast<uint32_t>(values[i]) & mask);
+    os << std::setw(width) << std::setfill('0') << static_cast<uint64_t>(static_cast<uint32_t>(values[i]) & mask);
   };
   if (reverse) {
     for (int i = static_cast<int>(values.size()) - 1; i >= 0; --i)
@@ -277,9 +277,9 @@ void CheckPoint::PrintPdp0WeSpadWr(WeightsHelper & weights, Matrix4<uint8_t> & b
 // Line format: "<address, 6 hex digits> <bytes, most significant first, 2 hex digits each>"
 void CheckPoint::PrintStoreOfCheckPoint(std::ofstream & os, std::vector<uint8_t> & bytes, uint32_t & address)
 {
-  os << std::setw(6) << std::setfill('0') << static_cast<unsigned long>(address) << " ";
+  os << std::setw(6) << std::setfill('0') << static_cast<uint64_t>(address) << " ";
   for (int i = static_cast<int>(bytes.size()) - 1; i >= 0; --i)
-    os << std::setw(2) << std::setfill('0') << static_cast<long>(bytes[i]);
+    os << std::setw(2) << std::setfill('0') << static_cast<int64_t>(bytes[i]);
   os << std::endl;
 }
 
