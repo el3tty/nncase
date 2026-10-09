@@ -110,9 +110,9 @@ struct MfuAct1ConfSrc1Instruction : public KInstruction {
     uint8_t sid_;  // +53 raw[27] source id: selects config bank 0/1
     uint8_t slice_loc_;  // +54 raw[28] slice location (l1/l2), stored next to the address
     uint8_t reserved_29_;  // +55 raw[31:29] reserved, unused
-    uint32_t rslice_val_;  // +56 g_gp_reg[rslice] (not used by operation)
-    uint32_t rright_repeats_val_;  // +60 g_gp_reg[rright_repeats] (not used by operation)
-    uint32_t rslice_repeats_val_;  // +64 g_gp_reg[rslice_repeats]: source address
+    uint32_t rslice_val_;  // +56 g_gp_reg[rslice]: slice length
+    uint32_t rright_repeats_val_;  // +60 g_gp_reg[rright_repeats]: repeat factor a
+    uint32_t rslice_repeats_val_;  // +64 g_gp_reg[rslice_repeats]: repeat factor b
     void get_next_pc() override;
     void operation() override;
     ~MfuAct1ConfSrc1Instruction() override;

@@ -330,12 +330,17 @@ void MfuAct1ConfSrc1Instruction::get_next_pc()
 // MfuAct1ConfSrc1Instruction2.cpp  @0x4220c0
 void MfuAct1ConfSrc1Instruction::operation()
 {
-    // Act1 source-1 config: sid selects the source (0: src1 at +4120/+4136, 1: src2 at +4132/+4137).
+    // Act1 source-1 config: sid selects the source (0: src1 at +4112..+4120/+4136, 1: src2 at +4124..+4132/+4137).
+    // verified against asm @0x4220c0: one qword store {slice_len, rpt_a} + dword rpt_b + byte no_l1_check per source.
     MeshNet * const mn = MeshNet::GetMeshNet();
     if (sid_) {
+        mn->a1_s2_slice_len_ = rslice_val_;
+        mn->a1_s2_rpt_a_ = rright_repeats_val_;
         mn->a1_s2_rpt_b_ = rslice_repeats_val_;
         mn->a1_s2_no_l1_check_ = slice_loc_;
     } else {
+        mn->a1_s1_slice_len_ = rslice_val_;
+        mn->a1_s1_rpt_a_ = rright_repeats_val_;
         mn->a1_s1_rpt_b_ = rslice_repeats_val_;
         mn->a1_s1_no_l1_check_ = slice_loc_;
     }
