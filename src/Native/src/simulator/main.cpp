@@ -168,26 +168,20 @@ static int simulator_run(int argc, const char ** argv) {
 
         const uint32_t raw    = *reinterpret_cast<uint32_t *>(pc);      // movl (%rax),%ecx
         const uint32_t opcode = raw & 0x7F;
-        // Sub-opcode fields; their position depends on the instruction format.
-        const uint32_t addi_func    = (raw >> 17) & 0x7;    // OP_ADDI:  must be 0
-        // TODO: other addi_func values are rejected as unsupported; confirm whether they are other ADDI-type ops (slti, xori, ...)
-        const uint32_t alu_op       = (raw >> 17) & 0x1F;   // OP_ALU:   add, sub, mul, div, divu, rem, remu
-        const uint32_t load_kind    = (raw >> 17) & 0x7;    // OP_LOAD:  lw, lh, lhu, lb, lbu
-        const uint32_t store_kind   = (raw >> 17) & 0x7;    // OP_STORE: sw, sh, sb
-        const uint32_t branch_cond  = (raw >> 17) & 0x7;    // OP_BRANCH: beq, bne, blt, bltu, bge, bgeu
-        const uint32_t conf_id      = (raw >> 13) & 0xF;    // OP_DM_CONF / OP_PU_CONF / OP_PU_PDP0_CONF: which configuration register
-        // TODO: the gaps (DM_CONF 3 and 6+, PU_CONF 9+, PU_PDP0_CONF 8+) are rejected as unsupported; confirm they are unused
-        const uint32_t mfu_conf_id  = (raw >> 7) & 0x1F;    // OP_MFU_CONF: which configuration register
-        // TODO: mfu_conf_id 5 and 15+ are rejected as unsupported; confirm 5 is not a missing MfuPdp1Conf5
 
         switch (opcode) {
         // ---------------- scalar core (parser_operation executes them, pc += 4) ----------------
-        case OP_ADDI:
+        case OP_ADDI: {
+            const uint32_t addi_func = (raw >> 17) & 0x7;   // must be 0
+            // TODO: other addi_func values are rejected as unsupported; confirm whether they are other ADDI-type ops (slti, xori, ...)
             if (addi_func != 0) goto unsupported;                          // verified @0x40bd6e
-            P32(AddiInstruction); break;
+            P32(AddiInstruction);
+            break;
+        }
         case OP_LUI:   P32(LuiInstruction);   break;
         case OP_AUIPC: P32(AuipcInstruction); break;
-        case OP_ALU:                                                    // alu_op = raw[21:17]
+        case OP_ALU: {
+            const uint32_t alu_op = (raw >> 17) & 0x1F;   // add, sub, mul, div, divu, rem, remu
             switch (alu_op) {
             case 0: P32(AddInstruction);  break;
             case 1: P32(SubInstruction);  break;
@@ -199,7 +193,9 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
-        case OP_LOAD:                                                   // load_kind = raw[19:17]
+        }
+        case OP_LOAD: {
+            const uint32_t load_kind = (raw >> 17) & 0x7;   // lw, lh, lhu, lb, lbu
             switch (load_kind) {
             case 0: P32(LwInstruction);  break;
             case 1: P32(LhInstruction);  break;
@@ -209,7 +205,9 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
-        case OP_STORE:                                                  // store_kind = raw[19:17]
+        }
+        case OP_STORE: {
+            const uint32_t store_kind = (raw >> 17) & 0x7;   // sw, sh, sb
             switch (store_kind) {
             case 0: P32(SwInstruction); break;
             case 1: P32(ShInstruction); break;
@@ -217,7 +215,9 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
-        case OP_BRANCH:                                                 // parse, operation, retarget pc if taken
+        }
+        case OP_BRANCH: {
+            const uint32_t branch_cond = (raw >> 17) & 0x7;   // beq, bne, blt, bltu, bge, bgeu
             switch (branch_cond) {
             case 0: PB32(BeqInstruction);  break;
             case 1: PB32(BneInstruction);  break;
@@ -228,6 +228,7 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
+        }
         case OP_JAL:   PB32(JalInstruction);  break;
         case OP_JALR:  PB32(JalrInstruction); break;
         case OP_EXTRW:  PO32(ExtrwInstruction);  break;
@@ -268,7 +269,9 @@ static int simulator_run(int argc, const char ** argv) {
         case OP_L2_LOADW:       PO32(L2LoadWInstruction);     break;
 
         // ---------------- DM ----------------
-        case OP_DM_CONF:
+        case OP_DM_CONF: {
+            const uint32_t conf_id = (raw >> 13) & 0xF;   // which configuration register
+            // TODO: conf_id gaps (DM_CONF 3 and 6+) are rejected as unsupported; confirm they are unused
             switch (conf_id) {
             case 0: PO32(DmLoadL1ConfInstruction);     break;
             case 1: PO32(DmLoadWConfInstruction);      break;
@@ -278,13 +281,16 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
+        }
         case OP_DM_LOAD_L1:   PO32(DmLoadL1Instruction);   break;
         case OP_DM_LOAD_W:    PO32(DmLoadWInstruction);    break;
         case OP_DM_LOAD_ACT0: PO32(DmLoadAct0Instruction); break;
         case OP_DM_STORE_OF:  PO32(DmStoreOfInstruction);  break;
 
         // ---------------- PU ----------------
-        case OP_PU_CONF:
+        case OP_PU_CONF: {
+            const uint32_t conf_id = (raw >> 13) & 0xF;   // which configuration register
+            // TODO: conf_id gaps (PU_CONF 9+) are rejected as unsupported; confirm they are unused
             switch (conf_id) {
             case 0: PO32(PuFetchifConf1Instruction);    break;
             case 1: PO32(PuFetchifConf2Instruction);    break;      // operation = empty stub
@@ -298,8 +304,11 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
+        }
         case OP_PU_FORWARD_PSUM: PO32(PuForward_psumInstruction); break;
-        case OP_PU_PDP0_CONF:
+        case OP_PU_PDP0_CONF: {
+            const uint32_t conf_id = (raw >> 13) & 0xF;   // which configuration register
+            // TODO: conf_id gaps (PU_PDP0_CONF 8+) are rejected as unsupported; confirm they are unused
             switch (conf_id) {
             case 0: PO32(PuPdp0ModeConfInstruction);     break;
             case 1: PO32(PuPdp0FetchifConf1Instruction); break;
@@ -312,6 +321,7 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
+        }
 
         // ---------------- ACT0 / MFU ----------------
         case OP_ACT0_SRC1_CONF: PO32(Act0Src1ConfInstruction);   break;
@@ -321,7 +331,9 @@ static int simulator_run(int argc, const char ** argv) {
         case OP_MFU_TRANSPOSE:  PO32(MfuTransposeInstruction);   break;
         case OP_MFU_PDP1_COMPUTE: PO32(MfuPdp1ComputeInstruction); break;
         case OP_MFU_ACT1_COMPUTE: PO32(MfuAct1ComputeInstruction); break;
-        case OP_MFU_CONF:                                               // mfu_conf_id = raw[11:7]
+        case OP_MFU_CONF: {
+            const uint32_t mfu_conf_id = (raw >> 7) & 0x1F;   // which configuration register
+            // TODO: mfu_conf_id 5 and 15+ are rejected as unsupported; confirm 5 is not a missing MfuPdp1Conf5
             switch (mfu_conf_id) {
             case 0:  PO32(MfuTransposeConfInstruction);   break;
             case 1:  PO32(MfuPdp1Conf1Instruction);       break;
@@ -340,6 +352,7 @@ static int simulator_run(int argc, const char ** argv) {
             default: goto unsupported;
             }
             break;
+        }
 
         default:
         unsupported:
