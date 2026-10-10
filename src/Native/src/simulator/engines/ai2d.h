@@ -73,7 +73,6 @@ struct AI2D {
     uint32_t src_format_;            // +308   0 NV12, 1 NV21, 2 I420, 3 planar, 4 packed RGB888, 5 raw16
     uint32_t dst_format_;            // +312   same encoding
     uint8_t  bound_smooth_;          // +316
-    uint8_t  pad316_[3];            // +317
     uint32_t csc_en_;                // +320   1 = run YUV444toRGB888 before storing
     uint32_t src_ind_;               // +324   1 = source is in DDR, 0 = in GLB
     uint32_t dst_ind_;               // +328   1 = destination is in DDR, 0 = in GLB
@@ -89,7 +88,6 @@ struct AI2D {
     uint8_t  const_pad_ch_[4];       // +368   constant padding value per plane
     uint8_t  is_signed_;             // +372   "signed" register bit (data is int8/int16)
     uint8_t  cmd_id_;                // +373
-    uint8_t  pad374_[2];            // +374
     int32_t  yuv2rgb_coef_[12];      // +376   12-bit signed (sign-extended by ai_2d_para_update)
     uint32_t intr_mask_;             // +424
     uint32_t calc_enable_;           // +428
@@ -97,7 +95,6 @@ struct AI2D {
     uint32_t glb_addr_offset_;       // +436   added to GLB addresses in the check point dumps (field name is a guess; the layout is verified)
     uint32_t glb_start_[16];         // +440   MmuConf segment start (written as _G.AI2D_Ai2dInst[seg + 110])
     uint32_t glb_depth_[16];         // +504   MmuConf segment depth (written as _G.AI2D_Ai2dInst[seg + 126])
-    uint8_t  pad568_[8];            // +568   padding, never accessed in the asm
     uint8_t *cur_glb_base_;          // +576   GLB bank base of the last Print*Glb call
     uint8_t  plane_in_[4][0x10000];  // +584   loaded source planes (src_height x src_width bytes each)
     uint8_t **interp_planes_;        // +262728 [4] -> 4 MiB planes: resampled image (dst_width x dst_height)
@@ -108,7 +105,6 @@ struct AI2D {
     uint8_t **src_yf_;               // +262768 [dst_width][dst_height] 8-bit y fraction
     float    plane_scale_[4];        // +262776 bytes per sample of the destination planes (see slice_factor_cnt)
     uint8_t  plane_row_div_[4];      // +262792 vertical sub-sampling divisor of each plane (see slice_factor_cnt)
-    uint8_t  tail_pad_[4];          // +262796
 
     // Singleton accessor: the object lives in the global register block AI2D_Ai2dInst.
     static AI2D *GetAI2D();

@@ -193,22 +193,17 @@ void MeshNet::Init() {
   reduce_fn_ = nullptr;
   for (MeshNode & n : node_) {
     n.op_ = nullptr;
+    n.op_config_ = 0;
     std::memset(n.in_, 0xFF, sizeof n.in_);      // unconnected
-    std::memset(n.pad11_, 0, sizeof n.pad11_);
     std::fill(std::begin(n.operand_), std::end(n.operand_), nullptr);
     std::memset(static_cast<void *>(&n.result_), 0, sizeof n.result_);
-    std::memset(n.pad42_, 0, sizeof n.pad42_);
-    n.cfg_ = 0;
   }
   reduce_enable_ = 0;
   order_count_ = 0;
-  std::memset(reserved1672_, 0, sizeof reserved1672_);
-  std::memset(reserved1680_, 0, sizeof reserved1680_);
-  // everything behind the four trace streams (string_slot .. a1_fit_addr)
-  std::memset(static_cast<void *>(&string_slot_), 0, sizeof(MeshNet) - offsetof(MeshNet, string_slot_));
-  // verified against asm @0x445f80: the object lives at 0x54AA60, so its fields sit at 0x54BAB8..0x54BAC8
-  // +0x1058.. (a1_s1_scale .. a1_use_mfu_fit); the original's explicit 16-bit zero stores at +0x1058 / +0x105e are
-  // covered by the memset above.
+  // everything behind the trace streams (reduce_op_ .. a1_fit_addr_) is plain data
+  uint8_t * const first = reinterpret_cast<uint8_t *>(&reduce_op_);
+  uint8_t * const last = reinterpret_cast<uint8_t *>(&a1_fit_addr_ + 1);
+  std::memset(first, 0, static_cast<size_t>(last - first));
 }
 
 // @0x426ba0 (MeshNet1): the original body only destroys the four trace streams, the order vector and the (empty) string.
@@ -407,7 +402,7 @@ void MeshNet::MeshNetOp()
       arg = mne_arg_[12];
     else if (i == 15)
       arg = mne_arg_[13];
-    reinterpret_cast<MNE *>(&node_[i])->MneProc(static_cast<uint8_t>(i), arg);
+    node_[i].MneProc(static_cast<uint8_t>(i), arg);
   }
 }
 
@@ -475,7 +470,7 @@ void MeshNet::MnCompute()
   // operand pointers: every node reads the `result` of its producers.  An unconnected input (0xFF) points past the
   // node array, as in the original (the operator never reads it).
   auto result_of = [this](uint8_t id) {
-    return reinterpret_cast<BF16::bfloat16 *>(reinterpret_cast<uint8_t *>(this) + 48 * id + 48);
+    return reinterpret_cast<BF16::bfloat16 *>(reinterpret_cast<uint8_t *>(&node_[0].result_) + sizeof(MeshNode) * id);
   };
   for (int k = order_count_ - 1; k >= 0; --k) {
     MeshNode & n = node_[order_[k]];
@@ -547,7 +542,7 @@ void MeshNet::MnCompute()
     for (int k = order_count_ - 1; k >= 0; --k) {
       const uint8_t id = order_[k];
       MeshNode & n = node_[id];
-      uint32_t cfg = n.cfg_;
+      uint32_t cfg = n.op_config_;
       uint16_t function_set = 0;
       if (id == 17) {
         cfg = node17_cfg_;

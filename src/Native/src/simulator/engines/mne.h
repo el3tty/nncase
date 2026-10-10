@@ -15,9 +15,8 @@ struct MNE {
     typedef void (*Op)(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *in2,
                        BF16::bfloat16 *out, uint32_t mode, uint8_t **tables, uint16_t fset);
 
-    Op      op_;          // +0   selected operation (set by MneProc)
-    uint8_t pad8_[36];    // +8   (unused here)
-    uint32_t op_config_;        // +44  op configuration passed to MneProc
+    Op      op_;          // selected operation (set by MneProc)
+    uint32_t op_config_;        // op configuration passed to MneProc
 
     static void mne_phold  (BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, uint32_t, uint8_t **, uint16_t);
     static void mne_inout  (BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, uint32_t, uint8_t **, uint16_t);

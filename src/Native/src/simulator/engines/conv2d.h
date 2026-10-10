@@ -44,7 +44,6 @@ struct PuCompute {
     uint32_t in_height_ = 0;      // +40  shape word 1: padded input height
     uint32_t in_width_ = 0;       // +44  shape word 0: padded input width
     uint8_t  pad_value_ = 0;      // +48  PuFetchifConf4 rpad_value_val (low byte): value fed outside the tensor
-    uint8_t  pad49_[3] = {};      // +49
     uint32_t pad_bottom_ = 0;     // +52  shape word 2   (asm @0x4681e0: word 52/56 are subtracted from in_height, 60/64 from in_width; side names inferred)
     uint32_t pad_top_ = 0;        // +56  shape word 3
     uint32_t pad_left_ = 0;       // +60  shape word 1
@@ -65,13 +64,10 @@ struct PuCompute {
     uint8_t  accumulate_ = 0;     // +140 PuComputeConf load_psum: accumulate into the PSUM already present
     uint8_t  clear_psum_ = 0;     // +141 PuComputeConf clr_psum: zero _G.PSUM_L1 before computing
     uint8_t  flag_142_ = 0;       // +142 PuComputeConf release_if
-    uint8_t  pad143_ = 0;         // +143
     uint32_t mode_ = 0;           // +144 PuComputeConf dest_target: 1 = result is forwarded to ACT0
     uint32_t param_148_ = 0;      // +148 PuComputeConf mode: non-zero selects window step 1 and col_stride = fetch_imm17 (asm @0x4686ab)
     uint32_t shift_mode_ = 0;     // +152 PuCompute of_shift_mode: PSUM scaling (0 none, 1 << 4, else >> 4)
     uint8_t  if_flag_ = 0;        // +156 non-zero: Compute() takes an IF tile from the DmLoadL1 queue
-    uint8_t  pad157_ = 0;           // +157
-    uint8_t  pad158_[2] = {};     // +158
 };
 
 struct Conv2D {

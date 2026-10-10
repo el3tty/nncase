@@ -99,13 +99,13 @@ void DmLoadAct0Instruction::get_next_pc()
 // DmLoadAct0Instruction2.cpp  @0x422690
 void DmLoadAct0Instruction::operation()
 {
-  char *dm = Dm::GetDm();
+  Dm *dm = Dm::GetDm();
   // Dm singleton: LoadAct0 section
-  at<uint64_t>(dm, 96)  = (uint64_t)(uintptr_t)_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB source pointer
-  at<uint8_t>(dm, 104)  = dest_channel_;          // TODO(layout): queue selector stored in the Dm
-  at<uint8_t>(dm, 105)  = is_by_channel_ != 0;
+  dm->loadact0_src_ = reinterpret_cast<const int16_t *>(_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF));  // GLB source pointer
+  dm->loadact0_use_pdp0_ = dest_channel_;          // queue selector
+  dm->loadact0_flag_ = is_by_channel_ != 0;
 
-  std::shared_ptr<DmLoadAct0> load = reinterpret_cast<Dm *>(dm)->GetLoadAct0();
+  std::shared_ptr<DmLoadAct0> load = dm->GetLoadAct0();
   if (dest_channel_) {
     // TODO(layout): PDP0 + 65800 is its std::deque<std::shared_ptr<DmLoadAct0>>
     static_cast<PDP0 *>(PDP0::GetPDP0())->load_act0_queue_.push_back(load);
@@ -155,13 +155,12 @@ void DmLoadL1ConfInstruction::get_next_pc()
 // DmLoadL1ConfInstruction2.cpp  @0x41e030
 void DmLoadL1ConfInstruction::operation()
 {
-  // TODO(layout): Dm singleton fields, accessed as 32-bit words (index = byte offset / 4).
-  uint32_t *dm = reinterpret_cast<uint32_t *>(Dm::GetDm());
-  dm[11] = (rstride_s_val_ >> 32) & 0xFFFF;   // Dm+44: L1 load shape dim0
-  dm[12] = (rstride_s_val_ >> 16) & 0xFFFF;   // Dm+48: L1 load shape dim1
-  dm[13] = rstride_s_val_ & 0xFFFF;           // Dm+52: L1 load shape dim2
-  dm[14] = 0;                        // Dm+56: dim3 (always cleared)
-  dm[15] = datatype_;                     // Dm+60: L1 load mode (consumed by Dm::GetDmLoadL1)
+  Dm *dm = Dm::GetDm();
+  dm->l1_shape_[0] = (rstride_s_val_ >> 32) & 0xFFFF;   // L1 load shape dim0
+  dm->l1_shape_[1] = (rstride_s_val_ >> 16) & 0xFFFF;   // L1 load shape dim1
+  dm->l1_shape_[2] = rstride_s_val_ & 0xFFFF;           // L1 load shape dim2
+  dm->l1_shape_[3] = 0;                                 // dim3 (always cleared)
+  dm->l1_mode_ = datatype_;                             // L1 load mode (consumed by Dm::GetDmLoadL1)
 }
 
 // DmLoadL1ConfInstruction3.cpp  @0x425ea0
@@ -210,7 +209,7 @@ void DmLoadL1Instruction::operation()
   if (flag_)
     _G.debug_flag = 1;   // byte at 0x5cc7b0
 
-  Dm *dm = reinterpret_cast<Dm *>(Dm::GetDm());
+  Dm *dm = Dm::GetDm();
   // Dm+64..76: the four 16-bit dims of the shape register (dim0 = [63:48] ... dim3 = [15:0])
   dm->l1_dims_[0] = (uint32_t)(rshape_val_ >> 48);
   dm->l1_dims_[1] = (uint32_t)((rshape_val_ >> 32) & 0xFFFF);
@@ -301,8 +300,7 @@ void DmLoadWConf_deqInstruction::get_next_pc()
 // DmLoadWConf_deqInstruction2.cpp  @0x41e010
 void DmLoadWConf_deqInstruction::operation()
 {
-  // TODO(layout): Dm singleton, +16 = weight dequantisation mode
-  *reinterpret_cast<uint32_t *>(Dm::GetDm() + 16) = quant_type_;
+  Dm::GetDm()->loadw_deq_mode_ = quant_type_;
 }
 
 // DmLoadWConf_deqInstruction3.cpp  @0x425db0
@@ -344,11 +342,10 @@ void DmLoadWConfInstruction::get_next_pc()
 // DmLoadWConfInstruction2.cpp  @0x41dff0
 void DmLoadWConfInstruction::operation()
 {
-  // TODO(layout): Dm singleton weight-load section, accessed as 32-bit words
-  uint32_t *dm = reinterpret_cast<uint32_t *>(Dm::GetDm());
-  dm[1] = kernel_h_;    // Dm+4
-  dm[2] = kernel_w_;    // Dm+8
-  dm[3] = (uint32_t)rstride_oc_val_;   // Dm+12
+  Dm *dm = Dm::GetDm();
+  dm->conf_a_ = kernel_h_;
+  dm->conf_b_ = kernel_w_;
+  dm->loadw_len_ = (uint32_t)rstride_oc_val_;
 }
 
 // DmLoadWConfInstruction3.cpp  @0x425e00
@@ -407,14 +404,14 @@ void DmLoadWInstruction::operation()
   if (flag_)
     _G.debug_flag = 1;
 
-  char *dm = Dm::GetDm();
+  Dm *dm = Dm::GetDm();
   // Dm singleton: LoadW section
-  at<uint64_t>(dm, 24) = (uint64_t)(uintptr_t)_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB pointer 0
-  at<uint64_t>(dm, 32) = (uint64_t)(uintptr_t)_G.GLB[raddr_bw_val_ >> 28] + (raddr_bw_val_ & 0xFFFFFFF);  // GLB pointer 1
-  at<uint8_t>(dm, 40)  = dest_type_;
-  at<uint16_t>(dm, 42) = (uint16_t)r_iochannels_val_lo32_;   // line count (byte size = Dm+12 * Dm+42)
+  dm->loadw_src0_ = _G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB pointer 0
+  dm->loadw_src1_ = _G.GLB[raddr_bw_val_ >> 28] + (raddr_bw_val_ & 0xFFFFFFF);  // GLB pointer 1
+  dm->loadw_use_pdp0_ = dest_type_;
+  dm->loadw_lines_ = (uint16_t)r_iochannels_val_lo32_;   // line count (byte size = loadw_len_ * loadw_lines_)
 
-  std::shared_ptr<DmLoadW> load = reinterpret_cast<Dm *>(dm)->GetLoadW();
+  std::shared_ptr<DmLoadW> load = dm->GetLoadW();
   if (dest_type_) {
     // TODO(layout): PDP0 + 65640 is its std::deque<std::shared_ptr<DmLoadW>>
     static_cast<PDP0 *>(PDP0::GetPDP0())->weight_queue_.push_back(load);
@@ -464,12 +461,12 @@ void DmStoreOfConfInstruction::get_next_pc()
 void DmStoreOfConfInstruction::operation()
 {
   // TODO(layout): Dm singleton OF-store section, accessed as 32-bit words (index = byte offset / 4).
-  uint32_t *dm = reinterpret_cast<uint32_t *>(Dm::GetDm());
-  dm[27] = (rstride_d_val_ >> 32) & 0xFFFF;   // Dm+108: OF store shape dim0
-  dm[28] = (rstride_d_val_ >> 16) & 0xFFFF;   // Dm+112: dim1
-  dm[29] = rstride_d_val_ & 0xFFFF;           // Dm+116: dim2
-  dm[30] = 0;                        // Dm+120: dim3 (always cleared)
-  dm[31] = datatype_;                     // Dm+124: OF store mode (consumed by Dm::GetStoreOf)
+  Dm *dm = Dm::GetDm();
+  dm->of_shape_[0] = (rstride_d_val_ >> 32) & 0xFFFF;   // OF store shape dim0
+  dm->of_shape_[1] = (rstride_d_val_ >> 16) & 0xFFFF;   // dim1
+  dm->of_shape_[2] = rstride_d_val_ & 0xFFFF;           // dim2
+  dm->of_shape_[3] = 0;                                 // dim3 (always cleared)
+  dm->of_mode_ = datatype_;                             // OF store mode (consumed by Dm::GetStoreOf)
 }
 
 // DmStoreOfConfInstruction3.cpp  @0x425d60
@@ -513,7 +510,7 @@ void DmStoreOfInstruction::get_next_pc()
 // DmStoreOfInstruction2.cpp  @0x422750
 void DmStoreOfInstruction::operation()
 {
-  Dm * dm = reinterpret_cast<Dm *>(Dm::GetDm());
+  Dm * dm = Dm::GetDm();
   const uint32_t bank = raddr_d_val_ >> 28;
 
   // Dm singleton: OF-store section

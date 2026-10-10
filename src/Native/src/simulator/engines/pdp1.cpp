@@ -35,7 +35,7 @@ bool IsByteType(uint8_t dtype) { return static_cast<uint8_t>(dtype - 1) < 2u; }
 
 // PDP1 singleton constructor (inlined into PDP1::GetPDP1 in the dump, "lazy-init elided"):
 // 16 empty window slots, everything else zero.
-PDP1::PDP1() : reserved_8_{}, windows_(16), reserved_160_(0), cfg_{} {}
+PDP1::PDP1() : windows_(16), cfg_{} {}
 
 // PDP1::GetPDP1() is not in the dump; a function-local static is equivalent to the guarded static.
 PDP1* PDP1::GetPDP1()

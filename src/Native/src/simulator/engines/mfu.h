@@ -3,9 +3,9 @@
 // K230 NPU C-model.  Lifted from IDA/Hex-Rays output (MFU1..MFU15 in sources/).
 //
 // The MFU is a singleton (MFU::GetMFU()) whose configuration registers are written by the Mfu*Instruction
-// classes.  In the original binary the instance lives at 0x54BB00 and the instruction handlers poke it by
-// raw byte offset.
-// The members below carry those offsets.
+// classes.  In the original binary the instance lives at 0x54BB00 and the instruction handlers poked it by
+// raw byte offset; the byte offsets in the comments below are those of the original binary (the layout here no
+// longer reproduces them).
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
@@ -45,9 +45,7 @@ struct MFU {
     uint8_t  quant_enable_;        // +135  destination tensor holds 8-bit quantised data
     uint16_t dim_sample_[4];       // +144  Sample loop extents (batch, channel, height, width)
     std::ofstream log_[4];         // +152  debug trace streams (+152, +664, +1176, +1688); log[3] is used by Mfu*Instruction
-    uint64_t string_slot_;         // +2200 an empty COW std::string in the original (never touched)
     uint8_t  busy_;                // +2208 set while Memcpy / Memset run (written by the instruction handlers)
-    uint8_t  reserved_[135];       // +2209 unused containers of the original (all null); object ends at +2344
 
     MFU();
     ~MFU();     // verified against asm @0x426e80 (MFUD2): plain destructor, no vptr; it only frees the trace-stream/vector storage
@@ -57,7 +55,6 @@ struct MFU {
     void Reset();
 
     // Singleton accessor.  @0x445da0 (MFU15)
-    // Returns void* because callers (Mfu*Instruction) address the object by raw byte offset (TODO(layout)).
     static void* GetMFU();
 
 private:

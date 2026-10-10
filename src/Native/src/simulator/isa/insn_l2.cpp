@@ -279,7 +279,6 @@ void L2StoreConfInstruction::operation()
   st->glb_dim3_ = 0;                         // +28
   // The original stores the 16-bit mode word (mode_lo | mode_hi << 8) as a zero-extended 64-bit value.
   const uint16_t mode = (uint16_t)(l2_datatype_ | (ddr_datatype_ << 8));
-  std::memset(&st->mode0_, 0, 8);
   st->mode0_ = (uint8_t)(mode & 0xFF);       // +32
   st->mode1_ = (uint8_t)(mode >> 8);         // +33
 }

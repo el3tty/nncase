@@ -43,7 +43,6 @@ struct L2Store {
     // otherwise 8-bit elements).
     uint8_t mode0_;            // +32
     uint8_t mode1_;            // +33
-    uint8_t pad34_[6];         // +34  zero (the conf instruction stores the mode as a 64-bit word)
     uint8_t * ddr_ptr_;        // +40  destination pointer (_G.DDR + ddr_offset)
     uint8_t * glb_ptr_;        // +48  source pointer inside the GLB bank
     // Extent of the transfer.

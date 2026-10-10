@@ -34,9 +34,9 @@ struct L1View {
 
 // Dm1.cpp  @0x44d700 (Source 1)
 // The original constructs the singleton behind a guard variable; the object is the Dm_dm global.
-char* Dm::GetDm()
+Dm* Dm::GetDm()
 {
-  return reinterpret_cast<char*>(_G.Dm_dm);
+  return reinterpret_cast<Dm*>(_G.Dm_dm);
 }
 
 // Dm2.cpp  @0x44d790 (Source 2)

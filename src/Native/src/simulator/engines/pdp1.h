@@ -27,7 +27,6 @@ struct Pdp1Config {
     uint16_t avg_scale_;         // +174 0x54A9EE  Conf4 rs3_val: fp16 factor applied in mode 3 (average)
     uint8_t  enable_h2c_;        // +176 0x54A9F0  Conf4 flag_a (requires pad_top == 0)
     uint8_t  enable_bw_;         // +177 0x54A9F1  Conf4 flag_b (requires 1x1 windows and strides)
-    uint8_t  reserved_178_[2];   // +178 0x54A9F2
     uint16_t dim1_count_;        // +180 0x54A9F4  Compute shape bits 63..48: outer loop count
     uint16_t dim2_count_;        // +182 0x54A9F6  Compute shape bits 47..32
     uint16_t shape_h_;           // +184 0x54A9F8  Compute shape bits 31..16: input height
@@ -40,21 +39,16 @@ struct Pdp1Config {
     uint8_t  pad_bottom_;        // +195 0x54AA03  Conf3 shape bits 47..32
     uint8_t  pad_left_;          // +196 0x54AA04  Conf3 shape bits 31..16
     uint8_t  pad_right_;         // +197 0x54AA05  Conf3 shape bits 15..0 (low byte; 0x54AA06 is its high byte)
-    uint8_t  reserved_198_;      // +198 0x54AA06
     uint8_t  pool_mode_;         // +199 0x54AA07  Conf1 mode: 0 min, 1 max, 2 average by 1/count, 3 sum scaled by avg_scale (TIR PDP_FUNCTION min/max/average/sum)
-    uint8_t  reserved_200_[8];   // +200 0x54AA08
     uint16_t src_pitch_;         // +208 0x54AA10  Conf1 shape_a: source row pitch (elements, multiple of 16/32 bytes)
     uint16_t src_plane_rows_;    // +210 0x54AA12  source rows per plane
     uint16_t src_dim2_;          // +212 0x54AA14  source planes per dim1 step
-    uint16_t reserved_214_;      // +214 0x54AA16
     uint8_t  conf3_rs1_;         // +216 0x54AA18  Conf3 rs1_val (unused by the lifted code)
     uint8_t  conf3_rs2_;         // +217 0x54AA19  Conf3 rs2_val (unused by the lifted code)
     uint16_t pad_value_;         // +218 0x54AA1A  Conf3 rs3_val: fp16 value of out-of-bounds elements
-    uint8_t  reserved_220_[4];   // +220 0x54AA1C
     uint16_t dst_pitch_;         // +224 0x54AA20  Conf1 shape_b: destination row pitch
     uint16_t dst_plane_rows_;    // +226 0x54AA22  destination rows per plane
     uint16_t dst_dim2_;          // +228 0x54AA24  destination planes per dim1 step
-    uint8_t  reserved_230_[10];  // +230 0x54AA26
     uint16_t dequant_scale_;     // +240 0x54AA30  Conf_deq rs1_val (fp16)
     uint16_t dequant_zero_;      // +242 0x54AA32  Conf_deq rs2_val
     uint8_t  src_dtype_;         // +244 0x54AA34  Conf_deq cfg low byte: 0 fp16, 1 uint8, 2 int8, 3 int16
@@ -66,9 +60,7 @@ struct Pdp1Config {
 };
 
 struct PDP1 {
-    uint8_t reserved_8_[128];            // +8    unused by the lifted code (vptr is at +0)
     std::vector<PdpWindow> windows_;     // +136  16 slots, created by the singleton constructor
-    uint32_t reserved_160_;              // +160  alignment padding before cfg
     Pdp1Config cfg_;                     // +164  configuration registers (see above)
 
     PDP1();

@@ -139,9 +139,7 @@ void MFU::Init() {
   quant_signed_ = 0;
   quant_enable_ = 0;
   std::fill(std::begin(dim_sample_), std::end(dim_sample_), 0);
-  string_slot_ = 0;
   busy_ = 0;
-  std::memset(reserved_, 0, sizeof reserved_);
 }
 
 // @0x426e80 (MFU1): the original body only destroys the four trace streams and the (empty) containers.

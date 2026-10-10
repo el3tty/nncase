@@ -115,10 +115,13 @@ void MfuPdp1Conf1Instruction::operation()
     Pdp1Config &pdp1_cfg = PDP1::GetPDP1()->cfg_;
     const uint16_t strides = static_cast<uint16_t>(stride_w_ | (stride_h_ << 8));
     std::memcpy(&pdp1_cfg.stride_w_, &strides, sizeof strides);
-    const uint64_t src_shape = rstride_s_val_, dst_shape = rstride_d_val_;
-    std::memcpy(&pdp1_cfg.src_pitch_, &src_shape, sizeof src_shape);   // src_pitch, src_plane_rows, src_dim2, reserved_214
+    pdp1_cfg.src_pitch_ = static_cast<uint16_t>(rstride_s_val_);
+    pdp1_cfg.src_plane_rows_ = static_cast<uint16_t>(rstride_s_val_ >> 16);
+    pdp1_cfg.src_dim2_ = static_cast<uint16_t>(rstride_s_val_ >> 32);
     pdp1_cfg.pool_mode_ = static_cast<uint8_t>(funct2_);
-    std::memcpy(&pdp1_cfg.dst_pitch_, &dst_shape, sizeof dst_shape);   // dst_pitch, dst_plane_rows, dst_dim2, reserved_230
+    pdp1_cfg.dst_pitch_ = static_cast<uint16_t>(rstride_d_val_);
+    pdp1_cfg.dst_plane_rows_ = static_cast<uint16_t>(rstride_d_val_ >> 16);
+    pdp1_cfg.dst_dim2_ = static_cast<uint16_t>(rstride_d_val_ >> 32);
 }
 
 // MfuPdp1Conf1Instruction3.cpp  @0x4253b0

@@ -41,7 +41,6 @@ struct DmLoadAct0 {
 struct DmStoreOf {
     uint32_t tile_shape_[4] = {};        // +0   Dm+108..123: store shape (dim0 = C, dim1 = H, dim2 = W, dim3 = 0)
     uint32_t mode_ = 0;                  // +16  Dm+124
-    uint32_t unused_20_ = 0;                   // +20  (always 0)
     uint8_t* dst_ = nullptr;             // +24  Dm+128: GLB destination pointer
     uint32_t full_shape_[4] = {};        // +32  Dm+136..151: shape of the whole destination tensor
     uint32_t mmu_addr_ = 0;              // +48  Dm+152
@@ -54,10 +53,8 @@ struct DmLoadL1 {
     uint32_t shape_[4] = {};             // +8   Dm+44..59 (L1 conf shape; shape[1], shape[2] are source pitches)
     uint32_t mode_ = 0;                  // +24  Dm+60: 2 = 16-bit elements (split into two byte planes)
     uint32_t dims_[4] = {};              // +28  Dm+64..79 (dims[1] = n_y, dims[2] = n_z, dims[3] = n_x; dims[0] unused)
-    uint32_t pad44_ = 0;                   // +44  (padding)
     const uint8_t* src_ = nullptr;       // +48  Dm+80: GLB source pointer
     uint32_t layout_ = 0;                // +56  Dm+88: <= 1 contiguous; otherwise low16 = count, high16 = step
-    uint32_t pad60_ = 0;                   // +60  (padding)
     DmLoadL1() = default;
     DmLoadL1(const DmLoadL1&) = delete;
     DmLoadL1& operator=(const DmLoadL1&) = delete;
@@ -65,30 +62,25 @@ struct DmLoadL1 {
     ~DmLoadL1() { std::free(if_snapshot_); }
 };
 
-// The Dm singleton. Fields are named by the instruction that writes them; the offsets are the ones
-// the other instruction files still use through raw pointers (TODO(layout)).
+// The Dm singleton. Fields are named by the instruction that writes them; the byte offsets in the comments are
+// those of the original binary (the layout here no longer reproduces them).
 struct Dm {
-    uint32_t unused_0_;                    // +0
     uint32_t conf_a_;                // +4   DmLoadWConf
     uint32_t conf_b_;                // +8   DmLoadWConf
     uint32_t loadw_len_;             // +12  DmLoadWConf: bytes per weight line
     uint32_t loadw_deq_mode_;        // +16  DmLoadWConf_deq
-    uint32_t unused_20_;                   // +20
     const uint8_t* loadw_src0_;      // +24  DmLoadW: GLB pointer 0 (weights)
     const uint8_t* loadw_src1_;      // +32  DmLoadW: GLB pointer 1 (zero points)
     uint8_t  loadw_use_pdp0_;        // +40  DmLoadW
-    uint8_t  pad41_;                   // +41
     uint16_t loadw_lines_;           // +42  DmLoadW: number of lines
     uint32_t l1_shape_[4];           // +44  DmLoadL1Conf
     uint32_t l1_mode_;               // +60  DmLoadL1Conf
     uint32_t l1_dims_[4];            // +64  DmLoadL1: four 16-bit dims of the shape register (verified against asm @0x423140)
     const uint8_t* l1_src_;          // +80  DmLoadL1: GLB pointer
     uint32_t l1_layout_;             // +88  DmLoadL1
-    uint32_t pad92_;                   // +92
     const int16_t* loadact0_src_;    // +96  DmLoadAct0: GLB pointer
     uint8_t  loadact0_use_pdp0_;     // +104 DmLoadAct0
     uint8_t  loadact0_flag_;         // +105 DmLoadAct0
-    uint8_t  pad106_[2];               // +106
     uint32_t of_shape_[4];           // +108 DmStoreOfConf
     uint32_t of_mode_;               // +124 DmStoreOfConf
     uint8_t* of_dst_;                // +128 DmStoreOf: GLB pointer
@@ -96,9 +88,8 @@ struct Dm {
     uint32_t of_mmu_addr_;           // +152 DmStoreOf
     uint8_t  of_use_pdp0_;           // +156 DmStoreOf
 
-    // @0x44d700 (Source 1). Returns the singleton as raw bytes because the instruction files
-    // still address it by byte offset. TODO(layout)
-    static char* GetDm();
+    // @0x44d700 (Source 1). The singleton lives in the raw global block _G.Dm_dm.
+    static Dm* GetDm();
     // @0x44d790 (Source 2)
     static void PrintDmIfAndPuIfInCkp(L1Helper & helper, L2DataType dataType);
     // @0x44d9c0 .. @0x44db70 (Sources 3-6): snapshot the current operands into a queueable descriptor

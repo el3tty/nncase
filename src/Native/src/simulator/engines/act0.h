@@ -51,7 +51,6 @@ struct Act0 {
     uint32_t engine_;          // +0x40014  Act0Src1Conf channel: 0 = Conv2D (reads psum0), 1 = PDP0 (reads psum1)
     uint32_t out_base_;        // +0x40018  Act0Compute only (copied to Act0Compute, then overwritten)
     uint8_t  out_route_;       // +0x4001C  "
-    uint8_t  pad_1d_[3];       // +0x4001D
     uint32_t out_type_;        // +0x40020  "
     uint8_t  per_channel_;     // +0x40024  "
 
