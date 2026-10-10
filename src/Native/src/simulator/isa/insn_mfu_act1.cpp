@@ -54,8 +54,13 @@ void MfuAct1ComputeInstruction::get_next_pc() {
 void MfuAct1ComputeInstruction::operation() {
     if (flag_)
         _G.debug_flag = 1;
-    // The MFU Act1 engine takes all its parameters from the Act1Conf* registers set earlier.
-    reinterpret_cast<MeshNet *>(MeshNet::GetMeshNet())->MfuAct1();
+    // Operand addresses come from the registers; the rest from the Act1Conf* registers set earlier.
+    MeshNet * const mn = MeshNet::GetMeshNet();
+    mn->a1_src1_addr_ = raddr_s1_val_;
+    mn->a1_src2_addr_ = raddr_s2_val_;
+    mn->a1_dst_addr_ = raddr_d1_val_;
+    mn->a1_fit_addr_ = raddr_arg_val_;
+    mn->MfuAct1();
 }
 
 MfuAct1ComputeInstruction::~MfuAct1ComputeInstruction() {
