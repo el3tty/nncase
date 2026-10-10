@@ -29,7 +29,7 @@
 struct BeqInstruction : public KInstruction {
     uint8_t rs1_;  // +49 raw[11:7] source register 1
     uint8_t rs2_;  // +50 raw[16:12] source register 2
-    uint8_t funct3_;  // +51 raw[19:17] branch condition select (dispatch field of main)
+    uint8_t cond_;  // +51 raw[19:17] branch condition select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit branch offset (raw)
     uint32_t rs1_val_;  // +56 value of rs1 (read at decode time)
     uint32_t rs2_val_;  // +60 value of rs2 (read at decode time)
@@ -43,7 +43,7 @@ template <> BeqInstruction Simulator::InstParser<BeqInstruction, 32>(unsigned ch
 struct BneInstruction : public KInstruction {
     uint8_t rs1_;  // +49 raw[11:7] source register 1
     uint8_t rs2_;  // +50 raw[16:12] source register 2
-    uint8_t funct3_;  // +51 raw[19:17] branch condition select (dispatch field of main)
+    uint8_t cond_;  // +51 raw[19:17] branch condition select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit branch offset (raw)
     uint32_t rs1_val_;  // +56 value of rs1 (read at decode time)
     uint32_t rs2_val_;  // +60 value of rs2 (read at decode time)
@@ -57,7 +57,7 @@ template <> BneInstruction Simulator::InstParser<BneInstruction, 32>(unsigned ch
 struct BltInstruction : public KInstruction {
     uint8_t rs1_;  // +49 raw[11:7] source register 1
     uint8_t rs2_;  // +50 raw[16:12] source register 2
-    uint8_t funct3_;  // +51 raw[19:17] branch condition select (dispatch field of main)
+    uint8_t cond_;  // +51 raw[19:17] branch condition select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit branch offset (raw)
     uint32_t rs1_val_;  // +56 value of rs1 (read at decode time)
     uint32_t rs2_val_;  // +60 value of rs2 (read at decode time)
@@ -71,7 +71,7 @@ template <> BltInstruction Simulator::InstParser<BltInstruction, 32>(unsigned ch
 struct BltuInstruction : public KInstruction {
     uint8_t rs1_;  // +49 raw[11:7] source register 1
     uint8_t rs2_;  // +50 raw[16:12] source register 2
-    uint8_t funct3_;  // +51 raw[19:17] branch condition select (dispatch field of main)
+    uint8_t cond_;  // +51 raw[19:17] branch condition select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit branch offset (raw)
     uint32_t rs1_val_;  // +56 value of rs1 (read at decode time)
     uint32_t rs2_val_;  // +60 value of rs2 (read at decode time)
@@ -85,7 +85,7 @@ template <> BltuInstruction Simulator::InstParser<BltuInstruction, 32>(unsigned 
 struct BgeInstruction : public KInstruction {
     uint8_t rs1_;  // +49 raw[11:7] source register 1
     uint8_t rs2_;  // +50 raw[16:12] source register 2
-    uint8_t funct3_;  // +51 raw[19:17] branch condition select (dispatch field of main)
+    uint8_t cond_;  // +51 raw[19:17] branch condition select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit branch offset (raw)
     uint32_t rs1_val_;  // +56 value of rs1 (read at decode time)
     uint32_t rs2_val_;  // +60 value of rs2 (read at decode time)
@@ -99,7 +99,7 @@ template <> BgeInstruction Simulator::InstParser<BgeInstruction, 32>(unsigned ch
 struct BgeuInstruction : public KInstruction {
     uint8_t rs1_;  // +49 raw[11:7] source register 1
     uint8_t rs2_;  // +50 raw[16:12] source register 2
-    uint8_t funct3_;  // +51 raw[19:17] branch condition select (dispatch field of main)
+    uint8_t cond_;  // +51 raw[19:17] branch condition select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit branch offset (raw)
     uint32_t rs1_val_;  // +56 value of rs1 (read at decode time)
     uint32_t rs2_val_;  // +60 value of rs2 (read at decode time)
@@ -125,7 +125,7 @@ template <> JalInstruction Simulator::InstParser<JalInstruction, 32>(unsigned ch
 struct JalrInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] link register
     uint8_t rs_;  // +50 raw[16:12] base register
-    uint8_t reserved0_;  // +51 raw[19:17] must be 0 (dispatch field of main)
+    uint8_t reserved_;  // +51 raw[19:17] must be 0 (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
     uint32_t link_val_;  // +56 pc + 4 (value written to rd)
     uint32_t rs_val_;  // +60 value of rs1 (_G.gp_reg[rs1], loaded by parser_operation)

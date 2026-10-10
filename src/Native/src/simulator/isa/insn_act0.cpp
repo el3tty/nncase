@@ -29,14 +29,14 @@ Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t
   inst.taken_  = 0;
   inst.flag_   = 0;
   inst.opcode_ = bits(raw, 0, 7);
-  inst.reserved_7_     = bits(raw, 7, 5);
+  inst.reserved1_     = bits(raw, 7, 5);
   inst.raddr_d_     = bits(raw, 12, 5);
   inst.tcu_id_  = bits(raw, 17, 3);
   inst.channel_   = bits(raw, 20, 1);
   inst.target_     = bits(raw, 21, 2);
   inst.dest_datatype_     = bits(raw, 23, 2);
   inst.is_by_channel_     = bits(raw, 25, 1);
-  inst.reserved_26_  = bits(raw, 26, 6);
+  inst.reserved2_  = bits(raw, 26, 6);
   inst.raddr_d_val_    = _G.gp_reg[inst.raddr_d_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
   inst.pc_     = KPU_PC(cur);
@@ -88,11 +88,11 @@ Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8
   inst.opcode_ = bits(raw, 0, 7);
   inst.tcu_id_     = bits(raw, 7, 3);
   inst.pu_id_  = bits(raw, 10, 3);
-  inst.funct3_  = bits(raw, 13, 3);
+  inst.conf_variant_  = bits(raw, 13, 3);
   inst.channel_   = bits(raw, 16, 1);
   inst.rshape_   = bits(raw, 17, 3);
   inst.rshift_bits_ = bits(raw, 20, 5);
-  inst.reserved_25_  = bits(raw, 25, 7);
+  inst.reserved_  = bits(raw, 25, 7);
   inst.rshape_val_      = _G.shape_reg[inst.rshape_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
   inst.pc_     = KPU_PC(cur);

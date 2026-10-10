@@ -33,7 +33,7 @@ MfuPdp1ComputeInstruction Simulator::InstParser<MfuPdp1ComputeInstruction, 32>(u
     inst.raddr_d_ = field(raw, 7, 5);
     inst.raddr_s_ = field(raw, 12, 5);
     inst.rshape_ = field(raw, 17, 3);
-    inst.reserved_20_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
     inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
     inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
     inst.rshape_val_ = _G.shape_reg[inst.rshape_];
@@ -86,13 +86,13 @@ MfuPdp1Conf1Instruction Simulator::InstParser<MfuPdp1Conf1Instruction, 32>(uint8
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.stride_w_ = field(raw, 12, 5);
     inst.stride_h_ = field(raw, 17, 5);
     inst.rstride_s_ = field(raw, 22, 3);
-    inst.funct2_ = field(raw, 25, 2);
+    inst.pool_mode_ = field(raw, 25, 2);
     inst.rstride_d_ = field(raw, 27, 3);
-    inst.reserved_30_ = field(raw, 30, 2);
+    inst.reserved_ = field(raw, 30, 2);
     inst.rstride_s_val_ = _G.shape_reg[inst.rstride_s_];
     inst.rstride_d_val_ = _G.shape_reg[inst.rstride_d_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
@@ -118,7 +118,7 @@ void MfuPdp1Conf1Instruction::operation()
     pdp1_cfg.src_pitch_ = static_cast<uint16_t>(rstride_s_val_);
     pdp1_cfg.src_plane_rows_ = static_cast<uint16_t>(rstride_s_val_ >> 16);
     pdp1_cfg.src_dim2_ = static_cast<uint16_t>(rstride_s_val_ >> 32);
-    pdp1_cfg.pool_mode_ = static_cast<uint8_t>(funct2_);
+    pdp1_cfg.pool_mode_ = static_cast<uint8_t>(pool_mode_);
     pdp1_cfg.dst_pitch_ = static_cast<uint16_t>(rstride_d_val_);
     pdp1_cfg.dst_plane_rows_ = static_cast<uint16_t>(rstride_d_val_ >> 16);
     pdp1_cfg.dst_dim2_ = static_cast<uint16_t>(rstride_d_val_ >> 32);
@@ -144,7 +144,7 @@ MfuPdp1Conf2Instruction Simulator::InstParser<MfuPdp1Conf2Instruction, 32>(uint8
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rcount_w_ = field(raw, 12, 5);
     inst.rcount_h_ = field(raw, 17, 5);
     inst.rpe_h_ = field(raw, 22, 5);
@@ -195,12 +195,12 @@ MfuPdp1Conf3Instruction Simulator::InstParser<MfuPdp1Conf3Instruction, 32>(uint8
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rpe_channels_ = field(raw, 12, 5);
     inst.rpe_last_channels_ = field(raw, 17, 5);
     inst.rpad_value_ = field(raw, 22, 5);
     inst.sspad_ = field(raw, 27, 3);
-    inst.reserved_30_ = field(raw, 30, 2);
+    inst.reserved_ = field(raw, 30, 2);
     inst.rpe_channels_val_ = _G.gp_reg[inst.rpe_channels_];
     inst.rpe_last_channels_val_ = _G.gp_reg[inst.rpe_last_channels_];
     inst.rpad_value_val_ = _G.gp_reg[inst.rpad_value_];
@@ -252,13 +252,13 @@ MfuPdp1Conf4Instruction Simulator::InstParser<MfuPdp1Conf4Instruction, 32>(uint8
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rwindow_w_ = field(raw, 12, 5);
     inst.rwindow_h_ = field(raw, 17, 5);
     inst.rscale_ = field(raw, 22, 5);
     inst.enable_h2c_ = field(raw, 27, 1);
     inst.enable_bw_ = field(raw, 28, 1);
-    inst.reserved_29_ = field(raw, 29, 3);
+    inst.reserved_ = field(raw, 29, 3);
     inst.rwindow_w_val_ = _G.gp_reg[inst.rwindow_w_];
     inst.rwindow_h_val_ = _G.gp_reg[inst.rwindow_h_];
     inst.rscale_val_ = _G.gp_reg[inst.rscale_];
@@ -307,11 +307,11 @@ MfuPdp1Conf_deqInstruction Simulator::InstParser<MfuPdp1Conf_deqInstruction, 32>
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rscale_ = field(raw, 12, 5);
     inst.rbias_ = field(raw, 17, 5);
     inst.cfg_ = static_cast<uint16_t>(field(raw, 22, 2) | (field(raw, 24, 5) << 8));
-    inst.reserved_29_ = field(raw, 29, 3);
+    inst.reserved_ = field(raw, 29, 3);
     inst.rscale_val_ = _G.gp_reg[inst.rscale_];
     inst.rbias_val_ = _G.gp_reg[inst.rbias_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
@@ -358,11 +358,11 @@ MfuPdp1Conf_quantInstruction Simulator::InstParser<MfuPdp1Conf_quantInstruction,
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rscale_ = field(raw, 12, 5);
     inst.rbias_ = field(raw, 17, 5);
     inst.cfg_ = static_cast<uint16_t>(field(raw, 22, 2) | (field(raw, 24, 5) << 8));
-    inst.reserved_29_ = field(raw, 29, 3);
+    inst.reserved_ = field(raw, 29, 3);
     inst.rscale_val_ = _G.gp_reg[inst.rscale_];
     inst.rbias_val_ = _G.gp_reg[inst.rbias_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4

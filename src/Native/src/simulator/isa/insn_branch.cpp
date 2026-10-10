@@ -26,7 +26,7 @@ BeqInstruction Simulator::InstParser<BeqInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.cond_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = _G.gp_reg[inst.rs1_];
   inst.rs2_val_ = _G.gp_reg[inst.rs2_];
@@ -79,7 +79,7 @@ BneInstruction Simulator::InstParser<BneInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.cond_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = _G.gp_reg[inst.rs1_];
   inst.rs2_val_ = _G.gp_reg[inst.rs2_];
@@ -132,7 +132,7 @@ BltInstruction Simulator::InstParser<BltInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.cond_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = _G.gp_reg[inst.rs1_];
   inst.rs2_val_ = _G.gp_reg[inst.rs2_];
@@ -186,7 +186,7 @@ BltuInstruction Simulator::InstParser<BltuInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.cond_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = _G.gp_reg[inst.rs1_];
   inst.rs2_val_ = _G.gp_reg[inst.rs2_];
@@ -239,7 +239,7 @@ BgeInstruction Simulator::InstParser<BgeInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.cond_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = _G.gp_reg[inst.rs1_];
   inst.rs2_val_ = _G.gp_reg[inst.rs2_];
@@ -293,7 +293,7 @@ BgeuInstruction Simulator::InstParser<BgeuInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rs1_ = kinst_bits(raw, 7, 5);
   inst.rs2_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.cond_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.rs1_val_ = _G.gp_reg[inst.rs1_];
   inst.rs2_val_ = _G.gp_reg[inst.rs2_];
@@ -397,7 +397,7 @@ JalrInstruction Simulator::InstParser<JalrInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.reserved0_ = kinst_bits(raw, 17, 3);
+  inst.reserved_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6

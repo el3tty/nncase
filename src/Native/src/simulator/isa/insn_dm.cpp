@@ -33,7 +33,7 @@ DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 1
   inst.broadcast_if_   = bits(raw, 10, 1);
   inst.broadcast_w_   = bits(raw, 11, 1);
   inst.psum_cascade_   = bits(raw, 12, 1);
-  inst.reserved0_ = bits(raw, 13, 3);
+  inst.reserved_ = bits(raw, 13, 3);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -74,7 +74,7 @@ DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t *
   inst.rlen_     = bits(raw, 18, 5);
   inst.dest_channel_   = bits(raw, 23, 1);
   inst.is_by_channel_  = bits(raw, 24, 1);
-  inst.reserved_25_  = bits(raw, 25, 7);
+  inst.reserved_  = bits(raw, 25, 7);
   inst.raddr_s_val_   = _G.gp_reg[inst.raddr_s_];
   inst.rlen_val_    = _G.gp_reg[inst.rlen_];
   inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
@@ -126,11 +126,11 @@ DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8
   inst.opcode_ = bits(raw, 0, 7);
   inst.tcu_id_     = bits(raw, 7, 3);
   inst.pu_id_  = bits(raw, 10, 3);
-  inst.funct4_  = bits(raw, 13, 4);
+  inst.conf_id_  = bits(raw, 13, 4);
   inst.rstride_s_   = bits(raw, 17, 3);
   inst.datatype_       = bits(raw, 20, 2);
   inst.l1_type_  = bits(raw, 22, 2);
-  inst.reserved_24_  = bits(raw, 24, 8);
+  inst.reserved_  = bits(raw, 24, 8);
   inst.rstride_s_val_      = _G.shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
@@ -178,7 +178,7 @@ DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc
   inst.rhtoc_window_     = bits(raw, 18, 5);
   inst.rshape_   = bits(raw, 23, 3);
   inst.l1_type_  = bits(raw, 26, 2);
-  inst.reserved_28_  = bits(raw, 28, 4);
+  inst.reserved_  = bits(raw, 28, 4);
   inst.raddr_s_val_   = _G.gp_reg[inst.raddr_s_];
   inst.rhtoc_window_val_    = _G.gp_reg[inst.rhtoc_window_];
   inst.rshape_val_      = _G.shape_reg[inst.rshape_];
@@ -237,10 +237,10 @@ DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8
   inst.opcode_ = bits(raw, 0, 7);
   inst.tcu_id_     = bits(raw, 7, 3);
   inst.pu_id_  = bits(raw, 10, 3);
-  inst.funct4_  = bits(raw, 13, 4);
+  inst.conf_id_  = bits(raw, 13, 4);
   inst.rgroups_        = bits(raw, 17, 5);
   inst.rgoc_        = bits(raw, 22, 5);
-  inst.reserved_27_  = bits(raw, 27, 5);
+  inst.reserved_  = bits(raw, 27, 5);
   inst.rgroups_val_lo8_ = (uint8_t)_G.gp_reg[inst.rgroups_];
   inst.rgoc_val_    = _G.gp_reg[inst.rgoc_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
@@ -274,9 +274,9 @@ DmLoadWConf_deqInstruction Simulator::InstParser<DmLoadWConf_deqInstruction, 32>
   inst.opcode_ = bits(raw, 0, 7);
   inst.tcu_id_     = bits(raw, 7, 3);
   inst.pu_id_  = bits(raw, 10, 3);
-  inst.funct4_  = bits(raw, 13, 4);
+  inst.conf_id_  = bits(raw, 13, 4);
   inst.quant_type_   = bits(raw, 17, 2);
-  inst.reserved_19_  = bits(raw, 19, 13);
+  inst.reserved_  = bits(raw, 19, 13);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -314,7 +314,7 @@ DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t
   inst.opcode_ = bits(raw, 0, 7);
   inst.tcu_id_     = bits(raw, 7, 3);
   inst.pu_id_  = bits(raw, 10, 3);
-  inst.funct4_  = bits(raw, 13, 4);
+  inst.conf_id_  = bits(raw, 13, 4);
   inst.kernel_h_     = bits(raw, 17, 5);
   inst.kernel_w_     = bits(raw, 22, 5);
   inst.rstride_oc_     = bits(raw, 27, 5);
@@ -372,7 +372,7 @@ DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc)
   inst.raddr_bw_    = bits(raw, 18, 5);
   inst.r_iochannels_   = bits(raw, 23, 3);
   inst.dest_type_   = bits(raw, 26, 2);
-  inst.reserved_28_  = bits(raw, 28, 4);
+  inst.reserved_  = bits(raw, 28, 4);
   inst.raddr_s_val_  = _G.gp_reg[inst.raddr_s_];
   inst.raddr_bw_val_  = _G.gp_reg[inst.raddr_bw_];
   inst.r_iochannels_val_lo32_ = (uint32_t)_G.shape_reg[inst.r_iochannels_];
@@ -430,10 +430,10 @@ DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uin
   inst.opcode_ = bits(raw, 0, 7);
   inst.tcu_id_     = bits(raw, 7, 3);
   inst.pu_id_  = bits(raw, 10, 3);
-  inst.funct4_  = bits(raw, 13, 4);
+  inst.conf_id_  = bits(raw, 13, 4);
   inst.rstride_d_   = bits(raw, 17, 3);
   inst.datatype_       = bits(raw, 20, 2);
-  inst.reserved_22_  = bits(raw, 22, 10);
+  inst.reserved_  = bits(raw, 22, 10);
   inst.rstride_d_val_      = _G.shape_reg[inst.rstride_d_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
@@ -480,7 +480,7 @@ DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** 
   inst.raddr_d_     = bits(raw, 13, 5);
   inst.rshape_   = bits(raw, 18, 3);
   inst.src_channel_   = bits(raw, 21, 1);
-  inst.reserved_22_  = bits(raw, 22, 10);
+  inst.reserved_  = bits(raw, 22, 10);
   inst.raddr_d_val_   = _G.gp_reg[inst.raddr_d_];
   inst.rshape_val_      = _G.shape_reg[inst.rshape_];
   inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];

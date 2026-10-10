@@ -16,7 +16,7 @@
 struct PuPdp0ComputeInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id
     uint8_t raddr_s_;  // +50 raw[14:10] register holding the compute parameter
-    uint8_t reserved_15_;  // +51 raw[15] reserved, unused
+    uint8_t reserved_;  // +51 raw[15] reserved, unused
     uint32_t compute_param_;  // +52 _G.gp_reg[rs], stored to PDP0+65632
     void get_next_pc() override;
     void operation() override;
@@ -28,10 +28,10 @@ template <> PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruct
 struct PuPdp0Conf_deqInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t rbx_;  // +52 raw[21:17] register: input zero point
     uint8_t quant_type_;  // +53 raw[23:22] unsigned flag (PDP0 regs.unsigned_flag)
-    uint8_t reserved_24_;  // +54 raw[31:24] reserved, unused
+    uint8_t reserved_;  // +54 raw[31:24] reserved, unused
     uint32_t rbx_val_;  // +56 _G.gp_reg[rs1]
     void get_next_pc() override;
     void operation() override;
@@ -43,10 +43,10 @@ template <> PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstru
 struct PuPdp0FetchifConf1Instruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t stride_w_;  // +52 raw[21:17] immediate -> PDP0 word 16385
     uint8_t stride_h_;  // +53 raw[26:22] immediate -> PDP0 word 16386
-    uint8_t reserved_27_;  // +54 raw[31:27] reserved, unused
+    uint8_t reserved_;  // +54 raw[31:27] reserved, unused
     void get_next_pc() override;
     void operation() override;
     ~PuPdp0FetchifConf1Instruction() override;
@@ -57,10 +57,10 @@ template <> PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifCon
 struct PuPdp0FetchifConf2Instruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t rgic_;  // +52 raw[21:17] register (unused)
     uint8_t rgic_last_;  // +53 raw[26:22] register (unused)
-    uint8_t reserved_27_;  // +54 raw[31:27] reserved, unused
+    uint8_t reserved_;  // +54 raw[31:27] reserved, unused
     uint32_t rgic_val_;  // +56 _G.gp_reg[rs1]
     uint32_t rgic_last_val_;  // +60 _G.gp_reg[rs2]
     void get_next_pc() override;
@@ -73,10 +73,10 @@ template <> PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifCon
 struct PuPdp0FetchifConf3Instruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
-    uint16_t reserved_17_;  // +52 raw[26:17] decoded, unused
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
+    uint16_t reserved1_;  // +52 raw[26:17] decoded, unused
     uint8_t rshape_;  // +54 raw[29:27] shape register index
-    uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
+    uint8_t reserved2_;  // +55 raw[31:30] reserved, unused
     uint64_t shape_;  // +56 _G.shape_reg[shape_idx]
     void get_next_pc() override;
     void operation() override;
@@ -88,10 +88,10 @@ template <> PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifCon
 struct PuPdp0FetchifConf4Instruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t rpad_value_;  // +52 raw[21:17] register -> PDP0 word 16391
     uint8_t sspad_;  // +53 raw[24:22] shape register index
-    uint8_t reserved_25_;  // +54 raw[31:25] reserved, unused
+    uint8_t reserved_;  // +54 raw[31:25] reserved, unused
     uint32_t rpad_value_val_;  // +56 _G.gp_reg[rs1]
     uint64_t shape_;  // +64 _G.shape_reg[shape_idx]
     void get_next_pc() override;
@@ -104,9 +104,9 @@ template <> PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifCon
 struct PuPdp0ModeConfInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t mode_;  // +52 raw[19:17] PDP0 mode register
-    uint16_t reserved_20_;  // +54 raw[31:20] reserved, unused
+    uint16_t reserved_;  // +54 raw[31:20] reserved, unused
     void get_next_pc() override;
     void operation() override;
     ~PuPdp0ModeConfInstruction() override;
@@ -117,10 +117,10 @@ template <> PuPdp0ModeConfInstruction Simulator::InstParser<PuPdp0ModeConfInstru
 struct PuPdp0OfConfInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t rstride_d_;  // +52 raw[19:17] shape register index 0
     uint8_t rshape_d_;  // +53 raw[22:20] shape register index 1
-    uint16_t reserved_23_;  // +54 raw[31:23] reserved, unused
+    uint16_t reserved_;  // +54 raw[31:23] reserved, unused
     uint64_t shape0_;  // +56 _G.shape_reg[shape_idx0]
     uint64_t shape1_;  // +64 _G.shape_reg[shape_idx1]
     void get_next_pc() override;
@@ -133,10 +133,10 @@ template <> PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstructio
 struct PuPdp0WConfInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id (compiler range 0)
     uint8_t pu_id_;  // +50 raw[12:10] PU id (compiler range 0)
-    uint8_t funct4_;  // +51 raw[16:13] pu_conf variant select (sub-opcode dispatched by main), not an assembly operand
+    uint8_t conf_id_;  // +51 raw[16:13] pu_conf register select (dispatched by main), not an assembly operand
     uint8_t kernel_h_;  // +52 raw[21:17] immediate -> PDP0+65596
     uint8_t kernel_w_;  // +53 raw[26:22] immediate -> PDP0+65592
-    uint8_t reserved_27_;  // +54 raw[31:27] reserved, unused
+    uint8_t reserved_;  // +54 raw[31:27] reserved, unused
     void get_next_pc() override;
     void operation() override;
     ~PuPdp0WConfInstruction() override;

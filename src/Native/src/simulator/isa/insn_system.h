@@ -40,7 +40,7 @@
 // ---- EndInstruction ----
 struct EndInstruction : public KInstruction {
     uint8_t rs_;  // +49 raw[11:7] register (always x0 in the dumps)
-    uint8_t reserved_12_;  // +50 raw[15:12] reserved, decoded but unused
+    uint8_t reserved_;  // +50 raw[15:12] reserved, decoded but unused
     uint32_t rs_val_;  // +52 _G.gp_reg[rs] sampled at decode time
     void get_next_pc() override;
     ~EndInstruction() override;
@@ -49,7 +49,7 @@ template <> EndInstruction Simulator::InstParser<EndInstruction, 16>(unsigned ch
 
 // ---- FenceInstruction ----
 struct FenceInstruction : public KInstruction {
-    uint16_t reserved0_;  // +50 raw[15:7] 9-bit field
+    uint16_t reserved_;  // +50 raw[15:7] 9-bit field
     void get_next_pc() override;
     ~FenceInstruction() override;
 };
@@ -57,7 +57,7 @@ template <> FenceInstruction Simulator::InstParser<FenceInstruction, 16>(unsigne
 
 // ---- FenceIInstruction ----
 struct FenceIInstruction : public KInstruction {
-    uint16_t reserved0_;  // +50 raw[15:7] 9-bit field
+    uint16_t reserved_;  // +50 raw[15:7] 9-bit field
     void get_next_pc() override;
     ~FenceIInstruction() override;
 };
@@ -66,7 +66,7 @@ template <> FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(unsig
 // ---- IntrInstruction ----
 struct IntrInstruction : public KInstruction {
     uint8_t rs_;  // +49 raw[11:7] register index
-    uint8_t reserved0_;  // +50 raw[15:12] 4-bit field
+    uint8_t reserved_;  // +50 raw[15:12] 4-bit field
     uint32_t value_;  // +52 _G.gp_reg[reg] sampled at decode time
     void get_next_pc() override;
     ~IntrInstruction() override;
@@ -76,7 +76,7 @@ template <> IntrInstruction Simulator::InstParser<IntrInstruction, 16>(unsigned 
 // ---- CcrClrInstruction ----
 struct CcrClrInstruction : public KInstruction {
     uint8_t ccr_;  // +49 raw[11:7] CCR index (compiler range 0..13)
-    uint8_t reserved_12_;  // +50 raw[15:12] reserved
+    uint8_t reserved_;  // +50 raw[15:12] reserved
     void get_next_pc() override;
     ~CcrClrInstruction() override;
 };
@@ -85,7 +85,7 @@ template <> CcrClrInstruction Simulator::InstParser<CcrClrInstruction, 16>(unsig
 // ---- CcrDeclInstruction ----
 struct CcrDeclInstruction : public KInstruction {
     uint8_t rnum_;  // +49 raw[11:7] register holding the CCR number
-    uint8_t reserved_12_;  // +50 raw[15:12] reserved, decoded but unused
+    uint8_t reserved_;  // +50 raw[15:12] reserved, decoded but unused
     uint32_t rnum_val_;  // +52 _G.gp_reg[rnum] sampled at decode time
     void get_next_pc() override;
     ~CcrDeclInstruction() override;
@@ -106,7 +106,7 @@ struct MmuConfInstruction : public KInstruction {
     uint8_t rstart_;  // +49 raw[11:7] register holding the GLB segment start
     uint8_t rdepth_;  // +50 raw[16:12] register holding the GLB segment depth
     uint8_t mmu_id_;  // +51 raw[20:17] MMU/GLB segment index (compiler range 0..5)
-    uint16_t reserved_21_;  // +52 raw[31:21] reserved, decoded but unused
+    uint16_t reserved_;  // +52 raw[31:21] reserved, decoded but unused
     uint32_t rstart_val_;  // +56 segment rstart_val (value of rstart)
     uint32_t rdepth_val_;  // +60 segment rdepth_val (value of rdepth)
     void get_next_pc() override;
@@ -134,7 +134,7 @@ struct SsPackShapeInstruction : public KInstruction {
     uint8_t rh_;  // +51 raw[21:17] register: height (H) dim, packed into [31:16]
     uint8_t rw_;  // +52 raw[26:22] register: width (W) dim, packed into [15:0]
     uint8_t rss_;  // +53 raw[29:27] destination shape register index
-    uint8_t reserved_30_;  // +54 raw[31:30] reserved, decoded but unused
+    uint8_t reserved_;  // +54 raw[31:30] reserved, decoded but unused
     uint32_t rn_val_;  // +56 value of rn
     uint32_t rc_val_;  // +60 value of rc
     uint32_t rh_val_;  // +64 value of rh
@@ -151,9 +151,9 @@ struct SsPackStrideInstruction : public KInstruction {
     uint8_t rn_;  // +49 raw[11:7] register: N stride, packed into [47:32]
     uint8_t rc_;  // +50 raw[16:12] register: C stride, packed into [31:16]
     uint8_t rh_;  // +51 raw[21:17] register: H stride, packed into [15:0]
-    uint8_t reserved_22_;  // +52 raw[26:22] reserved, decoded but unused
+    uint8_t reserved1_;  // +52 raw[26:22] reserved, decoded but unused
     uint8_t rss_;  // +53 raw[29:27] destination shape (stride) register index
-    uint8_t reserved_30_;  // +54 raw[31:30] reserved, decoded but unused
+    uint8_t reserved2_;  // +54 raw[31:30] reserved, decoded but unused
     uint32_t rn_val_;  // +56 value of rn
     uint32_t rc_val_;  // +60 value of rc
     uint32_t rh_val_;  // +64 value of rh

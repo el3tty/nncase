@@ -67,7 +67,7 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     inst.rstride_d_ = field(raw, 17, 3);
     inst.rstride_s_ = field(raw, 20, 3);
     inst.rshape_ = field(raw, 23, 3);
-    inst.reserved_26_ = field(raw, 26, 6);
+    inst.reserved_ = field(raw, 26, 6);
     inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
     inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
     inst.shape_a_ = _G.shape_reg[inst.rstride_d_];
@@ -137,7 +137,7 @@ MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** 
     inst.rstride_ = field(raw, 17, 3);
     inst.rshape_ = field(raw, 20, 3);
     inst.l2_datatype_ = field(raw, 23, 2);
-    inst.reserved_25_ = field(raw, 25, 7);
+    inst.reserved_ = field(raw, 25, 7);
     inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
     inst.rv_val_ = _G.gp_reg[inst.rv_];
     inst.shape_a_ = _G.shape_reg[inst.rstride_];
@@ -207,7 +207,7 @@ MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8
     inst.raddr_d_ = field(raw, 7, 5);
     inst.raddr_s_ = field(raw, 12, 5);
     inst.rshape_ = field(raw, 17, 3);
-    inst.reserved_20_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
     inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
     inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
     inst.rshape_val_ = _G.shape_reg[inst.rshape_];
@@ -261,11 +261,11 @@ MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 3
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rstride_d_ = field(raw, 12, 3);
     inst.rstride_s_ = field(raw, 15, 3);
     inst.cfg_ = static_cast<uint16_t>(field(raw, 18, 2) | (field(raw, 20, 5) << 8));
-    inst.reserved_25_ = field(raw, 25, 7);
+    inst.reserved_ = field(raw, 25, 7);
     inst.rstride_d_val_ = _G.shape_reg[inst.rstride_d_];
     inst.rstride_s_val_ = _G.shape_reg[inst.rstride_s_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4

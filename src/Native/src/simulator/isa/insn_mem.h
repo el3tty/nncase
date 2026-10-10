@@ -29,7 +29,7 @@
 struct LbInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] base register
-    uint8_t funct3_;  // +51 raw[19:17] load width select (dispatch field of main), not an assembly operand
+    uint8_t load_kind_;  // +51 raw[19:17] load width select (dispatched by main), not an assembly operand
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed byte offset (raw)
     uint32_t result_;  // +56 loaded value after extension (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)
@@ -44,7 +44,7 @@ template <> LbInstruction Simulator::InstParser<LbInstruction, 32>(unsigned char
 struct LbuInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] base register
-    uint8_t funct3_;  // +51 raw[19:17] load width select (dispatch field of main), not an assembly operand
+    uint8_t load_kind_;  // +51 raw[19:17] load width select (dispatched by main), not an assembly operand
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed byte offset (raw)
     uint32_t result_;  // +56 loaded value after extension (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)
@@ -59,7 +59,7 @@ template <> LbuInstruction Simulator::InstParser<LbuInstruction, 32>(unsigned ch
 struct LhInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] base register
-    uint8_t funct3_;  // +51 raw[19:17] load width select (dispatch field of main), not an assembly operand
+    uint8_t load_kind_;  // +51 raw[19:17] load width select (dispatched by main), not an assembly operand
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed byte offset (raw)
     uint32_t result_;  // +56 loaded value after extension (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)
@@ -74,7 +74,7 @@ template <> LhInstruction Simulator::InstParser<LhInstruction, 32>(unsigned char
 struct LhuInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] base register
-    uint8_t funct3_;  // +51 raw[19:17] load width select (dispatch field of main), not an assembly operand
+    uint8_t load_kind_;  // +51 raw[19:17] load width select (dispatched by main), not an assembly operand
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed byte offset (raw)
     uint32_t result_;  // +56 loaded value after extension (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)
@@ -89,7 +89,7 @@ template <> LhuInstruction Simulator::InstParser<LhuInstruction, 32>(unsigned ch
 struct LwInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] base register
-    uint8_t funct3_;  // +51 raw[19:17] load width select (dispatch field of main), not an assembly operand
+    uint8_t load_kind_;  // +51 raw[19:17] load width select (dispatched by main), not an assembly operand
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed byte offset (raw)
     uint32_t result_;  // +56 loaded value after extension (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)
@@ -104,7 +104,7 @@ template <> LwInstruction Simulator::InstParser<LwInstruction, 32>(unsigned char
 struct SbInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] base register
     uint8_t rs_;  // +50 raw[16:12] data register
-    uint8_t funct3_;  // +51 raw[19:17] store width select (dispatch field of main)
+    uint8_t store_kind_;  // +51 raw[19:17] store width select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
     uint32_t rd_val_;  // +56 value of rs1 (trace)
     uint32_t rs_val_;  // +60 value of rs2 (trace)
@@ -119,7 +119,7 @@ template <> SbInstruction Simulator::InstParser<SbInstruction, 32>(unsigned char
 struct ShInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] base register
     uint8_t rs_;  // +50 raw[16:12] data register
-    uint8_t funct3_;  // +51 raw[19:17] store width select (dispatch field of main)
+    uint8_t store_kind_;  // +51 raw[19:17] store width select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
     uint32_t rd_val_;  // +56 value of rs1 (trace)
     uint32_t rs_val_;  // +60 value of rs2 (trace)
@@ -134,7 +134,7 @@ template <> ShInstruction Simulator::InstParser<ShInstruction, 32>(unsigned char
 struct SwInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] base register
     uint8_t rs_;  // +50 raw[16:12] data register
-    uint8_t funct3_;  // +51 raw[19:17] store width select (dispatch field of main)
+    uint8_t store_kind_;  // +51 raw[19:17] store width select (dispatched by main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
     uint32_t rd_val_;  // +56 value of rs1 (trace)
     uint32_t rs_val_;  // +60 value of rs2 (trace)

@@ -52,7 +52,7 @@ PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruction, 16>(uin
   inst.opcode_ = raw & 0x7F;
   inst.tcu_id_ = kinst_bits(raw, 7, 3);
   inst.raddr_s_ = kinst_bits(raw, 10, 5);
-  inst.reserved_15_ = kinst_bits(raw, 15, 1);
+  inst.reserved_ = kinst_bits(raw, 15, 1);
   inst.compute_param_ = _G.gp_reg[inst.raddr_s_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000003LL;
@@ -74,10 +74,10 @@ PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstruction, 32>(u
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.rbx_ = pu::bits(raw, 17, 5);
     inst.quant_type_ = pu::bits(raw, 22, 2);
-    inst.reserved_24_ = pu::bits(raw, 24, 8);
+    inst.reserved_ = pu::bits(raw, 24, 8);
     inst.rbx_val_ = _G.gp_reg[inst.rbx_];
 
     inst.pc_ = cur;
@@ -121,10 +121,10 @@ PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifConf1Instructio
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.stride_w_ = pu::bits(raw, 17, 5);
     inst.stride_h_ = pu::bits(raw, 22, 5);
-    inst.reserved_27_ = pu::bits(raw, 27, 5);
+    inst.reserved_ = pu::bits(raw, 27, 5);
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -166,10 +166,10 @@ PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifConf2Instructio
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.rgic_ = pu::bits(raw, 17, 5);
     inst.rgic_last_ = pu::bits(raw, 22, 5);
-    inst.reserved_27_ = pu::bits(raw, 27, 5);
+    inst.reserved_ = pu::bits(raw, 27, 5);
     inst.rgic_val_ = _G.gp_reg[inst.rgic_];
     inst.rgic_last_val_ = _G.gp_reg[inst.rgic_last_];
 
@@ -212,10 +212,10 @@ PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifConf3Instructio
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
-    inst.reserved_17_ = pu::bits(raw, 17, 10);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
+    inst.reserved1_ = pu::bits(raw, 17, 10);
     inst.rshape_ = pu::bits(raw, 27, 3);
-    inst.reserved_30_ = pu::bits(raw, 30, 2);
+    inst.reserved2_ = pu::bits(raw, 30, 2);
     inst.shape_ = _G.shape_reg[inst.rshape_];
 
     inst.pc_ = cur;
@@ -260,10 +260,10 @@ PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifConf4Instructio
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.rpad_value_ = pu::bits(raw, 17, 5);
     inst.sspad_ = pu::bits(raw, 22, 3);
-    inst.reserved_25_ = pu::bits(raw, 25, 7);
+    inst.reserved_ = pu::bits(raw, 25, 7);
     inst.rpad_value_val_ = _G.gp_reg[inst.rpad_value_];
     inst.shape_ = _G.shape_reg[inst.sspad_];
 
@@ -310,9 +310,9 @@ PuPdp0ModeConfInstruction Simulator::InstParser<PuPdp0ModeConfInstruction, 32>(u
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.mode_ = pu::bits(raw, 17, 3);
-    inst.reserved_20_ = pu::bits(raw, 20, 12);
+    inst.reserved_ = pu::bits(raw, 20, 12);
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -352,10 +352,10 @@ PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstruction, 32>(uint8
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.rstride_d_ = pu::bits(raw, 17, 3);
     inst.rshape_d_ = pu::bits(raw, 20, 3);
-    inst.reserved_23_ = pu::bits(raw, 23, 9);
+    inst.reserved_ = pu::bits(raw, 23, 9);
     inst.shape0_ = _G.shape_reg[inst.rstride_d_];
     inst.shape1_ = _G.shape_reg[inst.rshape_d_];
 
@@ -405,10 +405,10 @@ PuPdp0WConfInstruction Simulator::InstParser<PuPdp0WConfInstruction, 32>(uint8_t
     inst.opcode_ = raw & 0x7F;
     inst.tcu_id_  = pu::bits(raw, 7, 3);
     inst.pu_id_ = pu::bits(raw, 10, 3);
-    inst.funct4_ = pu::bits(raw, 13, 4);
+    inst.conf_id_ = pu::bits(raw, 13, 4);
     inst.kernel_h_ = pu::bits(raw, 17, 5);
     inst.kernel_w_ = pu::bits(raw, 22, 5);
-    inst.reserved_27_ = pu::bits(raw, 27, 5);
+    inst.reserved_ = pu::bits(raw, 27, 5);
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;

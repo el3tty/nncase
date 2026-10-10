@@ -31,9 +31,9 @@
 struct AddInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -47,9 +47,9 @@ template <> AddInstruction Simulator::InstParser<AddInstruction, 32>(unsigned ch
 struct SubInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -64,9 +64,9 @@ template <> SubInstruction Simulator::InstParser<SubInstruction, 32>(unsigned ch
 struct MulInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -80,9 +80,9 @@ template <> MulInstruction Simulator::InstParser<MulInstruction, 32>(unsigned ch
 struct DivInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -96,9 +96,9 @@ template <> DivInstruction Simulator::InstParser<DivInstruction, 32>(unsigned ch
 struct DivuInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -112,9 +112,9 @@ template <> DivuInstruction Simulator::InstParser<DivuInstruction, 32>(unsigned 
 struct RemInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -128,9 +128,9 @@ template <> RemInstruction Simulator::InstParser<RemInstruction, 32>(unsigned ch
 struct RemuInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs1_;  // +50 raw[16:12] source register 1
-    uint8_t funct5_;  // +51 raw[21:17] ALU function select (dispatch field of main), not an assembly operand
+    uint8_t alu_op_;  // +51 raw[21:17] ALU function select (dispatched by main), not an assembly operand
     uint8_t rs2_;  // +52 raw[26:22] source register 2
-    uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
+    uint8_t reserved_;  // +53 raw[31:27] reserved, decoded but unused
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs1_val_;  // +60 value of rs1 (trace)
     uint32_t rs2_val_;  // +64 value of rs2 (trace)
@@ -144,7 +144,8 @@ template <> RemuInstruction Simulator::InstParser<RemuInstruction, 32>(unsigned 
 struct AddiInstruction : public KInstruction {
     uint8_t rd_;  // +49 raw[11:7] destination register
     uint8_t rs_;  // +50 raw[16:12] source register
-    uint8_t funct5_;  // +51 raw[19:17] must be 0 (dispatch field of main), not an assembly operand
+    uint8_t reserved_;  // +51 raw[19:17] must be 0 (checked by main), not an assembly operand
+    // TODO: other values are rejected as "unsupported instruction"; confirm whether they are other ADDI-type ops (slti, xori, ...)
     uint16_t imm_;  // +52 raw[31:20] 12-bit signed immediate (raw)
     uint32_t result_;  // +56 value written to rd (trace)
     uint32_t rs_val_;  // +60 value of rs (trace)

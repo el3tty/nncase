@@ -34,7 +34,7 @@ L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t *
   inst.rstride_s_  = bits(raw, 10, 3);
   inst.l2_datatype_      = bits(raw, 13, 2);
   inst.ddr_datatype_      = bits(raw, 15, 3);
-  inst.reserved_18_  = bits(raw, 18, 14);
+  inst.reserved_  = bits(raw, 18, 14);
   inst.rstride_d_val_     = _G.shape_reg[inst.rstride_d_];
   inst.rstride_s_val_     = _G.shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
@@ -87,7 +87,7 @@ L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc)
   inst.raddr_d_     = bits(raw, 7, 5);
   inst.raddr_s_     = bits(raw, 12, 5);
   inst.rshape_   = bits(raw, 17, 3);
-  inst.reserved_20_  = bits(raw, 20, 12);
+  inst.reserved_  = bits(raw, 20, 12);
   inst.raddr_d_val_   = _G.gp_reg[inst.raddr_d_];
   inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
   inst.rshape_val_      = _G.shape_reg[inst.rshape_];
@@ -145,7 +145,7 @@ L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t
   inst.l2_datatype_      = bits(raw, 17, 2);
   inst.ddr_datatype_      = bits(raw, 19, 3);
   inst.enable_decompress_  = bits(raw, 22, 1);
-  inst.reserved_23_  = bits(raw, 23, 9);
+  inst.reserved_  = bits(raw, 23, 9);
   inst.wconf_val_  = ((uint64_t)_G.gp_reg[inst.rlen_decompressed_] << 32) | _G.gp_reg[inst.rlen_compressed_];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = KPU_PC(cur);
@@ -191,7 +191,7 @@ L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc)
   inst.raddr_d_     = bits(raw, 7, 5);
   inst.raddr_s_     = bits(raw, 12, 5);
   inst.rvalid_c_num_     = bits(raw, 17, 5);
-  inst.reserved_22_  = bits(raw, 22, 10);
+  inst.reserved_  = bits(raw, 22, 10);
   inst.raddr_d_val_   = _G.gp_reg[inst.raddr_d_];
   inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
   inst.rvalid_c_num_val_    = _G.gp_reg[inst.rvalid_c_num_];
@@ -248,7 +248,7 @@ L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t
   inst.rstride_s_  = bits(raw, 10, 3);
   inst.l2_datatype_    = bits(raw, 13, 2);
   inst.ddr_datatype_    = bits(raw, 15, 3);
-  inst.reserved_18_  = bits(raw, 18, 14);
+  inst.reserved_  = bits(raw, 18, 14);
   inst.rstride_d_val_     = _G.shape_reg[inst.rstride_d_];
   inst.rstride_s_val_     = _G.shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
@@ -302,7 +302,7 @@ L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc)
   inst.raddr_d_     = bits(raw, 7, 5);
   inst.raddr_s_     = bits(raw, 12, 5);
   inst.rshape_   = bits(raw, 17, 3);
-  inst.reserved_20_  = bits(raw, 20, 12);
+  inst.reserved_  = bits(raw, 20, 12);
   inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
   inst.raddr_s_val_   = _G.gp_reg[inst.raddr_s_];
   inst.rshape_val_      = _G.shape_reg[inst.rshape_];

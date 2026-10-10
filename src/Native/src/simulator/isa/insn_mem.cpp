@@ -27,7 +27,7 @@ LbInstruction Simulator::InstParser<LbInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.load_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -81,7 +81,7 @@ LbuInstruction Simulator::InstParser<LbuInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.load_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -135,7 +135,7 @@ LhInstruction Simulator::InstParser<LhInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.load_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -189,7 +189,7 @@ LhuInstruction Simulator::InstParser<LhuInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.load_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -243,7 +243,7 @@ LwInstruction Simulator::InstParser<LwInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.load_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -297,7 +297,7 @@ SbInstruction Simulator::InstParser<SbInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.store_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -350,7 +350,7 @@ ShInstruction Simulator::InstParser<ShInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.store_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
@@ -404,7 +404,7 @@ SwInstruction Simulator::InstParser<SwInstruction, 32>(uint8_t ** pc)
   // verified against asm @0x4120f0 (and sibling parsers): register field is raw[11:7] (5 bits)
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.rs_ = kinst_bits(raw, 12, 5);
-  inst.funct3_ = kinst_bits(raw, 17, 3);
+  inst.store_kind_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6

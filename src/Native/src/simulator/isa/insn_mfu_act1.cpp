@@ -38,7 +38,7 @@ MfuAct1ComputeInstruction Simulator::InstParser<MfuAct1ComputeInstruction, 32>(u
     inst.raddr_s1_ = field(raw, 12, 5);
     inst.raddr_s2_ = field(raw, 17, 5);
     inst.raddr_arg_ = field(raw, 22, 5);
-    inst.reserved_27_ = field(raw, 27, 5);
+    inst.reserved_ = field(raw, 27, 5);
     inst.raddr_d1_val_ = _G.gp_reg[inst.raddr_d1_];
     inst.raddr_s1_val_ = _G.gp_reg[inst.raddr_s1_];
     inst.raddr_s2_val_ = _G.gp_reg[inst.raddr_s2_];
@@ -88,13 +88,13 @@ MfuAct1Conf_deqInstruction Simulator::InstParser<MfuAct1Conf_deqInstruction, 32>
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rscale_ = field(raw, 12, 5);
     inst.rbias_ = field(raw, 17, 5);
     inst.quant_type_ = field(raw, 22, 2);
     inst.sid_ = field(raw, 24, 1);
     inst.rshift_bits_ = field(raw, 25, 5);
-    inst.reserved_30_ = field(raw, 30, 2);
+    inst.reserved_ = field(raw, 30, 2);
     inst.rscale_val_ = _G.gp_reg[inst.rscale_];
     inst.rbias_val_ = _G.gp_reg[inst.rbias_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
@@ -150,9 +150,9 @@ MfuAct1Conf_quantInstruction Simulator::InstParser<MfuAct1Conf_quantInstruction,
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.quant_cfg_ = static_cast<uint16_t>(field(raw, 12, 2) | (field(raw, 14, 5) << 8));
-    inst.reserved_19_ = field(raw, 19, 13);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 19, 13);  // verified against asm: wider immediate (unused by operation)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -196,10 +196,10 @@ MfuAct1ConfDestInstruction Simulator::InstParser<MfuAct1ConfDestInstruction, 32>
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rlen_ = field(raw, 12, 5);
     inst.rshape_ = field(raw, 17, 3);
-    inst.reserved_20_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
     inst.rlen_val_ = _G.gp_reg[inst.rlen_];
     inst.rshape_val_ = _G.shape_reg[inst.rshape_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
@@ -244,11 +244,11 @@ MfuAct1ConfInstruction Simulator::InstParser<MfuAct1ConfInstruction, 32>(uint8_t
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
-    inst.funct4_ = field(raw, 12, 4);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
+    inst.alu_op_ = field(raw, 12, 4);
     inst.is_by_channel_ = field(raw, 16, 1);
     inst.is_16_segments_ = field(raw, 17, 1);
-    inst.reserved_18_ = field(raw, 18, 14);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 18, 14);  // verified against asm: wider immediate (unused by operation)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -270,7 +270,7 @@ void MfuAct1ConfInstruction::operation()
     MeshNet * const mn = MeshNet::GetMeshNet();
     mn->a1_per_channel_ = is_by_channel_ != 0;
     mn->a1_use_mfu_fit_ = is_16_segments_ != 0;
-    mn->a1_op_mul_ = funct4_;
+    mn->a1_op_mul_ = alu_op_;
 }
 
 // MfuAct1ConfInstruction3.cpp  @0x424fa0
@@ -292,13 +292,13 @@ MfuAct1ConfSrc1Instruction Simulator::InstParser<MfuAct1ConfSrc1Instruction, 32>
     inst.taken_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rslice_ = field(raw, 12, 5);
     inst.rright_repeats_ = field(raw, 17, 5);
     inst.rslice_repeats_ = field(raw, 22, 5);
     inst.sid_ = field(raw, 27, 1);
     inst.slice_loc_ = field(raw, 28, 1);
-    inst.reserved_29_ = field(raw, 29, 3);
+    inst.reserved_ = field(raw, 29, 3);
     inst.rslice_val_ = _G.gp_reg[inst.rslice_];
     inst.rright_repeats_val_ = _G.gp_reg[inst.rright_repeats_];
     inst.rslice_repeats_val_ = _G.gp_reg[inst.rslice_repeats_];
@@ -353,12 +353,12 @@ MfuAct1ConfSrc2Instruction Simulator::InstParser<MfuAct1ConfSrc2Instruction, 32>
     inst.taken_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rleft_repeats_ = field(raw, 12, 5);
     inst.rshape_ = field(raw, 17, 3);
     inst.sid_ = field(raw, 20, 1);
     inst.source_type_ = field(raw, 21, 1);
-    inst.reserved_22_ = field(raw, 22, 10);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 22, 10);  // verified against asm: wider immediate (unused by operation)
     inst.rleft_repeats_val_ = _G.gp_reg[inst.rleft_repeats_];
     inst.rshape_val_ = _G.shape_reg[inst.rshape_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
@@ -410,11 +410,11 @@ MfuAct1ConfStrideInstruction Simulator::InstParser<MfuAct1ConfStrideInstruction,
     inst.flag_ = 0;
     inst.opcode_ = raw & 0x7F;
     // verified against asm: register field is raw[11:7] (5 bits)
-    inst.funct5_ = field(raw, 7, 5);
+    inst.mfu_conf_id_ = field(raw, 7, 5);
     inst.rstride_s1_ = field(raw, 12, 3);
     inst.rstride_s2_ = field(raw, 15, 3);
     inst.rstride_d1_ = field(raw, 18, 3);
-    inst.reserved_21_ = field(raw, 21, 11);  // verified against asm: wider immediate (unused by operation)
+    inst.reserved_ = field(raw, 21, 11);  // verified against asm: wider immediate (unused by operation)
     inst.rstride_s1_val_ = _G.shape_reg[inst.rstride_s1_];
     inst.rstride_s2_val_ = _G.shape_reg[inst.rstride_s2_];
     inst.rstride_d1_val_ = _G.shape_reg[inst.rstride_d1_];
