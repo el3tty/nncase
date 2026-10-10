@@ -1,49 +1,33 @@
-// Lifted from IDA/Hex-Rays output; addresses refer to the original binary.
-// PuPdp0ComputeInstruction1.cpp  @0x41de80
-// Simulator52.cpp  @0x418050
-// Simulator48.cpp  @0x417740
-// Simulator49.cpp  @0x417960
-// Simulator50.cpp  @0x417bb0
-// Simulator51.cpp  @0x417df0
-// Simulator47.cpp  @0x417510
-// Simulator54.cpp  @0x4184c0
-// Simulator53.cpp  @0x4182a0
 #include "isa/insn_pupdp0.h"
 #include "globals.h"
 #include "isa/pu_common.h"
 #include "engines/pdp0.h"
 
 // ---- PuPdp0ComputeInstruction ----
-void PuPdp0ComputeInstruction::get_next_pc()
-{
+void PuPdp0ComputeInstruction::get_next_pc() {
     next_pc_ = pc_ + 2;
 }
 
-// PuPdp0ComputeInstruction2.cpp  @0x422b20
-void PuPdp0ComputeInstruction::operation()
-{
+void PuPdp0ComputeInstruction::operation() {
     PDP0* pdp0 = PDP0::GetPDP0();
-    pdp0->regs_.psum_offset_ = compute_param_;                 // +65632
+    pdp0->regs_.psum_offset_ = compute_param_;
 
     // Queue a snapshot of the configuration registers (inlined std::deque::push_back of a shared_ptr).
     pdp0->compute_queue_.push_back(pdp0->GetPdp0Compute());
 
-    // Run when the DmStoreOf queue (+65720) is non-empty.
-    // verified against asm @0x422b20: the original tests the store_of_queue size (PDP0+0x100b8 deque), not compute_queue.
+    // Run when the DmStoreOf queue is non-empty.
+    // verified against asm @0x422b20: the original tests the store_of_queue size (deque), not compute_queue.
     if (!pdp0->store_of_queue_.empty())
         pdp0->Compute();
 }
 
-// PuPdp0ComputeInstruction3.cpp  @0x4255e0
-PuPdp0ComputeInstruction::~PuPdp0ComputeInstruction()
-{
+PuPdp0ComputeInstruction::~PuPdp0ComputeInstruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40f0fa.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40f0fa.
 template <>
-PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruction, 16>(uint8_t ** pc)
-{
+PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   PuPdp0ComputeInstruction inst;
@@ -56,15 +40,14 @@ PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruction, 16>(uin
   inst.compute_param_ = _G.gp_reg[inst.raddr_s_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000003LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- PuPdp0Conf_deqInstruction ----
 template <>
-PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstruction, 32>(uint8_t** pc)
-{
+PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstruction, 32>(uint8_t** pc) {
     PuPdp0Conf_deqInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -87,31 +70,24 @@ PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstruction, 32>(u
     return inst;
 }
 
-// PuPdp0Conf_deqInstruction1.cpp  @0x41de50
-void PuPdp0Conf_deqInstruction::get_next_pc()
-{
+void PuPdp0Conf_deqInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0Conf_deqInstruction2.cpp  @0x422a50
-void PuPdp0Conf_deqInstruction::operation()
-{
-    // verified against asm @0x422a50: one qword store at PDP0+0x10030 = {rs1_val, unsigned_flag}
+void PuPdp0Conf_deqInstruction::operation() {
+    // verified against asm @0x422a50: one qword store at = {rs1_val, unsigned_flag}
     PDP0 *pdp0 = PDP0::GetPDP0();
     pdp0->regs_.in_zero_point_ = rbx_val_;
     pdp0->regs_.unsigned_flag_ = quant_type_;
 }
 
-// PuPdp0Conf_deqInstruction3.cpp  @0x4256d0
-PuPdp0Conf_deqInstruction::~PuPdp0Conf_deqInstruction()
-{
+PuPdp0Conf_deqInstruction::~PuPdp0Conf_deqInstruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0FetchifConf1Instruction ----
 template <>
-PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifConf1Instruction, 32>(uint8_t** pc)
-{
+PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifConf1Instruction, 32>(uint8_t** pc) {
     PuPdp0FetchifConf1Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -133,30 +109,23 @@ PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifConf1Instructio
     return inst;
 }
 
-// PuPdp0FetchifConf1Instruction1.cpp  @0x41de10
-void PuPdp0FetchifConf1Instruction::get_next_pc()
-{
+void PuPdp0FetchifConf1Instruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0FetchifConf1Instruction2.cpp  @0x422980
-void PuPdp0FetchifConf1Instruction::operation()
-{
+void PuPdp0FetchifConf1Instruction::operation() {
     Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
     regs.stride_x_ = stride_w_;
     regs.stride_y_ = stride_h_;
 }
 
-// PuPdp0FetchifConf1Instruction3.cpp  @0x425810
-PuPdp0FetchifConf1Instruction::~PuPdp0FetchifConf1Instruction()
-{
+PuPdp0FetchifConf1Instruction::~PuPdp0FetchifConf1Instruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0FetchifConf2Instruction ----
 template <>
-PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifConf2Instruction, 32>(uint8_t** pc)
-{
+PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifConf2Instruction, 32>(uint8_t** pc) {
     PuPdp0FetchifConf2Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -180,29 +149,22 @@ PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifConf2Instructio
     return inst;
 }
 
-// PuPdp0FetchifConf2Instruction1.cpp  @0x41de20
-void PuPdp0FetchifConf2Instruction::get_next_pc()
-{
+void PuPdp0FetchifConf2Instruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0FetchifConf2Instruction2.cpp  @0x4229a0
-void PuPdp0FetchifConf2Instruction::operation()
-{
+void PuPdp0FetchifConf2Instruction::operation() {
     // No configuration is written; only the PDP0 singleton is (lazily) created.
     (void)PDP0::GetPDP0();
 }
 
-// PuPdp0FetchifConf2Instruction3.cpp  @0x4257c0
-PuPdp0FetchifConf2Instruction::~PuPdp0FetchifConf2Instruction()
-{
+PuPdp0FetchifConf2Instruction::~PuPdp0FetchifConf2Instruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0FetchifConf3Instruction ----
 template <>
-PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifConf3Instruction, 32>(uint8_t** pc)
-{
+PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifConf3Instruction, 32>(uint8_t** pc) {
     PuPdp0FetchifConf3Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -225,15 +187,11 @@ PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifConf3Instructio
     return inst;
 }
 
-// PuPdp0FetchifConf3Instruction1.cpp  @0x41de30
-void PuPdp0FetchifConf3Instruction::get_next_pc()
-{
+void PuPdp0FetchifConf3Instruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0FetchifConf3Instruction2.cpp  @0x4229b0
-void PuPdp0FetchifConf3Instruction::operation()
-{
+void PuPdp0FetchifConf3Instruction::operation() {
     Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
     regs.in_dim3_ = pu::shape_word(shape_, 3);
     regs.in_c_ = pu::shape_word(shape_, 2);
@@ -241,16 +199,13 @@ void PuPdp0FetchifConf3Instruction::operation()
     regs.in_w_ = pu::shape_word(shape_, 0);
 }
 
-// PuPdp0FetchifConf3Instruction3.cpp  @0x425770
-PuPdp0FetchifConf3Instruction::~PuPdp0FetchifConf3Instruction()
-{
+PuPdp0FetchifConf3Instruction::~PuPdp0FetchifConf3Instruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0FetchifConf4Instruction ----
 template <>
-PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifConf4Instruction, 32>(uint8_t** pc)
-{
+PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifConf4Instruction, 32>(uint8_t** pc) {
     PuPdp0FetchifConf4Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -274,15 +229,11 @@ PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifConf4Instructio
     return inst;
 }
 
-// PuPdp0FetchifConf4Instruction1.cpp  @0x41de40
-void PuPdp0FetchifConf4Instruction::get_next_pc()
-{
+void PuPdp0FetchifConf4Instruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0FetchifConf4Instruction2.cpp  @0x422a00
-void PuPdp0FetchifConf4Instruction::operation()
-{
+void PuPdp0FetchifConf4Instruction::operation() {
     Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
     regs.pad_value_ = rpad_value_val_;
     regs.pad_bottom_ = pu::shape_word(shape_, 2);
@@ -291,16 +242,13 @@ void PuPdp0FetchifConf4Instruction::operation()
     regs.pad_right_ = pu::shape_word(shape_, 0);
 }
 
-// PuPdp0FetchifConf4Instruction3.cpp  @0x425720
-PuPdp0FetchifConf4Instruction::~PuPdp0FetchifConf4Instruction()
-{
+PuPdp0FetchifConf4Instruction::~PuPdp0FetchifConf4Instruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0ModeConfInstruction ----
 template <>
-PuPdp0ModeConfInstruction Simulator::InstParser<PuPdp0ModeConfInstruction, 32>(uint8_t** pc)
-{
+PuPdp0ModeConfInstruction Simulator::InstParser<PuPdp0ModeConfInstruction, 32>(uint8_t** pc) {
     PuPdp0ModeConfInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -321,28 +269,21 @@ PuPdp0ModeConfInstruction Simulator::InstParser<PuPdp0ModeConfInstruction, 32>(u
     return inst;
 }
 
-// PuPdp0ModeConfInstruction1.cpp  @0x41de00
-void PuPdp0ModeConfInstruction::get_next_pc()
-{
+void PuPdp0ModeConfInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0ModeConfInstruction2.cpp  @0x422960
-void PuPdp0ModeConfInstruction::operation()
-{
+void PuPdp0ModeConfInstruction::operation() {
     PDP0::GetPDP0()->regs_.mode_ = mode_;  // PDP0 mode register
 }
 
-// PuPdp0ModeConfInstruction3.cpp  @0x425860
-PuPdp0ModeConfInstruction::~PuPdp0ModeConfInstruction()
-{
+PuPdp0ModeConfInstruction::~PuPdp0ModeConfInstruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0OfConfInstruction ----
 template <>
-PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstruction, 32>(uint8_t** pc)
-{
+PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstruction, 32>(uint8_t** pc) {
     PuPdp0OfConfInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -366,15 +307,11 @@ PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstruction, 32>(uint8
     return inst;
 }
 
-// PuPdp0OfConfInstruction1.cpp  @0x41de70
-void PuPdp0OfConfInstruction::get_next_pc()
-{
+void PuPdp0OfConfInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0OfConfInstruction2.cpp  @0x422aa0
-void PuPdp0OfConfInstruction::operation()
-{
+void PuPdp0OfConfInstruction::operation() {
     Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
     regs.out_dim3_ = pu::shape_word(shape1_, 3);
     regs.out_c_ = pu::shape_word(shape1_, 2);
@@ -386,16 +323,13 @@ void PuPdp0OfConfInstruction::operation()
     regs.of_reserved_ = 0;
 }
 
-// PuPdp0OfConfInstruction3.cpp  @0x425630
-PuPdp0OfConfInstruction::~PuPdp0OfConfInstruction()
-{
+PuPdp0OfConfInstruction::~PuPdp0OfConfInstruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }
 
 // ---- PuPdp0WConfInstruction ----
 template <>
-PuPdp0WConfInstruction Simulator::InstParser<PuPdp0WConfInstruction, 32>(uint8_t** pc)
-{
+PuPdp0WConfInstruction Simulator::InstParser<PuPdp0WConfInstruction, 32>(uint8_t** pc) {
     PuPdp0WConfInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
     const uint32_t cur = KPU_PC(*pc);  // offset in DDR
@@ -417,22 +351,16 @@ PuPdp0WConfInstruction Simulator::InstParser<PuPdp0WConfInstruction, 32>(uint8_t
     return inst;
 }
 
-// PuPdp0WConfInstruction1.cpp  @0x41de60
-void PuPdp0WConfInstruction::get_next_pc()
-{
+void PuPdp0WConfInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// PuPdp0WConfInstruction2.cpp  @0x422a80
-void PuPdp0WConfInstruction::operation()
-{
+void PuPdp0WConfInstruction::operation() {
     Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
     regs.kernel_w_ = kernel_w_;
     regs.kernel_h_ = kernel_h_;
 }
 
-// PuPdp0WConfInstruction3.cpp  @0x425680
-PuPdp0WConfInstruction::~PuPdp0WConfInstruction()
-{
+PuPdp0WConfInstruction::~PuPdp0WConfInstruction() {
     // vptr reset to KInstruction vtable; std::string name released by the compiler
 }

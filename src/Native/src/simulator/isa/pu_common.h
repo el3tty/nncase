@@ -1,5 +1,5 @@
 #pragma once
-// Shared helpers for the PU / PU-PDP0 configuration instructions (lifted from IDA output).
+// Shared helpers for the PU / PU-PDP0 configuration instructions.
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -16,15 +16,13 @@ namespace pu {
 constexpr uint64_t kInstInfo = 0x400000003ULL;
 
 // Extract `width` bits starting at bit `lo` of the 32-bit instruction word.
-inline uint32_t bits(uint32_t raw, unsigned lo, unsigned width)
-{
+inline uint32_t bits(uint32_t raw, unsigned lo, unsigned width) {
     return (raw >> lo) & ((1u << width) - 1u);
 }
 
 // 16-bit lane `i` (0 = lowest) of a packed shape register _G.shape_reg[n]
 // (four 16-bit dimensions per 64-bit register).
-inline uint32_t shape_word(uint64_t shape, unsigned i)
-{
+inline uint32_t shape_word(uint64_t shape, unsigned i) {
     return static_cast<uint32_t>((shape >> (16u * i)) & 0xFFFFu);
 }
 
@@ -35,8 +33,7 @@ using OpaqueQueue = std::deque<std::shared_ptr<void>>;
 // CheckPoint trace: one zero-padded 18-wide word per configuration instruction.
 // The original writes to the object at CheckPoint offset 0 (stream kPu0); no std::hex is set in the
 // code because the check-point streams are opened in hex mode.
-inline void log_inst_word(uint64_t word)
-{
+inline void log_inst_word(uint64_t word) {
     std::ostream& os = CheckPoint::GetCheckPoint()->Stream(CheckPoint::kPu0);
     os << std::setfill('0') << std::setw(18) << word << std::endl;
 }

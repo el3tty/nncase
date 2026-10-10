@@ -1,5 +1,4 @@
 #pragma once
-// Reconstructed from IDA/Hex-Rays output (inferred declarations).
 #include <cstddef>
 #include <typeinfo>
 #include <xmmintrin.h>
@@ -15,8 +14,7 @@
 #include <cmath>
 #include <cstring>
 // Extract `width` bits of the instruction word starting at bit `lo` (decoder helper).
-inline uint32_t kinst_bits(uint64_t raw, unsigned lo, unsigned width)
-{
+inline uint32_t kinst_bits(uint64_t raw, unsigned lo, unsigned width) {
     return (uint32_t)((raw >> lo) & ((1ull << width) - 1));
 }
 
@@ -31,13 +29,13 @@ inline uint32_t kinst_bits(uint64_t raw, unsigned lo, unsigned width)
 // taken@36, name@40 (std::string, always empty and never read; not ported), flag@48; derived classes start their fields at +49.
 // The instruction word is 32 bits (opcode = raw & 0x7F); "short" instructions advance pc by 2.
 struct KInstruction {
-    uint32_t opcode_;  // +8   raw & 0x7F
-    uint64_t info_;  // +16  two u32: low = instruction type (6 for decoded 32-bit insns), high = kind/class (1 branch/jump, 3 mem, 4 conf)
-    uint32_t pc_;  // +24  address of this instruction relative to _G.DDR
-    uint32_t pc_rel_;  // +28  pc relative to the code base (Simulator::start_pc_)
-    uint32_t next_pc_;  // +32  filled by get_next_pc()/operation()
-    uint8_t taken_;  // +36  set by control-flow instructions when the branch/jump is taken
-    uint8_t flag_;  // +48
+    uint32_t opcode_;  // raw & 0x7F
+    uint64_t info_;  // two u32: low = instruction type (6 for decoded 32-bit insns), high = kind/class (1 branch/jump, 3 mem, 4 conf)
+    uint32_t pc_;  // address of this instruction relative to _G.DDR
+    uint32_t pc_rel_;  // pc relative to the code base (Simulator::start_pc_)
+    uint32_t next_pc_;  // filled by get_next_pc/operation
+    uint8_t taken_;  // set by control-flow instructions when the branch/jump is taken
+    uint8_t flag_;
     virtual ~KInstruction();
     virtual void operation();      // default: no-op
     virtual void get_next_pc();    // default: no-op (derived: pc + 4, or pc + 2 for 16-bit insns)

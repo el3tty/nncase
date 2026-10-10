@@ -1,12 +1,8 @@
-// Lifted from IDA/Hex-Rays output (TCU1..TCU4.cpp). The AVX instructions that the auto-converted
-// results/ copy had stripped were recovered from sources/TCU*.cpp (they only initialise the PE
-// bookkeeping words and compute the minimum of two ints).
-//
-// Dataflow of one convolution (TCU::ComputeConv):
+// TCU dataflow of one convolution (TCU::ComputeConv):
 //   for each kernel row ky:            FillWeight(ky) loads weight[ky][0..kw) into every PE (double buffered)
 //     for each output row oy:          the per-PE input queues are cleared, then
-//       for each output column ox:     FillIf() pushes the new IF samples of the sliding window into the PE queues,
-//                                      PECalculate() multiplies the kw queued samples with the kw weights, sums
+//       for each output column ox:     FillIf pushes the new IF samples of the sliding window into the PE queues,
+//                                      PECalculate multiplies the kw queued samples with the kw weights, sums
 //                                      over the PE rows (input channels) and writes/accumulates the 32 lanes into PSUM_L1.
 #include "engines/tcu.h"
 #include "globals.h"
@@ -22,17 +18,14 @@ extern std::string debug_file;   // dump file path
 
 namespace {
 
-void report_matrix_exceed()
-{
+void report_matrix_exceed() {
     std::cout << "[Error: Matrix Exceed]" << std::endl;
 }
 
 }  // namespace
 
-// @0x46d810 (Source 1)
 // Loads the weights of kernel row `kernel_row` into the inactive weight buffer of every PE and swaps buffers.
-void TCU::FillWeight(ComputeInfo& info, int kernel_row)
-{
+void TCU::FillWeight(ComputeInfo& info, int kernel_row) {
     const int block_rows = info.wide_rows_ ? 32 : 24;   // rows of one weight block
 
     for (int kx = 0; kx < info.kw_; ++kx) {
@@ -55,7 +48,7 @@ void TCU::FillWeight(ComputeInfo& info, int kernel_row)
                         value = static_cast<int8_t>(info.weights_[index]);
                     else
                         value = static_cast<int>(info.weights_[index]) - static_cast<int>(info.weight_zero_points_[col]);
-                    // verified against asm: the bogus self-call of the decompilation is the compiler's duplicated
+                    // verified against asm: the self-call in the binary is the compiler's duplicated
                     // (.cold / signed-case) copy of this same loop, lifted as one.
                     pe_[first_row + r][col].weight_[weight_sel_][kx] = value;
                 }
@@ -66,11 +59,9 @@ void TCU::FillWeight(ComputeInfo& info, int kernel_row)
     weight_sel_ = (weight_sel_ + 1) % 2;
 }
 
-// @0x46dbe0 (Source 2)
 // One output pixel: for every PE column, sum over kernel taps and PE rows of weight * queued IF sample.
-void TCU::PECalculate(ComputeInfo& info, int out_y, int out_x, bool accumulate, bool last_kernel_row)
-{
-    (void)last_kernel_row;   // passed by ComputeConv but never read by the decompiled body
+void TCU::PECalculate(ComputeInfo& info, int out_y, int out_x, bool accumulate, bool last_kernel_row) {
+    (void)last_kernel_row;   // passed by ComputeConv but never read by the body
 
     const int taps = pe_[0][0].taps_;
     std::vector<std::vector<int32_t>> tap_sum(taps, std::vector<int32_t>(kCols, 0));   // [tap][lane]
@@ -133,11 +124,9 @@ void TCU::PECalculate(ComputeInfo& info, int out_y, int out_x, bool accumulate, 
     }
 }
 
-// @0x46e5b0 (Source 3)
 // Pushes the IF samples at (y, x .. x+count-1) into the input queue of every PE (all columns of a group get the
 // same sample). Positions outside the tensor feed info.pad_value.
-void TCU::FillIf(ComputeInfo& info, int y, int x, int count)
-{
+void TCU::FillIf(ComputeInfo& info, int y, int x, int count) {
     for (int xi = x; xi < x + count; ++xi) {
         const bool inside = y >= 0 && xi >= 0 && y < info.ifmap_.height_ && xi < info.ifmap_.width_;
         const int32_t pad = info.pad_value_;
@@ -162,9 +151,7 @@ void TCU::FillIf(ComputeInfo& info, int y, int x, int count)
     // (movsbl (%r13,%rdi) ... = the same IF load as above); nothing is pushed when cols_per_group <= 0.
 }
 
-// @0x46e950 (Source 4)
-void TCU::ComputeConv(ComputeInfo& info)
-{
+void TCU::ComputeConv(ComputeInfo& info) {
     rows_ = info.ifmap_.channels_;
     cols_ = info.psum_.channels_;
     cols_per_group_ = cols_ / info.groups_;

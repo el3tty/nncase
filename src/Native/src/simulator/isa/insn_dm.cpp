@@ -1,4 +1,3 @@
-// Lifted from IDA/Hex-Rays output; names and types are inferred.
 #include "isa/insn_dm.h"
 #include "globals.h"
 #include "isa/kinstruction.h"
@@ -11,16 +10,13 @@
 // ---- DmConf_broadcastInstruction ----
 namespace {
 // Extract `width` bits of `word` starting at bit `lo`.
-inline uint32_t bits(uint32_t word, unsigned lo, unsigned width)
-{
+inline uint32_t bits(uint32_t word, unsigned lo, unsigned width) {
   return (word >> lo) & ((1u << width) - 1u);
 }
 }  // namespace
 
-// Simulator27.cpp  @0x414770
 template <>
-DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 16>(uint8_t ** pc)
-{
+DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 16>(uint8_t ** pc) {
   DmConf_broadcastInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -41,13 +37,10 @@ DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 1
   return inst;
 }
 
-// DmConf_broadcastInstruction1.cpp  @0x41dcb0
-void DmConf_broadcastInstruction::get_next_pc()
-{
+void DmConf_broadcastInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// DmConf_broadcastInstruction2.cpp  @0x425ef0
 DmConf_broadcastInstruction::~DmConf_broadcastInstruction() = default;
 
 // ---- DmLoadAct0 ----
@@ -56,10 +49,8 @@ namespace {
 using LoadAct0Queue = std::deque<std::shared_ptr<DmLoadAct0>>;
 }  // namespace
 
-// Simulator35.cpp  @0x415950
 template <>
-DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t ** pc)
-{
+DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t ** pc) {
   DmLoadAct0Instruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -85,15 +76,11 @@ DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t *
   return inst;
 }
 
-// DmLoadAct0Instruction1.cpp  @0x41dd30
-void DmLoadAct0Instruction::get_next_pc()
-{
+void DmLoadAct0Instruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadAct0Instruction2.cpp  @0x422690
-void DmLoadAct0Instruction::operation()
-{
+void DmLoadAct0Instruction::operation() {
   Dm *dm = Dm::GetDm();
   // Dm singleton: LoadAct0 section
   dm->loadact0_src_ = reinterpret_cast<const int16_t *>(_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF));  // GLB source pointer
@@ -108,14 +95,11 @@ void DmLoadAct0Instruction::operation()
   }
 }
 
-// DmLoadAct0Instruction3.cpp  @0x425c70
 DmLoadAct0Instruction::~DmLoadAct0Instruction() = default;
 
 // ---- DmLoadL1ConfInstruction ----
-// Simulator28.cpp  @0x4148d0
 template <>
-DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8_t ** pc)
-{
+DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8_t ** pc) {
   DmLoadL1ConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -139,15 +123,11 @@ DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8
   return inst;
 }
 
-// DmLoadL1ConfInstruction1.cpp  @0x41dcc0
-void DmLoadL1ConfInstruction::get_next_pc()
-{
+void DmLoadL1ConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadL1ConfInstruction2.cpp  @0x41e030
-void DmLoadL1ConfInstruction::operation()
-{
+void DmLoadL1ConfInstruction::operation() {
   Dm *dm = Dm::GetDm();
   dm->l1_shape_[0] = (rstride_s_val_ >> 32) & 0xFFFF;   // L1 load shape dim0
   dm->l1_shape_[1] = (rstride_s_val_ >> 16) & 0xFFFF;   // L1 load shape dim1
@@ -156,14 +136,11 @@ void DmLoadL1ConfInstruction::operation()
   dm->l1_mode_ = datatype_;                             // L1 load mode (consumed by Dm::GetDmLoadL1)
 }
 
-// DmLoadL1ConfInstruction3.cpp  @0x425ea0
 DmLoadL1ConfInstruction::~DmLoadL1ConfInstruction() = default;
 
 // ---- DmLoadL1Instruction ----
-// Simulator33.cpp  @0x415420
 template <>
-DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc)
-{
+DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc) {
   DmLoadL1Instruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -190,43 +167,37 @@ DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc
   return inst;
 }
 
-// DmLoadL1Instruction1.cpp  @0x41dd10
-void DmLoadL1Instruction::get_next_pc()
-{
+void DmLoadL1Instruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadL1Instruction::operation  @0x423140 (reconstructed from the assembly, IDA had no body)
-void DmLoadL1Instruction::operation()
-{
+// DmLoadL1Instruction::operation  @0x423140 (reconstructed from the assembly)
+void DmLoadL1Instruction::operation() {
   if (flag_)
     _G.debug_flag = 1;   // byte at 0x5cc7b0
 
   Dm *dm = Dm::GetDm();
-  // Dm+64..76: the four 16-bit dims of the shape register (dim0 = [63:48] ... dim3 = [15:0])
+  // the four 16-bit dims of the shape register (dim0 = [63:48] ... dim3 = [15:0])
   dm->l1_dims_[0] = (uint32_t)(rshape_val_ >> 48);
   dm->l1_dims_[1] = (uint32_t)((rshape_val_ >> 32) & 0xFFFF);
   dm->l1_dims_[2] = (uint32_t)((rshape_val_ >> 16) & 0xFFFF);
   dm->l1_dims_[3] = (uint32_t)(rshape_val_ & 0xFFFF);
-  // Dm+80: GLB source pointer (bank[31:28] | offset[27:0])
+  // GLB source pointer (bank[31:28] | offset[27:0])
   dm->l1_src_ = (const uint8_t *)(_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF));
-  // Dm+88: the value of the second register (rs_aux), not the MMU-translated address
+  // the value of the second register (rs_aux), not the MMU-translated address
   dm->l1_layout_ = rhtoc_window_val_;
 
   // The tile is loaded into IF_L1 right away from a first snapshot ...
   Dm::LoadL1(dm->GetDmLoadL1());
-  // ... and a second snapshot is queued on Conv2D (std::deque<shared_ptr<DmLoadL1>> at Conv2D+160).
+  // .. and a second snapshot is queued on Conv2D (std::deque<shared_ptr<DmLoadL1>> at ).
   Conv2D::GetConv2D()->if_queue_.push_back(dm->GetDmLoadL1());
 }
 
-// DmLoadL1Instruction2.cpp  @0x425d10
 DmLoadL1Instruction::~DmLoadL1Instruction() = default;
 
 // ---- DmLoadWConf2Instruction ----
-// Simulator32.cpp  @0x4151d0
 template <>
-DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8_t ** pc)
-{
+DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8_t ** pc) {
   DmLoadWConf2Instruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -250,20 +221,15 @@ DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8
   return inst;
 }
 
-// DmLoadWConf2Instruction1.cpp  @0x41dcd0
-void DmLoadWConf2Instruction::get_next_pc()
-{
+void DmLoadWConf2Instruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadWConf2Instruction2.cpp  @0x425e50
 DmLoadWConf2Instruction::~DmLoadWConf2Instruction() = default;
 
 // ---- DmLoadWConf_deqInstruction ----
-// Simulator30.cpp  @0x414d50
 template <>
-DmLoadWConf_deqInstruction Simulator::InstParser<DmLoadWConf_deqInstruction, 32>(uint8_t ** pc)
-{
+DmLoadWConf_deqInstruction Simulator::InstParser<DmLoadWConf_deqInstruction, 32>(uint8_t ** pc) {
   DmLoadWConf_deqInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -284,26 +250,19 @@ DmLoadWConf_deqInstruction Simulator::InstParser<DmLoadWConf_deqInstruction, 32>
   return inst;
 }
 
-// DmLoadWConf_deqInstruction1.cpp  @0x41dcf0
-void DmLoadWConf_deqInstruction::get_next_pc()
-{
+void DmLoadWConf_deqInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadWConf_deqInstruction2.cpp  @0x41e010
-void DmLoadWConf_deqInstruction::operation()
-{
+void DmLoadWConf_deqInstruction::operation() {
   Dm::GetDm()->loadw_deq_mode_ = quant_type_;
 }
 
-// DmLoadWConf_deqInstruction3.cpp  @0x425db0
 DmLoadWConf_deqInstruction::~DmLoadWConf_deqInstruction() = default;
 
 // ---- DmLoadWConfInstruction ----
-// Simulator29.cpp  @0x414b20
 template <>
-DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t ** pc)
-{
+DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t ** pc) {
   DmLoadWConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -326,38 +285,30 @@ DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t
   return inst;
 }
 
-// DmLoadWConfInstruction1.cpp  @0x41dce0
-void DmLoadWConfInstruction::get_next_pc()
-{
+void DmLoadWConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadWConfInstruction2.cpp  @0x41dff0
-void DmLoadWConfInstruction::operation()
-{
+void DmLoadWConfInstruction::operation() {
   Dm *dm = Dm::GetDm();
   dm->conf_a_ = kernel_h_;
   dm->conf_b_ = kernel_w_;
   dm->loadw_len_ = (uint32_t)rstride_oc_val_;
 }
 
-// DmLoadWConfInstruction3.cpp  @0x425e00
 DmLoadWConfInstruction::~DmLoadWConfInstruction() = default;
 
 // ---- DmLoadW ----
 namespace {
 using LoadWQueue = std::deque<std::shared_ptr<DmLoadW>>;
 
-inline uint32_t mmu_translate(uint32_t glb_addr)
-{
+inline uint32_t mmu_translate(uint32_t glb_addr) {
   return (glb_addr & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (glb_addr >> 28)];
 }
 }  // namespace
 
-// Simulator34.cpp  @0x4156b0
 template <>
-DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc)
-{
+DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc) {
   DmLoadWInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -385,15 +336,11 @@ DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc)
   return inst;
 }
 
-// DmLoadWInstruction1.cpp  @0x41dd20
-void DmLoadWInstruction::get_next_pc()
-{
+void DmLoadWInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmLoadWInstruction2.cpp  @0x4225b0
-void DmLoadWInstruction::operation()
-{
+void DmLoadWInstruction::operation() {
   if (flag_)
     _G.debug_flag = 1;
 
@@ -412,14 +359,11 @@ void DmLoadWInstruction::operation()
   }
 }
 
-// DmLoadWInstruction3.cpp  @0x425cc0
 DmLoadWInstruction::~DmLoadWInstruction() = default;
 
 // ---- DmStoreOfConfInstruction ----
-// Simulator31.cpp  @0x414f80
 template <>
-DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uint8_t ** pc)
-{
+DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uint8_t ** pc) {
   DmStoreOfConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -442,15 +386,11 @@ DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uin
   return inst;
 }
 
-// DmStoreOfConfInstruction1.cpp  @0x41dd00
-void DmStoreOfConfInstruction::get_next_pc()
-{
+void DmStoreOfConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmStoreOfConfInstruction2.cpp  @0x41e070
-void DmStoreOfConfInstruction::operation()
-{
+void DmStoreOfConfInstruction::operation() {
   Dm *dm = Dm::GetDm();
   dm->of_shape_[0] = (rstride_d_val_ >> 32) & 0xFFFF;   // OF store shape dim0
   dm->of_shape_[1] = (rstride_d_val_ >> 16) & 0xFFFF;   // dim1
@@ -459,14 +399,11 @@ void DmStoreOfConfInstruction::operation()
   dm->of_mode_ = datatype_;                             // OF store mode (consumed by Dm::GetStoreOf)
 }
 
-// DmStoreOfConfInstruction3.cpp  @0x425d60
 DmStoreOfConfInstruction::~DmStoreOfConfInstruction() = default;
 
 // ---- DmStoreOf ----
-// Simulator36.cpp  @0x415bc0
 template <>
-DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** pc)
-{
+DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** pc) {
   DmStoreOfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -491,28 +428,24 @@ DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** 
   return inst;
 }
 
-// DmStoreOfInstruction1.cpp  @0x41dd40
-void DmStoreOfInstruction::get_next_pc()
-{
+void DmStoreOfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// DmStoreOfInstruction2.cpp  @0x422750
-void DmStoreOfInstruction::operation()
-{
+void DmStoreOfInstruction::operation() {
   Dm * dm = Dm::GetDm();
   const uint32_t bank = raddr_d_val_ >> 28;
 
   // Dm singleton: OF-store section
-  dm->of_dst_ = _G.GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);          // +128  GLB destination pointer
-  dm->of_full_shape_[0] = (rshape_val_ >> 48) & 0xFFFF;              // +136  shape dim0
-  dm->of_full_shape_[1] = (rshape_val_ >> 32) & 0xFFFF;              // +140  shape dim1
-  dm->of_full_shape_[2] = (rshape_val_ >> 16) & 0xFFFF;              // +144  shape dim2
-  dm->of_full_shape_[3] = rshape_val_ & 0xFFFF;                      // +148  shape dim3
+  dm->of_dst_ = _G.GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);          // GLB destination pointer
+  dm->of_full_shape_[0] = (rshape_val_ >> 48) & 0xFFFF;              // shape dim0
+  dm->of_full_shape_[1] = (rshape_val_ >> 32) & 0xFFFF;              // shape dim1
+  dm->of_full_shape_[2] = (rshape_val_ >> 16) & 0xFFFF;              // shape dim2
+  dm->of_full_shape_[3] = rshape_val_ & 0xFFFF;                      // shape dim3
   // verified against asm @0x422750: the binary masks the offset with 0xFFFFFF (24 bits) here, while the decoder
-  // (dst_mmu_addr) uses 0xFFFFFFF (28 bits); Dm+152 is recomputed from dst_addr.
-  dm->of_mmu_addr_ = 32 * _G.MMU_MMUItem[2 * bank] + (raddr_d_val_ & 0xFFFFFF);   // +152
-  dm->of_use_pdp0_ = src_channel_;                                 // +156
+  // (dst_mmu_addr) uses 0xFFFFFFF (28 bits); is recomputed from dst_addr.
+  dm->of_mmu_addr_ = 32 * _G.MMU_MMUItem[2 * bank] + (raddr_d_val_ & 0xFFFFFF);
+  dm->of_use_pdp0_ = src_channel_;
 
   std::shared_ptr<DmStoreOf> store = dm->GetStoreOf();
   if (src_channel_) {
@@ -528,5 +461,4 @@ void DmStoreOfInstruction::operation()
   }
 }
 
-// DmStoreOfInstruction3.cpp  @0x425c20
 DmStoreOfInstruction::~DmStoreOfInstruction() = default;

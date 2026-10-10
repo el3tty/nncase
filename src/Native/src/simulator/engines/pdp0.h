@@ -1,5 +1,5 @@
 #pragma once
-// PDP0: pooling / depthwise-convolution engine of the NPU C-model (lifted from IDA/Hex-Rays output).
+// PDP0: pooling / depthwise-convolution engine of the NPU C-model.
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -14,10 +14,10 @@ struct DmStoreOf;                              // output-store descriptor  (see 
 struct DmLoadAct0;                             // activation-load descriptor (see DmLoadAct0Instruction)
 struct Act0Compute;                            // activation compute descriptor (see Act0::GetAct0Compute)
 
-// Snapshot of the PDP0 configuration registers (PDP0 + 0x10000 .. +0x10063) taken by
-// PDP0::GetPdp0Compute() when a PuPdp0ComputeInstruction is issued.
+// Snapshot of the PDP0 configuration registers (x10063) taken by
+// PDP0::GetPdp0Compute when a PuPdp0ComputeInstruction is issued.
 // Field index N is the 32-bit word at byte offset 4*N; "reg" is the word index into
-// PDP0::GetPDP0() used by the pupdp0*instruction files (reg = 16384 + N).
+// PDP0::GetPDP0 used by the pupdp0*instruction files (reg = 16384 + N).
 struct Pdp0Compute {
     uint32_t mode_;           // [0]  reg 16384, PuPdp0ModeConf: 0 = depthwise conv, 1/2 = pooling kinds
     uint32_t stride_x_;       // [1]  reg 16385, PuPdp0FetchifConf1 imm17
@@ -41,38 +41,38 @@ struct Pdp0Compute {
     uint32_t out_w_;          // [19] reg 16403
     uint32_t of_shape0_[3];   // [20..22] reg 16404..16406, PuPdp0OfConf shape0 words 2..0
     uint32_t of_reserved_;    // [23] reg 16407, always written as 0
-    uint32_t psum_offset_;    // [24] reg 16408, PuPdp0Compute compute_param (+65632): byte offset into PSUM L1
+    uint32_t psum_offset_;    // [24] reg 16408, PuPdp0Compute compute_param: byte offset into PSUM L1
 };
 
 // The PDP0 singleton. The raw byte offsets in the comments are what the pu*/dm*/act0*
-// instruction files use through PDP0::GetPDP0().
+// instruction files use through PDP0::GetPDP0.
 struct PDP0 {
-    Pdp0Compute regs_;             // +65536   configuration registers (words 16384..16408)
-    std::deque<std::shared_ptr<DmLoadW>>     weight_queue_;      // +65640  DmLoadWInstruction -> ComputeDW
-    std::deque<std::shared_ptr<DmStoreOf>>   store_of_queue_;    // +65720  DmStoreOfInstruction -> Activate
-    std::deque<std::shared_ptr<DmLoadAct0>>  load_act0_queue_;   // +65800  DmLoadAct0Instruction -> Activate
-    std::deque<std::shared_ptr<Act0Compute>> act0_queue_;        // +65880  Act0ComputeInstruction -> Activate
-    std::shared_ptr<Act0Compute>             cur_act0_;          // +65960  installed by Act0Src1ConfInstruction
-    std::deque<std::shared_ptr<Pdp0Compute>> compute_queue_;     // +65976  PuPdp0ComputeInstruction -> Compute
+    Pdp0Compute regs_;             // configuration registers (words 16384..16408)
+    std::deque<std::shared_ptr<DmLoadW>>     weight_queue_;      // DmLoadWInstruction -> ComputeDW
+    std::deque<std::shared_ptr<DmStoreOf>>   store_of_queue_;    // DmStoreOfInstruction -> Activate
+    std::deque<std::shared_ptr<DmLoadAct0>>  load_act0_queue_;   // DmLoadAct0Instruction -> Activate
+    std::deque<std::shared_ptr<Act0Compute>> act0_queue_;        // Act0ComputeInstruction -> Activate
+    std::shared_ptr<Act0Compute>             cur_act0_;          // installed by Act0Src1ConfInstruction
+    std::deque<std::shared_ptr<Pdp0Compute>> compute_queue_;     // PuPdp0ComputeInstruction -> Compute
 
-    // @0x42b5d0 (PDP01): Meyers singleton (function-local static).
+    // Meyers singleton (function-local static).
     static PDP0* GetPDP0();
-    // PDP02 @0x42bd40 is the destructor (releases the five deques and the shared_ptr); defaulted.
+    // PDP02  is the destructor (releases the five deques and the shared_ptr); defaulted.
     ~PDP0() = default;
 
     // Returns the object to its initial state (zeroed registers, empty queues). Called when a simulator run ends,
     // because the singleton survives between runs when the simulator is loaded as a DLL.
     void Reset();
 
-    // @0x46b6b0 (PDP03): pooling. `cfg` is the compute descriptor popped from compute_queue.
+    // pooling. `cfg` is the compute descriptor popped from compute_queue.
     static void ComputePDP0(L1Helper& in, L1Helper& out, bool is_signed, std::shared_ptr<Pdp0Compute> cfg);
-    // @0x46bb50 (PDP04): depthwise convolution.
+    // depthwise convolution.
     static void ComputeDW(L1Helper& in, WeightsHelper& weights, L1Helper& out, bool in_signed, bool weights_signed,
                           Matrix4<uint8_t>& weight_zero_points, std::shared_ptr<Pdp0Compute> cfg);
-    // @0x46c2d0 (PDP05): snapshot of the configuration registers.
+    // snapshot of the configuration registers.
     std::shared_ptr<Pdp0Compute> GetPdp0Compute() const;
-    // @0x46c3a0 (PDP06): pops one entry from act0_queue / load_act0_queue / store_of_queue and runs Act0::Compute.
+    // pops one entry from act0_queue / load_act0_queue / store_of_queue and runs Act0::Compute.
     void Activate();
-    // @0x46ce50 (PDP07): runs the oldest queued Pdp0Compute (pooling or depthwise conv), then Activate().
+    // runs the oldest queued Pdp0Compute (pooling or depthwise conv), then Activate.
     void Compute();
 };

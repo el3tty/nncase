@@ -1,4 +1,3 @@
-// Lifted from IDA/Hex-Rays output; names and types are inferred.
 #include <cstring>
 #include "isa/insn_l2.h"
 #include "globals.h"
@@ -10,18 +9,15 @@
 
 // ---- L2LoadConfInstruction ----
 namespace {
-inline uint32_t bits(uint32_t word, unsigned lo, unsigned width)
-{
+inline uint32_t bits(uint32_t word, unsigned lo, unsigned width) {
   return (word >> lo) & ((1u << width) - 1u);
 }
 // Reinterpret a (mis-sized) global scalar as the 32-bit field it really is.
 template <class T> inline uint32_t &as_u32(T &x) { return reinterpret_cast<uint32_t &>(x); }
 }  // namespace
 
-// Simulator21.cpp  @0x413870
 template <>
-L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t ** pc)
-{
+L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t ** pc) {
   L2LoadConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -44,16 +40,12 @@ L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t *
   return inst;
 }
 
-// L2LoadConfInstruction1.cpp  @0x41dc50
-void L2LoadConfInstruction::get_next_pc()
-{
+void L2LoadConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// L2LoadConfInstruction2.cpp  @0x41ea60
-void L2LoadConfInstruction::operation()
-{
-  // L2Load::GetL2Load() singleton (lazy init elided); the object lives at 0x54C440.
+void L2LoadConfInstruction::operation() {
+  // L2Load::GetL2Load singleton (lazy init elided); the object lives at 0x54C440.
   // verified against asm @0x41ea60: dword stores at +0/+4/+8/+12/+16/+20/+24/+28, byte stores at +0x50/+0x51
   L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   l2.dst_dim0_  = (rstride_d_val_ >> 32) & 0xFFFF;
@@ -68,14 +60,11 @@ void L2LoadConfInstruction::operation()
   l2.mode0_     = l2_datatype_;
 }
 
-// L2LoadConfInstruction3.cpp  @0x4260d0
 L2LoadConfInstruction::~L2LoadConfInstruction() = default;
 
 // ---- L2LoadInstruction ----
-// Simulator25.cpp  @0x414250
 template <>
-L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc)
-{
+L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc) {
   L2LoadInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -99,16 +88,12 @@ L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc)
   return inst;
 }
 
-// L2LoadInstruction1.cpp  @0x41dc90
-void L2LoadInstruction::get_next_pc()
-{
+void L2LoadInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// L2LoadInstruction2.cpp  @0x41e260
-void L2LoadInstruction::operation()
-{
-  // L2Load::GetL2Load() singleton (lazy init elided), object at 0x54C440.
+void L2LoadInstruction::operation() {
+  // L2Load::GetL2Load singleton (lazy init elided), object at 0x54C440.
   // verified against asm @0x41e260: qword stores at +0x40/+0x48, dword stores at +0x54/+0x5c/+0x20/+0x24/+0x28/+0x2c/+0x58
   L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   const uint32_t bank = raddr_d_val_ >> 28;
@@ -124,14 +109,11 @@ void L2LoadInstruction::operation()
   l2.Load();
 }
 
-// L2LoadInstruction3.cpp  @0x425f90
 L2LoadInstruction::~L2LoadInstruction() = default;
 
 // ---- L2LoadWConfInstruction ----
-// Simulator22.cpp  @0x413af0
 template <>
-L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t ** pc)
-{
+L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t ** pc) {
   L2LoadWConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -154,16 +136,12 @@ L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t
   return inst;
 }
 
-// L2LoadWConfInstruction1.cpp  @0x41dc60
-void L2LoadWConfInstruction::get_next_pc()
-{
+void L2LoadWConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// L2LoadWConfInstruction2.cpp  @0x41e790
-void L2LoadWConfInstruction::operation()
-{
-  // L2Load::GetL2Load() singleton (lazy init elided), object at 0x54C440.
+void L2LoadWConfInstruction::operation() {
+  // L2Load::GetL2Load singleton (lazy init elided), object at 0x54C440.
   // verified against asm @0x41e790: setne byte at +0x38, bytes at +0x53/+0x52, qword at +0x30
   L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   l2.compressed_ = enable_decompress_ != 0;
@@ -172,14 +150,11 @@ void L2LoadWConfInstruction::operation()
   std::memcpy(&l2.wconf_lo_, &wconf_val_, sizeof wconf_val_);   // wconf_lo + weight_count
 }
 
-// L2LoadWConfInstruction3.cpp  @0x426080
 L2LoadWConfInstruction::~L2LoadWConfInstruction() = default;
 
 // ---- L2LoadWInstruction ----
-// Simulator23.cpp  @0x413d50
 template <>
-L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc)
-{
+L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc) {
   L2LoadWInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -203,19 +178,15 @@ L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc)
   return inst;
 }
 
-// L2LoadWInstruction1.cpp  @0x41dc70
-void L2LoadWInstruction::get_next_pc()
-{
+void L2LoadWInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// L2LoadWInstruction2.cpp  @0x41eb50
-void L2LoadWInstruction::operation()
-{
+void L2LoadWInstruction::operation() {
   if (flag_)
     _G.debug_flag = 1;
 
-  // L2Load::GetL2Load() singleton (lazy init elided), object at 0x54C440.
+  // L2Load::GetL2Load singleton (lazy init elided), object at 0x54C440.
   // verified against asm @0x41eb50: qword stores at +0x40/+0x48, dword stores at +0x54/+0x3c/+0x5c/+0x58
   L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   const uint32_t bank = raddr_d_val_ >> 28;
@@ -228,14 +199,11 @@ void L2LoadWInstruction::operation()
   l2.LoadW();
 }
 
-// L2LoadWInstruction3.cpp  @0x426030
 L2LoadWInstruction::~L2LoadWInstruction() = default;
 
 // ---- L2StoreConfInstruction ----
-// Simulator24.cpp  @0x413fd0
 template <>
-L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t ** pc)
-{
+L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t ** pc) {
   L2StoreConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -258,39 +226,32 @@ L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t
   return inst;
 }
 
-// L2StoreConfInstruction1.cpp  @0x41dc80
-void L2StoreConfInstruction::get_next_pc()
-{
+void L2StoreConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// L2StoreConfInstruction2.cpp  @0x41e6b0
-void L2StoreConfInstruction::operation()
-{
-  // L2Store::GetL2Store() singleton (lazy init elided): the object at 0x53A6C0.
+void L2StoreConfInstruction::operation() {
+  // L2Store::GetL2Store singleton (lazy init elided): the object at 0x53A6C0.
   L2Store * st = reinterpret_cast<L2Store *>(_G.L2Store_L2StoreInst);
-  st->ddr_dim0_ = (rstride_d_val_ >> 32) & 0xFFFF;   // +0
-  st->ddr_dim1_ = (rstride_d_val_ >> 16) & 0xFFFF;   // +4
-  st->ddr_pitch_ = rstride_d_val_ & 0xFFFF;          // +8
-  st->ddr_dim3_ = 0;                         // +12
-  st->glb_dim0_ = (rstride_s_val_ >> 32) & 0xFFFF;   // +16
-  st->glb_dim1_ = (rstride_s_val_ >> 16) & 0xFFFF;   // +20
-  st->glb_pitch_ = rstride_s_val_ & 0xFFFF;          // +24
-  st->glb_dim3_ = 0;                         // +28
+  st->ddr_dim0_ = (rstride_d_val_ >> 32) & 0xFFFF;
+  st->ddr_dim1_ = (rstride_d_val_ >> 16) & 0xFFFF;
+  st->ddr_pitch_ = rstride_d_val_ & 0xFFFF;
+  st->ddr_dim3_ = 0;
+  st->glb_dim0_ = (rstride_s_val_ >> 32) & 0xFFFF;
+  st->glb_dim1_ = (rstride_s_val_ >> 16) & 0xFFFF;
+  st->glb_pitch_ = rstride_s_val_ & 0xFFFF;
+  st->glb_dim3_ = 0;
   // The original stores the 16-bit mode word (mode_lo | mode_hi << 8) as a zero-extended 64-bit value.
   const uint16_t mode = (uint16_t)(l2_datatype_ | (ddr_datatype_ << 8));
-  st->mode0_ = (uint8_t)(mode & 0xFF);       // +32
-  st->mode1_ = (uint8_t)(mode >> 8);         // +33
+  st->mode0_ = (uint8_t)(mode & 0xFF);
+  st->mode1_ = (uint8_t)(mode >> 8);
 }
 
-// L2StoreConfInstruction3.cpp  @0x425fe0
 L2StoreConfInstruction::~L2StoreConfInstruction() = default;
 
 // ---- L2StoreInstruction ----
-// Simulator26.cpp  @0x4144e0
 template <>
-L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc)
-{
+L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc) {
   L2StoreInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -314,29 +275,24 @@ L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc)
   return inst;
 }
 
-// L2StoreInstruction1.cpp  @0x41dca0
-void L2StoreInstruction::get_next_pc()
-{
+void L2StoreInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// L2StoreInstruction2.cpp  @0x41e380
-void L2StoreInstruction::operation()
-{
-  // L2Store::GetL2Store() singleton (lazy init elided): the object at 0x53A6C0.
+void L2StoreInstruction::operation() {
+  // L2Store::GetL2Store singleton (lazy init elided): the object at 0x53A6C0.
   L2Store * st = reinterpret_cast<L2Store *>(_G.L2Store_L2StoreInst);
   const uint32_t bank = raddr_s_val_ >> 28;
-  st->ddr_ptr_ = _G.DDR + raddr_d_val_;                                        // +40
-  st->glb_ptr_ = _G.GLB[bank] + (raddr_s_val_ & 0xFFFFFFF);                      // +48
-  st->ddr_offset_ = raddr_d_val_;                                             // +72
-  st->glb_bank_ = bank;                                                     // +80
-  st->batch_count_ = (rshape_val_ >> 48) & 0xFFFF;                                // +56
-  st->plane_count_ = (rshape_val_ >> 32) & 0xFFFF;                                // +60
-  st->row_count_ = (rshape_val_ >> 16) & 0xFFFF;                                  // +64
-  st->row_len_ = rshape_val_ & 0xFFFF;                                            // +68
-  st->glb_mmu_addr_ = (raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * bank]; // +76
+  st->ddr_ptr_ = _G.DDR + raddr_d_val_;
+  st->glb_ptr_ = _G.GLB[bank] + (raddr_s_val_ & 0xFFFFFFF);
+  st->ddr_offset_ = raddr_d_val_;
+  st->glb_bank_ = bank;
+  st->batch_count_ = (rshape_val_ >> 48) & 0xFFFF;
+  st->plane_count_ = (rshape_val_ >> 32) & 0xFFFF;
+  st->row_count_ = (rshape_val_ >> 16) & 0xFFFF;
+  st->row_len_ = rshape_val_ & 0xFFFF;
+  st->glb_mmu_addr_ = (raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * bank];
   st->Store();
 }
 
-// L2StoreInstruction3.cpp  @0x425f40
 L2StoreInstruction::~L2StoreInstruction() = default;

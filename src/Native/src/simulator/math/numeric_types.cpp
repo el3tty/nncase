@@ -1,13 +1,5 @@
-// Lifted from IDA/Hex-Rays output (fp161, fp162, FP161, FP162).
-// NOTE: sources/fp161.cpp and sources/fp162.cpp were overwritten by FP161/FP162 (case-insensitive file
-// system), so the body of round_to_fp16 is reconstructed (fp16_2exp_shift was re-lifted from the asm) from their
-// semantics, not copied from a decompilation.
-// Lifted from IDA/Hex-Rays output (fp241, fp242, fp243, FP241).
-// NOTE: sources/fp241.cpp was overwritten by FP241 (case-insensitive file system), so
-// round_to_fp24(float) is reconstructed, not copied from a decompilation.
-// Lifted from IDA/Hex-Rays output (bfloat161..bfloat164).
-// Lifted from IDA/Hex-Rays output (BF161, BF162).
-// REDUCE_ELEMENT operators. Lifted from IDA/Hex-Rays output (REDUCE_ELEMENT1..5).
+// NOTE: round_to_fp16 and round_to_fp24(float) are reconstructed from their semantics
+// (fp16_2exp_shift is taken from the asm).
 // fp24 values are 24-bit patterns; they are widened to float with `bits << 8`.
 #include <cmath>
 #include <cstring>
@@ -21,8 +13,7 @@ inline uint32_t float_bits(float f) { uint32_t u; std::memcpy(&u, &f, sizeof u);
 inline float bits_float(uint32_t u) { float f; std::memcpy(&f, &u, sizeof f); return f; }
 
 // Half -> float using the exponent-rebias trick the original code uses.
-float half_to_float(uint16_t h)
-{
+float half_to_float(uint16_t h) {
   uint32_t o = (uint32_t)(h & 0x7FFF) << 13;       // exponent + mantissa in float position
   const uint32_t exp = o & 0x0F800000;             // shifted 5-bit exponent field
   o += 0x38000000;                                  // rebias (127 - 15) << 23
@@ -36,8 +27,7 @@ float half_to_float(uint16_t h)
 }
 
 // Float -> half, round to nearest even.  Returns 16 significant bits.
-uint16_t float_to_half(float f)
-{
+uint16_t float_to_half(float f) {
   const uint32_t u = float_bits(f);
   const uint32_t sign = (u >> 16) & 0x8000;
   uint32_t a = u & 0x7FFFFFFF;
@@ -62,23 +52,18 @@ inline bool is_inf_half(float x) { return std::fabs(x) > 65504.0f && !std::isnan
 
 namespace FP16 {
 
-float fp16::f_value() const
-{
+float fp16::f_value() const {
   return half_to_float(bits_);
 }
 
-// @0x4455b0 (fp161)
-fp16 fp16::round_to_fp16(float value)
-{
+fp16 fp16::round_to_fp16(float value) {
   return fp16(float_to_half(value));
 }
 
-// @0x445720 (fp162)
 // verified against asm @0x445720: bit-level multiplication by 2^shift on the fp16 pattern (no float arithmetic).
 // Inf/NaN pass through; subnormals are renormalised / shifted; exponent overflow gives the largest finite value.
-fp16 fp16::fp16_2exp_shift(signed char shift) const
-{
-  auto clz32 = [](uint32_t v) -> int {            // @0x46b420 (0 -> 32)
+fp16 fp16::fp16_2exp_shift(signed char shift) const {
+  auto clz32 = [](uint32_t v) -> int {            // (0 -> 32)
     if (v == 0) return 32;
     int n = 0;
     while (!(v & 0x80000000u)) { ++n; v <<= 1; }
@@ -92,7 +77,7 @@ fp16 fp16::fp16_2exp_shift(signed char shift) const
     return *this;                                  // inf / NaN
   const int s = static_cast<int8_t>(e + shift);    // low byte of (exp + shift), signed compares
   uint32_t eax;
-  if (s > 0 && e == 0) {                           // subnormal scaled up (@0x4457a4)
+  if (s > 0 && e == 0) {                           // subnormal scaled up
     const int a = 0x20 - clz;
     const int ecx = clz - 0x15;
     if (a == 0 || s < ecx) {
@@ -110,25 +95,23 @@ fp16 fp16::fp16_2exp_shift(signed char shift) const
     }
     return fp16(static_cast<uint16_t>((bx & 0xFC00u) | eax));
   }
-  if (s <= 0 && e == 0) {                          // subnormal scaled down (@0x445838)
+  if (s <= 0 && e == 0) {                          // subnormal scaled down
     eax = (frac >> ((-static_cast<int>(shift)) & 31)) & 0x3FF;
     return fp16(static_cast<uint16_t>((bx & 0xFC00u) | eax));
   }
-  if (s <= 0) {                                    // normal -> subnormal (@0x445808)
+  if (s <= 0) {                                    // normal -> subnormal
     const int ecx = -static_cast<int>(shift) - e + 1;
     eax = ((0x400u + frac) >> (ecx & 31)) & 0x3FF;
     return fp16(static_cast<uint16_t>((bx & 0x8000u) | eax));
   }
-  if (s <= 30) {                                   // normal result (@0x445860)
+  if (s <= 30) {                                   // normal result
     bx = (bx & ~0x7C00u) | ((static_cast<uint32_t>(s) & 0x1F) << 10);
     return fp16(static_cast<uint16_t>(bx));
   }
   return fp16(static_cast<uint16_t>((bx & 0x8000u) + 0x7BFF));   // overflow: largest finite
 }
 
-// @0x445870 (FP161)
-fp16 operator+(fp16 a, fp16 b)
-{
+fp16 operator+(fp16 a, fp16 b) {
   const float fa = a.f_value(), fb = b.f_value();
   uint16_t r = float_to_half(fa + fb);
   if (is_inf_half(fa) && is_inf_half(fb) && ((a.bits_ ^ b.bits_) & 0x8000))
@@ -138,9 +121,7 @@ fp16 operator+(fp16 a, fp16 b)
   return fp16(r);
 }
 
-// @0x445a60 (FP162)
-fp16 operator*(fp16 a, fp16 b)
-{
+fp16 operator*(fp16 a, fp16 b) {
   const float fa = a.f_value(), fb = b.f_value();
   uint16_t r = float_to_half(fa * fb);
   const bool a_zero = (a.bits_ & 0x7FFF) == 0;
@@ -159,20 +140,16 @@ fp16 operator*(fp16 a, fp16 b)
 // ---- fp24 ----
 namespace FP24 {
 
-// @0x46b0e0 (fp243)
-float fp24::f_value() const
-{
+float fp24::f_value() const {
   const uint32_t u = bits_ << 8;
   float f;
   std::memcpy(&f, &u, sizeof f);
   return f;
 }
 
-// @0x4447c0 (fp241)
 // verified against asm @0x4447c0: NaN -> 0x7FC000; otherwise round-to-nearest-even on the binary32 bit pattern:
 // (bits + 0x7F + ((bits >> 8) & 1)) >> 8.  (It does not use the double overload.)
-fp24 fp24::round_to_fp24(float value)
-{
+fp24 fp24::round_to_fp24(float value) {
   uint32_t u;
   std::memcpy(&u, &value, sizeof u);
   if (std::isnan(value))
@@ -180,9 +157,7 @@ fp24 fp24::round_to_fp24(float value)
   return fp24((u + 0x7Fu + ((u >> 8) & 1u)) >> 8);
 }
 
-// @0x444820 (fp242)
-fp24 fp24::round_to_fp24(double value)
-{
+fp24 fp24::round_to_fp24(double value) {
   uint64_t d;
   std::memcpy(&d, &value, sizeof d);
   const uint32_t sign = (uint32_t)(d >> 63) << 23;             // fp24 sign bit
@@ -225,9 +200,7 @@ fp24 fp24::round_to_fp24(double value)
   return fp24((exp24 << 15) | man24 | sign);
 }
 
-// @0x4449e0 (FP241)
-fp24 operator+(fp24 a, fp24 b)
-{
+fp24 operator+(fp24 a, fp24 b) {
   const double sum = (double)a.f_value() + (double)b.f_value();
   fp24 r = fp24::round_to_fp24(sum);
   if (std::isnan(r.f_value()))
@@ -240,9 +213,7 @@ fp24 operator+(fp24 a, fp24 b)
 // ---- bfloat16 ----
 namespace BF16 {
 
-// @0x444a50 (bfloat161)
-bfloat16::bfloat16(int value)
-{
+bfloat16::bfloat16(int value) {
   if (value == 0) {
     bits_ = 0;
     return;
@@ -257,9 +228,7 @@ bfloat16::bfloat16(int value)
   bits_ = (uint16_t)(((msb + 127) << 7) | (sign << 15) | (mantissa & 0x7F));
 }
 
-// @0x444ac0 (bfloat162)
-int64_t bfloat16::round_to_bfloat16(float value)
-{
+int64_t bfloat16::round_to_bfloat16(float value) {
   if (std::isnan(value))
     return 0x7FC0;
   uint32_t u;
@@ -267,18 +236,14 @@ int64_t bfloat16::round_to_bfloat16(float value)
   return (u + ((u >> 16) & 1) + 0x7FFF) >> 16;                   // round to nearest even
 }
 
-// @0x4673f0 (bfloat163)
-float bfloat16::f_value() const
-{
+float bfloat16::f_value() const {
   const uint32_t u = (uint32_t)bits_ << 16;
   float f;
   std::memcpy(&f, &u, sizeof f);
   return f;
 }
 
-// @0x467400 (bfloat164)
-FP24::fp24 bfloat16::fp24() const
-{
+FP24::fp24 bfloat16::fp24() const {
   const uint32_t u = (uint32_t)bits_ << 16;
   if (std::isnan(f_value()))
     return FP24::fp24(0x7FC000);
@@ -290,9 +255,7 @@ FP24::fp24 bfloat16::fp24() const
 // ---- bf16 ----
 namespace BF16 {
 
-// @0x444e20 (BF161)
-int16_t AddTwoFp16Simp(bfloat16 a, bfloat16 b)
-{
+int16_t AddTwoFp16Simp(bfloat16 a, bfloat16 b) {
   const uint16_t x = a.bits_, y = b.bits_;
   if (a.f_value() != a.f_value() || b.f_value() != b.f_value())   // either operand is NaN
     return 0x7FC0;
@@ -336,9 +299,7 @@ int16_t AddTwoFp16Simp(bfloat16 a, bfloat16 b)
   return (int16_t)(((magnitude << shift >> 1) & 0x7F) | sign | ((exponent << 7) & 0x7F80));
 }
 
-// @0x444fb0 (BF162)
-int64_t operator*(bfloat16 a, bfloat16 b)
-{
+int64_t operator*(bfloat16 a, bfloat16 b) {
   // Flush subnormals (exponent field == 0) to signed zero.
   bfloat16 fa = (a.bits_ & 0x7F80) ? a : bfloat16::from_bits(a.bits_ & 0x8000);
   bfloat16 fb = (b.bits_ & 0x7F80) ? b : bfloat16::from_bits(b.bits_ & 0x8000);
@@ -363,24 +324,21 @@ inline uint16_t to_bf16(uint32_t v24) { return (uint16_t)BF16::bfloat16::round_t
 inline uint32_t to_fp24(float f) { FP24::fp24 d{}; return d.round_to_fp24(f).bits_; }
 }  // namespace
 
-// @0x444990 (REDUCE_ELEMENT1): out = lhs + rhs  (== FP24::operator+, NaN results lose their sign)
-void REDUCE_ELEMENT::re_add(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *)
-{
+// out = lhs + rhs  (== FP24::operator+, NaN results lose their sign)
+void REDUCE_ELEMENT::re_add(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *) {
     uint32_t r = to_fp24(f24(rd24(lhs)) + f24(rd24(rhs)));
     if (std::isnan(f24(r)))
         r &= 0x7FFFFF;
     wr24(out, r);
 }
 
-// @0x444a30 (REDUCE_ELEMENT2): out = lhs - rhs, implemented as lhs + (-rhs)
-void REDUCE_ELEMENT::re_sub(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *)
-{
+// out = lhs - rhs, implemented as lhs + (-rhs)
+void REDUCE_ELEMENT::re_sub(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *) {
     wr24(out, FP24::operator+(F(rd24(lhs)), F(rd24(rhs) ^ 0x800000u)).bits_);
 }
 
-// @0x444b20 (REDUCE_ELEMENT3): out = min(lhs, rhs) compared as bfloat16; a NaN operand loses
-void REDUCE_ELEMENT::re_min(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *)
-{
+// out = min(lhs, rhs) compared as bfloat16; a NaN operand loses
+void REDUCE_ELEMENT::re_min(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *) {
     uint16_t b = to_bf16(rd24(rhs));
     uint16_t a = to_bf16(rd24(lhs));
     uint16_t sel = b;
@@ -391,9 +349,8 @@ void REDUCE_ELEMENT::re_min(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, F
     wr24(out, to_fp24(bf2f(sel)));
 }
 
-// @0x444ba0 (REDUCE_ELEMENT4): out = max(lhs, rhs) compared as bfloat16; a NaN operand loses
-void REDUCE_ELEMENT::re_max(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *)
-{
+// out = max(lhs, rhs) compared as bfloat16; a NaN operand loses
+void REDUCE_ELEMENT::re_max(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *) {
     uint16_t b = to_bf16(rd24(rhs));
     uint16_t a = to_bf16(rd24(lhs));
     uint16_t sel = a;
@@ -406,9 +363,8 @@ void REDUCE_ELEMENT::re_max(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, F
     wr24(out, to_fp24(bf2f(sel)));
 }
 
-// @0x4454b0 (REDUCE_ELEMENT5): out = fp24(bf16(lhs) * bf16(rhs))
-void REDUCE_ELEMENT::re_mul(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *)
-{
+// out = fp24(bf16(lhs) * bf16(rhs))
+void REDUCE_ELEMENT::re_mul(FP24::fp24 *lhs, FP24::fp24 *rhs, FP24::fp24 *out, FP24::fp24 *) {
     uint16_t b = to_bf16(rd24(rhs));
     uint16_t a = to_bf16(rd24(lhs));
     uint16_t p = (uint16_t)BF16::operator*(B(a), B(b));

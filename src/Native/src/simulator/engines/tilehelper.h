@@ -1,13 +1,12 @@
 #pragma once
-// Lifted from IDA/Hex-Rays output (TileHelper: pure helper, no polymorphism).
 #include <cstdint>
 
 // Tiling helper. All members except the range result are stateless: the original
 // functions never read `this`.
 struct TileHelper {
-    uint32_t size_;    // +0  number of elements in the range (end - begin)
-    uint32_t end_;     // +4  exclusive end of the range
-    uint32_t begin_;   // +8  first element of the range
+    uint32_t size_;    // number of elements in the range (end - begin)
+    uint32_t end_;     // exclusive end of the range
+    uint32_t begin_;   // first element of the range
 
     TileHelper();
     ~TileHelper();

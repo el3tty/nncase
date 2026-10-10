@@ -1,15 +1,11 @@
-// Lifted from IDA/Hex-Rays output (Act01..Act06.cpp). The AVX instructions that the auto-converted
-// results/ copy had stripped (vmulss/vaddss/vcomiss/vroundss/...) were recovered from sources/Act0*.cpp.
-//
 // ACT0 post-processes the 32-bit PSUM of the PU array. Per channel `ch` it has seven fp16
 // parameters p[0..6] (a Matrix4<fp16> row) and per element it does
 //     x = fp16(psum * 2^-shift)                       (PsumToFp16, truncating)
 //     y = x < p[6] ? p[0] * x + p[2] : p[1] * x + p[3] (LineFit, fp16 mul / add)
 //     y = y <= p[4] ? p[4] : (y >= p[5] ? p[5] : y)     (clamp to [p4, p5])
 // and finally stores y as fp16, or rounds it to an integer and saturates it to uint8 / int8 / int16.
-// The fp16 multiply/add/convert sequences that Hex-Rays showed inline are FP16::operator* / operator+ /
-// f_value() / round_to_fp16() (see fp16.cpp). The conditions of the float compares were lost by the
-// decompiler; they were re-derived from the vcomiss / jb / jae / cmov sequences of the machine code.
+// The inlined fp16 multiply/add/convert sequences are FP16::operator* / operator+ / f_value /
+// round_to_fp16. The float-compare conditions were re-derived from the vcomiss / jb / jae / cmov sequences.
 #include "engines/act0.h"
 #include "engines/dm.h"
 #include "globals.h"
@@ -36,34 +32,33 @@ namespace {
 
 // L1Helper: (channel, row, col) view into a buffer; strides in bytes except row/col which count elements.
 struct L1View {
-    uint8_t* data_;        // +0
-    int32_t  max_channels_; // +8   channel capacity of the buffer (24 for IF = PE rows, 32 for PSUM = PE lanes)
-    int32_t  chan_stride_; // +12  bytes per channel (4096 for PSUM buffers)
-    int32_t  base_;        // +16  byte offset of element (0,0,0)
-    int32_t  row_stride_;  // +20  per row index (counted in elements of the accessed type)
-    int32_t  col_stride_;  // +24  per column index (same unit)
-    int32_t  channels_;    // +28
-    int32_t  height_;      // +32
-    int32_t  width_;       // +36
+    uint8_t* data_;
+    int32_t  max_channels_; // channel capacity of the buffer (24 for IF = PE rows, 32 for PSUM = PE lanes)
+    int32_t  chan_stride_; // bytes per channel (4096 for PSUM buffers)
+    int32_t  base_;        // byte offset of element (0,0,0)
+    int32_t  row_stride_;  // per row index (counted in elements of the accessed type)
+    int32_t  col_stride_;  // per column index (same unit)
+    int32_t  channels_;
+    int32_t  height_;
+    int32_t  width_;
 };
 
 // Tensor4DHelper as built from a DmStoreOf descriptor (see Act0::Compute).
 struct Tensor4DView {
-    uint8_t* data_;        // +0   DmStoreOf::dst_
-    uint32_t full_[4];     // +8   DmStoreOf::full_shape (not read by any Act0 function)
-    uint32_t tile_[4];     // +24  DmStoreOf::tile_shape_: [0] = channels, [1] = rows (H), [2] = columns (W)
+    uint8_t* data_;        // DmStoreOf::dst_
+    uint32_t full_[4];     // DmStoreOf::full_shape (not read by any Act0 function)
+    uint32_t tile_[4];     // DmStoreOf::tile_shape_: [0] = channels, [1] = rows (H), [2] = columns (W)
 };
 
 // Matrix4<fp16> (dims d0 x d1 x d2 x d3, row-major); Act0 only uses it as rows (d2) of 7 columns (d3).
 struct Fp16Matrix {
-    uint8_t owns_;         // +0
-    uint16_t* data_;       // +8
-    int32_t d0_, d1_, d2_, d3_;  // +16..+28
+    uint8_t owns_;
+    uint16_t* data_;
+    int32_t d0_, d1_, d2_, d3_;
 };
 
-// Matrix4::operator()(0, 0, row, col): reports an out-of-range access but still performs it.
-fp16 MatrixAt(const Fp16Matrix& m, int row, int col)
-{
+// Matrix4::operator(0, 0, row, col): reports an out-of-range access but still performs it.
+fp16 MatrixAt(const Fp16Matrix& m, int row, int col) {
   if (m.d0_ <= 0 || m.d1_ <= 0 || row >= m.d2_ || col >= m.d3_)
     std::cout << "[Error: Matrix Exceed]" << std::endl;
   return fp16(m.data_[m.d3_ * row + col]);
@@ -82,8 +77,7 @@ struct ChannelParams {
     fp16 knee_;        // p[6]  break point on x
 };
 
-ChannelParams ReadParams(const Fp16Matrix& m, int ch)
-{
+ChannelParams ReadParams(const Fp16Matrix& m, int ch) {
   ChannelParams p;
   p.slope_lo_ = MatrixAt(m, ch, 0);
   p.slope_hi_ = MatrixAt(m, ch, 1);
@@ -97,8 +91,7 @@ ChannelParams ReadParams(const Fp16Matrix& m, int ch)
 
 // int32 PSUM -> fp16 with the scale 2^-shift. The mantissa is truncated, magnitudes beyond the fp16 range
 // saturate to +/-65504 and tiny ones become subnormal / zero.
-fp16 PsumToFp16(int32_t psum, uint32_t shift)
-{
+fp16 PsumToFp16(int32_t psum, uint32_t shift) {
   if (psum == 0)
     return fp16(0);
   const uint16_t sign = psum < 0 ? 0x8000 : 0;
@@ -126,8 +119,7 @@ fp16 PsumToFp16(int32_t psum, uint32_t shift)
 //   `vcomiss y, p4; jb` not taken (p4 >= y, ordered) -> y = p4;
 //   `vcomiss p5, y; jae` (y >= p5, ordered) -> y = p5; otherwise y is kept (also when NaN is involved).
 // p[4] / p[5] are therefore the lower / upper clamp, not "min(y, p[4])" with an unused p[5].
-fp16 LineFit(const ChannelParams& p, fp16 x)
-{
+fp16 LineFit(const ChannelParams& p, fp16 x) {
   fp16 y;
   if (p.knee_.f_value() > x.f_value())
     y = p.slope_lo_ * x + p.offset_lo_;
@@ -141,14 +133,12 @@ fp16 LineFit(const ChannelParams& p, fp16 x)
 }
 
 // vroundss(.., 0xC) with the default rounding mode, then back to fp16 (exact for the reachable values).
-fp16 RoundToIntegral(fp16 y)
-{
+fp16 RoundToIntegral(fp16 y) {
   return fp16::round_to_fp16(std::nearbyint(y.f_value()));
 }
 
 // Integral fp16 -> uint8. Magnitudes >= 2^15 / inf / NaN saturate (negative -> 0, positive -> 255).
-uint8_t IntegralToUInt8(fp16 q)
-{
+uint8_t IntegralToUInt8(fp16 q) {
   const int sign = q.bits_ >> 15;
   const int exponent = (q.bits_ >> 10) & 0x1F;
   const int mantissa = q.bits_ & 0x3FF;
@@ -169,8 +159,7 @@ uint8_t IntegralToUInt8(fp16 q)
 
 // Integral fp16 -> int, truncated; inf / NaN become +/-65504 first (asm @0x447cb7 / 0x447cc5: sign from bit 15); then
 // clamped to [lo, hi] with vpminsd / vpmaxsd.
-int32_t IntegralToSaturated(fp16 q, int32_t lo, int32_t hi)
-{
+int32_t IntegralToSaturated(fp16 q, int32_t lo, int32_t hi) {
   float f = q.f_value();
   if (std::isnan(f) || std::isinf(f))
     f = (q.bits_ & 0x8000) ? -65504.0f : 65504.0f;
@@ -183,14 +172,12 @@ int32_t IntegralToSaturated(fp16 q, int32_t lo, int32_t hi)
 constexpr int32_t kInt8Max = 127, kInt8Min = -127;
 constexpr int32_t kInt16Max = 32767, kInt16Min = -32767;
 
-[[noreturn]] void BadDestType()
-{
+[[noreturn]] void BadDestType() {
   simulator_fail("Error act0 dest_datatype");
 }
 
 // Element index (in 4-byte words) of PSUM element (ch, row, col) inside an L1 view.
-int PsumWordIndex(const L1View& in, int ch, int row, int col)
-{
+int PsumWordIndex(const L1View& in, int ch, int row, int col) {
   const int64_t sum = static_cast<int64_t>(in.row_stride_ * row)
                     + static_cast<int64_t>(static_cast<uint64_t>(static_cast<int64_t>(in.base_)) >> 2)
                     + static_cast<int64_t>(in.col_stride_ * col)
@@ -199,8 +186,7 @@ int PsumWordIndex(const L1View& in, int ch, int row, int col)
 }
 
 // Element index (in 2-byte words) of an fp16 element (ch, row, col) inside an L1 output view.
-int HalfWordIndex(const L1View& out, int ch, int row, int col)
-{
+int HalfWordIndex(const L1View& out, int ch, int row, int col) {
   const int64_t sum = static_cast<int64_t>(out.row_stride_ * row)
                     + static_cast<int64_t>(static_cast<uint64_t>(static_cast<int64_t>(out.base_)) >> 1)
                     + static_cast<int64_t>(out.col_stride_ * col)
@@ -210,33 +196,29 @@ int HalfWordIndex(const L1View& out, int ch, int row, int col)
 
 }  // namespace
 
-// Act01.cpp  @0x446ac0 (Source 1)
 // Snapshots the Act0 configuration (see Act0Src1ConfInstruction) into a new Act0Compute descriptor.
-std::shared_ptr<Act0Compute> Act0::GetAct0Compute() const
-{
+std::shared_ptr<Act0Compute> Act0::GetAct0Compute() const {
   auto compute = std::make_shared<Act0Compute>();
-  compute->batch_ = batch_;              // +0..+15: 16-byte copy of Act0 + 0x40000
+  compute->batch_ = batch_;
   compute->channels_ = channels_;
   compute->height_ = height_;
   compute->width_ = width_;
-  compute->shift_ = shift_;              // +16: 8-byte copy of Act0 + 0x40010 (shift, engine)
+  compute->shift_ = shift_;
   compute->engine_ = engine_;
-  compute->out_base_ = out_base_;        // +24 (overwritten by Act0ComputeInstruction)
-  compute->out_route_ = out_route_;      // +28 (overwritten by Act0ComputeInstruction)
-  compute->out_type_ = out_type_;        // +32 (overwritten by Act0ComputeInstruction)
-  compute->per_channel_ = per_channel_;  // +36 (overwritten by Act0ComputeInstruction)
+  compute->out_base_ = out_base_;        // (overwritten by Act0ComputeInstruction)
+  compute->out_route_ = out_route_;      // (overwritten by Act0ComputeInstruction)
+  compute->out_type_ = out_type_;        // (overwritten by Act0ComputeInstruction)
+  compute->per_channel_ = per_channel_;  // (overwritten by Act0ComputeInstruction)
   // The second PSUM buffer belongs to PDP0 (engine != 0).
-  compute->psum_ = const_cast<uint32_t *>(engine_ ? psum1_ : psum0_);   // +40: this + 0x20000 or this
+  compute->psum_ = const_cast<uint32_t *>(engine_ ? psum1_ : psum0_);   // this + 0x20000 or this
   return compute;
 }
 
-// Act02.cpp  @0x446b80 (Source 2)
 // Line-fit activation of the PSUM `psum` (channels x height x width) into the L1 view `out`.
-void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, L1Helper & out_, uint32_t shift, ActOutputType type)
-{
-  const Fp16Matrix& params = reinterpret_cast<const Fp16Matrix&>(params_);  // TODO(layout)
-  const L1View& in = reinterpret_cast<const L1View&>(psum_);                // TODO(layout)
-  L1View& out = reinterpret_cast<L1View&>(out_);                            // TODO(layout)
+void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, L1Helper & out_, uint32_t shift, ActOutputType type) {
+  const Fp16Matrix& params = reinterpret_cast<const Fp16Matrix&>(params_);
+  const L1View& in = reinterpret_cast<const L1View&>(psum_);
+  L1View& out = reinterpret_cast<L1View&>(out_);
 
   for (int row = 0; row < in.height_; ++row) {
     for (int col = 0; col < in.width_; ++col) {
@@ -262,15 +244,13 @@ void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, L1Helper & 
   }
 }
 
-// Act03.cpp  @0x449460 (Source 3)
 // Gathers, for every (row, col) of `shape`, the channel values of the DM store tensor `out`.
 // verified against asm @0x449460: the machine code really only fills a freshly allocated 0x80-byte (32 x int) buffer and
 // frees it again - there is no print call.  The original stores lanes[ch] without a bound check (heap overflow for more
 // than 32 channels); the bound check below is kept for safety.
-void Act0::PrintActDmWriteCKP(L1Helper & shape_, Tensor4DHelper & out_, ActOutputType type)
-{
-  const L1View& shape = reinterpret_cast<const L1View&>(shape_);          // TODO(layout)
-  const Tensor4DView& out = reinterpret_cast<const Tensor4DView&>(out_);  // TODO(layout)
+void Act0::PrintActDmWriteCKP(L1Helper & shape_, Tensor4DHelper & out_, ActOutputType type) {
+  const L1View& shape = reinterpret_cast<const L1View&>(shape_);
+  const Tensor4DView& out = reinterpret_cast<const Tensor4DView&>(out_);
 
   for (int row = 0; row < shape.height_; ++row) {
     for (int col = 0; col < shape.width_; ++col) {
@@ -291,13 +271,11 @@ void Act0::PrintActDmWriteCKP(L1Helper & shape_, Tensor4DHelper & out_, ActOutpu
   }
 }
 
-// Act04.cpp  @0x449620 (Source 4)
 // Same line-fit as the L1 overload, but the result goes to a DM store tensor (channel, row, column).
-void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHelper & out_, uint32_t shift, ActOutputType type)
-{
-  const Fp16Matrix& params = reinterpret_cast<const Fp16Matrix&>(params_);  // TODO(layout)
-  const L1View& in = reinterpret_cast<const L1View&>(psum_);                // TODO(layout)
-  Tensor4DView& out = reinterpret_cast<Tensor4DView&>(out_);                // TODO(layout)
+void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHelper & out_, uint32_t shift, ActOutputType type) {
+  const Fp16Matrix& params = reinterpret_cast<const Fp16Matrix&>(params_);
+  const L1View& in = reinterpret_cast<const L1View&>(psum_);
+  Tensor4DView& out = reinterpret_cast<Tensor4DView&>(out_);
 
   CheckPoint::GetCheckPoint();   // the original ensures the singleton exists; the result is unused
 
@@ -343,11 +321,9 @@ void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHel
   }
 }
 
-// Act05.cpp  @0x44c650 (Source 5)
 // Runs the activation for one queued Act0Compute: builds the parameter matrix from the DmLoadAct0
 // table, then activates the PSUM into the DM store tensor and / or into PSUM_L1 depending on out_route.
-void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadAct0> load, std::shared_ptr<DmStoreOf> store)
-{
+void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadAct0> load, std::shared_ptr<DmStoreOf> store) {
   const Act0Compute& c = *compute;
   const int channels = static_cast<int>(c.channels_);
   const ActOutputType type = static_cast<ActOutputType>(c.out_type_);
@@ -393,8 +369,8 @@ void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadA
   psum_l1.height_ = static_cast<int32_t>(c.height_);
   psum_l1.width_ = static_cast<int32_t>(c.width_);
 
-  auto& matrix = reinterpret_cast<Matrix4<FP16::fp16>&>(params);   // TODO(layout)
-  auto& in_helper = reinterpret_cast<L1Helper&>(in);               // TODO(layout)
+  auto& matrix = reinterpret_cast<Matrix4<FP16::fp16>&>(params);
+  auto& in_helper = reinterpret_cast<L1Helper&>(in);
 
   if (c.out_route_ != 0) {
     // DM store tensor built from the DmStoreOf descriptor.
@@ -402,25 +378,23 @@ void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadA
     out.data_ = store->dst_;
     std::copy(store->full_shape_, store->full_shape_ + 4, out.full_);
     std::copy(store->tile_shape_, store->tile_shape_ + 4, out.tile_);
-    Activate(matrix, in_helper, reinterpret_cast<Tensor4DHelper&>(out), c.shift_, type);   // TODO(layout)
+    Activate(matrix, in_helper, reinterpret_cast<Tensor4DHelper&>(out), c.shift_, type);
     if (c.out_route_ != 1)
-      Activate(matrix, in_helper, reinterpret_cast<L1Helper&>(psum_l1), c.shift_, type);   // TODO(layout)
+      Activate(matrix, in_helper, reinterpret_cast<L1Helper&>(psum_l1), c.shift_, type);
   } else {
-    Activate(matrix, in_helper, reinterpret_cast<L1Helper&>(psum_l1), c.shift_, type);     // TODO(layout)
+    Activate(matrix, in_helper, reinterpret_cast<L1Helper&>(psum_l1), c.shift_, type);
   }
 }
 
-// Act06.cpp  @0x44d030 (Source 6)
 // Writes the activation result of the DM store tensor to the dm_of checkpoint, one 32-byte line per record.
 // `address` is the DM byte address of the tensor.
 // verified against asm @0x44d030: elem_bytes = (type > 1) + 1, i.e. uint8 / int8 are one byte and fp16 / int16 two bytes;
 // the address handed to PrintStoreOfCheckPoint (stack slot 0x58(%rsp)) is the address of the FIRST byte of the pending line:
 // address + channel offset at the start of a channel (not aligned down), and the byte address of the element that opened
 // the line after every line advance.
-void Act0::PrintDmOfCKP(L1Helper & shape_, Tensor4DHelper & out_, ActOutputType type, int address)
-{
-  const L1View& shape = reinterpret_cast<const L1View&>(shape_);          // TODO(layout)
-  const Tensor4DView& out = reinterpret_cast<const Tensor4DView&>(out_);  // TODO(layout)
+void Act0::PrintDmOfCKP(L1Helper & shape_, Tensor4DHelper & out_, ActOutputType type, int address) {
+  const L1View& shape = reinterpret_cast<const L1View&>(shape_);
+  const Tensor4DView& out = reinterpret_cast<const Tensor4DView&>(out_);
   const int elem_bytes = (static_cast<unsigned>(type) > 1) ? 2 : 1;      // fp16 / int16 are two bytes wide
 
   CheckPoint* ckp = CheckPoint::GetCheckPoint();
@@ -434,7 +408,7 @@ void Act0::PrintDmOfCKP(L1Helper & shape_, Tensor4DHelper & out_, ActOutputType 
     // Prints the pending line (if any), then starts a new line whose first byte is at `next_address`.
     auto advance = [&](uint32_t next_address) {
       if (!line.empty()) {
-        CheckPoint::PrintStoreOfCheckPoint(ckp->Stream(CheckPoint::kDmOf), line, line_address);   // +6144
+        CheckPoint::PrintStoreOfCheckPoint(ckp->Stream(CheckPoint::kDmOf), line, line_address);
         line.clear();
       }
       line_address = next_address;

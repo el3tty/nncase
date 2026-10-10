@@ -1,7 +1,4 @@
 // Free functions and global state of the K230 NPU C-model simulator.
-//
-// Lifted from the IDA/Hex-Rays dumps _global1..26.cpp and the plain-C fixed-point helpers
-// (shr_rnd_int.c ... linear_quant.c).
 #include "globals.h"
 
 #include <climits>
@@ -20,8 +17,7 @@
 
 Globals _G;
 
-void simulator_fail(const char * fmt, ...)
-{
+void simulator_fail(const char * fmt, ...) {
   char buffer[512];
   va_list args;
   va_start(args, fmt);
@@ -33,8 +29,7 @@ void simulator_fail(const char * fmt, ...)
   throw SimulatorError(message);
 }
 
-void initialize_globals()
-{
+void initialize_globals() {
   std::memset(&_G, 0, sizeof _G);
   // verified against ELF .data @0x53a48c/0x53a490: initial ddr_burst_num = 256, ddr_burst_len = 16.
   _G.ddr_burst_len = 16;
@@ -71,60 +66,47 @@ inline int64_t Sar64(int64_t value, uint32_t count) { return value >> (count & 6
 inline uint64_t Shr64(uint64_t value, uint32_t count) { return value >> (count & 63); }
 
 // Hex field of the given width, zero filled (the original sets flags, width and fill inline before every number).
-inline std::ostream & Hex(std::ostream & os, int width)
-{
+inline std::ostream & Hex(std::ostream & os, int width) {
   return os << std::hex << std::setw(width) << std::setfill('0');
 }
 
 }  // namespace
 
-// @0x41fc50 (_global1)
-void set_g_gp_reg(uint8_t reg, uint32_t value)
-{
+void set_g_gp_reg(uint8_t reg, uint32_t value) {
   if (reg)
     _G.gp_reg[reg] = value;
   else
     _G.gp_reg[0] = 0;      // x0 is hard-wired to zero
 }
 
-// @0x41fcc0 (_global2)
-void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint64_t data, std::ofstream & out)
-{
+void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint64_t data, std::ofstream & out) {
   Hex(out, 8) << addr << ' ';
   Hex(out, 1) << static_cast<int>(type) << ' ';
   Hex(out, 2) << tag << ' ';
   Hex(out, 16) << data << std::endl;
 }
 
-// @0x420020 (_global3)
-void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint32_t data, std::ofstream & out)
-{
+void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint32_t data, std::ofstream & out) {
   Hex(out, 8) << addr << ' ';
   Hex(out, 1) << static_cast<int>(type) << ' ';
   Hex(out, 2) << tag << ' ';
   Hex(out, 8) << data << std::endl;
 }
 
-// @0x420390 (_global4)
-void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint16_t data, std::ofstream & out)
-{
+void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint16_t data, std::ofstream & out) {
   Hex(out, 8) << addr << ' ';
   Hex(out, 1) << static_cast<int>(type) << ' ';
   Hex(out, 2) << tag << ' ';
   Hex(out, 4) << static_cast<unsigned>(data) << std::endl;
 }
 
-// @0x42d3e0 (_global5)
-void SimulatorInit(uint8_t * ddr, uint8_t ** glb_banks)
-{
+void SimulatorInit(uint8_t * ddr, uint8_t ** glb_banks) {
   _G.DDR = ddr;
   for (int bank = 0; bank < 16; ++bank)
     _G.GLB[bank] = glb_banks[bank];
 }
 
-// @0x42d4f0 (_global6)
-void set_bit(std::bitset<32> & bits, int width, int lsb, int value)
-{
+void set_bit(std::bitset<32> & bits, int width, int lsb, int value) {
   for (int i = 0; i < width; ++i) {
     const int pos = lsb + i;
     if (pos < 0 || pos >= 32)
@@ -133,10 +115,8 @@ void set_bit(std::bitset<32> & bits, int width, int lsb, int value)
   }
 }
 
-// @0x42d560 (_global7)
 // One line per entry of `byte_masks`; every line has ddr_burst_len bytes, highest byte first.
-void print_r_data(std::vector<uint16_t> & byte_masks, std::vector<uint8_t> & data, std::ofstream & out)
-{
+void print_r_data(std::vector<uint16_t> & byte_masks, std::vector<uint8_t> & data, std::ofstream & out) {
   // Position of the first set bit of the first mask (burst length if none): number of leading unused bytes.
   uint32_t first_bit = 0;
   if (_G.ddr_burst_len && !byte_masks.empty()) {
@@ -162,25 +142,19 @@ void print_r_data(std::vector<uint16_t> & byte_masks, std::vector<uint8_t> & dat
   }
 }
 
-// @0x42d910 (_global8)
-void print_addr(std::vector<uint32_t> & addrs, std::vector<uint8_t> & /*unused*/, std::ofstream & out)
-{
+void print_addr(std::vector<uint32_t> & addrs, std::vector<uint8_t> & /*unused*/, std::ofstream & out) {
   for (uint32_t addr : addrs)
     Hex(out, 8) << addr << std::endl;
 }
 
-// @0x42da80 (_global9)
-std::vector<bool> ByteToBits(uint8_t value)
-{
+std::vector<bool> ByteToBits(uint8_t value) {
   std::vector<bool> bits;
   for (int i = 0; i < 8; ++i)
     bits.push_back((value >> i) & 1);        // bit 0 first
   return bits;
 }
 
-// @0x42de80 (_global10)
-std::vector<uint8_t> BitsToByte(std::vector<bool> const & bits)
-{
+std::vector<uint8_t> BitsToByte(std::vector<bool> const & bits) {
   // verified against asm @0x42de80: byte count = ceil(bit_count * 0.125) (.rodata 0x481398 = 0.125, vroundsd imm 0xa).
   const uint64_t byte_count = static_cast<uint64_t>(std::ceil(static_cast<double>(bits.size()) * 0.125));
   std::vector<uint8_t> bytes;
@@ -196,10 +170,8 @@ std::vector<uint8_t> BitsToByte(std::vector<bool> const & bits)
   return bytes;
 }
 
-// @0x42e340 (_global11)
 void calc_ddr_param(std::vector<uint32_t> & burst_addr, std::vector<uint8_t> & burst_count_m1,
-                    std::vector<uint16_t> & byte_mask, uint8_t elem_bytes, uint32_t num_elems, uint32_t ddr_addr)
-{
+                    std::vector<uint16_t> & byte_mask, uint8_t elem_bytes, uint32_t num_elems, uint32_t ddr_addr) {
   const uint32_t total = num_elems * elem_bytes;
   if (total) {
     const uint32_t end_addr = total + ddr_addr;
@@ -254,13 +226,11 @@ void calc_ddr_param(std::vector<uint32_t> & burst_addr, std::vector<uint8_t> & b
     burst_addr[0] = ddr_addr;                        // the first burst keeps the unaligned start address
 }
 
-// @0x42ec80 (_global12)
 // Dumps what the debug command in debug_map asked for.  File names are <prefix>L3_pc_<pc>_start_<s>_len_<n>.txt,
 // <prefix>L2_pc_<pc>.txt, <prefix>GPR_pc_<pc>.txt, <prefix>MMU_pc_<pc>.txt and <prefix>SSR_pc_<pc>.txt.
-// verified against asm @0x42ec80: the std::to_string() arguments are entry [i] of the L3 vectors and entry [0] of
+// verified against asm @0x42ec80: the std::to_string arguments are entry [i] of the L3 vectors and entry [0] of
 // the one-element vectors ("pc", "dump_L2", "dump_reg").
-void dump_data_proc(std::string prefix)
-{
+void dump_data_proc(std::string prefix) {
   auto value_of = [](const char * key, size_t index) -> uint32_t {
     const std::vector<uint32_t> & v = debug_map[key];
     return index < v.size() ? v[index] : 0u;
@@ -330,14 +300,12 @@ void dump_data_proc(std::string prefix)
   }
 }
 
-// @0x4310a0 (_global13)
 // Command syntax (tokens separated by `delim`):
 //   +debug_pc_<n> | +debug_pc_end   pc to stop at (end -> -1)
 //   +dump_L3_start_<n> +dump_L3_len_<n>   DDR range (may repeat)
 //   +dump_L2_data   +dump_reg
 void Stringsplit(std::string const & text, std::string const & delim,
-                 std::map<std::string, std::vector<uint32_t>> & out)
-{
+                 std::map<std::string, std::vector<uint32_t>> & out) {
   _G.debug_pc = 0;
   debug_dump_L3_start.clear();
   debug_dump_L3_len.clear();
@@ -388,9 +356,7 @@ void Stringsplit(std::string const & text, std::string const & delim,
   out["dump_reg"] = std::vector<uint32_t>{_G.debug_dump_reg};
 }
 
-// @0x4329b0 (_global14)
-void debug_function(uint32_t pc, std::string prefix)
-{
+void debug_function(uint32_t pc, std::string prefix) {
   std::string line;
   _G.dump_data_flag = 0;
   if (_G.step_debug_flag) {
@@ -415,9 +381,7 @@ void debug_function(uint32_t pc, std::string prefix)
   std::cout << "current pc: " << pc << std::endl;
 }
 
-// @0x4385a0 (_global15)
-void memory_dump(void const * data, int size)
-{
+void memory_dump(void const * data, int size) {
   const uint8_t * bytes = static_cast<const uint8_t *>(data);
   for (int i = 0; i < size; ++i) {
     if (i > 0 && i % 16 == 0)
@@ -431,11 +395,9 @@ void memory_dump(void const * data, int size)
   std::putchar('\n');
 }
 
-// @0x439930 (_global16)
 // Converts a bfloat16 to a signed integer (the mantissa with its implicit one, shifted by the exponent, rounded);
 // same algorithm as TileHelper::BF16ToQint.
-int64_t BF16ToQint(BF16::bfloat16 value)
-{
+int64_t BF16ToQint(BF16::bfloat16 value) {
   const uint32_t bits = value.bits_;
   const uint32_t sign = bits >> 15;
   const uint8_t mantissa = static_cast<uint8_t>(bits | 0x80);   // 7 mantissa bits + implicit one
@@ -452,11 +414,9 @@ int64_t BF16ToQint(BF16::bfloat16 value)
   return 0;
 }
 
-// @0x4399c0 (_global17)
 // Linear element address of the 4-D index (d0, d1, d2, d3); layout 1 = (d0, d1, d2) major, d3 minor.
 int64_t GetAddress(uint32_t d0, uint32_t d1, uint32_t d2, uint32_t d3,
-                   uint32_t stride0, uint32_t stride1, uint32_t stride2, uint8_t layout)
-{
+                   uint32_t stride0, uint32_t stride1, uint32_t stride2, uint8_t layout) {
   const uint32_t base = stride0 * d0;
   if (layout == 1)
     return stride2 * (stride1 * (d1 + base) + d2) + d3;
@@ -471,8 +431,7 @@ namespace {
 
 constexpr size_t kTraceLineBytes = 32;
 
-uint32_t CountValid(std::vector<bool> const & valid)
-{
+uint32_t CountValid(std::vector<bool> const & valid) {
   uint32_t count = 0;
   for (bool bit : valid)
     count += bit;
@@ -480,8 +439,7 @@ uint32_t CountValid(std::vector<bool> const & valid)
 }
 
 // The first entry becomes bit 31 of the mask.
-uint32_t PackValid(std::vector<bool> const & valid)
-{
+uint32_t PackValid(std::vector<bool> const & valid) {
   uint32_t mask = 0;
   for (size_t i = 0; i < valid.size() && i < 32; ++i)
     if (valid[i])
@@ -492,8 +450,7 @@ uint32_t PackValid(std::vector<bool> const & valid)
 // When this call completes the transfer (all bytes seen so far add up to total_bytes) and the line is not yet
 // full, the line is padded at the front with zero bytes that are marked invalid.
 void PadCompletedLine(std::vector<uint8_t> & line, std::vector<bool> & valid, uint32_t valid_in_line,
-                      uint32_t valid_carry, uint32_t total_bytes)
-{
+                      uint32_t valid_carry, uint32_t total_bytes) {
   if (valid_in_line + valid_carry == total_bytes && !line.empty() && line.size() < kTraceLineBytes) {
     do {
       line.insert(line.begin(), 0);
@@ -504,8 +461,7 @@ void PadCompletedLine(std::vector<uint8_t> & line, std::vector<bool> & valid, ui
 
 // New value of the carried valid-byte count after a full line was written: the count is only carried for
 // transfers shorter than a line that are still incomplete.
-uint32_t NextValidCarry(uint32_t valid_carry, uint32_t valid_in_line, uint32_t total_bytes, bool last)
-{
+uint32_t NextValidCarry(uint32_t valid_carry, uint32_t valid_in_line, uint32_t total_bytes, bool last) {
   if (!(valid_carry == 0 && total_bytes < kTraceLineBytes && !last) || total_bytes == valid_in_line)
     return 0;
   return valid_in_line;
@@ -513,12 +469,10 @@ uint32_t NextValidCarry(uint32_t valid_carry, uint32_t valid_in_line, uint32_t t
 
 }  // namespace
 
-// @0x441de0 (_global18)
 // Header file: "<line address>(5 digits) <valid mask>(8 digits)"; data file: the 32 bytes of the line.
 void print_glb_read_core(std::vector<uint8_t> & line, std::vector<bool> & byte_valid, uint32_t glb_addr,
                          std::ofstream & addr_log, std::ofstream & data_log, uint32_t & valid_so_far,
-                         uint32_t total_bytes, bool last)
-{
+                         uint32_t total_bytes, bool last) {
   uint32_t valid_in_line = CountValid(byte_valid);
   PadCompletedLine(line, byte_valid, valid_in_line, valid_so_far, total_bytes);
   if (line.size() == kTraceLineBytes) {
@@ -535,11 +489,9 @@ void print_glb_read_core(std::vector<uint8_t> & line, std::vector<bool> & byte_v
   }
 }
 
-// @0x4421c0 (_global19)
 // One line per 32 bytes: "<line address>(5) <valid mask>(8) <32 data bytes>".
 void print_glb_write_core(std::vector<uint8_t> & line, std::vector<bool> & byte_valid, uint32_t glb_addr,
-                          std::ofstream & log, uint32_t & valid_so_far, uint32_t total_bytes, bool last)
-{
+                          std::ofstream & log, uint32_t & valid_so_far, uint32_t total_bytes, bool last) {
   uint32_t valid_in_line = CountValid(byte_valid);
   PadCompletedLine(line, byte_valid, valid_in_line, valid_so_far, total_bytes);
   if (line.size() == kTraceLineBytes) {
@@ -565,8 +517,7 @@ struct TraceLine {
   uint32_t valid_carry_ = 0;
 
   void PushBack(uint8_t byte, bool is_valid) { bytes_.push_back(byte); valid_.push_back(is_valid); }
-  void PushFront(uint8_t byte, bool is_valid)
-  {
+  void PushFront(uint8_t byte, bool is_valid) {
     bytes_.insert(bytes_.begin(), byte);
     valid_.insert(valid_.begin(), is_valid);
   }
@@ -575,8 +526,7 @@ struct TraceLine {
 };
 
 // Byte address of the GLB segment of `glb_addr` after MMU translation: offset in the bank plus 32 * segment start.
-uint32_t GlbBase(uint32_t glb_addr)
-{
+uint32_t GlbBase(uint32_t glb_addr) {
   return (glb_addr & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (glb_addr >> 28)];
 }
 
@@ -585,8 +535,7 @@ uint32_t GlbBase(uint32_t glb_addr)
 // and calls emit(byte address, last) after every byte and once more at the end of every element.
 template <typename Emit>
 void WalkTile(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, uint16_t cnt0, uint32_t glb_addr,
-              uint8_t elem_log2, MemAccessor const & mem, TraceLine & line, Emit emit)
-{
+              uint8_t elem_log2, MemAccessor const & mem, TraceLine & line, Emit emit) {
   const uint32_t elem = static_cast<uint8_t>(Shl32(1, elem_log2));   // element size in bytes
   const uint32_t dim0 = shape & 0xFFFF;
   const uint32_t dim1 = (shape >> 16) & 0xFFFF;
@@ -656,14 +605,12 @@ void WalkTile(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, uint1
 
 }  // namespace
 
-// @0x443460 (_global20)
 // `shape`: three 16-bit dimensions (dim0 = bits 15:0, dim1 = 31:16, dim2 = 47:32) giving the strides of the
 // tile in elements; cnt3..cnt0 are the loop counts (outermost first); the element size is 1 << elem_log2 bytes.
 // total_bytes is the number of valid bytes of the whole access, used to detect the last line.
 void mfu_glb_read(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, uint16_t cnt0, uint32_t glb_addr,
                   uint8_t elem_log2, MemAccessor mem, std::ofstream & addr_log, std::ofstream & data_log,
-                  uint32_t total_bytes)
-{
+                  uint32_t total_bytes) {
   TraceLine line;
   if (cnt3 == 0)
     return;
@@ -672,12 +619,10 @@ void mfu_glb_read(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, u
   });
 }
 
-// @0x443b00 (_global21)
-// Same tile walk as mfu_glb_read.  row_mode != 0 (stack argument, tested at @0x443b45) selects a second traversal that only uses cnt3 and
+// Same tile walk as mfu_glb_read.  row_mode != 0 (stack argument, tested ) selects a second traversal that only uses cnt3 and
 // cnt2 (one element at index i*dim0*dim1*dim2 + j*dim0*dim1 per step); the semantic name of the flag is not recoverable from asm.
 void mfu_glb_write(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, uint16_t cnt0, uint32_t glb_addr,
-                   uint8_t elem_log2, MemAccessor mem, std::ofstream & log, uint32_t total_bytes, uint8_t row_mode)
-{
+                   uint8_t elem_log2, MemAccessor mem, std::ofstream & log, uint32_t total_bytes, uint8_t row_mode) {
   TraceLine line;
   auto emit = [&](uint32_t addr, bool last) {
     print_glb_write_core(line.bytes_, line.valid_, addr, log, line.valid_carry_, total_bytes, last);
@@ -737,18 +682,14 @@ void mfu_glb_write(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, 
     }
 }
 
-// @0x464c30 (_global22)
-void Stringsplit(std::string text, char delim, std::vector<std::string> & out)
-{
+void Stringsplit(std::string text, char delim, std::vector<std::string> & out) {
   std::istringstream stream(text);
   std::string item;
   while (std::getline(stream, item, delim))
     out.push_back(item);
 }
 
-// @0x4672d0 (_global23)
-int fp_to_int32(float value)
-{
+int fp_to_int32(float value) {
   // vroundss with imm 0x0C (current rounding mode, nearest-even by default), then vcvttss2si.
   const float rounded = std::nearbyintf(value);
   if (!(rounded >= -2147483648.0f && rounded < 2147483648.0f))
@@ -756,9 +697,7 @@ int fp_to_int32(float value)
   return static_cast<int>(rounded);
 }
 
-// @0x4672e0 (_global24)
-int64_t xy_climp(int64_t value, int64_t lo, int64_t hi)
-{
+int64_t xy_climp(int64_t value, int64_t lo, int64_t hi) {
   if (value < lo)
     return lo;
   if (value > hi)
@@ -766,11 +705,9 @@ int64_t xy_climp(int64_t value, int64_t lo, int64_t hi)
   return value;
 }
 
-// @0x467300 (_global25)
 // Mirrors an out-of-range coordinate back into the range.
 // verified against asm @0x467300: below the range the value is negated (reflection about 0), not about `lo`.
-int64_t mirror_climp(int64_t value, int64_t lo, int64_t hi)
-{
+int64_t mirror_climp(int64_t value, int64_t lo, int64_t hi) {
   if (value < lo)
     return -value;
   if (value <= hi)
@@ -778,13 +715,11 @@ int64_t mirror_climp(int64_t value, int64_t lo, int64_t hi)
   return hi - (value - hi);          // reflection about hi
 }
 
-// @0x467330 (_global26)
 // In-place inverse of the 2x3 affine matrix {a, b, c, d, e, f}:  x' = a*x + b*y + c,  y' = d*x + e*y + f.
 // A singular matrix (determinant 0) becomes the zero matrix.
 // verified against asm @0x467330: .rodata 0x5220D8 = 1.0, .rodata 0x522D10 = -0.0 (so a singular matrix gives +0.0 / -0.0
 // as inv / neg_inv), sign mask .rodata 0x522D20 = 0x8000000000000000.
-void Mat_Inv(double * m)
-{
+void Mat_Inv(double * m) {
   const double a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5];
   const double det = a * e - b * d;
   double inv = 0.0;
@@ -810,8 +745,7 @@ void Mat_Inv(double * m)
 // @0x46b0f0 (shl_2_xbit)  verified against asm: saturating shift of a signed value to `xbits` bits.  Each of the
 // `shift` doublings first checks value > hi / value < lo (returning the limit); shift <= 0 tail-calls
 // shr_rnd_lint(value, -shift, 0).  The last doubling is not re-checked.
-int64_t shl_2_xbit(int64_t value, int shift, int xbits)
-{
+int64_t shl_2_xbit(int64_t value, int shift, int xbits) {
   int64_t hi = INT64_MAX, lo = INT64_MIN;
   if (xbits != 64) {
     const unsigned c = static_cast<unsigned>(xbits - 1) & 63;
@@ -830,11 +764,9 @@ int64_t shl_2_xbit(int64_t value, int shift, int xbits)
   return value;
 }
 
-// @0x46b170 (shr_rnd_int.c)
 // Arithmetic right shift of a 32-bit value with rounding.  Negative shift counts shift left with saturation to 32
 // bits; shifts of 33 or more give 0.  (The dump shows a 64-bit rax with the 32-bit result zero-extended.)
-int32_t shr_rnd_int(int32_t value, int shift, int round_mode)
-{
+int32_t shr_rnd_int(int32_t value, int shift, int round_mode) {
   if (shift < 0)
     return static_cast<int32_t>(shl_2_xbit(value, -shift, 32));
   if (shift == 0)
@@ -855,10 +787,8 @@ int32_t shr_rnd_int(int32_t value, int shift, int round_mode)
   return static_cast<int32_t>(static_cast<uint32_t>(biased >> shift));   // low 32 bits (the dump zero-extends)
 }
 
-// @0x46b200 (shr_rnd_lint.c)
 // Same for 64-bit values; shifts above 63 abort the program.
-int64_t shr_rnd_lint(int64_t value, int shift, int round_mode)
-{
+int64_t shr_rnd_lint(int64_t value, int shift, int round_mode) {
   if (shift > 63) {
     simulator_fail("the func shr_rnd_lint parameter shift should not greater than 63!!!\n ");
   }
@@ -877,10 +807,8 @@ int64_t shr_rnd_lint(int64_t value, int shift, int round_mode)
   return (value + half) >> shift;
 }
 
-// @0x46b2a0 (sat_int_xbits.c)
 // Clamps a 32-bit value to the signed range of `xbits` bits (xbits <= 32, otherwise the program aborts).
-int32_t sat_int_xbits(int32_t value, int xbits)
-{
+int32_t sat_int_xbits(int32_t value, int xbits) {
   if (xbits > 32) {
     simulator_fail("func sat_int_xbits x should not great than 32!!!\n ");
   }
@@ -894,12 +822,10 @@ int32_t sat_int_xbits(int32_t value, int xbits)
   return static_cast<int32_t>(lo);
 }
 
-// @0x46b300 (sat_lint_xbits.c)
 // Clamps a 64-bit value to the signed range of `xbits` bits (xbits <= 64, otherwise the program aborts).
 // verified against asm @0x46b300: for xbits == 64 the upper limit 1 << 63 wraps to INT64_MIN, so every input
 // saturates to INT64_MAX (quirk of the original).
-int64_t sat_lint_xbits(int64_t value, int xbits)
-{
+int64_t sat_lint_xbits(int64_t value, int xbits) {
   if (xbits > 64) {
     simulator_fail("func sat_int_xbits x should not great than 64!!!");
   }
@@ -913,29 +839,23 @@ int64_t sat_lint_xbits(int64_t value, int xbits)
   return lo;
 }
 
-// @0x46b350 (mul_int.c)
 // Product of two 32-bit fixed-point numbers, rounded half-to-even.  *shift_out receives the right shift that was
 // applied.  verified against asm @0x46b350: shift = bits_a + bits_b - 1 - bits_out.
-int64_t mul_int(int32_t a, int32_t b, int bits_a, int bits_b, int bits_out, uint32_t * shift_out)
-{
+int64_t mul_int(int32_t a, int32_t b, int bits_a, int bits_b, int bits_out, uint32_t * shift_out) {
   const uint32_t shift = static_cast<uint32_t>(bits_a + bits_b - 1 - bits_out);
   *shift_out = shift;
   return shr_rnd_lint(static_cast<int64_t>(b) * a, static_cast<int>(shift), 2);
 }
 
-// @0x46b370 (mul_lint.c)
-int64_t mul_lint(int64_t a, int64_t b, int bits_a, int bits_b, int bits_out, uint32_t * shift_out)
-{
+int64_t mul_lint(int64_t a, int64_t b, int bits_a, int bits_b, int bits_out, uint32_t * shift_out) {
   const uint32_t shift = static_cast<uint32_t>(bits_a + bits_b - 1 - bits_out);
   *shift_out = shift;
   return shr_rnd_lint(b * a, static_cast<int>(shift), 2);
 }
 
-// @0x46b390 (norm_int.c)
 // Number of left shifts that bring a signed 32-bit value into [2^30, 2^31) (redundant sign bits);
 // 0 for 0, 31 for -1.
-int norm_int(int32_t value)
-{
+int norm_int(int32_t value) {
   if (value == 0)
     return 0;
   if (value == -1)
@@ -951,10 +871,8 @@ int norm_int(int32_t value)
   return count;
 }
 
-// @0x46b3d0 (norm_lint.c)
 // 64-bit version of norm_int; 63 for 0 and -1.
-int norm_lint(int64_t value)
-{
+int norm_lint(int64_t value) {
   if (static_cast<uint64_t>(value + 1) <= 1)
     return 63;
   int64_t magnitude = (value >> 63) ^ value;
@@ -966,10 +884,8 @@ int norm_lint(int64_t value)
   return count;
 }
 
-// @0x46b420 (norm_uint.c)
 // Number of leading zero bits of the 32-bit pattern (32 for 0).
-int norm_uint(int32_t value)
-{
+int norm_uint(int32_t value) {
   uint32_t bits = static_cast<uint32_t>(value);
   if (bits == 0)
     return 32;
@@ -981,11 +897,9 @@ int norm_uint(int32_t value)
   return count;
 }
 
-// @0x46b450 (div_int_with_shift.c)
 // Normalised quotient num / den: the numerator is shifted left by its norm, the quotient is brought back to a
 // 32-bit mantissa and *shift_out reports the total left shift.  Division by zero saturates (0 for num == 0).
-int64_t div_int_with_shift(int32_t num, int32_t den, uint32_t * shift_out)
-{
+int64_t div_int_with_shift(int32_t num, int32_t den, uint32_t * shift_out) {
   if (den == 0) {
     int64_t result = 0;
     if (num)
@@ -1000,10 +914,8 @@ int64_t div_int_with_shift(int32_t num, int32_t den, uint32_t * shift_out)
   return Sar64(quotient, 32 - static_cast<uint8_t>(quotient_norm));
 }
 
-// @0x46b4e0 (div_uint_with_shift.c)
 // Unsigned version; division by zero gives 0xFFFFFFFF (0 for num == 0).
-uint64_t div_uint_with_shift(uint32_t num, uint32_t den, uint32_t * shift_out)
-{
+uint64_t div_uint_with_shift(uint32_t num, uint32_t den, uint32_t * shift_out) {
   if (den == 0) {
     *shift_out = 0;
     return static_cast<uint32_t>(-(num != 0));
@@ -1015,10 +927,8 @@ uint64_t div_uint_with_shift(uint32_t num, uint32_t den, uint32_t * shift_out)
   return Shr64(quotient, 32 - static_cast<uint8_t>(quotient_norm));
 }
 
-// @0x46b560 (div_int16_with_shift.c)
 // 16-bit version (only the low 16 bits of num are used); division by zero gives 0x7FFF / 0x8000 (0 for num == 0).
-int16_t div_int16_with_shift(int32_t num, int16_t den, uint32_t * shift_out)
-{
+int16_t div_int16_with_shift(int32_t num, int16_t den, uint32_t * shift_out) {
   if (den == 0) {
     int16_t result = 0;
     if (static_cast<int16_t>(num) != 0)
@@ -1034,10 +944,8 @@ int16_t div_int16_with_shift(int32_t num, int16_t den, uint32_t * shift_out)
   return static_cast<int16_t>(Sar64(quotient, 16 - static_cast<uint8_t>(quotient_norm)));
 }
 
-// @0x46b5f0 (div_uint16_with_shift.c)
 // Unsigned 16-bit version; division by zero gives 0xFFFFFFFF (0 for num == 0).
-int64_t div_uint16_with_shift(int32_t num, uint16_t den, uint32_t * shift_out)
-{
+int64_t div_uint16_with_shift(int32_t num, uint16_t den, uint32_t * shift_out) {
   if (den == 0) {
     *shift_out = 0;
     return static_cast<uint32_t>(-(static_cast<uint16_t>(num) != 0));
@@ -1049,11 +957,9 @@ int64_t div_uint16_with_shift(int32_t num, uint16_t den, uint32_t * shift_out)
   return Shr32(quotient, 16 - quotient_norm);
 }
 
-// @0x46b670 (linear_quant.c)
 // Affine quantisation of `x`: (x + offset) * scale when add_first is non-zero, otherwise x * scale + offset;
 // rounded half away from zero and clamped to [qmin, qmax].
-int linear_quant(int add_first, int qmax, int qmin, float x, float scale, float offset)
-{
+int linear_quant(int add_first, int qmax, int qmin, float x, float scale, float offset) {
   const float scaled = add_first ? (x + offset) * scale : x * scale + offset;
   const float rounded = std::roundf(scaled);
   int result = (rounded >= -2147483648.0f && rounded < 2147483648.0f) ? static_cast<int>(rounded) : INT_MIN;

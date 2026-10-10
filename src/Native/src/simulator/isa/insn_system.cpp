@@ -1,18 +1,3 @@
-// Lifted from IDA/Hex-Rays output; this instruction carries no operands.
-// EndInstruction1.cpp  @0x41db90
-// FenceInstruction1.cpp  @0x41dba0
-// FenceIInstruction1.cpp  @0x41dbb0
-// IntrInstruction1.cpp  @0x41db80
-// CcrClrInstruction1.cpp  @0x41dc00
-// CcrDeclInstruction1.cpp  @0x41dbe0
-// CcrSetInstruction1.cpp  @0x41dbf0
-// Lifted from IDA/Hex-Rays output; names and types are inferred.
-// Operand/result fields are named after their role; "+NN" in the header gives the byte offset.
-// Simulator18.cpp  @0x4131c0
-// MmuSetidInstruction1.cpp  @0x41dc20
-// Simulator19.cpp  @0x413410
-// Simulator20.cpp  @0x413640
-// ExtrawInstruction1.cpp  @0x41dbd0
 #include "isa/insn_system.h"
 #include "globals.h"
 #include "isa/kinstruction.h"
@@ -20,23 +5,19 @@
 #include "engines/ai2d.h"
 
 // ---- EndInstruction ----
-void EndInstruction::get_next_pc()
-{
+void EndInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// EndInstruction2.cpp  @0x426490
-EndInstruction::~EndInstruction()
-{
+EndInstruction::~EndInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // EndInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40db5e.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40db5e.
 template <>
-EndInstruction Simulator::InstParser<EndInstruction, 16>(uint8_t ** pc)
-{
+EndInstruction Simulator::InstParser<EndInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   EndInstruction inst;
@@ -48,29 +29,25 @@ EndInstruction Simulator::InstParser<EndInstruction, 16>(uint8_t ** pc)
   inst.rs_val_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x200000006LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- FenceInstruction ----
-void FenceInstruction::get_next_pc()
-{
+void FenceInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// FenceInstruction2.cpp  @0x426440
-FenceInstruction::~FenceInstruction()
-{
+FenceInstruction::~FenceInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // FenceInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e1d2.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e1d2.
 template <>
-FenceInstruction Simulator::InstParser<FenceInstruction, 16>(uint8_t ** pc)
-{
+FenceInstruction Simulator::InstParser<FenceInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   FenceInstruction inst;
@@ -80,29 +57,25 @@ FenceInstruction Simulator::InstParser<FenceInstruction, 16>(uint8_t ** pc)
   inst.reserved_ = kinst_bits(raw, 7, 9);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000000LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- FenceIInstruction ----
-void FenceIInstruction::get_next_pc()
-{
+void FenceIInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// FenceIInstruction2.cpp  @0x4263f0
-FenceIInstruction::~FenceIInstruction()
-{
+FenceIInstruction::~FenceIInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // FenceIInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40dd3f.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40dd3f.
 template <>
-FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(uint8_t ** pc)
-{
+FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   FenceIInstruction inst;
@@ -112,29 +85,25 @@ FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(uint8_t ** pc)
   inst.reserved_ = kinst_bits(raw, 7, 9);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000000LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- IntrInstruction ----
-void IntrInstruction::get_next_pc()
-{
+void IntrInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// IntrInstruction2.cpp  @0x4264e0
-IntrInstruction::~IntrInstruction()
-{
+IntrInstruction::~IntrInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // IntrInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e47b.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e47b.
 template <>
-IntrInstruction Simulator::InstParser<IntrInstruction, 16>(uint8_t ** pc)
-{
+IntrInstruction Simulator::InstParser<IntrInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   IntrInstruction inst;
@@ -146,29 +115,25 @@ IntrInstruction Simulator::InstParser<IntrInstruction, 16>(uint8_t ** pc)
   inst.value_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x200000006LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- CcrClrInstruction ----
-void CcrClrInstruction::get_next_pc()
-{
+void CcrClrInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// CcrClrInstruction2.cpp  @0x426260
-CcrClrInstruction::~CcrClrInstruction()
-{
+CcrClrInstruction::~CcrClrInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // CcrClrInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40de1e.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40de1e.
 template <>
-CcrClrInstruction Simulator::InstParser<CcrClrInstruction, 16>(uint8_t ** pc)
-{
+CcrClrInstruction Simulator::InstParser<CcrClrInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   CcrClrInstruction inst;
@@ -179,29 +144,25 @@ CcrClrInstruction Simulator::InstParser<CcrClrInstruction, 16>(uint8_t ** pc)
   inst.reserved_ = kinst_bits(raw, 12, 4);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000000LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- CcrDeclInstruction ----
-void CcrDeclInstruction::get_next_pc()
-{
+void CcrDeclInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// CcrDeclInstruction2.cpp  @0x426300
-CcrDeclInstruction::~CcrDeclInstruction()
-{
+CcrDeclInstruction::~CcrDeclInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // CcrDeclInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40d7d0.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40d7d0.
 template <>
-CcrDeclInstruction Simulator::InstParser<CcrDeclInstruction, 16>(uint8_t ** pc)
-{
+CcrDeclInstruction Simulator::InstParser<CcrDeclInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   CcrDeclInstruction inst;
@@ -213,29 +174,25 @@ CcrDeclInstruction Simulator::InstParser<CcrDeclInstruction, 16>(uint8_t ** pc)
   inst.rnum_val_ = _G.gp_reg[inst.rnum_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000000LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- CcrSetInstruction ----
-void CcrSetInstruction::get_next_pc()
-{
+void CcrSetInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// CcrSetInstruction2.cpp  @0x4262b0
-CcrSetInstruction::~CcrSetInstruction()
-{
+CcrSetInstruction::~CcrSetInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // CcrSetInstruction3.cpp: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e341.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e341.
 template <>
-CcrSetInstruction Simulator::InstParser<CcrSetInstruction, 16>(uint8_t ** pc)
-{
+CcrSetInstruction Simulator::InstParser<CcrSetInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   CcrSetInstruction inst;
@@ -246,15 +203,14 @@ CcrSetInstruction Simulator::InstParser<CcrSetInstruction, 16>(uint8_t ** pc)
   inst.value_ = kinst_bits(raw, 12, 4);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000000LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
 
 // ---- MmuConfInstruction ----
 template <>
-MmuConfInstruction Simulator::InstParser<MmuConfInstruction, 32>(uint8_t ** pc)
-{
+MmuConfInstruction Simulator::InstParser<MmuConfInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   MmuConfInstruction inst;
@@ -270,21 +226,17 @@ MmuConfInstruction Simulator::InstParser<MmuConfInstruction, 32>(uint8_t ** pc)
   inst.rdepth_val_ = _G.gp_reg[inst.rdepth_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// MmuConfInstruction1.cpp  @0x41dc10
-void MmuConfInstruction::get_next_pc()
-{
+void MmuConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// MmuConfInstruction2.cpp  @0x41e840
-void MmuConfInstruction::operation()
-{
+void MmuConfInstruction::operation() {
   AI2D *ai2d = AI2D::GetAI2D();
   ai2d->glb_start_[mmu_id_] = rstart_val_;
   ai2d->glb_depth_[mmu_id_] = rdepth_val_;
@@ -294,47 +246,37 @@ void MmuConfInstruction::operation()
   _G.glb_depth[mmu_id_] = rdepth_val_;
 }
 
-// MmuConfInstruction3.cpp  @0x426210
-MmuConfInstruction::~MmuConfInstruction()
-{
+MmuConfInstruction::~MmuConfInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // MmuConfInstruction4: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
 // ---- MmuSetidInstruction ----
-void MmuSetidInstruction::get_next_pc()
-{
+void MmuSetidInstruction::get_next_pc() {
   next_pc_ = pc_ + 2;
 }
 
-// MmuSetidInstruction2.cpp  @0x41fc80
-void MmuSetidInstruction::operation()
-{
+void MmuSetidInstruction::operation() {
   set_g_gp_reg(rd_, (_G.gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28));
   result_ = _G.gp_reg[rd_];
 }
 
-// MmuSetidInstruction3.cpp  @0x420f20
-void MmuSetidInstruction::parser_operation()
-{
-  // Same effect as operation(), but writes _G.gp_reg directly (bypasses set_g_gp_reg).
+void MmuSetidInstruction::parser_operation() {
+  // Same effect as operation, but writes _G.gp_reg directly (bypasses set_g_gp_reg).
   result_ = (_G.gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28);
   _G.gp_reg[rd_] = result_;
 }
 
-// MmuSetidInstruction4.cpp  @0x4261c0
-MmuSetidInstruction::~MmuSetidInstruction()
-{
+MmuSetidInstruction::~MmuSetidInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
 // MmuSetidInstruction4: duplicate of the preceding definition (C1/C2 constructor alias) omitted.
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40d97b.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40d97b.
 template <>
-MmuSetidInstruction Simulator::InstParser<MmuSetidInstruction, 16>(uint8_t ** pc)
-{
+MmuSetidInstruction Simulator::InstParser<MmuSetidInstruction, 16>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 2 below)
   const uint64_t raw = **pcw;          // only the low 16 bits are consumed
   MmuSetidInstruction inst;
@@ -345,7 +287,7 @@ MmuSetidInstruction Simulator::InstParser<MmuSetidInstruction, 16>(uint8_t ** pc
   inst.mmu_id_ = kinst_bits(raw, 12, 4);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000006LL;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
@@ -353,8 +295,7 @@ MmuSetidInstruction Simulator::InstParser<MmuSetidInstruction, 16>(uint8_t ** pc
 
 // ---- SsPackShapeInstruction ----
 template <>
-SsPackShapeInstruction Simulator::InstParser<SsPackShapeInstruction, 32>(uint8_t ** pc)
-{
+SsPackShapeInstruction Simulator::InstParser<SsPackShapeInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   SsPackShapeInstruction inst;
@@ -370,21 +311,17 @@ SsPackShapeInstruction Simulator::InstParser<SsPackShapeInstruction, 32>(uint8_t
   inst.reserved_ = kinst_bits(raw, 30, 2);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// SsPackShapeInstruction1.cpp  @0x41dc30
-void SsPackShapeInstruction::get_next_pc()
-{
+void SsPackShapeInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// SsPackShapeInstruction2.cpp  @0x420f50
-void SsPackShapeInstruction::parser_operation()
-{
+void SsPackShapeInstruction::parser_operation() {
   rn_val_ = _G.gp_reg[rn_];
   rc_val_ = _G.gp_reg[rc_];
   rh_val_ = _G.gp_reg[rh_];
@@ -394,9 +331,7 @@ void SsPackShapeInstruction::parser_operation()
   _G.shape_reg[rss_] = packed_;
 }
 
-// SsPackShapeInstruction3.cpp  @0x426170
-SsPackShapeInstruction::~SsPackShapeInstruction()
-{
+SsPackShapeInstruction::~SsPackShapeInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -404,8 +339,7 @@ SsPackShapeInstruction::~SsPackShapeInstruction()
 
 // ---- SsPackStrideInstruction ----
 template <>
-SsPackStrideInstruction Simulator::InstParser<SsPackStrideInstruction, 32>(uint8_t ** pc)
-{
+SsPackStrideInstruction Simulator::InstParser<SsPackStrideInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   SsPackStrideInstruction inst;
@@ -421,21 +355,17 @@ SsPackStrideInstruction Simulator::InstParser<SsPackStrideInstruction, 32>(uint8
   inst.reserved2_ = kinst_bits(raw, 30, 2);
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// SsPackStrideInstruction1.cpp  @0x41dc40
-void SsPackStrideInstruction::get_next_pc()
-{
+void SsPackStrideInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// SsPackStrideInstruction2.cpp  @0x420fb0
-void SsPackStrideInstruction::parser_operation()
-{
+void SsPackStrideInstruction::parser_operation() {
   rn_val_ = _G.gp_reg[rn_];
   rc_val_ = _G.gp_reg[rc_];
   rh_val_ = _G.gp_reg[rh_];
@@ -444,9 +374,7 @@ void SsPackStrideInstruction::parser_operation()
   _G.shape_reg[rss_] = packed_;
 }
 
-// SsPackStrideInstruction3.cpp  @0x426120
-SsPackStrideInstruction::~SsPackStrideInstruction()
-{
+SsPackStrideInstruction::~SsPackStrideInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -455,21 +383,16 @@ SsPackStrideInstruction::~SsPackStrideInstruction()
 // ---- ExtrwInstruction ----
 namespace {
 // Extract `width` bits of `word` starting at bit `lo`.
-inline uint32_t bits(uint32_t word, unsigned lo, unsigned width)
-{
+inline uint32_t bits(uint32_t word, unsigned lo, unsigned width) {
   return (word >> lo) & ((1u << width) - 1u);
 }
 }  // namespace
 
-// ExtrwInstruction1.cpp  @0x41dbc0
-void ExtrwInstruction::get_next_pc()
-{
+void ExtrwInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// ExtrwInstruction2.cpp  @0x41ef40
-void ExtrwInstruction::operation()
-{
+void ExtrwInstruction::operation() {
   AI2D *ai2d = AI2D::GetAI2D();
   const uint32_t v = reg_value_;
 
@@ -558,13 +481,11 @@ void ExtrwInstruction::operation()
     ai2d->ai2d_proc();
 }
 
-// ExtrwInstruction3.cpp  @0x4263a0
 ExtrwInstruction::~ExtrwInstruction() = default;
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e064. The inlined code stores no info word (stack slot left as is); 0 is used here.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40e064. The inlined code stores no info word (stack slot left as is); 0 is used here.
 template <>
-ExtrwInstruction Simulator::InstParser<ExtrwInstruction, 32>(uint8_t ** pc)
-{
+ExtrwInstruction Simulator::InstParser<ExtrwInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // only the low 32 bits are consumed
   ExtrwInstruction inst;
@@ -577,25 +498,22 @@ ExtrwInstruction Simulator::InstParser<ExtrwInstruction, 32>(uint8_t ** pc)
   inst.reg_value_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
 // ---- ExtrawInstruction ----
-void ExtrawInstruction::get_next_pc()
-{
+void ExtrawInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// ExtrawInstruction2.cpp  @0x41ec50
-void ExtrawInstruction::operation()
-{
+void ExtrawInstruction::operation() {
   AI2D *ai2d = AI2D::GetAI2D();
 
   if (extrd_ <= 0x1F) {
     // verified against asm @0x41ec50: jump table (0x48046c) is indexed by reg_addr >> 2 (16-bit), the stored
-    // value is reg_value (+0x38); targets map to AI2D+0x88,0x8c,0x90,0x94,0xa0,0xa4,0xa8,0xac.
+    // value is reg_value (+0x38); targets map to ,0x8c,0x90,0x94,0xa0,0xa4,0xa8,0xac.
     switch (extrd_ >> 2) {
       case 0: ai2d->src_ch_ptr_[0] = reg_value_; break;
       case 1: ai2d->src_ch_ptr_[1] = reg_value_; break;
@@ -609,13 +527,11 @@ void ExtrawInstruction::operation()
   }
 }
 
-// ExtrawInstruction3.cpp  @0x426350
 ExtrawInstruction::~ExtrawInstruction() = default;
 
-// Inlined into main() in the binary (no standalone symbol); reconstructed from the decoder at main @0x40f8c1. The inlined code stores no info word (stack slot left as is); 0 is used here.
+// Inlined into main in the binary (no standalone symbol); reconstructed from the decoder at main @0x40f8c1. The inlined code stores no info word (stack slot left as is); 0 is used here.
 template <>
-ExtrawInstruction Simulator::InstParser<ExtrawInstruction, 32>(uint8_t ** pc)
-{
+ExtrawInstruction Simulator::InstParser<ExtrawInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // only the low 32 bits are consumed
   ExtrawInstruction inst;
@@ -628,7 +544,7 @@ ExtrawInstruction Simulator::InstParser<ExtrawInstruction, 32>(uint8_t ** pc)
   inst.reg_value_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0;
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }

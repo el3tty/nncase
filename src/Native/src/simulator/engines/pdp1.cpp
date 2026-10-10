@@ -1,5 +1,4 @@
-// PDP1 (MFU pooling / reduction engine), lifted from IDA/Hex-Rays output (nncase K230 C-model).
-// Source numbering follows work/clean/PDP1<N>.cpp ("Source N").
+// PDP1 (MFU pooling / reduction engine).
 #include "engines/pdp1.h"
 #include "globals.h"
 #include "math/numeric_types.h"
@@ -30,20 +29,16 @@ void PDP1::Reset() {
   cfg_ = Pdp1Config{};
 }
 
-// PDP1::GetPDP1() is not in the dump; a function-local static is equivalent to the guarded static.
-PDP1* PDP1::GetPDP1()
-{
+// PDP1::GetPDP1 is not in the dump; a function-local static is equivalent to the guarded static.
+PDP1* PDP1::GetPDP1() {
   static PDP1 pdp1;
   return &pdp1;
 }
 
-// PDP11.cpp  @0x426b20 (Source 1)
 // Destroys the window vector and every window's element vector.
 PDP1::~PDP1() = default;
 
-// PDP12.cpp  @0x440470 (Source 2)
-void PDP1::PdpDM(MemAccessor src, int dim1, int dim2, int out_row, int out_col)
-{
+void PDP1::PdpDM(MemAccessor src, int dim1, int dim2, int out_row, int out_col) {
   PdpWindow& window = windows_[0];
   const uint16_t shape_h = cfg_.shape_h_;
   const uint16_t shape_w = cfg_.shape_w_;
@@ -78,12 +73,9 @@ void PDP1::PdpDM(MemAccessor src, int dim1, int dim2, int out_row, int out_col)
   }
 }
 
-// PDP13.cpp  @0x4406b0 (Source 3)
-void PDP1::PdpRedCompute()
-{
+void PDP1::PdpRedCompute() {
   const Pdp1Config& c = cfg_;
-  // The decompilation also builds and destroys a local array of 126 {vector, fp24, count} slots
-  // that is never used; it is dropped.
+  // The binary also builds and destroys an unused local array of 126 {vector, fp24, count} slots; dropped.
   MemAccessor src(_G.GLB[c.src_addr_ >> 28] + (c.src_addr_ & 0xFFFFFFF));
   MemAccessor dst(_G.GLB[c.dst_addr_ >> 28] + (c.dst_addr_ & 0xFFFFFFF));
 

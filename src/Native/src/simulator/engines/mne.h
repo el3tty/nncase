@@ -1,8 +1,7 @@
 #pragma once
 // MNE: per-lane "mini numeric engine" of the MeshNet MfuAct1 pipeline.
 // Each MNE object (48 bytes, 16 of them inside MeshNet) holds a function pointer to the
-// selected bf16 operation (+0) and the op configuration word (+44).
-// Lifted from IDA/Hex-Rays output (MNE1..MNE15).
+// selected bf16 operation and the op configuration word.
 #include <cstddef>
 #include <cstdint>
 #include "math/numeric_types.h"
@@ -10,7 +9,7 @@
 #include "engines/mfu_const.h"
 
 struct MNE {
-    // Uniform signature of all operations (the decompiler showed `this` as the first operand):
+    // Uniform signature of all operations (`this` is as the first operand):
     //   in0, in1, in2(select/cond), out, mode, table base pointers, function-set index.
     typedef void (*Op)(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *in2,
                        BF16::bfloat16 *out, uint32_t mode, uint8_t **tables, uint16_t fset);

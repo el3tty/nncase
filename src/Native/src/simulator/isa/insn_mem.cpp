@@ -1,13 +1,3 @@
-// Lifted from IDA/Hex-Rays output; names and types are inferred.
-// Operand/result fields are named after their role; "+NN" in the header gives the byte offset.
-// Simulator6.cpp  @0x411600
-// Simulator7.cpp  @0x411830
-// Simulator4.cpp  @0x4111a0
-// Simulator5.cpp  @0x4113d0
-// Simulator3.cpp  @0x410f70
-// Simulator10.cpp  @0x411ec0
-// Simulator9.cpp  @0x411c90
-// Simulator8.cpp  @0x411a60
 #include "isa/insn_mem.h"
 #include "globals.h"
 #include "isa/kinstruction.h"
@@ -16,8 +6,7 @@
 
 // ---- LbInstruction ----
 template <>
-LbInstruction Simulator::InstParser<LbInstruction, 32>(uint8_t ** pc)
-{
+LbInstruction Simulator::InstParser<LbInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   LbInstruction inst;
@@ -31,21 +20,17 @@ LbInstruction Simulator::InstParser<LbInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// LbInstruction1.cpp  @0x41dab0
-void LbInstruction::get_next_pc()
-{
+void LbInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// LbInstruction2.cpp  @0x422450
-void LbInstruction::parser_operation()
-{
+void LbInstruction::parser_operation() {
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
@@ -60,9 +45,7 @@ void LbInstruction::parser_operation()
   mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
-// LbInstruction3.cpp  @0x429360
-LbInstruction::~LbInstruction()
-{
+LbInstruction::~LbInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -70,8 +53,7 @@ LbInstruction::~LbInstruction()
 
 // ---- LbuInstruction ----
 template <>
-LbuInstruction Simulator::InstParser<LbuInstruction, 32>(uint8_t ** pc)
-{
+LbuInstruction Simulator::InstParser<LbuInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   LbuInstruction inst;
@@ -85,21 +67,17 @@ LbuInstruction Simulator::InstParser<LbuInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// LbuInstruction1.cpp  @0x41dac0
-void LbuInstruction::get_next_pc()
-{
+void LbuInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// LbuInstruction2.cpp  @0x422510
-void LbuInstruction::parser_operation()
-{
+void LbuInstruction::parser_operation() {
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
@@ -114,9 +92,7 @@ void LbuInstruction::parser_operation()
   mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
-// LbuInstruction3.cpp  @0x429300
-LbuInstruction::~LbuInstruction()
-{
+LbuInstruction::~LbuInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -124,8 +100,7 @@ LbuInstruction::~LbuInstruction()
 
 // ---- LhInstruction ----
 template <>
-LhInstruction Simulator::InstParser<LhInstruction, 32>(uint8_t ** pc)
-{
+LhInstruction Simulator::InstParser<LhInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   LhInstruction inst;
@@ -139,21 +114,17 @@ LhInstruction Simulator::InstParser<LhInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// LhInstruction1.cpp  @0x41da90
-void LhInstruction::get_next_pc()
-{
+void LhInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// LhInstruction2.cpp  @0x4222f0
-void LhInstruction::parser_operation()
-{
+void LhInstruction::parser_operation() {
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
@@ -168,9 +139,7 @@ void LhInstruction::parser_operation()
   mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
-// LhInstruction3.cpp  @0x4267b0
-LhInstruction::~LhInstruction()
-{
+LhInstruction::~LhInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -178,8 +147,7 @@ LhInstruction::~LhInstruction()
 
 // ---- LhuInstruction ----
 template <>
-LhuInstruction Simulator::InstParser<LhuInstruction, 32>(uint8_t ** pc)
-{
+LhuInstruction Simulator::InstParser<LhuInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   LhuInstruction inst;
@@ -193,21 +161,17 @@ LhuInstruction Simulator::InstParser<LhuInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// LhuInstruction1.cpp  @0x41daa0
-void LhuInstruction::get_next_pc()
-{
+void LhuInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// LhuInstruction2.cpp  @0x4223b0
-void LhuInstruction::parser_operation()
-{
+void LhuInstruction::parser_operation() {
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
@@ -222,9 +186,7 @@ void LhuInstruction::parser_operation()
   mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
-// LhuInstruction3.cpp  @0x426760
-LhuInstruction::~LhuInstruction()
-{
+LhuInstruction::~LhuInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -232,8 +194,7 @@ LhuInstruction::~LhuInstruction()
 
 // ---- LwInstruction ----
 template <>
-LwInstruction Simulator::InstParser<LwInstruction, 32>(uint8_t ** pc)
-{
+LwInstruction Simulator::InstParser<LwInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   LwInstruction inst;
@@ -247,21 +208,17 @@ LwInstruction Simulator::InstParser<LwInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// LwInstruction1.cpp  @0x41da80
-void LwInstruction::get_next_pc()
-{
+void LwInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// LwInstruction2.cpp  @0x420990
-void LwInstruction::parser_operation()
-{
+void LwInstruction::parser_operation() {
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
@@ -276,9 +233,7 @@ void LwInstruction::parser_operation()
   mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
-// LwInstruction3.cpp  @0x426800
-LwInstruction::~LwInstruction()
-{
+LwInstruction::~LwInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -286,8 +241,7 @@ LwInstruction::~LwInstruction()
 
 // ---- SbInstruction ----
 template <>
-SbInstruction Simulator::InstParser<SbInstruction, 32>(uint8_t ** pc)
-{
+SbInstruction Simulator::InstParser<SbInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   SbInstruction inst;
@@ -301,21 +255,17 @@ SbInstruction Simulator::InstParser<SbInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// SbInstruction1.cpp  @0x41daf0
-void SbInstruction::get_next_pc()
-{
+void SbInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// SbInstruction2.cpp  @0x420e30
-void SbInstruction::parser_operation()
-{
+void SbInstruction::parser_operation() {
   rd_val_ = _G.gp_reg[rd_];
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
@@ -329,9 +279,7 @@ void SbInstruction::parser_operation()
   mem_addr_ = off + 32 * _G.MMU_MMUItem[2 * seg];
 }
 
-// SbInstruction3.cpp  @0x4291e0
-SbInstruction::~SbInstruction()
-{
+SbInstruction::~SbInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -339,8 +287,7 @@ SbInstruction::~SbInstruction()
 
 // ---- ShInstruction ----
 template <>
-ShInstruction Simulator::InstParser<ShInstruction, 32>(uint8_t ** pc)
-{
+ShInstruction Simulator::InstParser<ShInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   ShInstruction inst;
@@ -354,21 +301,17 @@ ShInstruction Simulator::InstParser<ShInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// ShInstruction1.cpp  @0x41dae0
-void ShInstruction::get_next_pc()
-{
+void ShInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// ShInstruction2.cpp  @0x420d80
-void ShInstruction::parser_operation()
-{
+void ShInstruction::parser_operation() {
   rd_val_ = _G.gp_reg[rd_];
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
@@ -383,9 +326,7 @@ void ShInstruction::parser_operation()
   mem_addr_ = off + 32 * _G.MMU_MMUItem[2 * seg];
 }
 
-// ShInstruction3.cpp  @0x4266c0
-ShInstruction::~ShInstruction()
-{
+ShInstruction::~ShInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 
@@ -393,8 +334,7 @@ ShInstruction::~ShInstruction()
 
 // ---- SwInstruction ----
 template <>
-SwInstruction Simulator::InstParser<SwInstruction, 32>(uint8_t ** pc)
-{
+SwInstruction Simulator::InstParser<SwInstruction, 32>(uint8_t ** pc) {
   uint64_t **pcw = (uint64_t **)pc;   // instruction stream cursor (advanced by 4 below)
   const uint64_t raw = **pcw;          // 32-bit instruction word (upper half is ignored)
   SwInstruction inst;
@@ -408,21 +348,17 @@ SwInstruction Simulator::InstParser<SwInstruction, 32>(uint8_t ** pc)
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x300000006LL;   // (kind << 32) | type 6
-  inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
+  inst.pc_rel_ = inst.pc_ - start_pc_;
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
 }
 
-// SwInstruction1.cpp  @0x41dad0
-void SwInstruction::get_next_pc()
-{
+void SwInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// SwInstruction2.cpp  @0x420cb0
-void SwInstruction::parser_operation()
-{
+void SwInstruction::parser_operation() {
   rd_val_ = _G.gp_reg[rd_];
   rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
@@ -439,9 +375,7 @@ void SwInstruction::parser_operation()
   mem_addr_ = off + 32 * _G.MMU_MMUItem[2 * seg];
 }
 
-// SwInstruction3.cpp  @0x426710
-SwInstruction::~SwInstruction()
-{
+SwInstruction::~SwInstruction() {
   /* vptr reset to KInstruction vtable; std::string name released by member dtor */
 }
 

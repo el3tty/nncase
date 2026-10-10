@@ -1,14 +1,12 @@
 #pragma once
-// Free functions and global state of the K230 NPU C-model simulator (lifted from IDA/Hex-Rays).
+// Free functions and global state of the K230 NPU C-model simulator.
 //
-//  * Section 1: C++ helpers (_global1.._global26 in sources/).
-//  * Section 2: C fixed-point helpers (shr_rnd_int.c ... linear_quant.c).
-//  * Section 3: named global state shared by all instruction classes and NPU units.
-//  * Section 4: anonymous IDA placeholders (unk_/dword_/word_/byte_ at addresses of the original image).
+//  * C++ helpers.
+//  * C fixed-point helpers (shr_rnd_int ... linear_quant).
+//  * Named global state shared by all instruction classes and NPU units.
 //
-// All symbols have C++ linkage (the original binary mangles them as C++ names, e.g.
-// _Z12set_g_gp_reghj; the fixed-point helpers are the only plain-C symbols, but nothing links
-// against them from C so no extern "C" is used).
+// All symbols have C++ linkage (the fixed-point helpers are plain C in the original binary, but
+// nothing links against them from C).
 #include <cstdint>
 #include <stdexcept>
 #include <cstddef>
@@ -33,58 +31,58 @@ enum SPU_TYPE_ID : int;   // UNCERTAIN: enumerators are not visible in the dumps
 // 1. C++ helpers
 // ===================================================================================================
 
-// @0x41fc50 (_global1)  _G.gp_reg[reg] = value; x0 is hard-wired to zero.
+// _G.gp_reg[reg] = value; x0 is hard-wired to zero.
 void set_g_gp_reg(uint8_t reg, uint32_t value);
 
-// @0x41fcc0 / @0x420020 / @0x420390 (_global2..4)  One trace line "AAAAAAAA T NN DDDD" (hex, zero filled;
+// /  /   One trace line "AAAAAAAA T NN DDDD" (hex, zero filled;
 // the data field is 16 / 8 / 4 digits wide for the uint64_t / uint32_t / uint16_t overload).
 // UNCERTAIN: meaning of the first three fields (address, SPU data type, element tag).
 void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint64_t data, std::ofstream & out);
 void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint32_t data, std::ofstream & out);
 void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint16_t data, std::ofstream & out);
 
-// @0x42d3e0 (_global5)  Publishes the DDR image and the 16 GLB bank pointers (_G.DDR / _G.GLB).
+// Publishes the DDR image and the 16 GLB bank pointers (_G.DDR / _G.GLB).
 void SimulatorInit(uint8_t * ddr, uint8_t ** glb_banks);
 
-// @0x42d4f0 (_global6)  Copies the low `width` bits of `value` into `bits` starting at bit `lsb`.
+// Copies the low `width` bits of `value` into `bits` starting at bit `lsb`.
 void set_bit(std::bitset<32> & bits, int width, int lsb, int value);
 
-// @0x42d560 (_global7)  Dumps DDR read data: one line per entry of `byte_masks`, `ddr_burst_len` hex bytes
+// Dumps DDR read data: one line per entry of `byte_masks`, `ddr_burst_len` hex bytes
 // per line (most significant byte first).
 void print_r_data(std::vector<uint16_t> & byte_masks, std::vector<uint8_t> & data, std::ofstream & out);
 
-// @0x42d910 (_global8)  One 8-digit hex address per line.
+// One 8-digit hex address per line.
 void print_addr(std::vector<uint32_t> & addrs, std::vector<uint8_t> & unused, std::ofstream & out);
 
-// @0x42da80 (_global9) / @0x42de80 (_global10)  Byte <-> bit vector conversion (bit 0 first).
+// /   Byte <-> bit vector conversion (bit 0 first).
 std::vector<bool> ByteToBits(uint8_t value);
 std::vector<uint8_t> BitsToByte(std::vector<bool> const & bits);
 
-// @0x42e340 (_global11)  Splits a DDR transfer of `elem_bytes * num_elems` bytes starting at `ddr_addr` into
+// Splits a DDR transfer of `elem_bytes * num_elems` bytes starting at `ddr_addr` into
 // bursts: aligned burst addresses, burst count minus one per DDR group and 16-bit byte-enable masks.
 void calc_ddr_param(std::vector<uint32_t> & burst_addr, std::vector<uint8_t> & burst_count_m1,
                     std::vector<uint16_t> & byte_mask, uint8_t elem_bytes, uint32_t num_elems, uint32_t ddr_addr);
 
-// @0x42ec80 (_global12)  Writes the debug dumps requested through debug_map (L3 / L2 / registers).
+// Writes the debug dumps requested through debug_map (L3 / L2 / registers).
 void dump_data_proc(std::string prefix);
 
-// @0x4310a0 (_global13)  Parses the debug command line (see debug_function) and stores the result in `out`
+// Parses the debug command line (see debug_function) and stores the result in `out`
 // under the keys "pc", "dump_L3_start", "dump_L3_len", "dump_L2", "dump_reg".
 void Stringsplit(std::string const & text, std::string const & delim,
                  std::map<std::string, std::vector<uint32_t>> & out);
 
-// @0x4329b0 (_global14)  Interactive debugger hook, called once per instruction with the current pc.
+// Interactive debugger hook, called once per instruction with the current pc.
 void debug_function(uint32_t pc, std::string prefix);
 
-// @0x4385a0 (_global15)  Hex dump of `size` bytes to stdout, 16 per line.
+// Hex dump of `size` bytes to stdout, 16 per line.
 void memory_dump(void const * data, int size);
 
-// @0x439930 (_global16) / @0x4399c0 (_global17)  Same algorithms as TileHelper::BF16ToQint / GetAddress.
+// /   Same algorithms as TileHelper::BF16ToQint / GetAddress.
 int64_t BF16ToQint(BF16::bfloat16 value);
 int64_t GetAddress(uint32_t d0, uint32_t d1, uint32_t d2, uint32_t d3,
                    uint32_t stride0, uint32_t stride1, uint32_t stride2, uint8_t layout);
 
-// @0x441de0 / @0x4421c0 (_global18/19)  GLB access trace of the MFU: collects bytes into a 32-byte line and
+// /  (_global18/19)  GLB access trace of the MFU: collects bytes into a 32-byte line and
 // writes it out when full. `byte_valid` has one bit per entry of `line` (both are filled front-to-back in
 // reverse address order).
 void print_glb_read_core(std::vector<uint8_t> & line, std::vector<bool> & byte_valid, uint32_t glb_addr,
@@ -93,17 +91,16 @@ void print_glb_read_core(std::vector<uint8_t> & line, std::vector<bool> & byte_v
 void print_glb_write_core(std::vector<uint8_t> & line, std::vector<bool> & byte_valid, uint32_t glb_addr,
                           std::ofstream & log, uint32_t & valid_so_far, uint32_t total_bytes, bool last);
 
-// @0x443460 / @0x443b00 (_global20/21)  Walk a 4-D tile of a GLB bank and emit the access trace.
+// /  (_global20/21)  Walk a 4-D tile of a GLB bank and emit the access trace.
 void mfu_glb_read(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, uint16_t cnt0, uint32_t glb_addr,
                   uint8_t elem_log2, MemAccessor mem, std::ofstream & addr_log, std::ofstream & data_log,
                   uint32_t total_bytes);
 void mfu_glb_write(uint64_t shape, uint16_t cnt3, uint16_t cnt2, uint16_t cnt1, uint16_t cnt0, uint32_t glb_addr,
                    uint8_t elem_log2, MemAccessor mem, std::ofstream & log, uint32_t total_bytes, uint8_t row_mode);
 
-// @0x464c30 (_global22)  Splits `text` at every `delim` (std::getline semantics, empty fields kept).
+// Splits `text` at every `delim` (std::getline semantics, empty fields kept).
 void Stringsplit(std::string text, char delim, std::vector<std::string> & out);
 
-// @0x4672d0..@0x467330 (_global23..26)
 int fp_to_int32(float value);                                   // round to nearest even, then truncate
 int64_t xy_climp(int64_t value, int64_t lo, int64_t hi);        // clamp
 int64_t mirror_climp(int64_t value, int64_t lo, int64_t hi);    // reflect at the borders
@@ -112,7 +109,7 @@ void Mat_Inv(double * m);                                       // in-place inve
 // ===================================================================================================
 // 2. Fixed-point helpers (plain C functions in the original)
 // ===================================================================================================
-int64_t shl_2_xbit(int64_t value, int shift, int xbits);   // @0x46b0f0
+int64_t shl_2_xbit(int64_t value, int shift, int xbits);
 int32_t shr_rnd_int(int32_t value, int shift, int round_mode);
 int64_t shr_rnd_lint(int64_t value, int shift, int round_mode);
 int32_t sat_int_xbits(int32_t value, int xbits);
@@ -133,7 +130,7 @@ int linear_quant(int add_first, int qmax, int qmin, float x, float scale, float 
 // ===================================================================================================
 
 // Thrown instead of terminating the process when the simulated program is invalid (bad alignment, impossible shape,
-// ...).  The simulator may run inside the host process as a DLL, so it must never call exit()/abort().
+// ..).  The simulator may run inside the host process as a DLL, so it must never call exit/abort.
 // SimulatorMain catches it and turns it into a non-zero return code; with a debugger, break on this exception type.
 struct SimulatorError : std::runtime_error {
     using std::runtime_error::runtime_error;
@@ -147,7 +144,7 @@ struct SimulatorError : std::runtime_error {
 #endif
 
 // All trivially-copyable (POD) global state of the simulator lives in the single instance `_G`.
-// The simulator can run as a DLL that stays loaded between invocations, so initialize_globals() resets it
+// The simulator can run as a DLL that stays loaded between invocations, so initialize_globals resets it
 // at the start of every run.  Non-POD globals (debug_file, debug_dump_L3_*, debug_map) and the function-local
 // singleton units are NOT part of it, see the end of this section.
 struct Globals {
@@ -196,8 +193,7 @@ void initialize_globals();
 
 // Offset of `ptr` inside the DDR image (ptr - _G.DDR) as a 32-bit instruction address ("pc").
 // Throws std::out_of_range when ptr lies below _G.DDR or the offset does not fit in uint32_t.
-inline uint32_t kpu_pc(const void * ptr)
-{
+inline uint32_t kpu_pc(const void * ptr) {
     const uintptr_t base = reinterpret_cast<uintptr_t>(_G.DDR);
     const uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
     if (addr < base || addr - base > UINT32_MAX)
@@ -206,7 +202,7 @@ inline uint32_t kpu_pc(const void * ptr)
 }
 #define KPU_PC(ptr) kpu_pc(ptr)
 
-// Non-POD globals (not covered by initialize_globals()).
+// Non-POD globals (not covered by initialize_globals).
 extern std::string debug_file;            // path of that dump file
 extern std::vector<uint32_t> debug_dump_L3_start;  // DDR ranges to dump
 extern std::vector<uint32_t> debug_dump_L3_len;

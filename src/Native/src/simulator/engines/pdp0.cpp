@@ -1,5 +1,4 @@
-// PDP0 pooling / depthwise-convolution engine, lifted from IDA/Hex-Rays output (nncase K230 C-model).
-// Source numbering follows work/clean/PDP0<N>.cpp ("Source N").
+// PDP0 pooling / depthwise-convolution engine.
 #include "engines/pdp0.h"
 #include "globals.h"
 #include "engines/act0.h"
@@ -21,55 +20,53 @@ namespace {
 
 // L1Helper: a (channel, row, col) view into a byte buffer. Strides are in bytes.
 struct L1View {
-    uint8_t* data_;        // +0
-    int32_t  max_channels_; // +8   channel capacity of the buffer (24 for IF = PE rows, 32 for PSUM = PE lanes)
-    int32_t  chan_stride_; // +12
-    int32_t  base_;        // +16  byte offset of element (0,0,0)
-    int32_t  row_stride_;  // +20
-    int32_t  col_stride_;  // +24
-    int32_t  channels_;    // +28
-    int32_t  height_;      // +32
-    int32_t  width_;       // +36
+    uint8_t* data_;
+    int32_t  max_channels_; // channel capacity of the buffer (24 for IF = PE rows, 32 for PSUM = PE lanes)
+    int32_t  chan_stride_;
+    int32_t  base_;        // byte offset of element (0,0,0)
+    int32_t  row_stride_;
+    int32_t  col_stride_;
+    int32_t  channels_;
+    int32_t  height_;
+    int32_t  width_;
 };
 
 // WeightsHelper as consumed by ComputeDW.
 struct WeightsView {
-    uint8_t  type_;        // +0   0: 24-byte channel blocks, otherwise 32-byte blocks
-    uint8_t* data_;        // +8
-    int32_t  kernel_h_;    // +16
-    int32_t  kernel_w_;    // +20
-    int32_t  line_bytes_;  // +24  bytes per weight line (DmLoadW::line_bytes_; not read by ComputeDW)
+    uint8_t  type_;        // 0: 24-byte channel blocks, otherwise 32-byte blocks
+    uint8_t* data_;
+    int32_t  kernel_h_;
+    int32_t  kernel_w_;
+    int32_t  line_bytes_;  // bytes per weight line (DmLoadW::line_bytes_; not read by ComputeDW)
 };
 
 // Matrix4<uint8_t>: per-channel weight zero points (only the first channel row is used).
 struct MatrixView {
-    uint8_t  owns_;        // +0
-    uint8_t* data_;        // +8
-    int32_t  dim0_, dim1_, dim2_, dim3_;  // +16 .. +28
-    int32_t  count_;        // +32  (= dim3)
+    uint8_t  owns_;
+    uint8_t* data_;
+    int32_t  dim0_, dim1_, dim2_, dim3_;
+    int32_t  count_;        // (= dim3)
 };
 
-// DmLoadW descriptor as consumed by Compute() (created by DmLoadWInstruction).
+// DmLoadW descriptor as consumed by Compute (created by DmLoadWInstruction).
 struct DmLoadWView {
-    int32_t  line_bytes_;  // +0
-    int32_t  signed_flag_; // +4   ==1: weights are unsigned
-    uint8_t* weights_;     // +8
-    uint8_t* zero_points_; // +16
+    int32_t  line_bytes_;
+    int32_t  signed_flag_; // ==1: weights are unsigned
+    uint8_t* weights_;
+    uint8_t* zero_points_;
 };
 
 // Trace channels of the CheckPoint singleton used by the PDP0 engine.
 std::ofstream& CkptStream(CheckPoint::StreamId id) { return CheckPoint::GetCheckPoint()->Stream(id); }
-constexpr CheckPoint::StreamId kCkptPdp0In  = CheckPoint::kPdp0Unk19;   // +9728:  input pixels
-constexpr CheckPoint::StreamId kCkptPdp0W   = CheckPoint::kPdp0PeWeIn;  // +10240: weights
-constexpr CheckPoint::StreamId kCkptPdp0Out = CheckPoint::kPdp0PeOut;   // +10752: products / pooled values
+constexpr CheckPoint::StreamId kCkptPdp0In  = CheckPoint::kPdp0Unk19;   // input pixels
+constexpr CheckPoint::StreamId kCkptPdp0W   = CheckPoint::kPdp0PeWeIn;  // weights
+constexpr CheckPoint::StreamId kCkptPdp0Out = CheckPoint::kPdp0PeOut;   // products / pooled values
 
 }  // namespace
 
-// PDP01.cpp  @0x42b5d0 (Source 1)
 // The original constructs the singleton in place (five empty deques, one default shared_ptr) under a
 // guard variable and registers PDP0::~PDP0 with atexit; a function-local static is equivalent.
-PDP0* PDP0::GetPDP0()
-{
+PDP0* PDP0::GetPDP0() {
   static PDP0 pdp0;
   return &pdp0;
 }
@@ -84,12 +81,10 @@ void PDP0::Reset() {
   compute_queue_.clear();
 }
 
-// PDP02.cpp  @0x42bd40 (Source 2): PDP0::~PDP0() = default (header). The decompiled body only
-// destroys the five std::deque<std::shared_ptr<...>> members and cur_act0 (shared_ptr refcount code).
+// PDP0::~PDP0 = default (header): the binary only destroys the five
+// std::deque<std::shared_ptr<...>> members and cur_act0.
 
-// PDP03.cpp  @0x46b6b0 (Source 3)
-void PDP0::ComputePDP0(L1Helper& in_l1, L1Helper& out_l1, bool is_signed, std::shared_ptr<Pdp0Compute> cfg)
-{
+void PDP0::ComputePDP0(L1Helper& in_l1, L1Helper& out_l1, bool is_signed, std::shared_ptr<Pdp0Compute> cfg) {
   const L1View& in = reinterpret_cast<const L1View&>(in_l1);
   L1View& out = reinterpret_cast<L1View&>(out_l1);
   const Pdp0Compute& c = *cfg;
@@ -141,10 +136,8 @@ void PDP0::ComputePDP0(L1Helper& in_l1, L1Helper& out_l1, bool is_signed, std::s
   }
 }
 
-// PDP04.cpp  @0x46bb50 (Source 4)
 void PDP0::ComputeDW(L1Helper& in_l1, WeightsHelper& weights_h, L1Helper& out_l1, bool in_signed, bool weights_signed,
-                     Matrix4<uint8_t>& zero_points_m, std::shared_ptr<Pdp0Compute> cfg)
-{
+                     Matrix4<uint8_t>& zero_points_m, std::shared_ptr<Pdp0Compute> cfg) {
   const L1View& in = reinterpret_cast<const L1View&>(in_l1);
   L1View& out = reinterpret_cast<L1View&>(out_l1);
   const WeightsView& w = reinterpret_cast<const WeightsView&>(weights_h);
@@ -207,21 +200,16 @@ void PDP0::ComputeDW(L1Helper& in_l1, WeightsHelper& weights_h, L1Helper& out_l1
   }
 }
 
-// PDP05.cpp  @0x46c2d0 (Source 5)
-// The decompilation shows only stores for words 0, 1-2, 7 and 24 of the 100-byte descriptor; every
-// field the consumers read (strides, padding, kernel, output shape) lives in the words in between,
-// so the whole register block is copied.
+// The whole 100-byte register block is copied: consumers read strides, padding, kernel and output
+// shape from the words in between.
 // verified against asm @0x46c2d0: the stores are vectorised copies of words 0, 1-2, 3-6, 7, 8-11, 12-15, 16-19, 20-23,
 // 24, i.e. the whole 100-byte register block is copied.
-std::shared_ptr<Pdp0Compute> PDP0::GetPdp0Compute() const
-{
+std::shared_ptr<Pdp0Compute> PDP0::GetPdp0Compute() const {
   return std::make_shared<Pdp0Compute>(regs_);
 }
 
-// PDP06.cpp  @0x46c3a0 (Source 6)
-void PDP0::Activate()
-{
-  // Pop one entry from each queue (the original copies the front shared_ptr, then pop_front()s).
+void PDP0::Activate() {
+  // Pop one entry from each queue (the original copies the front shared_ptr, then pop_fronts).
   std::shared_ptr<Act0Compute> act0 = act0_queue_.front();
   act0_queue_.pop_front();
   std::shared_ptr<DmLoadAct0> load = load_act0_queue_.front();
@@ -231,9 +219,7 @@ void PDP0::Activate()
   Act0::Compute(act0, load, store);
 }
 
-// PDP07.cpp  @0x46ce50 (Source 7)
-void PDP0::Compute()
-{
+void PDP0::Compute() {
   // Oldest queued configuration snapshot.
   std::shared_ptr<Pdp0Compute> cfg = compute_queue_.front();
   compute_queue_.pop_front();
@@ -271,7 +257,7 @@ void PDP0::Compute()
     // Depthwise convolution: consume the oldest weight-load descriptor.
     std::shared_ptr<DmLoadW> load_w = weight_queue_.front();
     weight_queue_.pop_front();
-    const DmLoadWView& lw = *reinterpret_cast<const DmLoadWView*>(load_w.get());  // TODO(layout)
+    const DmLoadWView& lw = *reinterpret_cast<const DmLoadWView*>(load_w.get());
 
     WeightsView weights{};
     weights.type_ = 1;

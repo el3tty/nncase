@@ -1,4 +1,3 @@
-// Lifted from IDA/Hex-Rays output (AI2D1..AI2D23).  See ai2d.h for the object layout.
 #include "engines/ai2d.h"
 #include "globals.h"
 #include "engines/checkpoint.h"
@@ -14,29 +13,25 @@ namespace {
 
 // Check point stream of the AI2D block.
 // vcvttss2si: truncation, 0x80000000 ("integer indefinite") for NaN / out of range.
-int32_t TruncToInt32(float f)
-{
+int32_t TruncToInt32(float f) {
   if (!(f > -2147483904.0f && f < 2147483648.0f))
     return INT32_MIN;
   return static_cast<int32_t>(f);
 }
 
-std::ofstream &Ck(CheckPoint::StreamId id)
-{
+std::ofstream &Ck(CheckPoint::StreamId id) {
   return CheckPoint::GetCheckPoint()->Stream(id);
 }
 
 // The check point dumps print "<hex, zero filled, minimum width>"; like in the binary the hex/fill
 // formatting flags stay set on the stream afterwards.
-void PutHex(std::ostream &os, uint64_t value, int width)
-{
+void PutHex(std::ostream &os, uint64_t value, int width) {
   os << std::hex << std::setfill('0') << std::setw(width) << static_cast<uint64_t>(value);
 }
 
 // Address of a plane inside the source/destination memory: `in_ddr` selects DDR (flat address),
 // otherwise bits [31:28] of the address select a GLB bank and the low 28 bits are the offset.
-uint8_t *PlaneBase(const AI2D *a, bool in_ddr, uint32_t ptr, int64_t offset)
-{
+uint8_t *PlaneBase(const AI2D *a, bool in_ddr, uint32_t ptr, int64_t offset) {
   if (in_ddr)
     return a->ddr_ + offset + ptr;
   return a->glb_[ptr >> 28] + offset + (ptr & 0xFFFFFFF);
@@ -44,33 +39,26 @@ uint8_t *PlaneBase(const AI2D *a, bool in_ddr, uint32_t ptr, int64_t offset)
 
 }  // namespace
 
-// @0x424ef0 (Source AI2D1)
-AI2D::~AI2D()
-{
+AI2D::~AI2D() {
 }
 
 // Singleton: the object is the global register block AI2D_Ai2dInst (see ai2d.h).
-AI2D *AI2D::GetAI2D()
-{
+AI2D *AI2D::GetAI2D() {
   return reinterpret_cast<AI2D *>(_G.AI2D_Ai2dInst);
 }
 
-// @0x45d0c0 (Source AI2D2)
 // Latches the registers: sign-extends the 12-bit YUV->RGB coefficients and copies M0..M5 into the
 // float shadow registers used by cord_calc.
-void AI2D::ai_2d_para_update()
-{
-  std::memcpy(m_, m_raw_, sizeof(m_));   // 16 bytes +184 -> +208 (M0..M3) and 8 bytes +200 -> +224 (M4, M5)
+void AI2D::ai_2d_para_update() {
+  std::memcpy(m_, m_raw_, sizeof(m_));   // M0..M3 (16 bytes) and M4, M5 (8 bytes)
   for (int32_t &coef : yuv2rgb_coef_) {
     if (coef > 2047)
       coef -= 4096;
   }
 }
 
-// @0x45d220 (Source AI2D3)
 // Dumps the configuration into the first AI2D check point stream.
-void AI2D::ai_2d_para_print()
-{
+void AI2D::ai_2d_para_print() {
   std::ofstream &os = Ck(CheckPoint::kAi2d0);
   // verified against asm @0x45d220: every value goes through std::ostream::operator<<(int) (_ZNSolsEi), i.e. it is printed
   // as a SIGNED 32-bit integer (byte fields are zero-extended first); each print re-fetches the check point stream (+0x4000).
@@ -120,13 +108,11 @@ void AI2D::ai_2d_para_print()
   line("ai2d_calc_enable", calc_enable_);
 }
 
-// @0x45fb80 (Source AI2D4)
 // Dumps a DDR read of `len` bytes at `addr` as 16-byte rows (most significant byte first) into
 // stream 4, plus one "<addr> <row count - 1>" request line per 256-byte block into the rx address stream.
-void AI2D::PrintLoadDDRCheckPoint(uint32_t addr, uint32_t len)
-{
-  std::ofstream &data = Ck(CheckPoint::kAi2d4);                 // CheckPoint +18432
-  std::ofstream &req = Ck(CheckPoint::kAi2dRxDdrRaddr);         // CheckPoint +17920
+void AI2D::PrintLoadDDRCheckPoint(uint32_t addr, uint32_t len) {
+  std::ofstream &data = Ck(CheckPoint::kAi2d4);
+  std::ofstream &req = Ck(CheckPoint::kAi2dRxDdrRaddr);
 
   uint32_t cur = addr + ddr_addr_offset_;
   const uint32_t end = cur + len;
@@ -165,13 +151,11 @@ void AI2D::PrintLoadDDRCheckPoint(uint32_t addr, uint32_t len)
   }
 }
 
-// @0x45ffe0 (Source AI2D5)
 // Dumps a GLB read of `len` bytes at `addr` (bank in bits [31:28]): per 16-byte row one line with the
 // row index in the address stream and one line with the 16 data bytes (most significant first).
-void AI2D::PrintLoadGlbCheckPoint(uint32_t addr, uint32_t len)
-{
-  std::ofstream &req = Ck(CheckPoint::kAi2d13);                 // CheckPoint +23040
-  std::ofstream &data = Ck(CheckPoint::kAi2d14);                // CheckPoint +23552
+void AI2D::PrintLoadGlbCheckPoint(uint32_t addr, uint32_t len) {
+  std::ofstream &req = Ck(CheckPoint::kAi2d13);
+  std::ofstream &data = Ck(CheckPoint::kAi2d14);
 
   const uint32_t bank = addr >> 28;
   uint8_t line[16] = {};
@@ -198,13 +182,11 @@ void AI2D::PrintLoadGlbCheckPoint(uint32_t addr, uint32_t len)
   } while (done < len);
 }
 
-// @0x460490 (Source AI2D6)
 // Dumps a DDR write of `len` bytes at `addr`: one line "<byte mask> <16 bytes, msb first>" per 16-byte
 // row into the data stream and one "<addr> <row count - 1>" line per 256-byte block into the waddr stream.
-void AI2D::PrintStoreDDRCheckPoint(uint32_t addr, uint32_t len)
-{
-  std::ofstream &data = Ck(CheckPoint::kAi2d11);                // CheckPoint +22016
-  std::ofstream &req = Ck(CheckPoint::kAi2dTxDdrWaddr);         // CheckPoint +21504
+void AI2D::PrintStoreDDRCheckPoint(uint32_t addr, uint32_t len) {
+  std::ofstream &data = Ck(CheckPoint::kAi2d11);
+  std::ofstream &req = Ck(CheckPoint::kAi2dTxDdrWaddr);
 
   uint32_t cur = addr + ddr_addr_offset_;
   const uint32_t end = cur + len;
@@ -244,11 +226,9 @@ void AI2D::PrintStoreDDRCheckPoint(uint32_t addr, uint32_t len)
   }
 }
 
-// @0x460c10 (Source AI2D7)
 // Dumps a GLB write of `len` bytes at `addr`: per 16-byte row "<row> <byte mask> <16 bytes, msb first>".
-void AI2D::PrintWriteGlbCheckPoint(uint32_t addr, uint32_t len)
-{
-  std::ofstream &os = Ck(CheckPoint::kAi2dGlbWrite);            // CheckPoint +24064
+void AI2D::PrintWriteGlbCheckPoint(uint32_t addr, uint32_t len) {
+  std::ofstream &os = Ck(CheckPoint::kAi2dGlbWrite);
 
   const uint32_t bank = addr >> 28;
   uint8_t line[16] = {};
@@ -280,11 +260,9 @@ void AI2D::PrintWriteGlbCheckPoint(uint32_t addr, uint32_t len)
   } while (done < len);
 }
 
-// @0x4611e0 (Source AI2D8)
 // Sets the per-plane scale / row divisor tables for a pixel format (0/1 NV12/NV21, 2 I420, 4 packed
 // RGB888, 5 raw16).  Entries not mentioned keep their previous value.
-void AI2D::slice_factor_cnt(int format)
-{
+void AI2D::slice_factor_cnt(int format) {
   std::memset(plane_row_div_, 1, sizeof(plane_row_div_));
   if (format == 2) {
     plane_scale_[1] = 0.5f;
@@ -302,19 +280,17 @@ void AI2D::slice_factor_cnt(int format)
   }
 }
 
-// @0x461270 (Source AI2D9)
 // Dumps the source read requests of a plane: first the request line "<addr> <len> <rows>", then one
 // Load check point per row (DDR or GLB depending on src_ind).
 // verified against asm @0x461270: the row length is (int)((float)src_width_shape * scale) (movl 0x120(%rdi), unsigned->float),
 // the byte offset of src_x is (int)((float)src_x * scale) (signed), and src_y * pitch / row_div uses a SIGNED idiv.
-void AI2D::print_rx_data(uint32_t addr, int pitch, float scale, uint8_t row_div)
-{
+void AI2D::print_rx_data(uint32_t addr, int pitch, float scale, uint8_t row_div) {
   const int32_t x_bytes = TruncToInt32(static_cast<float>(src_x_) * scale);
   uint32_t row_addr = addr + static_cast<uint32_t>(static_cast<int32_t>(static_cast<uint32_t>(pitch) * src_y_) / row_div) +
                       static_cast<uint32_t>(x_bytes);
   const uint32_t row_len = static_cast<uint32_t>(TruncToInt32(static_cast<float>(src_width_shape_) * scale));
 
-  std::ofstream &os = Ck(CheckPoint::kAi2d2);                   // CheckPoint +17408
+  std::ofstream &os = Ck(CheckPoint::kAi2d2);
   PutHex(os, row_addr, 8);
   os << ' ';
   PutHex(os, row_len, 4);
@@ -334,19 +310,17 @@ void AI2D::print_rx_data(uint32_t addr, int pitch, float scale, uint8_t row_div)
   }
 }
 
-// @0x461610 (Source AI2D10)
 // Dumps the destination write request of a plane ("<addr> <len> 0001") and the matching Store/Write
 // check point (DDR or GLB depending on dst_ind).
 // verified against asm @0x461610: the row length is (float)pad_width (+0x130, NOT dst_width_shape) * scale; dst_y * pitch / row_div
 // is a signed idiv, row * pitch / row_div an unsigned div.
-void AI2D::print_tx_data(uint32_t addr, int pitch, float scale, uint8_t row_div, uint32_t row)
-{
+void AI2D::print_tx_data(uint32_t addr, int pitch, float scale, uint8_t row_div, uint32_t row) {
   const int32_t x_bytes = TruncToInt32(static_cast<float>(dst_x_) * scale);
   const uint32_t tx_addr = static_cast<uint32_t>(static_cast<int32_t>(static_cast<uint32_t>(pitch) * dst_y_) / row_div) + addr +
                            (row * static_cast<uint32_t>(pitch)) / row_div + static_cast<uint32_t>(x_bytes);
   const uint32_t row_len = static_cast<uint32_t>(TruncToInt32(static_cast<float>(pad_width_) * scale));
 
-  std::ofstream &os = Ck(CheckPoint::kAi2dTxReq);               // CheckPoint +20992
+  std::ofstream &os = Ck(CheckPoint::kAi2dTxReq);
   PutHex(os, tx_addr, 8);
   os << ' ';
   PutHex(os, row_len, 4);
@@ -360,17 +334,13 @@ void AI2D::print_tx_data(uint32_t addr, int pitch, float scale, uint8_t row_div,
     PrintWriteGlbCheckPoint(tx_addr, row_len);
 }
 
-// @0x461970 (Source AI2D11)
-void AI2D::print_ddr_data()
-{
+void AI2D::print_ddr_data() {
   slice_factor_cnt(src_format_);
 }
 
-// @0x461980 (Source AI2D12)
 // Loads the source rectangle (src_x, src_y, src_width_shape x src_height_shape) from DDR/GLB into the
 // four plane buffers plane_in[], de-interleaving according to src_format.
-void AI2D::slice_ld()
-{
+void AI2D::slice_ld() {
   const bool in_ddr = src_ind_ != 0;
   const uint32_t rows = src_height_shape_;
   const uint32_t cols = src_width_shape_;
@@ -462,7 +432,6 @@ void AI2D::slice_ld()
   }
 }
 
-// @0x4623a0 (Source AI2D13)
 // Computes, for every output pixel (x, y), the source coordinate (M0*x + M1*y + M2, M3*x + M4*y + M5)
 // in fixed point: integer parts into src_xi/src_yi (clamped to -1..4096) and, for bilinear
 // interpolation, 8-bit fractions into src_xf/src_yf.
@@ -470,8 +439,7 @@ void AI2D::slice_ld()
 // fixed-point format is whatever the host put into M0..M5: the sum is shifted >> 10 for the integer part and >> 2 (low
 // byte) for the fraction.  Float maths as in the binary: x*M0, x*M3 per column; y*M1+M2, y*M4+M5 per row (vmulss, vaddss);
 // round offset 512/2 (cord_round 0) or 1024/4 (cord_round 1) for nearest/bilinear, 0 otherwise.
-void AI2D::cord_calc()
-{
+void AI2D::cord_calc() {
   const uint32_t w = dst_width_shape_;
   const uint32_t h = dst_height_shape_;
   std::vector<int32_t> x_from_col(w), y_from_col(w);
@@ -517,12 +485,10 @@ void AI2D::cord_calc()
   }
 }
 
-// @0x4626a0 (Source AI2D14)
 // Resamples the loaded planes: for every output pixel and plane fetches the 2x2 neighbourhood at
 // (src_xi, src_yi) (out-of-range samples are replaced by the edge pixel when bound_ind is set, otherwise
 // by the constant bound_val), then writes nearest (interpolation == 0) or bilinear results to interp_planes.
-void AI2D::inter_calc()
-{
+void AI2D::inter_calc() {
   const int32_t sw = static_cast<int32_t>(src_width_shape_);
   const int32_t sh = static_cast<int32_t>(src_height_shape_);
 
@@ -614,12 +580,10 @@ void AI2D::inter_calc()
   }
 }
 
-// @0x4630e0 (Source AI2D15)
 // In-place YUV444 -> RGB888 on interp_planes[0..2] using the 3x4 coefficient matrix (12-bit signed,
 // scaled by 256; the offsets are added after the shift).
 // verified against asm @0x4630e0: signed imull, arithmetic sarl $8 on (sum + 128), then + offset, then xy_climp(.., 0, 255).
-void AI2D::YUV444toRGB888()
-{
+void AI2D::YUV444toRGB888() {
   const uint32_t count = dst_width_shape_ * dst_height_shape_;
   const int32_t *c = yuv2rgb_coef_;
   for (uint32_t i = 0; i < count; ++i) {
@@ -635,11 +599,9 @@ void AI2D::YUV444toRGB888()
   }
 }
 
-// @0x463270 (Source AI2D16)
 // Applies the raw16 shift (rounding right shift, or left shift for shift <= 0) with saturation to the
 // 16-bit range (signed data is re-centred by 0x8000) and, for 8-bit destinations, to 8 bits.
-int64_t AI2D::raw16_data_shift(int value)
-{
+int64_t AI2D::raw16_data_shift(int value) {
   int64_t result;
   if (is_signed_) {
     const int v = value - 0x8000;
@@ -660,13 +622,11 @@ int64_t AI2D::raw16_data_shift(int value)
   return result;
 }
 
-// @0x463360 (Source AI2D17)
 // Pads the resampled image (interp_planes, dst_width x dst_height) into padded_planes
 // (pad_width x pad_height) according to pad_mod: 0 constant, 1 replicate edge, 2 mirror.
 // For raw16 sources the 16-bit samples are first shifted/saturated (raw16_data_shift); for signed
 // 8-bit data the samples are biased by 0x80.
-void AI2D::slice_padding()
-{
+void AI2D::slice_padding() {
   uint8_t **in = interp_planes_;
   uint8_t **out = padded_planes_;
   const uint32_t rows = dst_height_shape_;
@@ -748,13 +708,11 @@ void AI2D::slice_padding()
   }
 }
 
-// @0x463b00 (Source AI2D18)
 // Converts YUV->RGB if requested, pads the image and writes it to the destination planes in DDR or
 // GLB (dst_ind) in the destination format, then finishes with slice_factor_cnt.
 // verified against asm @0x463b00: dst_x is a signed 32-bit value in every format (movslq 0xb0(%rbp), or the sign-correcting
 // shr $31 / sar for x/2); packed RGB888 and raw16 compute 3*x / 2*x in 32 bits and sign-extend it (cltq / movslq).
-void AI2D::slice_store()
-{
+void AI2D::slice_store() {
   if (csc_en_ == 1)
     YUV444toRGB888();
   pad_height_ = pad_b_ + dst_height_shape_ + pad_t_;
@@ -855,14 +813,12 @@ void AI2D::slice_store()
   slice_factor_cnt(dst_format_);
 }
 
-// @0x464640 (Source AI2D19)
 // Allocates the working buffers: 4 interpolated planes and 4 padded planes of 4 MiB each (zero
 // filled) plus the per-output-pixel coordinate tables src_xi/src_yi (uint16) and src_xf/src_yf
 // (uint8), each [dst_width][dst_height] and zero filled.
 // verified against asm @0x464640: the 4 MiB plane fill loops store a zeroed ymm (vpxor + vmovdqu / vextractf128, 32 bytes per
 // iteration), i.e. zero fill; the coordinate tables are memset to 0 as well.
-void AI2D::mem_init()
-{
+void AI2D::mem_init() {
   constexpr size_t kPlaneBytes = 0x400000;
   const uint32_t cols = dst_width_shape_;
   const uint32_t rows = dst_height_shape_;
@@ -888,10 +844,8 @@ void AI2D::mem_init()
     src_yf_[x] = new uint8_t[rows]();
 }
 
-// @0x464970 (Source AI2D20)
 // Releases everything allocated by mem_init.
-void AI2D::mem_delete()
-{
+void AI2D::mem_delete() {
   for (uint32_t x = 0; x < dst_width_shape_; ++x) {
     delete[] src_xi_[x];
     delete[] src_yi_[x];
@@ -910,12 +864,10 @@ void AI2D::mem_delete()
   delete[] padded_planes_;
 }
 
-// @0x464ac0 (Source AI2D21)
 // Runs one AI2D job: latches the memory bases, then load -> coordinate calc -> resample -> store.
-void AI2D::ai2d_proc()
-{
+void AI2D::ai2d_proc() {
   ddr_ = _G.DDR;
-  // The decompiler showed an overlap check plus a vectorised copy; both paths copy the 16 GLB bases.
+  // The asm has an overlap check plus a vectorised copy; both paths copy the 16 GLB bases.
   for (int bank = 0; bank < 16; ++bank)
     glb_[bank] = _G.GLB[bank];
   ai_2d_para_update();
@@ -936,8 +888,7 @@ uint32_t *U32(int32_t &field) { return reinterpret_cast<uint32_t *>(&field); }
 // Registers settable by name in the text parameter file read by para_parser_back.
 // verified against asm @0x465430: the binary's key list is exactly the keys below (38 strcmp/memcmp
 // literals); dst_ch1/dst_ch2_width_layout, channel_cfg, csc_en, ... are not recognised.
-std::vector<std::pair<std::string, uint32_t *>> NamedParams(AI2D &a)
-{
+std::vector<std::pair<std::string, uint32_t *>> NamedParams(AI2D &a) {
   std::vector<std::pair<std::string, uint32_t *>> keys;
   for (int i = 0; i < 4; ++i)
     keys.emplace_back("src_ch" + std::to_string(i) + "_ptr", &a.src_ch_ptr_[i]);
@@ -978,10 +929,8 @@ std::vector<std::pair<std::string, uint32_t *>> NamedParams(AI2D &a)
 
 }  // namespace
 
-// @0x465430 (Source AI2D22)
 // Reads a text parameter file with lines "<name> <decimal value>" and sets the named registers.
-void AI2D::para_parser_back(const char *path)
-{
+void AI2D::para_parser_back(const char *path) {
   std::ifstream file(path, std::ios::in);
   const auto keys = NamedParams(*this);
   std::string line;
@@ -1004,11 +953,9 @@ void AI2D::para_parser_back(const char *path)
   ai_2d_para_update();
 }
 
-// @0x466460 (Source AI2D23)
 // Reads a register dump: every line is "<8 chars> <32 hex digits>" = tag + four 32-bit register words
 // (w0..w3, 8 hex digits each). Line n (0-based) is decoded like the n-th Extrw register group.
-void AI2D::para_parser(const char *path)
-{
+void AI2D::para_parser(const char *path) {
   std::ifstream file(path, std::ios::in);
   std::string line;
   int line_no = 0;
@@ -1065,7 +1012,7 @@ void AI2D::para_parser(const char *path)
         yuv2rgb_coef_[1] = (w3 >> 12) & 0xFFF;
         break;
       case 6:   // coefficients 8..11, constant padding, indirection flags
-        const_pad_ch_[1] = static_cast<uint8_t>(w2);          // +369 (16-bit store: bytes 1 and 2)
+        const_pad_ch_[1] = static_cast<uint8_t>(w2);          // (16-bit store: bytes 1 and 2)
         const_pad_ch_[2] = static_cast<uint8_t>(w2 >> 8);
         yuv2rgb_coef_[9] = (w1 >> 12) & 0xFFF;
         yuv2rgb_coef_[8] = w1 & 0xFFF;

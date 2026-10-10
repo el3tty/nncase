@@ -1,4 +1,3 @@
-// Lifted from IDA/Hex-Rays output (L2Load1..L2Load5).
 #include "engines/l2load.h"
 #include "globals.h"
 #include "engines/checkpoint.h"
@@ -17,8 +16,7 @@ namespace {
 
 // IEEE binary32 -> binary16, round to nearest even, NaN keeps its sign (quiet), inf/overflow -> inf,
 // tiny values flush to signed zero (exponent below 2^-26).
-uint16_t Fp32ToFp16(float value)
-{
+uint16_t Fp32ToFp16(float value) {
   uint32_t bits;
   std::memcpy(&bits, &value, sizeof bits);
   const uint32_t sign = (bits >> 31) << 15;
@@ -57,8 +55,7 @@ uint16_t Fp32ToFp16(float value)
 }
 
 // One beat of the load_glb_write check file: "<line:5> <byte mask:8> <32 bytes, MSB first>".
-void PrintGlbWriteBeat(std::ofstream & os, uint32_t line, uint32_t byte_mask, const uint8_t * beat)
-{
+void PrintGlbWriteBeat(std::ofstream & os, uint32_t line, uint32_t byte_mask, const uint8_t * beat) {
   if (line > 0x1FFFF) {
     simulator_fail("[Error] glb addr exceed 4M");
   }
@@ -71,9 +68,7 @@ void PrintGlbWriteBeat(std::ofstream & os, uint32_t line, uint32_t byte_mask, co
 
 }  // namespace
 
-// L2Load1.cpp  @0x434c00
-int64_t L2Load::Load()
-{
+int64_t L2Load::Load() {
   if (!(row_len_ * row_count_ * plane_count_ * batch_count_))
     return plane_count_;
   if ((int)batch_count_ <= 0)
@@ -120,12 +115,10 @@ int64_t L2Load::Load()
   return plane_count_;
 }
 
-// L2Load2.cpp  @0x434fe0
 // rel_offset: byte offset relative to ddr_offset, num_bytes: number of bytes.  The data is dumped in 256-byte
 // chunks of 16-byte lines (MSB first, bytes below an unaligned start are written as 00).
 // Returns 0 (the original returned a stream reference left in a register).
-int64_t L2Load::PrintLoadDDRCheckPoint(uint32_t rel_offset, uint32_t num_bytes)
-{
+int64_t L2Load::PrintLoadDDRCheckPoint(uint32_t rel_offset, uint32_t num_bytes) {
   CheckPoint * cp = CheckPoint::GetCheckPoint();
   std::ofstream & rdata = cp->Stream(CheckPoint::kLoadDdrRdata);
   std::ofstream & raddr = cp->Stream(CheckPoint::kLoadDdrRaddr);
@@ -160,15 +153,13 @@ int64_t L2Load::PrintLoadDDRCheckPoint(uint32_t rel_offset, uint32_t num_bytes)
   return 0;
 }
 
-// L2Load3.cpp  @0x435410
 // Dumps what LoadW writes into the GLB as 32-byte beats (check file load_glb_write.chk).
 //   rel_offset: byte offset from glb_mmu_addr, num_bytes: number of bytes, row_len_m1: elements per row group minus one,
 //   elem_bytes: element size in bytes.  Row groups are placed at a pitch of 24 elements; with
 //   row_len_m1 == 23 the data is contiguous.
 // UNCERTAIN (open in asm too): no direct call to @0x435410 exists in the binary; row_len_m1/elem_bytes meanings inferred from LoadW's index formula.
 // Returns 0 (the original returned a stream reference left in a register).
-int64_t L2Load::PrintWriteGlbCheckPoint(uint32_t rel_offset, uint32_t num_bytes, uint32_t row_len_m1, int elem_bytes)
-{
+int64_t L2Load::PrintWriteGlbCheckPoint(uint32_t rel_offset, uint32_t num_bytes, uint32_t row_len_m1, int elem_bytes) {
   std::ofstream & os = CheckPoint::GetCheckPoint()->Stream(CheckPoint::kLoadGlbWrite);
   const int total = (int)num_bytes;
   if (total <= 0)
@@ -249,13 +240,11 @@ int64_t L2Load::PrintWriteGlbCheckPoint(uint32_t rel_offset, uint32_t num_bytes,
   }
 }
 
-// L2Load4.cpp  @0x4361f0
 // Compressed block format: for every 16 output bytes a 16-bit mask (bit k set => byte k present),
 // followed by the present bytes.  Missing bytes are zero.
 // verified against asm @0x4361f0 (memset + 16-byte mask loop).  The original returns whatever is left in rax (dst when
 // dst_len <= 0, otherwise the last mask / last copied byte); no caller uses it, the output pointer is returned here.
-uint8_t* L2Load::Decompress(uint8_t * dst, uint8_t * src, int dst_len)
-{
+uint8_t* L2Load::Decompress(uint8_t * dst, uint8_t * src, int dst_len) {
   uint8_t * const out = dst;
   std::memset(dst, 0, dst_len > 0 ? (size_t)dst_len : 0);
   if (dst_len > 0) {
@@ -275,9 +264,7 @@ uint8_t* L2Load::Decompress(uint8_t * dst, uint8_t * src, int dst_len)
   return out;
 }
 
-// L2Load5.cpp  @0x436340
-void L2Load::LoadW()
-{
+void L2Load::LoadW() {
   // Size of the staging buffer: weight_count elements of the source format.
   int elem_bytes = 1 << w_mode1_;
   if (w_mode1_ == 5)
@@ -326,7 +313,7 @@ void L2Load::LoadW()
   if (_G.debug_flag) {
     // Hex dump of the staging buffer, one byte per line.
     // verified against asm @0x436340: byte_count (r13d) is overwritten with the packed size for the 4/6-bit formats at
-    // @0x4363d2, so the dump length is the packed size (the buffer itself is expanded).
+    // so the dump length is the packed size (the buffer itself is expanded).
     std::ofstream dump(debug_file.c_str(), std::ios::out);
     dump << std::hex;
     for (int i = 0; i < byte_count; ++i)

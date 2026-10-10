@@ -1,7 +1,3 @@
-// Lifted from IDA/Hex-Rays output (Conv2D1..Conv2D5.cpp). The AVX instructions that the auto-converted
-// results/ copy had stripped (16/32-byte block copies of the configuration, the IF/PSUM tensor setup) were
-// recovered from sources/Conv2D*.cpp. All inlined libstdc++ code (shared_ptr reference counting, std::deque
-// pop_front / node release, make_shared) is expressed with the standard containers.
 #include "engines/conv2d.h"
 #include "globals.h"
 #include "engines/act0.h"
@@ -23,7 +19,7 @@ Conv2D::Conv2D() {
 
 void Conv2D::Reset() {
     cfg_ = PuCompute();
-    // @0x468f10 (Source 4): the only non-zero initial value; the rest of the object is zero / empty queues.
+    // the only non-zero initial value; the rest of the object is zero / empty queues.
     cfg_.if_flag_ = 1;
     if_queue_.clear();
     weight_queue_.clear();
@@ -34,45 +30,38 @@ void Conv2D::Reset() {
     compute_queue_.clear();
 }
 
-// @0x469500 (Source 5): destroys the six queues (the 1700 decompiled lines are the inlined deque / shared_ptr releases).
+// Destroys the six queues (inlined deque / shared_ptr releases).
 Conv2D::~Conv2D() = default;
 
-// @0x467450 (Source 1)
-std::shared_ptr<PuCompute> Conv2D::GetPuCompute() const
-{
+std::shared_ptr<PuCompute> Conv2D::GetPuCompute() const {
     // The original allocates a shared control block and copies the configuration bytes [0, 158) with 16-byte moves.
     return std::make_shared<PuCompute>(cfg_);
 }
 
 // Legacy shim: the generated header declared `Conv2D* GetPuCompute(int64_t*)` because the sret slot (a
 // shared_ptr<PuCompute> in the caller) arrives in the 'this' register. See conv2d.h.
-Conv2D* Conv2D::GetPuCompute(int64_t* conv)
-{
+Conv2D* Conv2D::GetPuCompute(int64_t* conv) {
     ::new (static_cast<void*>(this)) std::shared_ptr<PuCompute>(reinterpret_cast<const Conv2D*>(conv)->GetPuCompute());
     return this;
 }
 
-// @0x467590 (Source 2)
 // Pops the next ACT0 job: Act0Compute descriptor + activation parameters (+ the DM store when the result goes to
 // the DM).
-void Conv2D::Activate()
-{
+void Conv2D::Activate() {
     std::shared_ptr<Act0Compute> compute = act0_queue_.front();
     act0_queue_.pop_front();
     std::shared_ptr<DmLoadAct0> load = act0_param_queue_.front();
     act0_param_queue_.pop_front();
 
     std::shared_ptr<DmStoreOf> store;
-    if (compute->out_route_ != 0) {   // +28: 0 = _G.PSUM_L1 only, no DM store involved
+    if (compute->out_route_ != 0) {   // 0 = _G.PSUM_L1 only, no DM store involved
         store = store_queue_.front();
         store_queue_.pop_front();
     }
     Act0::Compute(compute, load, store);
 }
 
-// @0x4681e0 (Source 3)
-void Conv2D::Compute()
-{
+void Conv2D::Compute() {
     std::shared_ptr<DmLoadW> load_w = weight_queue_.front();
     weight_queue_.pop_front();
     std::shared_ptr<PuCompute> pu_job = compute_queue_.front();
@@ -118,18 +107,18 @@ void Conv2D::Compute()
     info.psum_.chan_stride_ = 4096;
     // verified against asm @0x46858c / @0x4686ab: the PSUM tensor and the window steps are filled from the snapshot
     // BEFORE TCU::ComputeConv (they are overwritten again after it for mode 1).
-    info.psum_.base_ = static_cast<int32_t>(pu.psum_base_);          // +0x88
-    info.psum_.row_stride_ = static_cast<int32_t>(pu.of1_d0_);       // +0x70
-    info.psum_.channels_ = static_cast<int32_t>(pu.of2_d2_);         // +0x7c
-    info.psum_.height_ = static_cast<int32_t>(pu.of2_d1_);           // +0x80
-    info.psum_.width_ = static_cast<int32_t>(pu.of2_d0_);            // +0x84
+    info.psum_.base_ = static_cast<int32_t>(pu.psum_base_);
+    info.psum_.row_stride_ = static_cast<int32_t>(pu.of1_d0_);
+    info.psum_.channels_ = static_cast<int32_t>(pu.of2_d2_);
+    info.psum_.height_ = static_cast<int32_t>(pu.of2_d1_);
+    info.psum_.width_ = static_cast<int32_t>(pu.of2_d0_);
     if (pu.param_148_ == 0) {
         info.psum_.col_stride_ = 1;
         info.stride_x_ = static_cast<int32_t>(pu.fetch_imm17_);     // qword at pu+0: (imm17, imm22)
         info.stride_y_ = static_cast<int32_t>(pu.fetch_imm22_);
     } else {
         info.psum_.col_stride_ = static_cast<int32_t>(pu.fetch_imm17_);
-        info.stride_x_ = 1;                                        // .rodata 0x522270 = 0x0000000100000001
+        info.stride_x_ = 1;                                        // rodata 0x522270 = 0x0000000100000001
         info.stride_y_ = 1;
     }
     info.pad_bottom_ = static_cast<int32_t>(pu.pad_bottom_);
@@ -164,12 +153,12 @@ void Conv2D::Compute()
     tcu->ComputeConv(info);
 
     if (pu.mode_ == 1) {
-        // Hand the PSUM to ACT0: copy one 4 KiB plane per output channel into the Act0 PSUM buffer, then Activate().
-        std::shared_ptr<Act0Compute> act = act0_queue_.front();   // peeked, popped by Activate()
-        const int channels = static_cast<int>(act->channels_);    // +4
-        const int height = static_cast<int>(act->height_);        // +8
-        const int width = static_cast<int>(act->width_);          // +12
-        const int base = static_cast<int32_t>(cfg_.psum_base_);    // live Conv2D+136, not the snapshot
+        // Hand the PSUM to ACT0: copy one 4 KiB plane per output channel into the Act0 PSUM buffer, then Activate.
+        std::shared_ptr<Act0Compute> act = act0_queue_.front();   // peeked, popped by Activate
+        const int channels = static_cast<int>(act->channels_);
+        const int height = static_cast<int>(act->height_);
+        const int width = static_cast<int>(act->width_);
+        const int base = static_cast<int32_t>(cfg_.psum_base_);    // live , not the snapshot
         info.psum_.col_stride_ = 1;
         info.psum_.channels_ = channels;
         info.psum_.height_ = height;
@@ -177,7 +166,7 @@ void Conv2D::Compute()
         info.psum_.row_stride_ = width;
         info.psum_.base_ = base;
 
-        uint8_t* dst = reinterpret_cast<uint8_t*>(act->psum_);    // +40
+        uint8_t* dst = reinterpret_cast<uint8_t*>(act->psum_);
         const size_t bytes = 4 * static_cast<size_t>(height * width);
         for (int ch = 0; ch < channels; ++ch) {
             const int32_t word = (base >> 2) + static_cast<int32_t>(static_cast<uint64_t>(info.psum_.chan_stride_ * ch) >> 2);
@@ -189,9 +178,7 @@ void Conv2D::Compute()
     // The original also deletes info.weight_zero_points (1 byte) when owns_zero_points is set; it never is.
 }
 
-// @0x468f10 (Source 4)
-Conv2D* Conv2D::GetConv2D()
-{
+Conv2D* Conv2D::GetConv2D() {
     static Conv2D conv2d;   // guarded lazy init; the original registers ~Conv2D with __cxa_atexit
     return &conv2d;
 }

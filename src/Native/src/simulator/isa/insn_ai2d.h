@@ -1,6 +1,5 @@
 #pragma once
-// Lifted from IDA/Hex-Rays output.
-// AI2D compute: 16-bit instruction without own operands or operation() body in the binary.
+// AI2D compute: 16-bit instruction without own operands or operation body in the binary.
 // asm: (not in compiler dumps) ai2d_compute ...
 #include <cstddef>
 #include <cstdint>
@@ -9,7 +8,7 @@
 
 // ---- Ai2dComputeInstruction ----
 struct Ai2dComputeInstruction : public KInstruction {
-    uint16_t reserved_;  // +50 raw[15:7] 9-bit field
+    uint16_t reserved_;  // raw[15:7] 9-bit field
     void get_next_pc() override;   // pc + 2
     ~Ai2dComputeInstruction() override;
 };

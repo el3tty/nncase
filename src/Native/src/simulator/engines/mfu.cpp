@@ -1,13 +1,10 @@
-// MFU: lifted from IDA/Hex-Rays output (MFU1..MFU15 in sources/).  The AVX instructions that the auto-converted
-// results/ copy had stripped (vmulss/vaddss/vcomiss/vroundss/...) were recovered from sources/MFU*.cpp.
-//
 // Conventions used by the lifted code
 //  * Tensors are addressed as   element(i, j, k, l) = l + w * (k + h * (j + c * i))   where (c, h, w) are the
 //    three halfwords of a 64-bit "shape" register (MFU::GetCHW) and (i, j, k, l) run over MFU::dim_[0..3].
-//  * All bfloat16 arithmetic Hex-Rays showed inline (flush-to-zero float multiply + round, the 8-bit-significand
+//  * All bfloat16 arithmetic inlined in the machine code (flush-to-zero float multiply + round, the 8-bit-significand
 //    adder with its inf/NaN/zero special cases) is BF16::operator* / BF16::AddTwoFp16Simp (see bf16.cpp).
-//  * Hex-Rays lost the flags of every float compare; the asm shows `vcomiss`, which sets CF when "below or
-//    unordered".  CfBelow() below reproduces that.
+//  * The asm uses `vcomiss`, which sets CF when "below or
+//    unordered".  CfBelow below reproduces that.
 #include "engines/mfu.h"
 #include "globals.h"
 #include "math/numeric_types.h"
@@ -34,8 +31,7 @@ using FP24::fp24;
 inline bool CfBelow(float a, float b) { return !(a >= b); }
 
 // vcvttss2si: truncation, 0x80000000 ("integer indefinite") for NaN / out of range.
-inline int32_t TruncToInt32(float f)
-{
+inline int32_t TruncToInt32(float f) {
   if (!(f > -2147483904.0f && f < 2147483648.0f))
     return INT32_MIN;
   return static_cast<int32_t>(f);
@@ -44,9 +40,9 @@ inline int32_t TruncToInt32(float f)
 // verified against ELF .rodata and asm @0x438fd0 / 0x4396d0: .rodata 0x522060 = 127, 522070 = -128, 522080 = 255,
 // 5220A0 = -127 (all four 32-bit lanes' first element; combined with vpminsd / vpmaxsd).
 constexpr int32_t kInt8Max = 127;
-constexpr int32_t kInt8MinActivate = -128;    // .rodata 0x522070
-constexpr int32_t kInt8MinQuant = -127;       // .rodata 0x5220A0
-constexpr int32_t kUint8Max = 255;            // .rodata 0x522080
+constexpr int32_t kInt8MinActivate = -128;    // rodata 0x522070
+constexpr int32_t kInt8MinQuant = -127;       // rodata 0x5220A0
+constexpr int32_t kUint8Max = 255;            // rodata 0x522080
 // verified against asm @0x4394fe / 0x4397fa: .rodata 0x481410 = 0x7f7fffff (FLT_MAX); `ja` after vandps(abs) means "is +-infinity"
 // (NaN is unordered and does not take it).  Only valid for an fp16 value (where it equals "> 65504") or a bf16 value
 // (where finite values far above 65504 are NOT saturated by this test).
@@ -61,7 +57,7 @@ inline uint16_t BfAdd(uint16_t a, uint16_t b) { return static_cast<uint16_t>(BF1
 inline uint16_t BfNeg(uint16_t a) { return static_cast<uint16_t>(a ^ 0x8000); }
 inline uint16_t BfRound(float f) { return static_cast<uint16_t>(bfloat16::round_to_bfloat16(f)); }
 
-// Pointer to the start of the memory block a MemAccessor wraps (the pointer is its only member, at +0).
+// Pointer to the start of the memory block a MemAccessor wraps.
 // TODO(layout): MemAccessor keeps `base_` private.
 inline uint8_t * MemBase(const MemAccessor & acc) { return *reinterpret_cast<uint8_t * const *>(&acc); }
 
@@ -71,12 +67,11 @@ inline uint8_t * GlbPtr(uint32_t addr) { return _G.GLB[addr >> 28] + (addr & 0xF
 inline uint16_t Load16(const uint8_t * p) { uint16_t v; std::memcpy(&v, p, 2); return v; }
 inline void Store16(uint8_t * p, uint16_t v) { std::memcpy(p, &v, 2); }
 
-// fp16 -> 16-bit integer, FP16::fp16::operator short().
+// fp16 -> 16-bit integer, FP16::fp16::operator short.
 // verified against asm @0x437960 (_ZNK4FP164fp16cvsEv): exponent field > 29 (|x| >= 32768, inf, NaN) gives +32767 / -32767
 // (sign from bit 15, NOT -32768); exponent field <= 13 (|x| < 0.5) gives 0; otherwise the 11-bit significand is shifted
 // by (exp - 25): left for exp >= 25, right with round-half-to-even (arithmetic shift of the signed significand) for exp <= 24.
-inline int32_t Fp16ToInt16(fp16 v)
-{
+inline int32_t Fp16ToInt16(fp16 v) {
   const uint32_t b = v.bits_;
   const int32_t e = (b >> 10) & 0x1F;
   const int32_t s = (b >> 15) & 1;
@@ -97,7 +92,7 @@ inline int32_t Fp16ToInt16(fp16 v)
 // construction / destruction
 // ==================================================================================================================
 
-// Initial state of the singleton (@0x445da0, MFU15 zeroes the fields that are not static).
+// Initial state of the singleton (, MFU15 zeroes the fields that are not static).
 MFU::MFU() {
   Init();
 }
@@ -142,19 +137,16 @@ void MFU::Init() {
   busy_ = 0;
 }
 
-// @0x426e80 (MFU1): the original body only destroys the four trace streams and the (empty) containers.
+// the original body only destroys the four trace streams and the (empty) containers.
 MFU::~MFU() = default;
 
-// @0x445da0 (MFU15)
-void * MFU::GetMFU()
-{
+void * MFU::GetMFU() {
   static MFU instance;     // the original instance sits at 0x54BB00
   return &instance;
 }
 
-// verified against asm @0x437940 (GetCHW.constprop.0): w = shape & 0xFFFF, h = (shape >> 16) & 0xFFFF, c = (shape >> 32) & 0xFFFF.
-void MFU::GetCHW(uint64_t shape, uint32_t & c, uint32_t & h, uint32_t & w)
-{
+// verified against asm : w = shape & 0xFFFF, h = (shape >> 16) & 0xFFFF, c = (shape >> 32) & 0xFFFF.
+void MFU::GetCHW(uint64_t shape, uint32_t & c, uint32_t & h, uint32_t & w) {
   w = static_cast<uint16_t>(shape);
   h = static_cast<uint16_t>(shape >> 16);
   c = static_cast<uint16_t>(shape >> 32);
@@ -164,9 +156,7 @@ void MFU::GetCHW(uint64_t shape, uint32_t & c, uint32_t & h, uint32_t & w)
 // reduction buffer
 // ==================================================================================================================
 
-// @0x4382d0 (MFU2)
-void MFU::ReduceInit(FP24::fp24 * buf, FP24::fp24 init, uint8_t op)
-{
+void MFU::ReduceInit(FP24::fp24 * buf, FP24::fp24 init, uint8_t op) {
   switch (op) {
     case 0:    // max: most negative finite fp24
       for (int i = 0; i < 15; ++i) buf[i] = fp24(0xFF7FFF);
@@ -184,7 +174,7 @@ void MFU::ReduceInit(FP24::fp24 * buf, FP24::fp24 init, uint8_t op)
     default:   // slots 0..14 are left alone
       break;
   }
-  buf[15] = init;   // +60: the running accumulator
+  buf[15] = init;   // the running accumulator
 }
 
 // ==================================================================================================================
@@ -196,28 +186,27 @@ namespace {
 // L1Helper: (channel, row, col) view of an int32 tile.  Same raw layout as act0.cpp's L1View.
 // TODO(layout): L1Helper is not lifted yet.
 struct L1View {
-  uint8_t * data_;        // +0
-  int32_t   max_channels_; // +8   channel capacity of the buffer (24 for IF = PE rows, 32 for PSUM = PE lanes)
-  int32_t   chan_stride_; // +12  bytes per channel
-  int32_t   base_;        // +16  byte offset of element (0, 0, 0)
-  int32_t   row_stride_;  // +20  per row index, in elements
-  int32_t   col_stride_;  // +24  per column index, in elements
-  int32_t   channels_;    // +28
-  int32_t   height_;      // +32
-  int32_t   width_;       // +36
+  uint8_t * data_;
+  int32_t   max_channels_; // channel capacity of the buffer (24 for IF = PE rows, 32 for PSUM = PE lanes)
+  int32_t   chan_stride_; // bytes per channel
+  int32_t   base_;        // byte offset of element (0, 0, 0)
+  int32_t   row_stride_;  // per row index, in elements
+  int32_t   col_stride_;  // per column index, in elements
+  int32_t   channels_;
+  int32_t   height_;
+  int32_t   width_;
 };
 
 // Matrix4<bfloat16>: rows (d2) x columns (d3) of bf16 parameters.  TODO(layout): Matrix4 is not lifted yet.
 struct Bf16Matrix {
-  uint8_t   owns_;        // +0
-  uint16_t * data_;       // +8
-  int32_t   d0_, d1_, d2_, d3_;   // +16..+28
+  uint8_t   owns_;
+  uint16_t * data_;
+  int32_t   d0_, d1_, d2_, d3_;
 };
 
-// Matrix4::operator()(row, col): reports an out-of-range access but still performs it.
-// verified against asm @0x437b70 (Matrix4<bfloat16>::operator()(iiii) constprop): see act0.cpp
-uint16_t MatrixAt(const Bf16Matrix & m, int row, int col)
-{
+// Matrix4::operator(row, col): reports an out-of-range access but still performs it.
+// verified against asm @0x437b70 (Matrix4<bfloat16>::operator(iiii) constprop): see act0.cpp
+uint16_t MatrixAt(const Bf16Matrix & m, int row, int col) {
   if (m.d0_ <= 0 || m.d1_ <= 0 || row >= m.d2_ || col >= m.d3_)
     std::cout << "[Error: Matrix Exceed]" << std::endl;
   return m.data_[m.d3_ * row + col];
@@ -225,17 +214,15 @@ uint16_t MatrixAt(const Bf16Matrix & m, int row, int col)
 
 }  // namespace
 
-// @0x438fd0 (MFU3)
 // Per channel i the matrix row holds p[0..6]; every int32 element v of the tile is converted to bfloat16 and
 //     x = bf16(v)
 //     y = x <= knee ? p0 * x + p2 : p1 * x + p3            (bf16 multiply / bf16 add)
 //     y = nearbyint(y)
 //     r = y > lo ? (y < hi ? y : hi) : lo                   with lo = p4, hi = p5
 // and r is truncated to an integer, clamped to the int8 / uint8 range and stored back in place.
-void MFU::Activate(Matrix4<BF16::bfloat16> & params, L1Helper & psum, bool is_signed)
-{
-  const Bf16Matrix & m = reinterpret_cast<const Bf16Matrix &>(params);   // TODO(layout)
-  const L1View & tile = reinterpret_cast<const L1View &>(psum);          // TODO(layout)
+void MFU::Activate(Matrix4<BF16::bfloat16> & params, L1Helper & psum, bool is_signed) {
+  const Bf16Matrix & m = reinterpret_cast<const Bf16Matrix &>(params);
+  const L1View & tile = reinterpret_cast<const L1View &>(psum);
 
   for (int ch = 0; ch < tile.channels_; ++ch) {
     const uint16_t p0 = MatrixAt(m, ch, 0);
@@ -264,7 +251,7 @@ void MFU::Activate(Matrix4<BF16::bfloat16> & params, L1Helper & psum, bool is_si
           y = BfAdd(BfMul(x, p1), p3);          // verified against asm @0x4393d0: x * ftz(p1) + p3
         const uint16_t yr = BfRound(std::nearbyint(BfToFloat(y)));
 
-        // clamp stage (the compare chain of the decompilation reduces to this select)
+        // clamp stage (the compare chain reduces to this select)
         uint16_t out;
         if (CfBelow(BfToFloat(lo), BfToFloat(yr))) {          // lo < y
           out = hi;
@@ -289,10 +276,8 @@ void MFU::Activate(Matrix4<BF16::bfloat16> & params, L1Helper & psum, bool is_si
 // fp16 (PDP1) quantisation helpers
 // ==================================================================================================================
 
-// @0x439480 (MFU4)
 void MFU::quant_new(FP16::fp16 const & value, FP16::fp16 const & scale, FP16::fp16 const & zero_point,
-                    uint8_t const & mode, signed char shift, short & out)
-{
+                    uint8_t const & mode, signed char shift, short & out) {
   if (std::isnan(value.f_value())) {
     out = 0;
     return;
@@ -320,22 +305,18 @@ void MFU::quant_new(FP16::fp16 const & value, FP16::fp16 const & scale, FP16::fp
   }
 }
 
-// @0x4395a0 (MFU5)
 // verified against asm @0x4395a0: `cmpb $1, (mode); movswl q; jne skip; subl zero_point` -> the signed 16-bit zero point
 // is subtracted ONLY when mode == 1 (uint8); for every other mode the raw q is converted.
 void MFU::dequant_new(short const & q, FP16::fp16 const & scale, short const & zero_point,
-                      uint8_t const & mode, signed char shift, FP16::fp16 & out)
-{
+                      uint8_t const & mode, signed char shift, FP16::fp16 & out) {
   const int diff = static_cast<int>(q) - (mode == 1 ? static_cast<int>(zero_point) : 0);
   fp16 t = fp16::round_to_fp16(static_cast<float>(diff));
   t = t.fp16_2exp_shift(static_cast<signed char>(-static_cast<int>(shift)));
   out = t * scale;
 }
 
-// @0x439610 (MFU6)
 void MFU::quant_new_MemSt(int index, MemAccessor dst, FP16::fp16 scale, FP16::fp16 zero_point,
-                          uint8_t mode, uint8_t shift, FP16::fp16 & value)
-{
+                          uint8_t mode, uint8_t shift, FP16::fp16 & value) {
   uint8_t * base = MemBase(dst);
   if (mode == 0) {                                        // raw fp16
     Store16(base + 2 * index, value.bits_);
@@ -349,10 +330,8 @@ void MFU::quant_new_MemSt(int index, MemAccessor dst, FP16::fp16 scale, FP16::fp
     base[index] = static_cast<uint8_t>(q);
 }
 
-// @0x43d970 (MFU14)
 void MFU::dequant_new_MemAt(int index, MemAccessor src, FP16::fp16 scale, short zero_point,
-                            uint8_t mode, uint8_t shift, FP16::fp16 & out)
-{
+                            uint8_t mode, uint8_t shift, FP16::fp16 & out) {
   short q;
   if (mode == 1)
     q = src.MemAt<uint8_t>(index);
@@ -371,11 +350,9 @@ void MFU::dequant_new_MemAt(int index, MemAccessor src, FP16::fp16 scale, short 
 // bf16 (MeshNet / ReduceFun / Sample) quantisation helpers
 // ==================================================================================================================
 
-// @0x4396d0 (MFU7)
-// All the fp24 conversions Hex-Rays showed as repeated round_to_fp24 calls are the bf16 -> fp24 widenings.
+// All the fp24 conversions that appear as repeated round_to_fp24 calls are the bf16 -> fp24 widenings.
 void MFU::quant(BF16::bfloat16 const & x, BF16::bfloat16 const & scale, uint32_t const & zero_point,
-                uint8_t const & is_signed, uint8_t & out)
-{
+                uint8_t const & is_signed, uint8_t & out) {
   int32_t v;
   if (std::isnan(x.f_value())) {
     v = 0;
@@ -400,10 +377,8 @@ void MFU::quant(BF16::bfloat16 const & x, BF16::bfloat16 const & scale, uint32_t
   out = static_cast<uint8_t>(v);
 }
 
-// @0x4398a0 (MFU8)
 void MFU::dequant(uint8_t const & q, BF16::bfloat16 const & scale, uint8_t const & zero_point,
-                  uint8_t const & is_signed, BF16::bfloat16 & out)
-{
+                  uint8_t const & is_signed, BF16::bfloat16 & out) {
   const int value = is_signed ? static_cast<int8_t>(q) : static_cast<int>(q);
   // verified against asm @0x4398b6 (movzbl): the zero point is read as an unsigned byte even for int8 data.
   const int diff = value - static_cast<int>(zero_point);
@@ -415,9 +390,7 @@ void MFU::dequant(uint8_t const & q, BF16::bfloat16 const & scale, uint8_t const
 // Memset / Memcpy / Trans
 // ==================================================================================================================
 
-// @0x439a00 (MFU9)
-void MFU::Memset()
-{
+void MFU::Memset() {
   const uint32_t dst = dst_addr_;
   if (elem16_ && (dst & 1)) {
     simulator_fail("when data type is fp16 or int16, memset addr_d must be align with 2 bytes, addr_dest = %d! \n",
@@ -442,9 +415,7 @@ void MFU::Memset()
         }
 }
 
-// @0x439c00 (MFU10)
-void MFU::Memcpy()
-{
+void MFU::Memcpy() {
   const uint8_t * src = GlbPtr(src_addr_);
   uint8_t * dst = GlbPtr(dst_addr_);
   uint32_t sc, sh, sw, dc, dh, dw;
@@ -471,9 +442,7 @@ const uint8_t kTransPerm[24][4] = {
     {3, 0, 1, 2}, {3, 0, 2, 1}, {3, 1, 0, 2}, {3, 1, 2, 0}, {3, 2, 0, 1}, {3, 2, 1, 0}};
 }  // namespace
 
-// @0x439e30 (MFU11)
-void MFU::Trans()
-{
+void MFU::Trans() {
   const uint32_t src_raw = src_addr_;
   const uint32_t dst_raw = dst_addr_;
   const uint32_t dst_off = dst_raw & 0xFFFFFFF;
@@ -539,8 +508,7 @@ namespace {
 // Reduces the 8 freshly loaded elements buf[0..7] pairwise and folds the result into the accumulator buf[15].
 // Slots 8..14 receive the intermediate tree levels.  The sub operation (3) sums the block with fp24 adds and
 // subtracts the block sum from the accumulator.
-void ReduceBlock(fp24 * buf, uint8_t op, REDUCE_ELEMENT::Fn fn)
-{
+void ReduceBlock(fp24 * buf, uint8_t op, REDUCE_ELEMENT::Fn fn) {
   if (op == 3) {
     buf[8] = buf[0] + buf[1];
     buf[9] = buf[2] + buf[3];
@@ -564,12 +532,10 @@ void ReduceBlock(fp24 * buf, uint8_t op, REDUCE_ELEMENT::Fn fn)
 
 }  // namespace
 
-// @0x43aae0 (MFU12)
 // Reduces the trailing `reduce_mode + 1` dimensions of a bf16 tensor (mode 3 reduces everything to one value).
 // Elements are consumed in blocks of 8 through an fp24 tree (ReduceBlock); a block cut short by the end of a
 // row is padded with the identity element that ReduceInit left in the unused slots.
-void MFU::ReduceFun(uint64_t *)
-{
+void MFU::ReduceFun(uint64_t *) {
   const uint8_t * src = GlbPtr(src_addr_);
   uint8_t * dst = GlbPtr(dst_addr_);
   uint32_t sc, sh, sw, dc, dh, dw;
@@ -585,7 +551,7 @@ void MFU::ReduceFun(uint64_t *)
     default: fn = REDUCE_ELEMENT::re_max; break;
   }
 
-  fp24 buf[16] = {};       // ..v240 : 8 inputs, 7 tree levels, accumulator
+  fp24 buf[16] = {};       // .v240 : 8 inputs, 7 tree levels, accumulator
   uint32_t count = 0;      // elements loaded into the current row (v13)
   const uint8_t mode = reduce_mode_;
 
@@ -655,14 +621,12 @@ void MFU::ReduceFun(uint64_t *)
 // Sample
 // ==================================================================================================================
 
-// @0x43be70 (MFU13)
 // Grid sampling.  For every (n, c, h, w) of dim_sample[] one record of the grid at aux_addr
 //     { u16 x; bf16 wx; u16 y; bf16 wy; }    (8 bytes, indexed by n, h, w - shared by all channels c)
 // selects the source pixel (x, y) of plane (n, c); with interp_mode != 0 the four neighbours are blended
 // bilinearly in bf16, otherwise the pixel itself is copied.  Source and destination tensors are bf16, or 8-bit
 // quantised when dequant_enable / quant_enable are set.
-void MFU::Sample()
-{
+void MFU::Sample() {
   const MemAccessor grid(GlbPtr(aux_addr_));
   const MemAccessor src(GlbPtr(src_addr_));
   uint8_t * dst = GlbPtr(dst_addr_);

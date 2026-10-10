@@ -1,6 +1,5 @@
-// MNE math helpers on bf16 / fp24.  Lifted from IDA/Hex-Rays output (MNE1..MNE15).
-// Note: Hex-Rays dropped most SSE arithmetic (addss/mulss/divss/ucomiss operands); places where the
-// operation had to be inferred were re-checked against the machine code (see 'verified against asm' notes).
+// MNE math helpers on bf16 / fp24. Operations inferred from the SSE arithmetic were checked against the
+// machine code (see 'verified against asm' notes).
 #include "engines/mne.h"
 #include "globals.h"
 #include "math/numeric_types.h"
@@ -36,20 +35,16 @@ inline void wr16(BF16::bfloat16 *p, uint16_t v) { std::memcpy(p, &v, 2); }
 
 } // namespace
 
-// @0x444630 (MNE1)
-void MNE::mne_phold(BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, uint32_t, uint8_t **, uint16_t)
-{
+void MNE::mne_phold(BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *, uint32_t, uint8_t **, uint16_t) {
 }
 
-// @0x444640 (MNE2): pass-through
-void MNE::mne_inout(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t, uint8_t **, uint16_t)
-{
+// pass-through
+void MNE::mne_inout(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t, uint8_t **, uint16_t) {
     wr16(out, rd16(in0));
 }
 
-// @0x444650 (MNE3): sin (mode 0) / cos (otherwise) table lookup
-void MNE::mne_trangle(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// sin (mode 0) / cos (otherwise) table lookup
+void MNE::mne_trangle(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t x = rd16(in0);
     unsigned idx;
     if (x & 0x7F80)
@@ -59,9 +54,8 @@ void MNE::mne_trangle(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, B
     wr16(out, mode == 0 ? mfu_const::sin_bf16[idx] : mfu_const::cos_bf16[idx]);
 }
 
-// @0x4446b0 (MNE4): natural-log table lookup
-void MNE::mne_logmode(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// natural-log table lookup
+void MNE::mne_logmode(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t x = ftz(rd16(in0));
     unsigned idx = (uint16_t)(x | 3) - (x & 3);
     if (mode == 1) {
@@ -77,9 +71,8 @@ void MNE::mne_logmode(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, B
     }
 }
 
-// @0x444750 (MNE5): exp table lookup
-void MNE::mne_exp(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t, uint8_t **, uint16_t)
-{
+// exp table lookup
+void MNE::mne_exp(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t, uint8_t **, uint16_t) {
     uint16_t x = rd16(in0);
     uint16_t base; unsigned low;
     if (x & 0x7F80) { base = x & 0xFFFC; low = x & 3; }
@@ -87,17 +80,15 @@ void MNE::mne_exp(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16:
     wr16(out, mfu_const::exp_bf16[(uint16_t)(base + 3) - low]);
 }
 
-// @0x444790 (MNE6): select. out = (float(cond) == 0) ? in1 : in0   (NaN cond selects in0)
-void MNE::mne_sel(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *cond, BF16::bfloat16 *out, uint32_t, uint8_t **, uint16_t)
-{
+// select. out = (float(cond) == 0) ? in1 : in0   (NaN cond selects in0)
+void MNE::mne_sel(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *cond, BF16::bfloat16 *out, uint32_t, uint8_t **, uint16_t) {
     float c = bf_to_f(rd16(cond));
     const BF16::bfloat16 *src = (c == 0.0f) ? in1 : in0;
     wr16(out, rd16(src));
 }
 
-// @0x444c20 (MNE7): compare / min / max / arithmetic by mode
-void MNE::mne_comp(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// compare / min / max / arithmetic by mode
+void MNE::mne_comp(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t a = ftz(rd16(in0));
     uint16_t b = ftz(rd16(in1));
     float fa = bf_to_f(a), fb = bf_to_f(b);
@@ -131,9 +122,8 @@ void MNE::mne_comp(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, B
     }
 }
 
-// @0x444d90 (MNE8): round
-void MNE::mne_round(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// round
+void MNE::mne_round(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t x = ftz(rd16(in0));
     if (mode <= 2) {
         // verified against asm @0x444d90: vroundss imm 0xc (mode 0, current rounding mode = nearest even),
@@ -146,9 +136,8 @@ void MNE::mne_round(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF1
     }
 }
 
-// @0x445000 (MNE9): out = (1 - k) * in0 * in1
-void MNE::mne_mul(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// out = (1 - k) * in0 * in1
+void MNE::mne_mul(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     // verified against asm @0x445000: k = round_to_bfloat16((float)(2 * (mode & 1))), i.e. 0.0 or 2.0; (1 - k) is
     // therefore +1.0 (modes 6/8) or -1.0 (modes 7/9, sign flip).
     uint16_t k = bf_round((float)(2 * (mode & 1)));
@@ -157,9 +146,8 @@ void MNE::mne_mul(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF
     wr16(out, bf_mul(t, rd16(in1)));
 }
 
-// @0x445080 (MNE10): out = in0 * c * (1 / in1)
-void MNE::mne_div(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// out = in0 * c * (1 / in1)
+void MNE::mne_div(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t x = ftz(rd16(in0));
     uint16_t y = ftz(rd16(in1));
     float fy = bf_to_f(y);
@@ -171,10 +159,9 @@ void MNE::mne_div(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF
     wr16(out, bf_mul(t, recip));
 }
 
-// @0x445130 (MNE11): piecewise-linear fit. `config` encodes table index (bits 28..31) and offset (bits 0..27).
+// piecewise-linear fit. `config` encodes table index (bits 28..31) and offset (bits 0..27).
 // Coefficients are read from a MemAccessor: [fset*94 + 8 + 2i] thresholds, [+38] slopes, [+70] intercepts.
-void MNE::mne_linefit(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t config, uint8_t **tables, uint16_t fset)
-{
+void MNE::mne_linefit(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t config, uint8_t **tables, uint16_t fset) {
     uint16_t raw = rd16(in0);
     uint16_t x = ftz(raw);
     MemAccessor mem(tables[config >> 28] + (config & 0xFFFFFFF));
@@ -200,9 +187,8 @@ void MNE::mne_linefit(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, B
     wr16(out, r);
 }
 
-// @0x4452c0 (MNE12): unary ops: 0 = absolute value, 1 = sign, 2 = negate
-void MNE::mne_ucalc(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// unary ops: 0 = absolute value, 1 = sign, 2 = negate
+void MNE::mne_ucalc(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t x = ftz(rd16(in0));
     if (mode == 1) {
         float fx = bf_to_f(x);
@@ -218,9 +204,8 @@ void MNE::mne_ucalc(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF1
     }
 }
 
-// @0x445380 (MNE13): square root variants
-void MNE::mne_sqrt(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// square root variants
+void MNE::mne_sqrt(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     uint16_t raw = rd16(in0);
     uint16_t x = ftz(raw);
     float fx = bf_to_f(x);
@@ -244,9 +229,8 @@ void MNE::mne_sqrt(BF16::bfloat16 *in0, BF16::bfloat16 *, BF16::bfloat16 *, BF16
     }
 }
 
-// @0x445500 (MNE14): out = bf16( fp24(c1*in0) + fp24(c2*in1) )  (truncated from fp24 to the top 16 bits)
-void MNE::mne_addsub(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t)
-{
+// out = bf16( fp24(c1*in0) + fp24(c2*in1) )  (truncated from fp24 to the top 16 bits)
+void MNE::mne_addsub(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *, BF16::bfloat16 *out, uint32_t mode, uint8_t **, uint16_t) {
     // verified against asm @0x445500: c1 = round_to_bfloat16(1.0f - (float)(2 * (mode & 1))),
     // c2 = round_to_bfloat16(1.0f - (float)(mode & 2)), i.e. +/-1.0 (bit 0 negates in0, bit 1 negates in1).
     uint16_t c1 = bf_round(1.0f - (float)(2 * (mode & 1))), c2 = bf_round(1.0f - (float)(mode & 2));
@@ -256,9 +240,7 @@ void MNE::mne_addsub(BF16::bfloat16 *in0, BF16::bfloat16 *in1, BF16::bfloat16 *,
     wr16(out, (uint16_t)(sum >> 8));
 }
 
-// @0x445ca0 (MNE15)
-void *MNE::MneProc(uint8_t opcode, uint32_t config)
-{
+void *MNE::MneProc(uint8_t opcode, uint32_t config) {
     op_config_ = config;
     switch (opcode) {
     case 0: case 1:                       op_ = mne_comp;    break;

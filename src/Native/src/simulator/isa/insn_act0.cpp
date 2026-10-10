@@ -1,4 +1,3 @@
-// Lifted from IDA/Hex-Rays output; names and types are inferred.
 #include "isa/insn_act0.h"
 #include "globals.h"
 #include "engines/conv2d.h"
@@ -9,18 +8,15 @@
 
 // ---- Act0Compute ----
 namespace {
-inline uint32_t bits(uint32_t word, unsigned lo, unsigned width)
-{
+inline uint32_t bits(uint32_t word, unsigned lo, unsigned width) {
   return (word >> lo) & ((1u << width) - 1u);
 }
 
 using Act0ComputeQueue = std::deque<std::shared_ptr<Act0Compute>>;
 }  // namespace
 
-// Simulator56.cpp  @0x418970
 template <>
-Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t ** pc)
-{
+Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t ** pc) {
   Act0ComputeInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -45,15 +41,11 @@ Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t
   return inst;
 }
 
-// Act0ComputeInstruction1.cpp  @0x41dea0
-void Act0ComputeInstruction::get_next_pc()
-{
+void Act0ComputeInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// Act0ComputeInstruction2.cpp  @0x423010
-void Act0ComputeInstruction::operation()
-{
+void Act0ComputeInstruction::operation() {
   // The "current" Act0Compute descriptor was installed by Act0Src1ConfInstruction.
   Conv2D *conv = Conv2D::GetConv2D();
   PDP0 *pdp0 = PDP0::GetPDP0();
@@ -66,7 +58,6 @@ void Act0ComputeInstruction::operation()
   (channel_ ? pdp0->act0_queue_ : conv->act0_queue_).push_back(compute);
 }
 
-// Act0ComputeInstruction3.cpp  @0x425540
 Act0ComputeInstruction::~Act0ComputeInstruction() = default;
 
 // ---- Act0Src1ConfInstruction ----
@@ -74,10 +65,8 @@ namespace {
 template <class T> inline uint32_t &as_u32(T &x) { return reinterpret_cast<uint32_t &>(x); }
 }  // namespace
 
-// Simulator55.cpp  @0x418720
 template <>
-Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8_t ** pc)
-{
+Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8_t ** pc) {
   Act0Src1ConfInstruction inst;
   const uint8_t *cur = *pc;
   uint32_t raw;
@@ -101,16 +90,12 @@ Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8
   return inst;
 }
 
-// Act0Src1ConfInstruction1.cpp  @0x41de90
-void Act0Src1ConfInstruction::get_next_pc()
-{
+void Act0Src1ConfInstruction::get_next_pc() {
   next_pc_ = pc_ + 4;
 }
 
-// Act0Src1ConfInstruction2.cpp  @0x422ec0
-void Act0Src1ConfInstruction::operation()
-{
-  // Act0::GetAct0() singleton (lazy init elided); verified against asm @0x422ec0: dword stores at Act0+0x40000..+0x40014
+void Act0Src1ConfInstruction::operation() {
+  // Act0::GetAct0 singleton (lazy init elided); verified against asm @0x422ec0: dword stores at x40014
   Act0 *act0 = reinterpret_cast<Act0 *>(_G.Act0_act0);
   act0->batch_    = (rshape_val_ >> 48) & 0xFFFF;
   act0->channels_ = (rshape_val_ >> 32) & 0xFFFF;
@@ -120,12 +105,11 @@ void Act0Src1ConfInstruction::operation()
   act0->engine_   = channel_;             // target engine (0: Conv2D, 1: PDP0)
 
   // Install a fresh Act0Compute descriptor as the "current" one of the selected engine
-  // (consumed later by Act0ComputeInstruction::operation()).
+  // (consumed later by Act0ComputeInstruction::operation).
   if (channel_)
     PDP0::GetPDP0()->cur_act0_ = act0->GetAct0Compute();
   else
     Conv2D::GetConv2D()->cur_act0_ = act0->GetAct0Compute();
 }
 
-// Act0Src1ConfInstruction3.cpp  @0x425590
 Act0Src1ConfInstruction::~Act0Src1ConfInstruction() = default;

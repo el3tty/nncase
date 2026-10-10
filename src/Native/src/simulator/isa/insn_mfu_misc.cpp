@@ -1,5 +1,3 @@
-// Lifted from IDA/Hex-Rays output (K230 NPU C-model simulator).
-// Member names describe the decoded instruction fields; byte offsets are given in the header.
 #include <iomanip>
 #include "isa/insn_mfu_misc.h"
 #include "globals.h"
@@ -11,23 +9,20 @@
 // ---- MfuMemcpyInstruction ----
 namespace {
 // Returns `width` bits of `raw` starting at bit `lo`.
-inline uint32_t field(uint64_t raw, unsigned lo, unsigned width)
-{
+inline uint32_t field(uint64_t raw, unsigned lo, unsigned width) {
     return static_cast<uint32_t>((raw >> lo) & ((1ull << width) - 1));
 }
 // Configuration vector logged by the MFU (209 bits).
 using ConfigBits = std::bitset<209>;
 
 // Stores the low `width` bits of `value` at bit position `lo` of `cfg`.
-void put_bits(ConfigBits &cfg, unsigned lo, unsigned width, uint64_t value)
-{
+void put_bits(ConfigBits &cfg, unsigned lo, unsigned width, uint64_t value) {
     for (unsigned i = 0; i < width; ++i)
         cfg[lo + i] = (value >> i) & 1;
 }
 
 // Writes the vector to the MFU log as 52 hex digits (MSB first; bit 0 is not printed), then a newline.
-void log_config_bits(std::ofstream &log, const ConfigBits &cfg)
-{
+void log_config_bits(std::ofstream &log, const ConfigBits &cfg) {
     const std::string bits = cfg.to_string();  // 209 characters, MSB first
     for (size_t pos = 0; pos < 208; pos += 4) {
         const uint64_t nibble = std::bitset<4>(bits, pos, 4).to_ulong();
@@ -36,11 +31,9 @@ void log_config_bits(std::ofstream &log, const ConfigBits &cfg)
     log << std::endl;
 }
 
-// TODO(layout): the MFU singleton is accessed by raw byte offset (storage is MFU_MFUInst).
 
 // Splits a 64-bit shape register into the four loop extents of the MFU.
-void store_shape_halfwords(MFU *mfu, uint64_t shape)
-{
+void store_shape_halfwords(MFU *mfu, uint64_t shape) {
     mfu->dim_[0] = static_cast<uint16_t>(shape >> 48);
     mfu->dim_[1] = static_cast<uint16_t>(shape >> 32);
     mfu->dim_[2] = static_cast<uint16_t>(shape >> 16);
@@ -48,13 +41,11 @@ void store_shape_halfwords(MFU *mfu, uint64_t shape)
 }
 }  // namespace
 
-// Simulator57.cpp  @0x418bc0
 template <>
-MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** pc)
-{
+MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** pc) {
     MfuMemcpyInstruction inst;
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
-    // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
+    // The instruction is loaded as a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
     const uint32_t pc_abs = KPU_PC(word);
 
@@ -73,7 +64,7 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     inst.shape_a_ = _G.shape_reg[inst.rstride_d_];
     inst.shape_b_ = _G.shape_reg[inst.rstride_s_];
     inst.shape_c_ = _G.shape_reg[inst.rshape_];
-    // (IDA also computed MMU-translated rs1_val here, but the result was discarded.)
+    // (also computed MMU-translated rs1_val here, but the result was discarded.)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -81,15 +72,11 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     return inst;
 }
 
-// MfuMemcpyInstruction1.cpp  @0x41deb0
-void MfuMemcpyInstruction::get_next_pc()
-{
+void MfuMemcpyInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// MfuMemcpyInstruction2.cpp  @0x423420
-void MfuMemcpyInstruction::operation()
-{
+void MfuMemcpyInstruction::operation() {
     MFU *mfu = static_cast<MFU *>(MFU::GetMFU());
 
     // Hand the operands to the MFU.
@@ -112,19 +99,15 @@ void MfuMemcpyInstruction::operation()
     log_config_bits(mfu->log_[3], cfg);
 }
 
-// MfuMemcpyInstruction3.cpp  @0x4254f0
-MfuMemcpyInstruction::~MfuMemcpyInstruction()
-{
+MfuMemcpyInstruction::~MfuMemcpyInstruction() {
 }
 
 // ---- MfuMemsetInstruction ----
-// Simulator58.cpp  @0x418e90
 template <>
-MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** pc)
-{
+MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** pc) {
     MfuMemsetInstruction inst;
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
-    // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
+    // The instruction is loaded as a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
     const uint32_t pc_abs = KPU_PC(word);
 
@@ -151,15 +134,11 @@ MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** 
     return inst;
 }
 
-// MfuMemsetInstruction1.cpp  @0x41dec0
-void MfuMemsetInstruction::get_next_pc()
-{
+void MfuMemsetInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// MfuMemsetInstruction2.cpp  @0x423b60
-void MfuMemsetInstruction::operation()
-{
+void MfuMemsetInstruction::operation() {
     MFU *mfu = static_cast<MFU *>(MFU::GetMFU());
 
     // Hand the operands to the MFU.
@@ -184,19 +163,15 @@ void MfuMemsetInstruction::operation()
     log_config_bits(mfu->log_[3], cfg);
 }
 
-// MfuMemsetInstruction3.cpp  @0x4254a0
-MfuMemsetInstruction::~MfuMemsetInstruction()
-{
+MfuMemsetInstruction::~MfuMemsetInstruction() {
 }
 
 // ---- MfuTransposeInstruction ----
-// Simulator60.cpp  @0x419380
 template <>
-MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8_t ** pc)
-{
+MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8_t ** pc) {
     MfuTransposeInstruction inst;
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
-    // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
+    // The instruction is loaded as a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
     const uint32_t pc_abs = KPU_PC(word);
 
@@ -211,7 +186,7 @@ MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8
     inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
     inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
     inst.rshape_val_ = _G.shape_reg[inst.rshape_];
-    // (IDA also computed MMU-translated raddr_s_val here, but the result was discarded.)
+    // (also computed MMU-translated raddr_s_val here, but the result was discarded.)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -219,17 +194,13 @@ MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8
     return inst;
 }
 
-// MfuTransposeInstruction1.cpp  @0x41dee0
-void MfuTransposeInstruction::get_next_pc()
-{
+void MfuTransposeInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// MfuTransposeInstruction2.cpp  @0x4213d0
-void MfuTransposeInstruction::operation()
-{
+void MfuTransposeInstruction::operation() {
     // verified against asm @0x4213d0: the "globals" 0x54BB04..0x54BB26 are fields of the MFU singleton (0x54BB00):
-    // +8 dst_addr <- raddr_d_val (32-bit store), +4 src_addr <- raddr_s_val, dim[3..0] (+0x26, +0x24, +0x22, +0x20) <- rshape_val
+    // dst_addr <- raddr_d_val (32-bit store), +4 src_addr <- raddr_s_val, dim[3..0] (+0x26, +0x24, +0x22, +0x20) <- rshape_val
     // halfwords 0..3; then a tail call to MFU::Trans.
     MFU * const mfu = static_cast<MFU *>(MFU::GetMFU());
     mfu->dst_addr_ = raddr_d_val_;
@@ -241,19 +212,15 @@ void MfuTransposeInstruction::operation()
     mfu->Trans();
 }
 
-// MfuTransposeInstruction3.cpp  @0x425400
-MfuTransposeInstruction::~MfuTransposeInstruction()
-{
+MfuTransposeInstruction::~MfuTransposeInstruction() {
 }
 
 // ---- MfuTransposeConfInstruction ----
-// Simulator59.cpp  @0x419120
 template <>
-MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 32>(uint8_t ** pc)
-{
+MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 32>(uint8_t ** pc) {
     MfuTransposeConfInstruction inst;
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
-    // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
+    // The instruction is loaded as a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
     const uint32_t pc_abs = KPU_PC(word);
 
@@ -275,17 +242,13 @@ MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 3
     return inst;
 }
 
-// MfuTransposeConfInstruction1.cpp  @0x41ded0
-void MfuTransposeConfInstruction::get_next_pc()
-{
+void MfuTransposeConfInstruction::get_next_pc() {
     next_pc_ = pc_ + 4;
 }
 
-// MfuTransposeConfInstruction2.cpp  @0x421230
-void MfuTransposeConfInstruction::operation()
-{
-    // verified against asm @0x421230: MFU+0x50 / +0x58 (trans_shape_src / trans_shape_dst) <- {rstride_s_val, rstride_d_val}
-    // (a 16-byte load of rstride_d_val:rstride_s_val with the halves swapped), and the 16-bit cfg word is stored at MFU+0x60
+void MfuTransposeConfInstruction::operation() {
+    // verified against asm @0x421230: / +0x58 (trans_shape_src / trans_shape_dst) <- {rstride_s_val, rstride_d_val}
+    // (a 16-byte load of rstride_d_val:rstride_s_val with the halves swapped), and the 16-bit cfg word is stored at 
     // (trans_elem16 = low byte, trans_type = high byte).
     MFU * const mfu = static_cast<MFU *>(MFU::GetMFU());
     mfu->trans_shape_src_ = rstride_s_val_;
@@ -294,7 +257,5 @@ void MfuTransposeConfInstruction::operation()
     mfu->trans_type_ = static_cast<uint8_t>(cfg_ >> 8);
 }
 
-// MfuTransposeConfInstruction3.cpp  @0x425450
-MfuTransposeConfInstruction::~MfuTransposeConfInstruction()
-{
+MfuTransposeConfInstruction::~MfuTransposeConfInstruction() {
 }

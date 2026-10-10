@@ -1,4 +1,3 @@
-// Lifted from IDA/Hex-Rays output (CheckPoint1..11.cpp).
 #include "engines/checkpoint.h"
 #include "globals.h"
 #include <iomanip>
@@ -8,36 +7,36 @@ namespace {
 // Raw layouts of helper types that no header defines yet (only the fields CheckPoint reads).
 // TODO(layout): replace by the real L1Helper / WeightsHelper / Matrix4 once they are defined.
 struct L1HelperView {
-    uint8_t* data_;        // +0
-    uint8_t pad8_[4];      // +8
-    int32_t elemStride_;   // +12  byte stride between lanes
-    int32_t baseOffset_;   // +16  byte offset of the first element
-    int32_t aStride_;      // +20  byte stride of the outer loop (count at +32)
-    int32_t bStride_;      // +24  byte stride of the inner loop (count at +36)
-    int32_t lanes_;        // +28  number of elements per row
-    int32_t aCount_;       // +32
-    int32_t bCount_;       // +36
+    uint8_t* data_;
+    uint8_t pad8_[4];
+    int32_t elemStride_;   // byte stride between lanes
+    int32_t baseOffset_;   // byte offset of the first element
+    int32_t aStride_;      // byte stride of the outer loop
+    int32_t bStride_;      // byte stride of the inner loop
+    int32_t lanes_;        // number of elements per row
+    int32_t aCount_;
+    int32_t bCount_;
 };
 struct WeightsHelperView {
-    uint8_t wide_;         // +0   0 => rows of 24 bytes, otherwise 32
+    uint8_t wide_;         // 0 => rows of 24 bytes, otherwise 32
     uint8_t pad1_[7];
-    uint8_t* data_;        // +8
-    int32_t dimA_;         // +16
-    int32_t dimB_;         // +20
+    uint8_t* data_;
+    int32_t dimA_;
+    int32_t dimB_;
 };
 struct MatrixU8View {
-    uint8_t pad0_[8];      // +0
-    uint8_t* data_;        // +8
-    int32_t dim0_;         // +16
-    int32_t dim1_;         // +20
-    int32_t dim2_;         // +24
-    int32_t count_;        // +28
+    uint8_t pad0_[8];
+    uint8_t* data_;
+    int32_t dim0_;
+    int32_t dim1_;
+    int32_t dim2_;
+    int32_t count_;
 };
 
 constexpr int kRowLanes = 32;  // every trace row is a vector<int>(32)
 
 // File names; all verified against the string literals in .rodata referenced by OpenPuCheckPoint @0x451ff0 and
-// OpenAi2dCheckPoint @0x454db0 (0x52254b..0x522688, 0x52269c..0x522776).
+// OpenAi2dCheckPoint  (0x52254b..0x522688, 0x52269c..0x522776).
 struct StreamFile {
     CheckPoint::StreamId id_;
     const char* name_;
@@ -107,8 +106,7 @@ const StreamFile kAi2dFiles[] = {
 // Opens `path` for binary output and selects hexadecimal integer output.
 // All Open*CheckPoint functions repeat exactly this sequence for every stream:
 //   ofstream tmp(path, out|binary); stream = std::move(tmp); stream.setf(hex, basefield)
-void CheckPoint::OpenStream(std::ofstream & os, std::string const & path)
-{
+void CheckPoint::OpenStream(std::ofstream & os, std::string const & path) {
   if (os.is_open())
     os.close();
   os.clear();
@@ -116,10 +114,8 @@ void CheckPoint::OpenStream(std::ofstream & os, std::string const & path)
   os.setf(std::ios::hex, std::ios::basefield);
 }
 
-// CheckPoint1.cpp  @0x44ebf0 (Source 1)
-void CheckPoint::PrintActPsumL1Write(L1Helper & helper, ActOutputType outType)
-{
-  const L1HelperView& h = reinterpret_cast<const L1HelperView&>(helper);  // TODO(layout)
+void CheckPoint::PrintActPsumL1Write(L1Helper & helper, ActOutputType outType) {
+  const L1HelperView& h = reinterpret_cast<const L1HelperView&>(helper);
   const uint32_t type = static_cast<uint32_t>(outType);
   const bool is8bit = type <= 1;
   const bool is16bit = (type - 2) <= 1;
@@ -128,9 +124,9 @@ void CheckPoint::PrintActPsumL1Write(L1Helper & helper, ActOutputType outType)
   // 32 lanes, 8 words each.
   std::vector<std::vector<int>> lanes(32, std::vector<int>(8, 0));
 
-  // CheckPoint::PrintActPsumL1Write(L1Helper&, ActOutputType)::{lambda(int)#1} @0x44e6e0 (flushes the collected lanes)
+  // CheckPoint::PrintActPsumL1Write(L1Helper&, ActOutputType)::{lambda(int)#1}  (flushes the collected lanes)
   // verified against asm @0x44e6e0 (the lambda body): captures [this, &mask, &counter, &lanes, &type].
-  // Writes one line to stream +7680 (act_psuml1_write): mask (%08x), address (%03x), (1<<counter)-1 (%02x), then
+  // Writes one line to the act_psuml1_write stream: mask (%08x), address (%03x), (1<<counter)-1 (%02x), then
   // every lane (highest lane first, lanes separated by "_"): 8-bit types print the low byte of each of the lane's
   // words from the last word down to the first (width 2), other types print the low 16 bits of words 3..0
   // (width 4).  Every printed word is cleared afterwards.
@@ -206,10 +202,8 @@ void CheckPoint::PrintActPsumL1Write(L1Helper & helper, ActOutputType outType)
   }
 }
 
-// CheckPoint2.cpp  @0x44ef60 (Source 2)
 // Writes one line: every value masked to `width` hex nibbles, zero padded (stream is in hex mode).
-void CheckPoint::PrintCheckPoint(std::ofstream & os, std::vector<int> const & values, int width, bool reverse)
-{
+void CheckPoint::PrintCheckPoint(std::ofstream & os, std::vector<int> const & values, int width, bool reverse) {
   uint32_t mask = 0xFFFFFFFFu;
   if (width <= 7)
     mask = static_cast<uint32_t>((1 << (4 * width)) - 1);
@@ -226,10 +220,8 @@ void CheckPoint::PrintCheckPoint(std::ofstream & os, std::vector<int> const & va
   os << std::endl;
 }
 
-// CheckPoint3.cpp  @0x44f1d0 (Source 3)
-void CheckPoint::PrintPuOut(L1Helper & helper, int useWide)
-{
-  const L1HelperView& h = reinterpret_cast<const L1HelperView&>(helper);  // TODO(layout)
+void CheckPoint::PrintPuOut(L1Helper & helper, int useWide) {
+  const L1HelperView& h = reinterpret_cast<const L1HelperView&>(helper);
   const uint32_t* words = reinterpret_cast<const uint32_t*>(h.data_);
   for (int a = 0; a < h.aCount_; ++a) {
     for (int b = 0; b < h.bCount_; ++b) {
@@ -248,12 +240,10 @@ void CheckPoint::PrintPuOut(L1Helper & helper, int useWide)
   }
 }
 
-// CheckPoint4.cpp  @0x44f380 (Source 4)
 // Dumps PDP0 weights (rawWeights) or weights minus bias into the pdp0_dm_we_in trace.
-void CheckPoint::PrintPdp0WeSpadWr(WeightsHelper & weights, Matrix4<uint8_t> & bias, bool rawWeights)
-{
-  const WeightsHelperView& w = reinterpret_cast<const WeightsHelperView&>(weights);  // TODO(layout)
-  const MatrixU8View& m = reinterpret_cast<const MatrixU8View&>(bias);                // TODO(layout)
+void CheckPoint::PrintPdp0WeSpadWr(WeightsHelper & weights, Matrix4<uint8_t> & bias, bool rawWeights) {
+  const WeightsHelperView& w = reinterpret_cast<const WeightsHelperView&>(weights);
+  const MatrixU8View& m = reinterpret_cast<const MatrixU8View&>(bias);
   const int rowBytes = (w.wide_ == 0) ? 24 : 32;
   for (int a = 0; a < w.dimA_; ++a) {
     for (int i = 0; i < w.dimB_; ++i) {
@@ -273,56 +263,44 @@ void CheckPoint::PrintPdp0WeSpadWr(WeightsHelper & weights, Matrix4<uint8_t> & b
   }
 }
 
-// CheckPoint5.cpp  @0x44f680 (Source 5)
 // Line format: "<address, 6 hex digits> <bytes, most significant first, 2 hex digits each>"
-void CheckPoint::PrintStoreOfCheckPoint(std::ofstream & os, std::vector<uint8_t> & bytes, uint32_t & address)
-{
+void CheckPoint::PrintStoreOfCheckPoint(std::ofstream & os, std::vector<uint8_t> & bytes, uint32_t & address) {
   os << std::setw(6) << std::setfill('0') << static_cast<uint64_t>(address) << " ";
   for (int i = static_cast<int>(bytes.size()) - 1; i >= 0; --i)
     os << std::setw(2) << std::setfill('0') << static_cast<int64_t>(bytes[i]);
   os << std::endl;
 }
 
-// CheckPoint6.cpp  @0x44f860 (Source 6)
-CheckPoint* CheckPoint::GetCheckPoint()
-{
+CheckPoint* CheckPoint::GetCheckPoint() {
   static CheckPoint checkpoint;  // guarded static, destroyed at exit
   return &checkpoint;
 }
 
-void CheckPoint::Reset()
-{
-  for (std::ofstream & os : streams_)
-  {
+void CheckPoint::Reset() {
+  for (std::ofstream & os : streams_) {
     os.close();
     os = std::ofstream();
   }
 }
 
-// CheckPoint7.cpp  @0x44fa50 (Source 7)
-void CheckPoint::OpenLoadStoreCheckPoint(std::string const & dir)
-{
+void CheckPoint::OpenLoadStoreCheckPoint(std::string const & dir) {
   for (const StreamFile& f : kLoadStoreFiles)
     OpenStream(streams_[f.id_], dir + f.name_);
 }
 
-// CheckPoint8.cpp  @0x451ff0 (Source 8)
-void CheckPoint::OpenPuCheckPoint(std::string const & dir)
-{
+void CheckPoint::OpenPuCheckPoint(std::string const & dir) {
   for (const StreamFile& f : kPuFiles) {
     std::string name = f.name_;
     OpenStream(streams_[f.id_], dir + name);
   }
 }
 
-// CheckPoint9.cpp  @0x454db0 (Source 9)
-void CheckPoint::OpenAi2dCheckPoint(std::string const & dir)
-{
+void CheckPoint::OpenAi2dCheckPoint(std::string const & dir) {
   for (const StreamFile& f : kAi2dFiles) {
     std::string name = f.name_;
     OpenStream(streams_[f.id_], dir + name);
   }
 }
 
-// CheckPoint10.cpp @0x4580d0 / CheckPoint11.cpp @0x459ac0: constructor and destructor are
+// constructor and destructor are
 // defaulted in the header (they only construct/destroy the 48 ofstream members).
