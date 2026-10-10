@@ -33,6 +33,7 @@
 #include <filesystem>
 
 #include <nncase/runtime/k230/shared_memory.h>
+#include "engines/checkpoint.h"
 #include "globals.h"
 #include "engines/simulator.h"
 #include "isa/kinstruction.h"
@@ -354,15 +355,18 @@ static int simulator_run(int argc, const char ** argv)
 // terminate() is of little help when debugging).
 static int simulator_guarded_run(int argc, const char ** argv)
 {
+    int result;
     try
     {
-        return simulator_run(argc, argv);
+        result = simulator_run(argc, argv);
     }
     catch (const std::exception & e)
     {
         std::cerr << "simulator: " << e.what() << std::endl;
-        return 1;
+        result = 1;
     }
+    CheckPoint::GetCheckPoint()->Reset();
+    return result;
 }
 
 #ifdef K230_SIMULATOR_DLL

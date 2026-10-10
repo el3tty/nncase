@@ -290,6 +290,15 @@ CheckPoint* CheckPoint::GetCheckPoint()
   return &checkpoint;
 }
 
+void CheckPoint::Reset()
+{
+  for (std::ofstream & os : streams_)
+  {
+    os.close();
+    os = std::ofstream();
+  }
+}
+
 // CheckPoint7.cpp  @0x44fa50 (Source 7)
 void CheckPoint::OpenLoadStoreCheckPoint(std::string const & dir)
 {

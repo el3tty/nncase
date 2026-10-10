@@ -92,6 +92,9 @@ struct CheckPoint {
     void OpenLoadStoreCheckPoint(std::string const & dir);
     void OpenPuCheckPoint(std::string const & dir);
     void OpenAi2dCheckPoint(std::string const & dir);
+    // Closes all streams and returns them to the default (closed, no error) state. Called when a simulator run ends,
+    // because the singleton survives between runs when the simulator is loaded as a DLL.
+    void Reset();
 
 private:
     static void OpenStream(std::ofstream & os, std::string const & path);
