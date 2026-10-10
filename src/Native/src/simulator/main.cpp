@@ -35,6 +35,7 @@
 #include <nncase/runtime/k230/shared_memory.h>
 #include "engines/checkpoint.h"
 #include "engines/conv2d.h"
+#include "engines/pdp0.h"
 #include "globals.h"
 #include "engines/simulator.h"
 #include "isa/kinstruction.h"
@@ -368,6 +369,7 @@ static int simulator_guarded_run(int argc, const char ** argv)
     }
     CheckPoint::GetCheckPoint()->Reset();
     Conv2D::GetConv2D()->Reset();
+    static_cast<PDP0 *>(PDP0::GetPDP0())->Reset();
     return result;
 }
 

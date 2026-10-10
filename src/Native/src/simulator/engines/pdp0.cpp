@@ -74,6 +74,18 @@ void* PDP0::GetPDP0()
   return &pdp0;
 }
 
+void PDP0::Reset() {
+  std::memset(scratch_, 0, sizeof(scratch_));
+  std::memset(&regs_, 0, sizeof(regs_));
+  reg_10064_ = 0;
+  weight_queue_.clear();
+  store_of_queue_.clear();
+  load_act0_queue_.clear();
+  act0_queue_.clear();
+  cur_act0_.reset();
+  compute_queue_.clear();
+}
+
 // PDP02.cpp  @0x42bd40 (Source 2): PDP0::~PDP0() = default (header). The decompiled body only
 // destroys the five std::deque<std::shared_ptr<...>> members and cur_act0 (shared_ptr refcount code).
 

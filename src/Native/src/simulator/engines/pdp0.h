@@ -63,6 +63,10 @@ struct PDP0 {
     // PDP02 @0x42bd40 is the destructor (releases the five deques and the shared_ptr); defaulted.
     ~PDP0() = default;
 
+    // Returns the object to its initial state (zeroed registers, empty queues). Called when a simulator run ends,
+    // because the singleton survives between runs when the simulator is loaded as a DLL.
+    void Reset();
+
     // @0x46b6b0 (PDP03): pooling. `cfg` is the compute descriptor popped from compute_queue.
     static void ComputePDP0(L1Helper& in, L1Helper& out, bool is_signed, std::shared_ptr<Pdp0Compute> cfg);
     // @0x46bb50 (PDP04): depthwise convolution.
