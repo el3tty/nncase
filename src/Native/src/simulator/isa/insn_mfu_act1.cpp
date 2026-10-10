@@ -50,7 +50,6 @@ MfuAct1ComputeInstruction Simulator::InstParser<MfuAct1ComputeInstruction, 32>(u
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -103,7 +102,6 @@ MfuAct1Conf_deqInstruction Simulator::InstParser<MfuAct1Conf_deqInstruction, 32>
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -161,7 +159,6 @@ MfuAct1Conf_quantInstruction Simulator::InstParser<MfuAct1Conf_quantInstruction,
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -212,7 +209,6 @@ MfuAct1ConfDestInstruction Simulator::InstParser<MfuAct1ConfDestInstruction, 32>
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -261,7 +257,6 @@ MfuAct1ConfInstruction Simulator::InstParser<MfuAct1ConfInstruction, 32>(uint8_t
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -316,7 +311,6 @@ MfuAct1ConfSrc1Instruction Simulator::InstParser<MfuAct1ConfSrc1Instruction, 32>
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -377,7 +371,6 @@ MfuAct1ConfSrc2Instruction Simulator::InstParser<MfuAct1ConfSrc2Instruction, 32>
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -436,7 +429,6 @@ MfuAct1ConfStrideInstruction Simulator::InstParser<MfuAct1ConfStrideInstruction,
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }

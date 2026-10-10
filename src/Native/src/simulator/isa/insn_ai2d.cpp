@@ -28,7 +28,6 @@ Ai2dComputeInstruction Simulator::InstParser<Ai2dComputeInstruction, 16>(uint8_t
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   // verified against asm: inst.info is not written by the decoder (left as constructed)
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }

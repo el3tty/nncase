@@ -16,14 +16,6 @@ public:
     template <class T, uint32_t N>
     T InstParser(uint8_t ** pc);
 
-    // TODO(layout): the parsers read these two members through raw names, so the original
-    // fNN names (= byte offset in the binary object) are kept.
-    //
-    // insn_name: address of the std::string holding the mnemonic of the instruction being decoded
-    //       (parsers do  inst.name = *reinterpret_cast<const std::string *>(insn_name)).
-    //       In the original binary this was an owned (COW) std::string member at +144; the lifted
-    //       destructor therefore no longer releases anything for it.
-    uint64_t insn_name_ = 0;      // +144
     // start_pc: offset of the code image inside DDR; parsers compute  pc_rel = pc - start_pc.
     uint32_t start_pc_ = 0;      // +440
 

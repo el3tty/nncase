@@ -56,7 +56,6 @@ AddInstruction Simulator::InstParser<AddInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -108,7 +107,6 @@ SubInstruction Simulator::InstParser<SubInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -155,7 +153,6 @@ MulInstruction Simulator::InstParser<MulInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -203,7 +200,6 @@ DivInstruction Simulator::InstParser<DivInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -251,7 +247,6 @@ DivuInstruction Simulator::InstParser<DivuInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -299,7 +294,6 @@ RemInstruction Simulator::InstParser<RemInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -324,7 +318,6 @@ RemuInstruction Simulator::InstParser<RemuInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -396,7 +389,6 @@ AddiInstruction Simulator::InstParser<AddiInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -438,7 +430,6 @@ LuiInstruction Simulator::InstParser<LuiInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;
@@ -480,7 +471,6 @@ AuipcInstruction Simulator::InstParser<AuipcInstruction, 32>(uint8_t ** pc)
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   inst.parser_operation();
   *pcw = (uint64_t *)((char *)*pcw + 4);
   return inst;

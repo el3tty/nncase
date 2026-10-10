@@ -57,7 +57,6 @@ PuPdp0ComputeInstruction Simulator::InstParser<PuPdp0ComputeInstruction, 16>(uin
   inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
   inst.info_ = 0x400000003LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
-  inst.name_ = **(const std::string **)&insn_name_;   // TODO(layout): Simulator::insn_name_ holds a std::string*
   *pcw = (uint64_t *)((char *)*pcw + 2);
   return inst;
 }
@@ -84,7 +83,6 @@ PuPdp0Conf_deqInstruction Simulator::InstParser<PuPdp0Conf_deqInstruction, 32>(u
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -131,7 +129,6 @@ PuPdp0FetchifConf1Instruction Simulator::InstParser<PuPdp0FetchifConf1Instructio
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -179,7 +176,6 @@ PuPdp0FetchifConf2Instruction Simulator::InstParser<PuPdp0FetchifConf2Instructio
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -225,7 +221,6 @@ PuPdp0FetchifConf3Instruction Simulator::InstParser<PuPdp0FetchifConf3Instructio
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -275,7 +270,6 @@ PuPdp0FetchifConf4Instruction Simulator::InstParser<PuPdp0FetchifConf4Instructio
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -323,7 +317,6 @@ PuPdp0ModeConfInstruction Simulator::InstParser<PuPdp0ModeConfInstruction, 32>(u
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -370,7 +363,6 @@ PuPdp0OfConfInstruction Simulator::InstParser<PuPdp0OfConfInstruction, 32>(uint8
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }
@@ -422,7 +414,6 @@ PuPdp0WConfInstruction Simulator::InstParser<PuPdp0WConfInstruction, 32>(uint8_t
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
     inst.pc_rel_ = cur - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string*>(insn_name_);
     *pc += 4;
     return inst;
 }

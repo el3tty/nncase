@@ -79,7 +79,6 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -152,7 +151,6 @@ MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** 
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -222,7 +220,6 @@ MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }
@@ -280,7 +277,6 @@ MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 3
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
-    inst.name_ = *reinterpret_cast<const std::string *>(static_cast<uintptr_t>(insn_name_));  // insn_name: pointer to mnemonic
     *pc += 4;
     return inst;
 }

@@ -110,8 +110,6 @@ static inline void step(Simulator & sim, uint8_t *& pc)
 #define PO16(I)  step<I, 16, true>(sim, pc)
 #define P16(I)   step<I, 16>(sim, pc)
 
-static std::string g_sim_name;   // see Simulator::insn_name (holds the mnemonic string copied into every decoded insn)
-
 static int simulator_run(int argc, const char ** argv)
 {
     // verified against asm @0x40b801 / main.cold @0x4062ee: std::invalid_argument("The Argument Count != 5")
@@ -140,12 +138,11 @@ static int simulator_run(int argc, const char ** argv)
 
     SimulatorInit(ddr_base, banks);     // @0x40b907, publishes g_DDR / g_GLB
 
-    // Simulator object is built inline in main (@0x40b90c..0x40ba1d): ddr pointer, copy of the bank table, empty
-    // name string, bit_offset = 0, has_base = 0, empty trace vectors, start_pc = 0.
+    // Simulator object is built inline in main (@0x40b90c..0x40ba1d): ddr pointer, copy of the bank table,
+    // bit_offset = 0, has_base = 0, empty trace vectors, start_pc = 0.
     Simulator sim;
     sim.ddr_ = ddr_base;
     memcpy(sim.glb_banks_, banks, sizeof(banks));
-    sim.insn_name_ = (uint64_t)&g_sim_name;         // TODO(layout): in the binary insn_name is the (empty) COW string itself
     sim.bit_offset_ = 0;
     sim.has_base_ = 0;
 

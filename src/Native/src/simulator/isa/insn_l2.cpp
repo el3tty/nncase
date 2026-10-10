@@ -40,7 +40,6 @@ L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t *
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -96,7 +95,6 @@ L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc)
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -152,7 +150,6 @@ L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -202,7 +199,6 @@ L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc)
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -258,7 +254,6 @@ L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -316,7 +311,6 @@ L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc)
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }

@@ -46,7 +46,6 @@ Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -106,7 +105,6 @@ Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }

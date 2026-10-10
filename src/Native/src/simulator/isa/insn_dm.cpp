@@ -37,7 +37,6 @@ DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 1
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);   // default mnemonic string
   *pc += 2;   // 16-bit instruction (asm: InstParser<...,16>, addq $2)
   return inst;
 }
@@ -87,7 +86,6 @@ DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t *
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -144,7 +142,6 @@ DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -197,7 +194,6 @@ DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -258,7 +254,6 @@ DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -293,7 +288,6 @@ DmLoadWConf_deqInstruction Simulator::InstParser<DmLoadWConf_deqInstruction, 32>
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -337,7 +331,6 @@ DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -398,7 +391,6 @@ DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc)
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -458,7 +450,6 @@ DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uin
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }
@@ -509,7 +500,6 @@ DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** 
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
   inst.pc_rel_ = inst.pc_ - start_pc_;
-  inst.name_   = *reinterpret_cast<const std::string *>(insn_name_);
   *pc += 4;
   return inst;
 }

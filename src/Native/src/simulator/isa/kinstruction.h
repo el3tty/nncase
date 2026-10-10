@@ -28,7 +28,7 @@ inline uint32_t kinst_bits(uint64_t raw, unsigned lo, unsigned width)
 //   Per-instruction field names follow the compiler operand names; see each class header for `// asm:` syntax.
 // Common base of every simulated instruction.
 // Object layout (byte offsets): vptr@0, opcode@8, info@16, pc@24, pc_rel@28, next_pc@32,
-// taken@36, name@40 (std::string), flag@48; derived classes start their fields at +49.
+// taken@36, name@40 (std::string, always empty and never read; not ported), flag@48; derived classes start their fields at +49.
 // The instruction word is 32 bits (opcode = raw & 0x7F); "short" instructions advance pc by 2.
 struct KInstruction {
     uint32_t opcode_;  // +8   raw & 0x7F
@@ -37,7 +37,6 @@ struct KInstruction {
     uint32_t pc_rel_;  // +28  pc relative to the code base (Simulator::start_pc_)
     uint32_t next_pc_;  // +32  filled by get_next_pc()/operation()
     uint8_t taken_;  // +36  set by control-flow instructions when the branch/jump is taken
-    std::string name_;  // +40  mnemonic copied from the simulator's name table
     uint8_t flag_;  // +48
     virtual ~KInstruction();
     virtual void operation();      // default: no-op
