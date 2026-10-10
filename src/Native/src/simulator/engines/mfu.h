@@ -22,24 +22,19 @@ struct MFU {
     uint32_t dst_addr_;            // +8    GLB address of the destination tensor
     uint32_t aux_addr_;            // +12   Sample: GLB address of the sampling grid
     uint16_t reduce_init_;         // +16   ReduceFun: initial accumulator value (bfloat16 bits)
-    uint8_t  pad18_[14];           // +18
     uint16_t dim_[4];              // +32   loop extents d0..d3 (set from a shape register)
     uint8_t  reduce_op_;           // +40   ReduceFun: 1 min, 2 add, 3 sub, 4 mul, otherwise max
     uint8_t  reduce_mode_;         // +41   ReduceFun: how many trailing dims are reduced (0 = d3 .. 3 = all)
-    uint8_t  pad42_[14];           // +42
     uint64_t shape_src_;           // +56   Memcpy / ReduceFun / Sample: source strides (3 halfwords, see GetCHW)
     uint64_t shape_dst_;           // +64   Memcpy / Memset / ReduceFun / Sample: destination strides
     uint8_t  elem16_;              // +72   Memset: 1 = 16-bit elements
-    uint8_t  pad73_[7];            // +73
     uint64_t trans_shape_src_;     // +80   Trans: source strides
     uint64_t trans_shape_dst_;     // +88   Trans: destination strides
     uint8_t  trans_elem16_;        // +96   Trans: 1 = 16-bit elements
     uint8_t  trans_type_;          // +97   Trans: dimension permutation (0..23)
     uint16_t memset_value_;        // +98   Memset: fill value
-    uint8_t  pad100_[4];           // +100
     uint64_t shape_grid_;          // +104  Sample: strides of the sampling grid
     uint32_t interp_mode_;         // +112  Sample: non-zero = bilinear, 0 = nearest
-    uint8_t  pad116_[4];           // +116
     uint32_t dequant_zero_;        // +120  de-quantisation zero point (low byte used)
     uint16_t dequant_scale_;       // +124  de-quantisation scale (bfloat16 bits)
     uint8_t  dequant_signed_;      // +126  source bytes are int8
@@ -48,7 +43,6 @@ struct MFU {
     uint16_t quant_scale_;         // +132  quantisation scale (bfloat16 bits)
     uint8_t  quant_signed_;        // +134  produce int8 instead of uint8
     uint8_t  quant_enable_;        // +135  destination tensor holds 8-bit quantised data
-    uint8_t  pad136_[8];           // +136
     uint16_t dim_sample_[4];       // +144  Sample loop extents (batch, channel, height, width)
     std::ofstream log_[4];         // +152  debug trace streams (+152, +664, +1176, +1688); log[3] is used by Mfu*Instruction
     uint64_t string_slot_;         // +2200 an empty COW std::string in the original (never touched)
@@ -58,9 +52,19 @@ struct MFU {
     MFU();
     ~MFU();     // verified against asm @0x426e80 (MFUD2): plain destructor, no vptr; it only frees the trace-stream/vector storage
 
+    // Returns the object to its freshly constructed state (registers zeroed, trace streams closed). Called when a
+    // simulator run ends, because the singleton survives between runs when the simulator is loaded as a DLL.
+    void Reset();
+
     // Singleton accessor.  @0x445da0 (MFU15)
     // Returns void* because callers (Mfu*Instruction) address the object by raw byte offset (TODO(layout)).
     static void* GetMFU();
+
+private:
+    // Initializes the POD members (called by the constructor and by Reset()); log_ is not touched.
+    void Init();
+
+public:
 
     // Splits a shape register (four 16-bit fields) into the three strides used by the tensor addressing
     //   element(i, j, k, l) = l + w * (k + h * (j + c * i)).

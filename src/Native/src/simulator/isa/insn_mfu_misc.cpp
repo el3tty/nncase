@@ -38,14 +38,13 @@ void log_config_bits(std::ofstream &log, const ConfigBits &cfg)
 
 // TODO(layout): the MFU singleton is accessed by raw byte offset (storage is MFU_MFUInst).
 
-// Splits a 64-bit shape register into the four halfwords the MFU expects at byte offsets 32..38.
-void store_shape_halfwords(uint8_t *mfu, uint64_t shape)
+// Splits a 64-bit shape register into the four loop extents of the MFU.
+void store_shape_halfwords(MFU *mfu, uint64_t shape)
 {
-    uint16_t *hw = reinterpret_cast<uint16_t *>(mfu);
-    hw[16] = static_cast<uint16_t>(shape >> 48);
-    hw[17] = static_cast<uint16_t>(shape >> 32);
-    hw[18] = static_cast<uint16_t>(shape >> 16);
-    hw[19] = static_cast<uint16_t>(shape);
+    mfu->dim_[0] = static_cast<uint16_t>(shape >> 48);
+    mfu->dim_[1] = static_cast<uint16_t>(shape >> 32);
+    mfu->dim_[2] = static_cast<uint16_t>(shape >> 16);
+    mfu->dim_[3] = static_cast<uint16_t>(shape);
 }
 }  // namespace
 
@@ -91,16 +90,15 @@ void MfuMemcpyInstruction::get_next_pc()
 // MfuMemcpyInstruction2.cpp  @0x423420
 void MfuMemcpyInstruction::operation()
 {
-    uint8_t *mfu = static_cast<uint8_t *>(MFU::GetMFU());
-    uint32_t *mfu_words = reinterpret_cast<uint32_t *>(mfu);
+    MFU *mfu = static_cast<MFU *>(MFU::GetMFU());
 
-    // Hand the operands to the MFU (TODO(layout): MFU object offsets 4, 8, 32..38, 2208).
-    mfu_words[1] = raddr_s_val_;
-    mfu_words[2] = raddr_d_val_;
-    reinterpret_cast<MFU *>(mfu)->busy_ = 1;
+    // Hand the operands to the MFU.
+    mfu->src_addr_ = raddr_s_val_;
+    mfu->dst_addr_ = raddr_d_val_;
+    mfu->busy_ = 1;
     store_shape_halfwords(mfu, shape_c_);
-    reinterpret_cast<MFU *>(mfu)->Memcpy();
-    reinterpret_cast<MFU *>(mfu)->busy_ = 0;
+    mfu->Memcpy();
+    mfu->busy_ = 0;
 
     // Checkpoint log of the configuration that was used.
     // verified against asm @0x423420: the 208-bit bitset is zero-initialised (vpxor + 2x vmovdqu to the stack), so unset bits 193..207 are 0
@@ -111,7 +109,7 @@ void MfuMemcpyInstruction::operation()
     put_bits(cfg, 49, 48, shape_a_);
     put_bits(cfg, 97, 48, shape_b_);
     put_bits(cfg, 145, 48, shape_c_);
-    log_config_bits(reinterpret_cast<MFU *>(mfu)->log_[3], cfg);
+    log_config_bits(mfu->log_[3], cfg);
 }
 
 // MfuMemcpyInstruction3.cpp  @0x4254f0
@@ -162,17 +160,17 @@ void MfuMemsetInstruction::get_next_pc()
 // MfuMemsetInstruction2.cpp  @0x423b60
 void MfuMemsetInstruction::operation()
 {
-    uint8_t *mfu = static_cast<uint8_t *>(MFU::GetMFU());
+    MFU *mfu = static_cast<MFU *>(MFU::GetMFU());
 
-    // Hand the operands to the MFU (TODO(layout): MFU object offsets 8, 64, 72, 98, 32..38, 2208).
-    *reinterpret_cast<uint32_t *>(mfu + 8) = raddr_d_val_;
-    *reinterpret_cast<uint16_t *>(mfu + 98) = static_cast<uint16_t>(rv_val_);
-    mfu[72] = l2_datatype_;
-    *reinterpret_cast<uint64_t *>(mfu + 64) = shape_a_;
-    reinterpret_cast<MFU *>(mfu)->busy_ = 1;
+    // Hand the operands to the MFU.
+    mfu->dst_addr_ = raddr_d_val_;
+    mfu->memset_value_ = static_cast<uint16_t>(rv_val_);
+    mfu->elem16_ = l2_datatype_;
+    mfu->shape_dst_ = shape_a_;
+    mfu->busy_ = 1;
     store_shape_halfwords(mfu, shape_b_);
-    reinterpret_cast<MFU *>(mfu)->Memset();
-    reinterpret_cast<MFU *>(mfu)->busy_ = 0;
+    mfu->Memset();
+    mfu->busy_ = 0;
 
     // Checkpoint log of the configuration that was used.
     // verified against asm @0x423b60: the 208-bit bitset is zero-initialised (vpxor + 2x vmovdqu to the stack), so unset bits 157..207 are 0
@@ -183,7 +181,7 @@ void MfuMemsetInstruction::operation()
     put_bits(cfg, 43, 48, shape_a_);
     put_bits(cfg, 91, 64, shape_b_);
     put_bits(cfg, 155, 2, l2_datatype_);
-    log_config_bits(reinterpret_cast<MFU *>(mfu)->log_[3], cfg);
+    log_config_bits(mfu->log_[3], cfg);
 }
 
 // MfuMemsetInstruction3.cpp  @0x4254a0

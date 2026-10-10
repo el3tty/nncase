@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
+#include <algorithm>
 #include <iostream>
 
 
@@ -96,9 +98,47 @@ inline int32_t Fp16ToInt16(fp16 v)
 // ==================================================================================================================
 
 // Initial state of the singleton (@0x445da0, MFU15 zeroes the fields that are not static).
-MFU::MFU()
-{
-  std::memset(static_cast<void *>(this), 0, offsetof(MFU, log_));     // everything before the trace streams
+MFU::MFU() {
+  Init();
+}
+
+void MFU::Reset() {
+  for (std::ofstream & os : log_) {
+    os.close();
+    os = std::ofstream();
+  }
+  Init();
+}
+
+// Initializes the POD part of the object; the trace streams are left alone.
+void MFU::Init() {
+  reg0_ = 0;
+  src_addr_ = 0;
+  dst_addr_ = 0;
+  aux_addr_ = 0;
+  reduce_init_ = 0;
+  std::fill(std::begin(dim_), std::end(dim_), 0);
+  reduce_op_ = 0;
+  reduce_mode_ = 0;
+  shape_src_ = 0;
+  shape_dst_ = 0;
+  elem16_ = 0;
+  trans_shape_src_ = 0;
+  trans_shape_dst_ = 0;
+  trans_elem16_ = 0;
+  trans_type_ = 0;
+  memset_value_ = 0;
+  shape_grid_ = 0;
+  interp_mode_ = 0;
+  dequant_zero_ = 0;
+  dequant_scale_ = 0;
+  dequant_signed_ = 0;
+  dequant_enable_ = 0;
+  quant_zero_ = 0;
+  quant_scale_ = 0;
+  quant_signed_ = 0;
+  quant_enable_ = 0;
+  std::fill(std::begin(dim_sample_), std::end(dim_sample_), 0);
   string_slot_ = 0;
   busy_ = 0;
   std::memset(reserved_, 0, sizeof reserved_);
