@@ -152,6 +152,17 @@ struct MeshNet {
     MeshNet();
     ~MeshNet();                              // not virtual (the original object has no vptr)
 
+    // Returns the object to its freshly constructed state (registers zeroed, nodes unconnected, evaluation order empty,
+    // trace streams closed). Called when a simulator run ends, because the singleton survives between runs when the
+    // simulator is loaded as a DLL.
+    void Reset();
+
+private:
+    // Initializes the POD members (called by the constructor and by Reset()); order_ and log_ are not touched.
+    void Init();
+
+public:
+
     // Singleton accessor.  @0x445f80 (MeshNet16)
     // Callers (Mfu*Act1* instructions) address the object by raw byte offset (TODO(layout)).
     static MeshNet * GetMeshNet();

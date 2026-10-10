@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
 #include <iomanip>
 #include <set>
 
@@ -174,11 +175,33 @@ int32_t HalfToInteger(fp16 v)
 
 // Initial state of the singleton (inlined into MeshNet::GetMeshNet @0x445f80): every node has its three input bytes
 // at 0xFF (unconnected), everything else is zero.
-MeshNet::MeshNet()
-{
-  std::memset(static_cast<void *>(this), 0, offsetof(MeshNet, order_));          // reduce_fn, nodes, flags
-  for (MeshNode & n : node_)
-    n.in_[0] = n.in_[1] = n.in_[2] = 0xFF;
+MeshNet::MeshNet() {
+  Init();
+}
+
+void MeshNet::Reset() {
+  order_.clear();
+  for (std::ofstream & os : log_) {
+    os.close();
+    os = std::ofstream();
+  }
+  Init();
+}
+
+// Initializes the POD part of the object; the order_ vector and the trace streams are left alone.
+void MeshNet::Init() {
+  reduce_fn_ = nullptr;
+  for (MeshNode & n : node_) {
+    n.op_ = nullptr;
+    std::memset(n.in_, 0xFF, sizeof n.in_);      // unconnected
+    std::memset(n.pad11_, 0, sizeof n.pad11_);
+    std::fill(std::begin(n.operand_), std::end(n.operand_), nullptr);
+    std::memset(static_cast<void *>(&n.result_), 0, sizeof n.result_);
+    std::memset(n.pad42_, 0, sizeof n.pad42_);
+    n.cfg_ = 0;
+  }
+  reduce_enable_ = 0;
+  order_count_ = 0;
   std::memset(reserved1672_, 0, sizeof reserved1672_);
   std::memset(reserved1680_, 0, sizeof reserved1680_);
   // everything behind the four trace streams (string_slot .. a1_fit_addr)
