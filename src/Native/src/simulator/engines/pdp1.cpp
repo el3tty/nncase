@@ -37,6 +37,15 @@ bool IsByteType(uint8_t dtype) { return static_cast<uint8_t>(dtype - 1) < 2u; }
 // 16 empty window slots, everything else zero.
 PDP1::PDP1() : windows_(16), cfg_{} {}
 
+void PDP1::Reset() {
+  for (PdpWindow& w : windows_) {
+    w.data_.clear();
+    w.acc_ = FP24::fp24(0);
+    w.count_ = 0;
+  }
+  cfg_ = Pdp1Config{};
+}
+
 // PDP1::GetPDP1() is not in the dump; a function-local static is equivalent to the guarded static.
 PDP1* PDP1::GetPDP1()
 {

@@ -36,6 +36,7 @@
 #include "engines/checkpoint.h"
 #include "engines/conv2d.h"
 #include "engines/pdp0.h"
+#include "engines/pdp1.h"
 #include "engines/meshnet.h"
 #include "engines/mfu.h"
 #include "globals.h"
@@ -373,6 +374,7 @@ static int simulator_guarded_run(int argc, const char ** argv)
     Conv2D::GetConv2D()->Reset();
     PDP0::GetPDP0()->Reset();
     MeshNet::GetMeshNet()->Reset();
+    PDP1::GetPDP1()->Reset();
     static_cast<MFU *>(MFU::GetMFU())->Reset();
     return result;
 }

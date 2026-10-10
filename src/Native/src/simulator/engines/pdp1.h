@@ -70,6 +70,10 @@ struct PDP1 {
     // Singleton accessor; PDP1::GetPDP1() is not in the dump (inlined, "singleton lazy-init elided").
     static PDP1* GetPDP1();
 
+    // Returns the object to its freshly constructed state (16 empty window slots, zeroed configuration). Called when
+    // a simulator run ends, because the singleton survives between runs when the simulator is loaded as a DLL.
+    void Reset();
+
     // @0x440470 (PDP12): fills windows[0].data with the window_h x window_w elements of the window
     // at output position (out_row, out_col) of block (dim1, dim2), dequantised from `src`.
     // The always-1 fifth parameter of the demangled signature is not used and dropped.
