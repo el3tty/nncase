@@ -87,6 +87,10 @@ struct Conv2D {
     Conv2D();
     ~Conv2D();
 
+    // Returns the object to its freshly constructed state (default configuration, empty queues). Called when a
+    // simulator run ends, because the singleton survives between runs when the simulator is loaded as a DLL.
+    void Reset();
+
     // @0x467450 (Source 1): snapshot of the current configuration.
     std::shared_ptr<PuCompute> GetPuCompute() const;
     // @0x467590 (Source 2): pops the queued ACT0 descriptors (+ DM store) and runs Act0::Compute.

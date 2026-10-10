@@ -17,10 +17,21 @@ namespace {
 
 }  // namespace
 
-Conv2D::Conv2D()
-{
+Conv2D::Conv2D() {
+    Reset();
+}
+
+void Conv2D::Reset() {
+    cfg_ = PuCompute();
     // @0x468f10 (Source 4): the only non-zero initial value; the rest of the object is zero / empty queues.
     cfg_.if_flag_ = 1;
+    if_queue_.clear();
+    weight_queue_.clear();
+    store_queue_.clear();
+    act0_param_queue_.clear();
+    act0_queue_.clear();
+    cur_act0_.reset();
+    compute_queue_.clear();
 }
 
 // @0x469500 (Source 5): destroys the six queues (the 1700 decompiled lines are the inlined deque / shared_ptr releases).
