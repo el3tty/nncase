@@ -24,10 +24,10 @@ void AddInstruction::get_next_pc()
 // AddInstruction2.cpp  @0x4207a0
 void AddInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   set_g_gp_reg(rd_, rs1_val_ + rs2_val_);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // AddInstruction3.cpp  @0x426a30
@@ -75,10 +75,10 @@ void SubInstruction::get_next_pc()
 // SubInstruction3.cpp  @0x4207f0
 void SubInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   set_g_gp_reg(rd_, rs1_val_ - rs2_val_);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // SubInstruction4.cpp  @0x4269e0
@@ -121,10 +121,10 @@ void MulInstruction::get_next_pc()
 // MulInstruction2.cpp  @0x420840
 void MulInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   set_g_gp_reg(rd_, rs2_val_ * rs1_val_);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // MulInstruction3.cpp  @0x426990
@@ -167,11 +167,11 @@ void DivInstruction::get_next_pc()
 // DivInstruction2.cpp  @0x420890
 void DivInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   // verified against asm @0x420890: plain idivl, no zero / INT_MIN/-1 check (host SIGFPE)
   set_g_gp_reg(rd_, (int32_t)rs1_val_ / (int32_t)rs2_val_);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // DivInstruction3.cpp  @0x426940
@@ -214,11 +214,11 @@ void DivuInstruction::get_next_pc()
 // DivuInstruction2.cpp  @0x4208e0
 void DivuInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   // verified against asm @0x4208e0: plain divl, no zero check (host SIGFPE)
   set_g_gp_reg(rd_, rs1_val_ / rs2_val_);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // DivuInstruction3.cpp  @0x4268f0
@@ -261,8 +261,8 @@ void RemInstruction::get_next_pc()
 // RemInstruction2.cpp  @0x420930
 void RemInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   // verified against asm @0x420930: plain idivl, no zero / INT_MIN%-1 check (host SIGFPE)
   result_ = (int32_t)rs1_val_ % (int32_t)rs2_val_;
   set_g_gp_reg(rd_, result_);
@@ -332,8 +332,8 @@ void RemuInstruction::get_next_pc()
 // RemuInstruction2.cpp  @0x420960
 void RemuInstruction::parser_operation()
 {
-  rs1_val_ = g_gp_reg[rs1_];
-  rs2_val_ = g_gp_reg[rs2_];
+  rs1_val_ = _G.gp_reg[rs1_];
+  rs2_val_ = _G.gp_reg[rs2_];
   // verified against asm @0x420960: plain divl, no zero check (host SIGFPE)
   result_ = (uint32_t)rs1_val_ % (uint32_t)rs2_val_;
   set_g_gp_reg(rd_, result_);
@@ -356,12 +356,12 @@ void AddiInstruction::get_next_pc()
 // AddiInstruction2.cpp  @0x420750
 void AddiInstruction::parser_operation()
 {
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = imm_;
   if (imm_ & 0x800)   // sign-extend the 12-bit immediate
     simm -= 4096;
   set_g_gp_reg(rd_, simm + rs_val_);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // AddiInstruction3.cpp  @0x428ee0
@@ -404,7 +404,7 @@ void LuiInstruction::get_next_pc()
 void LuiInstruction::parser_operation()
 {
   set_g_gp_reg(rd_, imm_ << 12);
-  result_ = g_gp_reg[rd_];
+  result_ = _G.gp_reg[rd_];
 }
 
 // LuiInstruction3.cpp  @0x426ad0

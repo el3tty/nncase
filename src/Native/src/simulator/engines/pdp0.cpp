@@ -11,7 +11,6 @@
 #include <vector>
 
 // Partial-sum L1 buffer read by the pooling / depthwise engines (declared in pu_common.h as well).
-extern uint32_t PSUM_L1[];
 
 namespace {
 
@@ -232,7 +231,7 @@ void PDP0::Compute()
 
   // Input: the partial-sum L1 buffer, (in_h - pads) x (in_w - pads) x in_c.
   L1View input{};
-  input.data_ = reinterpret_cast<uint8_t*>(PSUM_L1);
+  input.data_ = reinterpret_cast<uint8_t*>(_G.PSUM_L1);
   input.max_channels_ = 32;
   input.chan_stride_ = 0x1000;
   input.base_ = static_cast<int32_t>(c.psum_offset_);
@@ -244,7 +243,7 @@ void PDP0::Compute()
 
   // verified against asm @0x46cf5b: the output buffer is the second PSUM buffer of the Act0 singleton (Act0 @0x58c760
   // + 0x20000), zeroed with memset(.., 0, 0x20000).
-  uint8_t * const psum1 = reinterpret_cast<uint8_t *>(Act0_act0) + 0x20000;
+  uint8_t * const psum1 = reinterpret_cast<uint8_t *>(_G.Act0_act0) + 0x20000;
   std::memset(psum1, 0, 0x20000);
   L1View output{};
   output.data_ = psum1;

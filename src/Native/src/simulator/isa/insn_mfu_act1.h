@@ -25,7 +25,6 @@
 #include "engines/simulator.h"
 
 // ---- MfuAct1ComputeInstruction ----
-extern uint8_t debug_flag;  // u8 at 0x5cc7b0, also declared in globals.h
 // asm: mfu_act1_compute raddr_d1, raddr_s1, raddr_s2, raddr_arg
 struct MfuAct1ComputeInstruction : public KInstruction {
     uint8_t raddr_d1_;  // +49 raw[11:7] register: destination address
@@ -33,10 +32,10 @@ struct MfuAct1ComputeInstruction : public KInstruction {
     uint8_t raddr_s2_;  // +51 raw[21:17] register: source 2 address
     uint8_t raddr_arg_;  // +52 raw[26:22] register: argument address
     uint8_t reserved_27_;  // +53 raw[31:27] reserved, decoded but unused
-    uint32_t raddr_d1_val_;  // +56 g_gp_reg[raddr_d1]
-    uint32_t raddr_s1_val_;  // +60 g_gp_reg[raddr_s1]
-    uint32_t raddr_s2_val_;  // +64 g_gp_reg[raddr_s2]
-    uint32_t raddr_arg_val_;  // +68 g_gp_reg[raddr_arg]
+    uint32_t raddr_d1_val_;  // +56 _G.gp_reg[raddr_d1]
+    uint32_t raddr_s1_val_;  // +60 _G.gp_reg[raddr_s1]
+    uint32_t raddr_s2_val_;  // +64 _G.gp_reg[raddr_s2]
+    uint32_t raddr_arg_val_;  // +68 _G.gp_reg[raddr_arg]
     uint32_t raddr_s1_mmu_addr_;  // +72 MMU-translated raddr_s1_val (decoded only)
     uint32_t raddr_s2_mmu_addr_;  // +76 MMU-translated raddr_s2_val (decoded only)
     uint32_t raddr_d1_mmu_addr_;  // +80 MMU-translated raddr_d1_val (decoded only)
@@ -55,8 +54,8 @@ struct MfuAct1Conf_deqInstruction : public KInstruction {
     uint8_t sid_;  // +53 raw[24] source id: 0 -> source 1, 1 -> source 2 register bank
     uint8_t rshift_bits_;  // +54 raw[29:25] no operand in the dumps (shift, high byte of the 16-bit config)
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
-    uint32_t rscale_val_;  // +56 g_gp_reg[rscale]
-    uint32_t rbias_val_;  // +60 g_gp_reg[rbias]
+    uint32_t rscale_val_;  // +56 _G.gp_reg[rscale]
+    uint32_t rbias_val_;  // +60 _G.gp_reg[rbias]
     void get_next_pc() override;
     void operation() override;
     ~MfuAct1Conf_deqInstruction() override;
@@ -80,8 +79,8 @@ struct MfuAct1ConfDestInstruction : public KInstruction {
     uint8_t rlen_;  // +50 raw[16:12] register: length (stored as dest address, see note)
     uint8_t rshape_;  // +51 raw[19:17] shape register index
     uint16_t reserved_20_;  // +52 raw[31:20] reserved, unused
-    uint32_t rlen_val_;  // +56 g_gp_reg[rlen]: destination address
-    uint64_t rshape_val_;  // +64 g_shape_reg[rshape]: destination shape
+    uint32_t rlen_val_;  // +56 _G.gp_reg[rlen]: destination address
+    uint64_t rshape_val_;  // +64 _G.shape_reg[rshape]: destination shape
     void get_next_pc() override;
     void operation() override;
     ~MfuAct1ConfDestInstruction() override;
@@ -110,9 +109,9 @@ struct MfuAct1ConfSrc1Instruction : public KInstruction {
     uint8_t sid_;  // +53 raw[27] source id: selects config bank 0/1
     uint8_t slice_loc_;  // +54 raw[28] slice location (l1/l2), stored next to the address
     uint8_t reserved_29_;  // +55 raw[31:29] reserved, unused
-    uint32_t rslice_val_;  // +56 g_gp_reg[rslice]: slice length
-    uint32_t rright_repeats_val_;  // +60 g_gp_reg[rright_repeats]: repeat factor a
-    uint32_t rslice_repeats_val_;  // +64 g_gp_reg[rslice_repeats]: repeat factor b
+    uint32_t rslice_val_;  // +56 _G.gp_reg[rslice]: slice length
+    uint32_t rright_repeats_val_;  // +60 _G.gp_reg[rright_repeats]: repeat factor a
+    uint32_t rslice_repeats_val_;  // +64 _G.gp_reg[rslice_repeats]: repeat factor b
     void get_next_pc() override;
     void operation() override;
     ~MfuAct1ConfSrc1Instruction() override;
@@ -127,8 +126,8 @@ struct MfuAct1ConfSrc2Instruction : public KInstruction {
     uint8_t sid_;  // +52 raw[20] source id: selects config bank 0/1
     uint8_t source_type_;  // +53 raw[21] source type (l2/psum), stored with the shape
     uint16_t reserved_22_;  // +54 raw[31:22] reserved, unused
-    uint32_t rleft_repeats_val_;  // +56 g_gp_reg[rleft_repeats]: source address
-    uint64_t rshape_val_;  // +64 g_shape_reg[rshape]: source shape
+    uint32_t rleft_repeats_val_;  // +56 _G.gp_reg[rleft_repeats]: source address
+    uint64_t rshape_val_;  // +64 _G.shape_reg[rshape]: source shape
     void get_next_pc() override;
     void operation() override;
     ~MfuAct1ConfSrc2Instruction() override;
@@ -142,9 +141,9 @@ struct MfuAct1ConfStrideInstruction : public KInstruction {
     uint8_t rstride_s2_;  // +51 raw[17:15] source-2 stride shape register index
     uint8_t rstride_d1_;  // +52 raw[20:18] destination stride shape register index
     uint16_t reserved_21_;  // +54 raw[31:21] reserved, unused
-    uint64_t rstride_s1_val_;  // +56 g_shape_reg[rstride_s1] (not used by operation)
-    uint64_t rstride_s2_val_;  // +64 g_shape_reg[rstride_s2] (not used by operation)
-    uint64_t rstride_d1_val_;  // +72 g_shape_reg[rstride_d1]: stride written to the MeshNet
+    uint64_t rstride_s1_val_;  // +56 _G.shape_reg[rstride_s1] (not used by operation)
+    uint64_t rstride_s2_val_;  // +64 _G.shape_reg[rstride_s2] (not used by operation)
+    uint64_t rstride_d1_val_;  // +72 _G.shape_reg[rstride_d1]: stride written to the MeshNet
     void get_next_pc() override;
     void operation() override;
     ~MfuAct1ConfStrideInstruction() override;

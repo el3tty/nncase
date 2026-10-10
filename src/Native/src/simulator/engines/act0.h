@@ -29,8 +29,8 @@ struct Act0Compute {
     uint32_t width_ = 0;       // +12  Act0 + 0x4000C
     uint32_t shift_ = 0;       // +16  Act0 + 0x40010: PSUM scale, the PSUM is multiplied by 2^-shift
     uint32_t engine_ = 0;      // +20  Act0 + 0x40014 (0 Conv2D, 1 PDP0)
-    uint32_t out_base_ = 0;    // +24  Act0ComputeInstruction raddr_d_val: byte offset in PSUM_L1 of the L1 output
-    uint8_t  out_route_ = 0;   // +28  Act0ComputeInstruction target: 0 = PSUM_L1 only, 1 = DM store only, else both
+    uint32_t out_base_ = 0;    // +24  Act0ComputeInstruction raddr_d_val: byte offset in _G.PSUM_L1 of the L1 output
+    uint8_t  out_route_ = 0;   // +28  Act0ComputeInstruction target: 0 = _G.PSUM_L1 only, 1 = DM store only, else both
     uint32_t out_type_ = 0;    // +32  Act0ComputeInstruction dest_datatype: ActOutputType
     uint8_t  per_channel_ = 0; // +36  Act0ComputeInstruction is_by_channel: 1 = one parameter row per channel
     uint32_t* psum_ = nullptr; // +40  PSUM buffer to read (Act0 or Act0 + 0x20000)

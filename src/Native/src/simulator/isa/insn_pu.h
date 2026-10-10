@@ -51,7 +51,7 @@ struct PuFetchifConf1Instruction : public KInstruction {
     uint8_t stride_h_;  // +53 raw[26:22] vertical stride (immediate) -> Conv2D cfg[1]
     uint8_t rstride_s_;  // +54 raw[29:27] stride shape register index
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
-    uint64_t rstride_s_val_;  // +56 g_shape_reg[rstride_s]
+    uint64_t rstride_s_val_;  // +56 _G.shape_reg[rstride_s]
     void get_next_pc() override;
     void operation() override;
     ~PuFetchifConf1Instruction() override;
@@ -66,8 +66,8 @@ struct PuFetchifConf2Instruction : public KInstruction {
     uint8_t rgic_;  // +52 raw[21:17] register: number of input-channel groups
     uint8_t rgic_last_;  // +53 raw[26:22] register: input channels of the last group
     uint8_t reserved_27_;  // +54 raw[31:27] reserved, unused
-    uint32_t rgic_val_;  // +56 g_gp_reg[rgic]
-    uint32_t rgic_last_val_;  // +60 g_gp_reg[rgic_last]
+    uint32_t rgic_val_;  // +56 _G.gp_reg[rgic]
+    uint32_t rgic_last_val_;  // +60 _G.gp_reg[rgic_last]
     void get_next_pc() override;
     ~PuFetchifConf2Instruction() override;
 };
@@ -82,9 +82,9 @@ struct PuFetchifConf3Instruction : public KInstruction {
     uint8_t rgroups_;  // +53 raw[26:22] register: number of groups -> Conv2D cfg[6]
     uint8_t rshape_;  // +54 raw[29:27] shape register index
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
-    uint32_t raddr_s_val_;  // +56 g_gp_reg[raddr_s]
-    uint32_t rgroups_val_;  // +60 g_gp_reg[rgroups]
-    uint64_t rshape_val_;  // +64 g_shape_reg[rshape]
+    uint32_t raddr_s_val_;  // +56 _G.gp_reg[raddr_s]
+    uint32_t rgroups_val_;  // +60 _G.gp_reg[rgroups]
+    uint64_t rshape_val_;  // +64 _G.shape_reg[rshape]
     void get_next_pc() override;
     void operation() override;
     ~PuFetchifConf3Instruction() override;
@@ -100,8 +100,8 @@ struct PuFetchifConf4Instruction : public KInstruction {
     uint8_t sspad_;  // +53 raw[29:27] pad shape register index
     uint8_t reserved_22_;  // +54 raw[26:22] decoded but unused
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
-    uint32_t rpad_value_val_;  // +56 g_gp_reg[rpad_value]
-    uint64_t sspad_val_;  // +64 g_shape_reg[sspad]
+    uint32_t rpad_value_val_;  // +56 _G.gp_reg[rpad_value]
+    uint64_t sspad_val_;  // +64 _G.shape_reg[sspad]
     void get_next_pc() override;
     void operation() override;
     ~PuFetchifConf4Instruction() override;
@@ -117,8 +117,8 @@ struct PuFetchifConf_deqInstruction : public KInstruction {
     uint8_t rbx_;  // +53 raw[26:22] register: dequant byte value
     uint8_t quant_type_;  // +54 raw[28:27] IF quantisation type -> Conv2D+92
     uint8_t reserved_29_;  // +55 raw[31:29] reserved, unused
-    uint32_t ric_val_;  // +56 g_gp_reg[ric]: index of the dequant byte slot (31 = all)
-    uint32_t rbx_val_;  // +60 g_gp_reg[rbx]: dequant byte value
+    uint32_t ric_val_;  // +56 _G.gp_reg[ric]: index of the dequant byte slot (31 = all)
+    uint32_t rbx_val_;  // +60 _G.gp_reg[rbx]: dequant byte value
     void get_next_pc() override;
     void operation() override;
     ~PuFetchifConf_deqInstruction() override;
@@ -129,11 +129,11 @@ template <> PuFetchifConf_deqInstruction Simulator::InstParser<PuFetchifConf_deq
 struct PuForward_psumInstruction : public KInstruction {
     uint8_t tcu_id_;  // +49 raw[9:7] TCU id
     uint8_t pu_id_;  // +50 raw[12:10] PU id
-    uint8_t raddr_;  // +51 raw[17:13] register: source byte offset in PSUM_L1
+    uint8_t raddr_;  // +51 raw[17:13] register: source byte offset in _G.PSUM_L1
     uint8_t rlen_;  // +52 raw[22:18] register: words copied per row
     uint16_t reserved_21_;  // +54 raw[29:21] decoded, unused (overlaps rs2; bit 22 masked out)
-    uint32_t raddr_val_;  // +56 g_gp_reg[rs1]: source byte offset in PSUM_L1
-    uint64_t rlen_val_;  // +64 g_gp_reg[rs2]: words copied per row
+    uint32_t raddr_val_;  // +56 _G.gp_reg[rs1]: source byte offset in _G.PSUM_L1
+    uint64_t rlen_val_;  // +64 _G.gp_reg[rs2]: words copied per row
     void get_next_pc() override;
     void operation() override;
     ~PuForward_psumInstruction() override;
@@ -149,9 +149,9 @@ struct PuOfConf1Instruction : public KInstruction {
     uint8_t rgoc_last_;  // +53 raw[26:22] register: last group of output channels (unused by operation)
     uint8_t rstride_d_;  // +54 raw[29:27] output stride shape register index
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
-    uint32_t rgoc_val_;  // +56 g_gp_reg[rgoc] (unused)
-    uint32_t rgoc_last_val_;  // +60 g_gp_reg[rgoc_last] (unused)
-    uint64_t rstride_d_val_;  // +64 g_shape_reg[rstride_d]
+    uint32_t rgoc_val_;  // +56 _G.gp_reg[rgoc] (unused)
+    uint32_t rgoc_last_val_;  // +60 _G.gp_reg[rgoc_last] (unused)
+    uint64_t rstride_d_val_;  // +64 _G.shape_reg[rstride_d]
     void get_next_pc() override;
     void operation() override;
     ~PuOfConf1Instruction() override;
@@ -167,8 +167,8 @@ struct PuOfConf2Instruction : public KInstruction {
     uint8_t reserved_22_;  // +53 raw[26:22] decoded but unused
     uint8_t rshape_d_;  // +54 raw[29:27] output shape register index
     uint8_t reserved_30_;  // +55 raw[31:30] reserved, unused
-    uint32_t raddr_d_val_;  // +56 g_gp_reg[raddr_d] -> Conv2D cfg[34]
-    uint64_t rshape_d_val_;  // +64 g_shape_reg[rshape_d]
+    uint32_t raddr_d_val_;  // +56 _G.gp_reg[raddr_d] -> Conv2D cfg[34]
+    uint64_t rshape_d_val_;  // +64 _G.shape_reg[rshape_d]
     void get_next_pc() override;
     void operation() override;
     ~PuOfConf2Instruction() override;

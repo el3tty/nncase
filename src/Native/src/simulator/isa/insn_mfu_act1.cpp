@@ -16,7 +16,7 @@ inline uint32_t field(uint64_t raw, unsigned lo, unsigned width)
 // Virtual-to-physical style translation through the MMU table: 28-bit offset + 32 * entry[addr >> 28].
 inline uint32_t mmu_translate(uint32_t addr)
 {
-    return (addr & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (addr >> 28)];
+    return (addr & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (addr >> 28)];
 }
 }  // namespace
 
@@ -39,10 +39,10 @@ MfuAct1ComputeInstruction Simulator::InstParser<MfuAct1ComputeInstruction, 32>(u
     inst.raddr_s2_ = field(raw, 17, 5);
     inst.raddr_arg_ = field(raw, 22, 5);
     inst.reserved_27_ = field(raw, 27, 5);
-    inst.raddr_d1_val_ = g_gp_reg[inst.raddr_d1_];
-    inst.raddr_s1_val_ = g_gp_reg[inst.raddr_s1_];
-    inst.raddr_s2_val_ = g_gp_reg[inst.raddr_s2_];
-    inst.raddr_arg_val_ = g_gp_reg[inst.raddr_arg_];
+    inst.raddr_d1_val_ = _G.gp_reg[inst.raddr_d1_];
+    inst.raddr_s1_val_ = _G.gp_reg[inst.raddr_s1_];
+    inst.raddr_s2_val_ = _G.gp_reg[inst.raddr_s2_];
+    inst.raddr_arg_val_ = _G.gp_reg[inst.raddr_arg_];
     inst.raddr_s1_mmu_addr_ = mmu_translate(inst.raddr_s1_val_);
     inst.raddr_s2_mmu_addr_ = mmu_translate(inst.raddr_s2_val_);
     inst.raddr_d1_mmu_addr_ = mmu_translate(inst.raddr_d1_val_);
@@ -63,7 +63,7 @@ void MfuAct1ComputeInstruction::get_next_pc()
 void MfuAct1ComputeInstruction::operation()
 {
     if (flag_)
-        debug_flag = 1;
+        _G.debug_flag = 1;
     // The MFU Act1 engine takes all its parameters from the Act1Conf* registers set earlier.
     reinterpret_cast<MeshNet *>(MeshNet::GetMeshNet())->MfuAct1();
 }
@@ -95,8 +95,8 @@ MfuAct1Conf_deqInstruction Simulator::InstParser<MfuAct1Conf_deqInstruction, 32>
     inst.sid_ = field(raw, 24, 1);
     inst.rshift_bits_ = field(raw, 25, 5);
     inst.reserved_30_ = field(raw, 30, 2);
-    inst.rscale_val_ = g_gp_reg[inst.rscale_];
-    inst.rbias_val_ = g_gp_reg[inst.rbias_];
+    inst.rscale_val_ = _G.gp_reg[inst.rscale_];
+    inst.rbias_val_ = _G.gp_reg[inst.rbias_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -200,8 +200,8 @@ MfuAct1ConfDestInstruction Simulator::InstParser<MfuAct1ConfDestInstruction, 32>
     inst.rlen_ = field(raw, 12, 5);
     inst.rshape_ = field(raw, 17, 3);
     inst.reserved_20_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
-    inst.rlen_val_ = g_gp_reg[inst.rlen_];
-    inst.rshape_val_ = g_shape_reg[inst.rshape_];
+    inst.rlen_val_ = _G.gp_reg[inst.rlen_];
+    inst.rshape_val_ = _G.shape_reg[inst.rshape_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -299,9 +299,9 @@ MfuAct1ConfSrc1Instruction Simulator::InstParser<MfuAct1ConfSrc1Instruction, 32>
     inst.sid_ = field(raw, 27, 1);
     inst.slice_loc_ = field(raw, 28, 1);
     inst.reserved_29_ = field(raw, 29, 3);
-    inst.rslice_val_ = g_gp_reg[inst.rslice_];
-    inst.rright_repeats_val_ = g_gp_reg[inst.rright_repeats_];
-    inst.rslice_repeats_val_ = g_gp_reg[inst.rslice_repeats_];
+    inst.rslice_val_ = _G.gp_reg[inst.rslice_];
+    inst.rright_repeats_val_ = _G.gp_reg[inst.rright_repeats_];
+    inst.rslice_repeats_val_ = _G.gp_reg[inst.rslice_repeats_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -359,8 +359,8 @@ MfuAct1ConfSrc2Instruction Simulator::InstParser<MfuAct1ConfSrc2Instruction, 32>
     inst.sid_ = field(raw, 20, 1);
     inst.source_type_ = field(raw, 21, 1);
     inst.reserved_22_ = field(raw, 22, 10);  // verified against asm: wider immediate (unused by operation)
-    inst.rleft_repeats_val_ = g_gp_reg[inst.rleft_repeats_];
-    inst.rshape_val_ = g_shape_reg[inst.rshape_];
+    inst.rleft_repeats_val_ = _G.gp_reg[inst.rleft_repeats_];
+    inst.rshape_val_ = _G.shape_reg[inst.rshape_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -415,9 +415,9 @@ MfuAct1ConfStrideInstruction Simulator::InstParser<MfuAct1ConfStrideInstruction,
     inst.rstride_s2_ = field(raw, 15, 3);
     inst.rstride_d1_ = field(raw, 18, 3);
     inst.reserved_21_ = field(raw, 21, 11);  // verified against asm: wider immediate (unused by operation)
-    inst.rstride_s1_val_ = g_shape_reg[inst.rstride_s1_];
-    inst.rstride_s2_val_ = g_shape_reg[inst.rstride_s2_];
-    inst.rstride_d1_val_ = g_shape_reg[inst.rstride_d1_];
+    inst.rstride_s1_val_ = _G.shape_reg[inst.rstride_s1_];
+    inst.rstride_s2_val_ = _G.shape_reg[inst.rstride_s2_];
+    inst.rstride_d1_val_ = _G.shape_reg[inst.rstride_d1_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;

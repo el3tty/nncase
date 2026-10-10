@@ -46,7 +46,7 @@ struct AI2D {
         kGlbStart = 110, kGlbDepth = 126                                       // +440, +504 (16 words each, MmuConf)
     };
 
-    uint8_t *ddr_;                   // +0     DDR base (copied from g_DDR by ai2d_proc)
+    uint8_t *ddr_;                   // +0     DDR base (copied from _G.DDR by ai2d_proc)
     uint8_t *glb_[16];               // +8     GLB bank base pointers, selected by address bits [31:28]
     uint32_t src_ch_ptr_[4];         // +136   source plane addresses (bits [31:28] = GLB bank when src_ind == 0)
     int32_t  src_x_;                 // +152
@@ -95,8 +95,8 @@ struct AI2D {
     uint32_t calc_enable_;           // +428
     uint32_t ddr_addr_offset_;       // +432   added to DDR addresses in the check point dumps (field name is a guess; the layout is verified)
     uint32_t glb_addr_offset_;       // +436   added to GLB addresses in the check point dumps (field name is a guess; the layout is verified)
-    uint32_t glb_start_[16];         // +440   MmuConf segment start (written as AI2D_Ai2dInst[seg + 110])
-    uint32_t glb_depth_[16];         // +504   MmuConf segment depth (written as AI2D_Ai2dInst[seg + 126])
+    uint32_t glb_start_[16];         // +440   MmuConf segment start (written as _G.AI2D_Ai2dInst[seg + 110])
+    uint32_t glb_depth_[16];         // +504   MmuConf segment depth (written as _G.AI2D_Ai2dInst[seg + 126])
     uint8_t  pad568_[8];            // +568   padding, never accessed in the asm
     uint8_t *cur_glb_base_;          // +576   GLB bank base of the last Print*Glb call
     uint8_t  plane_in_[4][0x10000];  // +584   loaded source planes (src_height x src_width bytes each)
@@ -141,4 +141,4 @@ struct AI2D {
 };
 
 
-constexpr size_t kAi2dWords = (sizeof(AI2D) + 3) / 4;   // minimum size of AI2D_Ai2dInst
+constexpr size_t kAi2dWords = (sizeof(AI2D) + 3) / 4;   // minimum size of _G.AI2D_Ai2dInst

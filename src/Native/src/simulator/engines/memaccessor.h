@@ -2,7 +2,7 @@
 // Little-endian view onto a block of simulated memory (one GLB/DDR segment).
 // Lifted from IDA/Hex-Rays output (MemAccessor1..MemAccessor9 in sources/).
 //
-// Usage in the ISA:   MemAccessor acc(g_GLB[addr >> 28]);  acc.MemAt<uint32_t>(addr & 0xFFFFFFF);
+// Usage in the ISA:   MemAccessor acc(_G.GLB[addr >> 28]);  acc.MemAt<uint32_t>(addr & 0xFFFFFFF);
 #include <cstdint>
 #include <cstring>
 #include <type_traits>

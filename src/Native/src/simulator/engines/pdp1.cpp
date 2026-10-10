@@ -91,8 +91,8 @@ void PDP1::PdpRedCompute()
   const Pdp1Config& c = cfg_;
   // The decompilation also builds and destroys a local array of 126 {vector, fp24, count} slots
   // that is never used; it is dropped.
-  MemAccessor src(g_GLB[c.src_addr_ >> 28] + (c.src_addr_ & 0xFFFFFFF));
-  MemAccessor dst(g_GLB[c.dst_addr_ >> 28] + (c.dst_addr_ & 0xFFFFFFF));
+  MemAccessor src(_G.GLB[c.src_addr_ >> 28] + (c.src_addr_ & 0xFFFFFFF));
+  MemAccessor dst(_G.GLB[c.dst_addr_ >> 28] + (c.dst_addr_ & 0xFFFFFFF));
 
   // --- configuration checks (each failure prints a message and exits) -------------------------
   // Maximum window_w for 4 < window_h <= 8 (small_h) and window_h > 8 (large_h): halved for 16-bit sources.

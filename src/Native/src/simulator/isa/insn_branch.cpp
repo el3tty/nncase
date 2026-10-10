@@ -28,8 +28,8 @@ BeqInstruction Simulator::InstParser<BeqInstruction, 32>(uint8_t ** pc)
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
-  inst.rs1_val_ = g_gp_reg[inst.rs1_];
-  inst.rs2_val_ = g_gp_reg[inst.rs2_];
+  inst.rs1_val_ = _G.gp_reg[inst.rs1_];
+  inst.rs2_val_ = _G.gp_reg[inst.rs2_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -81,8 +81,8 @@ BneInstruction Simulator::InstParser<BneInstruction, 32>(uint8_t ** pc)
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
-  inst.rs1_val_ = g_gp_reg[inst.rs1_];
-  inst.rs2_val_ = g_gp_reg[inst.rs2_];
+  inst.rs1_val_ = _G.gp_reg[inst.rs1_];
+  inst.rs2_val_ = _G.gp_reg[inst.rs2_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -134,8 +134,8 @@ BltInstruction Simulator::InstParser<BltInstruction, 32>(uint8_t ** pc)
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
-  inst.rs1_val_ = g_gp_reg[inst.rs1_];
-  inst.rs2_val_ = g_gp_reg[inst.rs2_];
+  inst.rs1_val_ = _G.gp_reg[inst.rs1_];
+  inst.rs2_val_ = _G.gp_reg[inst.rs2_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -188,8 +188,8 @@ BltuInstruction Simulator::InstParser<BltuInstruction, 32>(uint8_t ** pc)
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
-  inst.rs1_val_ = g_gp_reg[inst.rs1_];
-  inst.rs2_val_ = g_gp_reg[inst.rs2_];
+  inst.rs1_val_ = _G.gp_reg[inst.rs1_];
+  inst.rs2_val_ = _G.gp_reg[inst.rs2_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -241,8 +241,8 @@ BgeInstruction Simulator::InstParser<BgeInstruction, 32>(uint8_t ** pc)
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
-  inst.rs1_val_ = g_gp_reg[inst.rs1_];
-  inst.rs2_val_ = g_gp_reg[inst.rs2_];
+  inst.rs1_val_ = _G.gp_reg[inst.rs1_];
+  inst.rs2_val_ = _G.gp_reg[inst.rs2_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -295,8 +295,8 @@ BgeuInstruction Simulator::InstParser<BgeuInstruction, 32>(uint8_t ** pc)
   inst.rs2_ = kinst_bits(raw, 12, 5);
   inst.funct3_ = kinst_bits(raw, 17, 3);
   inst.offset_ = kinst_bits(raw, 20, 12);   // verified against asm: 12-bit field raw[31:20]
-  inst.rs1_val_ = g_gp_reg[inst.rs1_];
-  inst.rs2_val_ = g_gp_reg[inst.rs2_];
+  inst.rs1_val_ = _G.gp_reg[inst.rs1_];
+  inst.rs2_val_ = _G.gp_reg[inst.rs2_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x100000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -426,9 +426,9 @@ void JalrInstruction::get_next_pc()
 // JalrInstruction3.cpp  @0x420ef0
 void JalrInstruction::parser_operation()
 {
-  // verified against asm @0x420ef0: stores {pc+4, g_gp_reg[rs1]} as one qword at +56/+60, then set_g_gp_reg(rd, pc+4)
+  // verified against asm @0x420ef0: stores {pc+4, _G.gp_reg[rs1]} as one qword at +56/+60, then set_g_gp_reg(rd, pc+4)
   link_val_ = pc_ + 4;
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   set_g_gp_reg(rd_, link_val_);
 }
 

@@ -61,9 +61,9 @@ struct PuCompute {
     uint32_t of2_d2_ = 0;         // +124 (bounds the weight column index in TCU::FillWeight)
     uint32_t of2_d1_ = 0;         // +128
     uint32_t of2_d0_ = 0;         // +132
-    uint32_t psum_base_ = 0;      // +136 PuOfConf2 raddr_d_val: byte offset in PSUM_L1 of the output
+    uint32_t psum_base_ = 0;      // +136 PuOfConf2 raddr_d_val: byte offset in _G.PSUM_L1 of the output
     uint8_t  accumulate_ = 0;     // +140 PuComputeConf load_psum: accumulate into the PSUM already present
-    uint8_t  clear_psum_ = 0;     // +141 PuComputeConf clr_psum: zero PSUM_L1 before computing
+    uint8_t  clear_psum_ = 0;     // +141 PuComputeConf clr_psum: zero _G.PSUM_L1 before computing
     uint8_t  flag_142_ = 0;       // +142 PuComputeConf release_if
     uint8_t  pad143_ = 0;         // +143
     uint32_t mode_ = 0;           // +144 PuComputeConf dest_target: 1 = result is forwarded to ACT0

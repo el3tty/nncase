@@ -22,8 +22,6 @@
 #include <set>
 
 // TODO(layout): defined by the globals owner (act0.cpp / conv2d.cpp / dm.cpp declare the same objects locally).
-extern uint32_t PSUM_L1[];       // L1 partial-sum buffer
-extern uint8_t debug_flag;       // dump request flag (cleared after the dump)
 extern std::string debug_file;   // dump file path
 
 // Connection code (cfg_code, 1..14) -> producer node id stored in an input byte.  Out of range: 0xFF (unconnected).
@@ -101,7 +99,7 @@ inline uint16_t Load16(const uint8_t * p) { uint16_t v; std::memcpy(&v, p, 2); r
 inline void Store16(uint8_t * p, uint16_t v) { std::memcpy(p, &v, 2); }
 
 // GLB address -> host pointer: (addr >> 28) selects the segment, the low 28 bits are the offset.
-inline uint8_t * GlbPtr(uint64_t addr) { return g_GLB[addr >> 28] + (addr & 0xFFFFFFF); }
+inline uint8_t * GlbPtr(uint64_t addr) { return _G.GLB[addr >> 28] + (addr & 0xFFFFFFF); }
 
 // Three strides of a shape register (MFU::GetCHW).
 struct Chw {
@@ -533,7 +531,7 @@ void MeshNet::MnCompute()
         if (node17_per_channel_)
           function_set = static_cast<uint16_t>(channel);
       }
-      n.op_(n.operand_[0], n.operand_[1], n.operand_[2], &n.result_, cfg, g_GLB, function_set);
+      n.op_(n.operand_[0], n.operand_[1], n.operand_[2], &n.result_, cfg, _G.GLB, function_set);
     }
     const uint16_t result = node_[33].result_.bits_;
 
@@ -636,10 +634,10 @@ void MeshNet::MfuAct1()
   // ---- operands ---------------------------------------------------------------------------------------------------
   // src1 is either a PSUM_L1 byte pointer or a GLB MemAccessor; src2 and dst are always GLB.
   const uint8_t * const psum = a1_src1_psum_
-      ? reinterpret_cast<const uint8_t *>(PSUM_L1) + 4 * (a1_src1_addr_ >> 2) : nullptr;
-  const MemAccessor src1_mem(a1_src1_psum_ ? nullptr : g_GLB[a1_src1_addr_ >> 28] + addr1);
-  const MemAccessor src2_mem(g_GLB[a1_src2_addr_ >> 28] + addr2);
-  uint8_t * const dst = g_GLB[a1_dst_addr_ >> 28] + (a1_dst_addr_ & 0xFFFFFFF);
+      ? reinterpret_cast<const uint8_t *>(_G.PSUM_L1) + 4 * (a1_src1_addr_ >> 2) : nullptr;
+  const MemAccessor src1_mem(a1_src1_psum_ ? nullptr : _G.GLB[a1_src1_addr_ >> 28] + addr1);
+  const MemAccessor src2_mem(_G.GLB[a1_src2_addr_ >> 28] + addr2);
+  uint8_t * const dst = _G.GLB[a1_dst_addr_ >> 28] + (a1_dst_addr_ & 0xFFFFFFF);
 
   // dst pitches (halfwords of a1_dst_chw) and loop extents
   const uint32_t pitch_w = a1_dst_chw_ & 0xFFFF, pitch_h = (a1_dst_chw_ >> 16) & 0xFFFF, pitch_c = (a1_dst_chw_ >> 32) & 0xFFFF;
@@ -655,7 +653,7 @@ void MeshNet::MfuAct1()
         for (uint32_t w = 0; w < loop.w_; ++w) {
           const uint32_t dst_idx = dst_plane + h * pitch_w + w;
           const uint32_t dense = dense_plane + h * loop.w_ + w;
-          const uint32_t psum_idx = c * 2048 + h * loop.w_ + w;                // PSUM_L1 holds 2048 elements per channel
+          const uint32_t psum_idx = c * 2048 + h * loop.w_ + w;                // _G.PSUM_L1 holds 2048 elements per channel
 
           if (src1_valid) {
             if (a1_src1_psum_) {
@@ -693,9 +691,9 @@ void MeshNet::MfuAct1()
           const uint16_t param_set = a1_per_channel_ ? static_cast<uint16_t>(c) : 0;
           fp16 fit;
           if (a1_use_mfu_fit_)
-            mfu_linefit(&sum, &fit, a1_fit_addr_, g_GLB, param_set, 16);
+            mfu_linefit(&sum, &fit, a1_fit_addr_, _G.GLB, param_set, 16);
           else
-            act1_linefit(&sum, &fit, a1_fit_addr_, g_GLB, param_set);
+            act1_linefit(&sum, &fit, a1_fit_addr_, _G.GLB, param_set);
 
           // store
           switch (a1_dst_type_) {
@@ -719,7 +717,7 @@ void MeshNet::MfuAct1()
   }
 
   // ---- optional debug dump of the destination bytes (one hex byte per line) ------------------------------------
-  if (debug_flag) {
+  if (_G.debug_flag) {
     std::ofstream dump(debug_file.c_str(), std::ios::out);
     // verified against asm @0x43ddac: the dump starts at (a1_fit_addr & 1), which is always 0 here (odd addresses exit above).
     uint32_t batch_base = 0;
@@ -739,6 +737,6 @@ void MeshNet::MfuAct1()
       batch_base += pitch_w * pitch_h * pitch_c;
     }
     dump.close();
-    debug_flag = 0;
+    _G.debug_flag = 0;
   }
 }

@@ -42,7 +42,7 @@ Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t
   inst.dest_datatype_     = bits(raw, 23, 2);
   inst.is_by_channel_     = bits(raw, 25, 1);
   inst.reserved_26_  = bits(raw, 26, 6);
-  inst.raddr_d_val_    = g_gp_reg[inst.raddr_d_];
+  inst.raddr_d_val_    = _G.gp_reg[inst.raddr_d_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -101,7 +101,7 @@ Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8
   inst.rshape_   = bits(raw, 17, 3);
   inst.rshift_bits_ = bits(raw, 20, 5);
   inst.reserved_25_  = bits(raw, 25, 7);
-  inst.rshape_val_      = g_shape_reg[inst.rshape_];
+  inst.rshape_val_      = _G.shape_reg[inst.rshape_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -119,7 +119,7 @@ void Act0Src1ConfInstruction::get_next_pc()
 void Act0Src1ConfInstruction::operation()
 {
   // Act0::GetAct0() singleton (lazy init elided); verified against asm @0x422ec0: dword stores at Act0+0x40000..+0x40014
-  Act0 *act0 = reinterpret_cast<Act0 *>(Act0_act0);
+  Act0 *act0 = reinterpret_cast<Act0 *>(_G.Act0_act0);
   act0->batch_    = (rshape_val_ >> 48) & 0xFFFF;
   act0->channels_ = (rshape_val_ >> 32) & 0xFFFF;
   act0->height_   = (rshape_val_ >> 16) & 0xFFFF;

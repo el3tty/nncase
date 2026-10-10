@@ -17,7 +17,7 @@
 //     sub13 = raw[16:13] (DM / PU selector), sub7 = raw[11:7] (MFU selector)
 //   * the matching Simulator::InstParser<I, 16|32>(&pc) decodes (and, for the scalar ALU/LSU insns, executes via
 //     parser_operation()) and advances pc by 2 or 4; for most NPU insns main then calls I::operation()
-//   * control-flow insns (Beq..Bgeu, Jal, Jalr) retarget pc to g_DDR + next_pc when `taken` is set
+//   * control-flow insns (Beq..Bgeu, Jal, Jalr) retarget pc to _G.DDR + next_pc when `taken` is set
 //   * bit_offset += 32 (or 16 for the 16-bit encodings) after each instruction
 //   * End and FenceI leave the loop and main returns 0; Intr throws runtime_error("INTR!");
 //     an unknown opcode prints the "unsupported instruction in Cmodel, Skip!" message and throws
@@ -93,14 +93,14 @@ enum Opcode : uint32_t {
 };
 
 // Parse one instruction of class I (N = 16 or 32 bits).  When OP is set the asm calls I::operation() right after the
-// parser; when BR is set the (already advanced) pc is replaced by g_DDR + next_pc if the instruction was taken.
+// parser; when BR is set the (already advanced) pc is replaced by _G.DDR + next_pc if the instruction was taken.
 // bit_offset is advanced by N afterwards in every case.
 template <class I, unsigned N, bool OP = false, bool BR = false>
 static inline void step(Simulator & sim, uint8_t *& pc)
 {
     I inst = sim.InstParser<I, N>(&pc);
     if constexpr (OP) inst.operation();
-    if constexpr (BR) { if (inst.taken_) pc = g_DDR + inst.next_pc_; }
+    if constexpr (BR) { if (inst.taken_) pc = _G.DDR + inst.next_pc_; }
     sim.bit_offset_ += N;
 }
 // parse only                       parse + operation()              parse + operation() + branch retarget
@@ -112,6 +112,9 @@ static inline void step(Simulator & sim, uint8_t *& pc)
 
 static int simulator_run(int argc, const char ** argv)
 {
+    // The DLL build stays loaded between invocations: start every run from a clean global state.
+    initialize_globals();
+
     // verified against asm @0x40b801 / main.cold @0x4062ee: std::invalid_argument("The Argument Count != 5")
     if (argc != 5)
         throw std::invalid_argument("The Argument Count != 5");
@@ -136,7 +139,7 @@ static int simulator_run(int argc, const char ** argv)
         banks[i] = bank_storage.back().get();
     }
 
-    SimulatorInit(ddr_base, banks);     // @0x40b907, publishes g_DDR / g_GLB
+    SimulatorInit(ddr_base, banks);     // @0x40b907, publishes _G.DDR / _G.GLB
 
     // Simulator object is built inline in main (@0x40b90c..0x40ba1d): ddr pointer, copy of the bank table,
     // bit_offset = 0, has_base = 0, empty trace vectors, start_pc = 0.
@@ -335,7 +338,7 @@ static int simulator_run(int argc, const char ** argv)
         unsupported:
             // verified against asm @0x40facb..0x40fb55 (strings at .rodata 0x4800c8 / 0x480046 / 0x48004a)
             std::cout << "unsupported instruction in Cmodel, Skip!" << std::endl;
-            std::cout << "pc " << (size_t)((pc - g_DDR) - (int64_t)sim.start_pc_) << std::endl;
+            std::cout << "pc " << (size_t)((pc - _G.DDR) - (int64_t)sim.start_pc_) << std::endl;
             std::cout << "opcode " << (size_t)*pc << std::endl;
             throw std::runtime_error("Invaild Opcode");                 // main.cold @0x4058f0 (string @0x480052)
         }

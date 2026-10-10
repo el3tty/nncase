@@ -12,8 +12,6 @@
 #include <vector>
 
 // TODO(globals): not declared in globals.h (defined elsewhere in the original binary).
-extern uint8_t IF_L1[0x6000];      // L1 input-feature buffer: byte planes of 512 bytes, 1024 bytes per line
-extern uint8_t debug_flag;         // set by DmLoadW when the next L1 load should be dumped
 extern std::string debug_file;     // path of the dump file (a COW std::string at 0x5cc7a8 in the original)
 
 namespace {
@@ -38,7 +36,7 @@ struct L1View {
 // The original constructs the singleton behind a guard variable; the object is the Dm_dm global.
 char* Dm::GetDm()
 {
-  return reinterpret_cast<char*>(Dm_dm);
+  return reinterpret_cast<char*>(_G.Dm_dm);
 }
 
 // Dm2.cpp  @0x44d790 (Source 2)
@@ -117,13 +115,13 @@ std::shared_ptr<DmLoadAct0> Dm::GetLoadAct0() const
 std::shared_ptr<DmLoadL1> Dm::GetDmLoadL1() const
 {
   auto load = std::make_shared<DmLoadL1>();
-  load->if_snapshot_ = static_cast<uint8_t*>(std::malloc(sizeof(IF_L1)));
+  load->if_snapshot_ = static_cast<uint8_t*>(std::malloc(sizeof(_G.IF_L1)));
   std::copy(l1_shape_, l1_shape_ + 4, load->shape_);   // +8   (16-byte copy from Dm+44)
   load->mode_ = l1_mode_;                             // +24
   std::copy(l1_dims_, l1_dims_ + 4, load->dims_);      // +28  (16-byte copy from Dm+64)
   load->src_ = l1_src_;                               // +48
   load->layout_ = l1_layout_;                         // +56
-  std::memcpy(load->if_snapshot_, IF_L1, sizeof(IF_L1));
+  std::memcpy(load->if_snapshot_, _G.IF_L1, sizeof(_G.IF_L1));
   return load;
 }
 
@@ -142,11 +140,11 @@ void Dm::LoadL1(std::shared_ptr<DmLoadL1> load)
   const uint8_t* src = l.src_;
   int dump_lines;   // number of "lines" printed by the debug dump
 
-  std::memset(IF_L1, 0, sizeof(IF_L1));
+  std::memset(_G.IF_L1, 0, sizeof(_G.IF_L1));
 
   auto store_pair = [&](int dst, uint16_t value) {   // 16-bit element -> two byte planes
-    IF_L1[dst] = static_cast<uint8_t>(value);
-    IF_L1[dst + 512] = static_cast<uint8_t>(value >> 8);
+    _G.IF_L1[dst] = static_cast<uint8_t>(value);
+    _G.IF_L1[dst + 512] = static_cast<uint8_t>(value >> 8);
   };
 
   if (l.layout_ <= 1) {
@@ -164,7 +162,7 @@ void Dm::LoadL1(std::shared_ptr<DmLoadL1> load)
               std::memcpy(&value, src + 2 * idx, sizeof(value));
               store_pair(dst, value);
             } else {
-              IF_L1[dst] = src[idx];
+              _G.IF_L1[dst] = src[idx];
             }
           }
         }
@@ -184,7 +182,7 @@ void Dm::LoadL1(std::shared_ptr<DmLoadL1> load)
           int64_t idx = a * pitch2 + y * y_stride;
           for (int z = 0; z < n_z; ++z) {
             if (!wide) {
-              std::memcpy(&IF_L1[dst], src + idx, static_cast<size_t>(n_x));
+              std::memcpy(&_G.IF_L1[dst], src + idx, static_cast<size_t>(n_x));
             } else {
               for (int t = 0; t < n_x; ++t) {
                 uint16_t value;
@@ -200,19 +198,19 @@ void Dm::LoadL1(std::shared_ptr<DmLoadL1> load)
     }
   }
 
-  if (debug_flag) {
+  if (_G.debug_flag) {
     // One hex byte per line.
     std::ofstream dump(debug_file.c_str(), std::ios::out);
     for (int line = 0; line < dump_lines; ++line) {
       for (int x = line; x != n_x + line; ++x) {
         int idx = x;
         for (int y = 0; y < n_y; ++y) {
-          dump << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(IF_L1[idx]) << std::endl;
+          dump << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(_G.IF_L1[idx]) << std::endl;
           idx += n_x;
         }
       }
     }
-    debug_flag = 0;
+    _G.debug_flag = 0;
     dump.close();
   }
 }

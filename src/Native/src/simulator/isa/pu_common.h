@@ -8,7 +8,7 @@
 #include <ostream>
 #include "engines/checkpoint.h"
 
-#include "globals.h"  // debug_flag, PSUM_L1, ...
+#include "globals.h"  // _G.debug_flag, _G.PSUM_L1, ...
 
 namespace pu {
 
@@ -21,7 +21,7 @@ inline uint32_t bits(uint32_t raw, unsigned lo, unsigned width)
     return (raw >> lo) & ((1u << width) - 1u);
 }
 
-// 16-bit lane `i` (0 = lowest) of a packed shape register g_shape_reg[n]
+// 16-bit lane `i` (0 = lowest) of a packed shape register _G.shape_reg[n]
 // (four 16-bit dimensions per 64-bit register).
 inline uint32_t shape_word(uint64_t shape, unsigned i)
 {

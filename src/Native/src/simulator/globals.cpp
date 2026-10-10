@@ -16,46 +16,25 @@
 // Global state
 // ===================================================================================================
 
-uint32_t g_gp_reg[32];
-uint64_t g_shape_reg[8];
-uint8_t * g_DDR;
-uint8_t * g_GLB[16];
-uint32_t g_glb_start[16];
-uint32_t g_glb_depth[16];
-uint8_t g_GLB_DATA[0x400000];
-uint32_t MMU_MMUItem[32];
 
-// Singleton storage.  The instruction classes cast these word arrays to the unit class.
-// AI2D: must hold a whole object (the class is larger than 1 MiB).
-alignas(64) uint32_t AI2D_Ai2dInst[kAi2dWords];
-// Act0: two 128 KiB PSUM buffers (0x40000 bytes) followed by the configuration words up to +0x40028.
-alignas(64) uint32_t Act0_act0[0x10010];
-alignas(64) uint32_t Dm_dm[0x4000];
-alignas(64) uint32_t L2Load_L2LoadInst[0x4000];
-alignas(64) uint32_t L2Store_L2StoreInst[0x4000];
+Globals _G;
+
+void initialize_globals()
+{
+  std::memset(&_G, 0, sizeof _G);
+  // verified against ELF .data @0x53a48c/0x53a490: initial ddr_burst_num = 256, ddr_burst_len = 16.
+  _G.ddr_burst_len = 16;
+  _G.ddr_burst_num = 256;
+}
+
 // Not defined any more: CheckPoint_checkpoint, Conv2D_conv2d, MFU_MFUInst, MeshNet_MeshNetInst, PDP0_pdp0 and
 // PDP1_Pdp1Inst (the lifted classes keep their instances as function-local statics).
 
-alignas(64) uint32_t PSUM_L1[0x8000];
-alignas(64) uint8_t IF_L1[0x6000];
-alignas(64) char pdp0_out_buffer[0x20000];
 
-uint8_t debug_flag;
 std::string debug_file;
-uint8_t debug_tcu_sel;
-int debug_dmw_h;
-uint8_t step_debug_flag;
-uint8_t dump_data_flag;
-uint32_t debug_pc;
 std::vector<uint32_t> debug_dump_L3_start;
 std::vector<uint32_t> debug_dump_L3_len;
-uint32_t debug_dump_L2;
-uint32_t debug_dump_reg;
 std::map<std::string, std::vector<uint32_t>> debug_map;
-// verified against ELF .data @0x53a48c/0x53a490: initial ddr_burst_num = 256, ddr_burst_len = 16.
-uint32_t ddr_burst_len = 16;
-uint32_t ddr_burst_num = 256;
-
 
 // ---- Anonymous placeholders ----------------------------------------------------------------------
 // Addresses in the original image; mostly fields of NPU singletons, see class headers.
@@ -89,9 +68,9 @@ inline std::ostream & Hex(std::ostream & os, int width)
 void set_g_gp_reg(uint8_t reg, uint32_t value)
 {
   if (reg)
-    g_gp_reg[reg] = value;
+    _G.gp_reg[reg] = value;
   else
-    g_gp_reg[0] = 0;      // x0 is hard-wired to zero
+    _G.gp_reg[0] = 0;      // x0 is hard-wired to zero
 }
 
 // @0x41fcc0 (_global2)
@@ -124,9 +103,9 @@ void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint16_t data
 // @0x42d3e0 (_global5)
 void SimulatorInit(uint8_t * ddr, uint8_t ** glb_banks)
 {
-  g_DDR = ddr;
+  _G.DDR = ddr;
   for (int bank = 0; bank < 16; ++bank)
-    g_GLB[bank] = glb_banks[bank];
+    _G.GLB[bank] = glb_banks[bank];
 }
 
 // @0x42d4f0 (_global6)
@@ -146,17 +125,17 @@ void print_r_data(std::vector<uint16_t> & byte_masks, std::vector<uint8_t> & dat
 {
   // Position of the first set bit of the first mask (burst length if none): number of leading unused bytes.
   uint32_t first_bit = 0;
-  if (ddr_burst_len && !byte_masks.empty()) {
+  if (_G.ddr_burst_len && !byte_masks.empty()) {
     const uint32_t mask0 = byte_masks[0];
     if (!(mask0 & 1u)) {
       do
         ++first_bit;
-      while (ddr_burst_len > static_cast<uint8_t>(first_bit) && !((mask0 >> static_cast<uint8_t>(first_bit)) & 1u));
+      while (_G.ddr_burst_len > static_cast<uint8_t>(first_bit) && !((mask0 >> static_cast<uint8_t>(first_bit)) & 1u));
     }
   }
 
   for (size_t row = 0; row < byte_masks.size(); ++row) {
-    const uint32_t burst = ddr_burst_len;
+    const uint32_t burst = _G.ddr_burst_len;
     for (uint32_t col = 0; col < burst; ++col) {
       const bool enabled = (byte_masks[row] >> (burst - 1 - col)) & 1u;
       const uint64_t index = static_cast<uint64_t>(static_cast<uint32_t>(row * burst)) + burst - 1 - first_bit - col;
@@ -213,8 +192,8 @@ void calc_ddr_param(std::vector<uint32_t> & burst_addr, std::vector<uint8_t> & b
     uint32_t done = 0;                               // bytes of the transfer handled so far
     while (done < total) {
       const uint32_t start = done + ddr_addr;
-      const uint32_t burst = ddr_burst_len;
-      const uint32_t group = ddr_burst_len * ddr_burst_num;   // bytes per DDR group
+      const uint32_t burst = _G.ddr_burst_len;
+      const uint32_t group = _G.ddr_burst_len * _G.ddr_burst_num;   // bytes per DDR group
 
       // Burst-aligned address of the first burst of this piece.
       burst_addr.push_back(burst * (start / burst));
@@ -285,28 +264,28 @@ void dump_data_proc(std::string prefix)
                                std::to_string(len) + ".txt";
       std::ofstream out(name.c_str(), std::ios::out);
       for (uint32_t addr = start; addr < start + len; ++addr)
-        Hex(out, 2) << static_cast<unsigned>(g_DDR[addr]) << '\n';
+        Hex(out, 2) << static_cast<unsigned>(_G.DDR[addr]) << '\n';
     }
   }
 
-  // --- L2 (all GLB banks, flattened into g_GLB_DATA) ---
+  // --- L2 (all GLB banks, flattened into _G.GLB_DATA) ---
   std::cout << "dump_L2:" << value_of("dump_L2", 0) << std::endl;
   if (value_of("dump_L2", 0)) {
     const std::string name = prefix + "L2_pc_" + pc + ".txt";
     std::ofstream out(name.c_str(), std::ios::out);
-    std::memset(g_GLB_DATA, 0, sizeof g_GLB_DATA);
+    std::memset(_G.GLB_DATA, 0, sizeof _G.GLB_DATA);
     for (int bank = 0; bank < 16; ++bank) {
       // start / depth are counted in 32-byte lines.
-      const uint64_t byte_start = 32ull * g_glb_start[bank];
-      uint64_t byte_len = 32ull * g_glb_depth[bank];
-      if (byte_start >= sizeof g_GLB_DATA)
+      const uint64_t byte_start = 32ull * _G.glb_start[bank];
+      uint64_t byte_len = 32ull * _G.glb_depth[bank];
+      if (byte_start >= sizeof _G.GLB_DATA)
         continue;                                    // guard added: the original has no bounds check
-      if (byte_start + byte_len > sizeof g_GLB_DATA)
-        byte_len = sizeof g_GLB_DATA - byte_start;
-      std::memcpy(g_GLB_DATA + byte_start, g_GLB[bank], byte_len);
+      if (byte_start + byte_len > sizeof _G.GLB_DATA)
+        byte_len = sizeof _G.GLB_DATA - byte_start;
+      std::memcpy(_G.GLB_DATA + byte_start, _G.GLB[bank], byte_len);
     }
-    for (size_t i = 0; i < sizeof g_GLB_DATA; ++i)
-      Hex(out, 2) << static_cast<unsigned>(g_GLB_DATA[i]) << '\n';
+    for (size_t i = 0; i < sizeof _G.GLB_DATA; ++i)
+      Hex(out, 2) << static_cast<unsigned>(_G.GLB_DATA[i]) << '\n';
   }
 
   // --- registers ---
@@ -315,7 +294,7 @@ void dump_data_proc(std::string prefix)
     {
       const std::string name = prefix + "GPR_pc_" + pc + ".txt";
       std::ofstream out(name.c_str(), std::ios::out);
-      for (uint32_t reg : g_gp_reg)
+      for (uint32_t reg : _G.gp_reg)
         Hex(out, 8) << reg << '\n';
     }
     {
@@ -323,15 +302,15 @@ void dump_data_proc(std::string prefix)
       const std::string name = prefix + "MMU_pc_" + pc + ".txt";
       std::ofstream out(name.c_str(), std::ios::out);
       for (unsigned bank = 0; bank != 16; ++bank) {
-        out << std::dec << std::setw(2) << bank << ' ' << std::setw(8) << g_glb_start[bank] << ' ' << std::setw(8)
-            << g_glb_depth[bank] << '\n';
+        out << std::dec << std::setw(2) << bank << ' ' << std::setw(8) << _G.glb_start[bank] << ' ' << std::setw(8)
+            << _G.glb_depth[bank] << '\n';
       }
     }
     {
-      // verified against asm/symbols: g_shape_reg is 64 bytes (8 registers) and is directly followed by g_GLB.
+      // verified against asm/symbols: _G.shape_reg is 64 bytes (8 registers) and is directly followed by _G.GLB.
       const std::string name = prefix + "SSR_pc_" + pc + ".txt";
       std::ofstream out(name.c_str(), std::ios::out);
-      for (uint64_t shape : g_shape_reg)
+      for (uint64_t shape : _G.shape_reg)
         Hex(out, 16) << shape << '\n';
     }
   }
@@ -345,11 +324,11 @@ void dump_data_proc(std::string prefix)
 void Stringsplit(std::string const & text, std::string const & delim,
                  std::map<std::string, std::vector<uint32_t>> & out)
 {
-  debug_pc = 0;
+  _G.debug_pc = 0;
   debug_dump_L3_start.clear();
   debug_dump_L3_len.clear();
-  debug_dump_L2 = 0;
-  debug_dump_reg = 0;
+  _G.debug_dump_L2 = 0;
+  _G.debug_dump_reg = 0;
   if (text.empty())
     return;
 
@@ -369,17 +348,17 @@ void Stringsplit(std::string const & text, std::string const & delim,
   for (const std::string & token : tokens) {
     if (token.find("+debug_pc_") != std::string::npos) {
       if (token.find("end") == std::string::npos)
-        debug_pc = static_cast<uint32_t>(std::strtol(token.substr(10).c_str(), nullptr, 10));
+        _G.debug_pc = static_cast<uint32_t>(std::strtol(token.substr(10).c_str(), nullptr, 10));
       else
-        debug_pc = static_cast<uint32_t>(-1);
+        _G.debug_pc = static_cast<uint32_t>(-1);
     } else if (token.find("+dump_L3_start_") != std::string::npos) {
       debug_dump_L3_start.push_back(static_cast<uint32_t>(std::strtol(token.substr(15).c_str(), nullptr, 10)));
     } else if (token.find("+dump_L3_len_") != std::string::npos) {
       debug_dump_L3_len.push_back(static_cast<uint32_t>(std::strtol(token.substr(13).c_str(), nullptr, 10)));
     } else if (token.find("+dump_L2_data") != std::string::npos) {
-      debug_dump_L2 = 1;
+      _G.debug_dump_L2 = 1;
     } else if (token.find("+dump_reg") != std::string::npos) {
-      debug_dump_reg = 1;
+      _G.debug_dump_reg = 1;
     }
   }
 
@@ -388,37 +367,37 @@ void Stringsplit(std::string const & text, std::string const & delim,
     debug_dump_L3_len.push_back(0);
   }
 
-  out["pc"] = std::vector<uint32_t>{debug_pc};
+  out["pc"] = std::vector<uint32_t>{_G.debug_pc};
   out["dump_L3_start"] = debug_dump_L3_start;
   out["dump_L3_len"] = debug_dump_L3_len;
-  out["dump_L2"] = std::vector<uint32_t>{debug_dump_L2};
-  out["dump_reg"] = std::vector<uint32_t>{debug_dump_reg};
+  out["dump_L2"] = std::vector<uint32_t>{_G.debug_dump_L2};
+  out["dump_reg"] = std::vector<uint32_t>{_G.debug_dump_reg};
 }
 
 // @0x4329b0 (_global14)
 void debug_function(uint32_t pc, std::string prefix)
 {
   std::string line;
-  dump_data_flag = 0;
-  if (step_debug_flag) {
+  _G.dump_data_flag = 0;
+  if (_G.step_debug_flag) {
     std::cout << "debug_cmd: +debug_pc_x +dump_L3_start_x +dump_L3_len_x +dump_L2_data +dump_reg [input other for end]"
               << std::endl;
     std::getline(std::cin, line);
     Stringsplit(line, " ", debug_map);
     const std::vector<uint32_t> & stop_pc = debug_map["pc"];
     std::cout << "set pc: " << (stop_pc.empty() ? 0u : stop_pc[0]) << std::endl;
-    step_debug_flag = 0;
+    _G.step_debug_flag = 0;
   }
 
   const std::vector<uint32_t> & stop_pc = debug_map["pc"];
   if ((stop_pc.empty() ? 0u : stop_pc[0]) == pc) {
-    step_debug_flag = 1;                 // prompt again on the next call
-    dump_data_flag = 1;
-  } else if (!dump_data_flag) {
+    _G.step_debug_flag = 1;                 // prompt again on the next call
+    _G.dump_data_flag = 1;
+  } else if (!_G.dump_data_flag) {
     return;
   }
   dump_data_proc(prefix);
-  dump_data_flag = 0;
+  _G.dump_data_flag = 0;
   std::cout << "current pc: " << pc << std::endl;
 }
 
@@ -584,7 +563,7 @@ struct TraceLine {
 // Byte address of the GLB segment of `glb_addr` after MMU translation: offset in the bank plus 32 * segment start.
 uint32_t GlbBase(uint32_t glb_addr)
 {
-  return (glb_addr & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (glb_addr >> 28)];
+  return (glb_addr & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (glb_addr >> 28)];
 }
 
 // Shared tile walk of mfu_glb_read and mfu_glb_write (flat mode): visits every element of the 4-D tile

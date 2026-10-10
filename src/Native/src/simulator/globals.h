@@ -21,7 +21,9 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
+#include "engines/ai2d.h"
 #include "math/numeric_types.h"
 #include "engines/memaccessor.h"
 
@@ -31,7 +33,7 @@ enum SPU_TYPE_ID : int;   // UNCERTAIN: enumerators are not visible in the dumps
 // 1. C++ helpers
 // ===================================================================================================
 
-// @0x41fc50 (_global1)  g_gp_reg[reg] = value; x0 is hard-wired to zero.
+// @0x41fc50 (_global1)  _G.gp_reg[reg] = value; x0 is hard-wired to zero.
 void set_g_gp_reg(uint8_t reg, uint32_t value);
 
 // @0x41fcc0 / @0x420020 / @0x420390 (_global2..4)  One trace line "AAAAAAAA T NN DDDD" (hex, zero filled;
@@ -41,7 +43,7 @@ void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint64_t data
 void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint32_t data, std::ofstream & out);
 void print_spu_data(uint32_t addr, SPU_TYPE_ID type, uint32_t tag, uint16_t data, std::ofstream & out);
 
-// @0x42d3e0 (_global5)  Publishes the DDR image and the 16 GLB bank pointers (g_DDR / g_GLB).
+// @0x42d3e0 (_global5)  Publishes the DDR image and the 16 GLB bank pointers (_G.DDR / _G.GLB).
 void SimulatorInit(uint8_t * ddr, uint8_t ** glb_banks);
 
 // @0x42d4f0 (_global6)  Copies the low `width` bits of `value` into `bits` starting at bit `lsb`.
@@ -129,55 +131,72 @@ int linear_quant(int add_first, int qmax, int qmin, float x, float scale, float 
 // ===================================================================================================
 // 3. Named global state
 // ===================================================================================================
-extern uint32_t g_gp_reg[32];             // RISC-V style general purpose registers (x0 stays 0)
-extern uint64_t g_shape_reg[8];           // shape registers: four 16-bit dimensions each (3-bit selector)
-extern uint8_t * g_DDR;                   // base of the simulated DDR image
 
-// Offset of `ptr` inside the DDR image (ptr - g_DDR) as a 32-bit instruction address ("pc").
-// Throws std::out_of_range when ptr lies below g_DDR or the offset does not fit in uint32_t.
+// All trivially-copyable (POD) global state of the simulator lives in the single instance `_G`.
+// The simulator can run as a DLL that stays loaded between invocations, so initialize_globals() resets it
+// at the start of every run.  Non-POD globals (debug_file, debug_dump_L3_*, debug_map) and the function-local
+// singleton units are NOT part of it, see the end of this section.
+struct Globals {
+    uint32_t gp_reg[32];                  // RISC-V style general purpose registers (x0 stays 0)
+    uint64_t shape_reg[8];                // shape registers: four 16-bit dimensions each (3-bit selector)
+    uint8_t * DDR;                        // base of the simulated DDR image
+    uint8_t * GLB[16];                    // base of each of the 16 GLB banks
+    uint32_t glb_start[16];               // MmuConf: segment start per bank (in 32-byte lines)
+    uint32_t glb_depth[16];               // MmuConf: segment depth per bank (in 32-byte lines)
+    uint8_t GLB_DATA[0x400000];           // flat 4 MiB copy of all GLB segments used by dump_data_proc
+    uint32_t MMU_MMUItem[32];             // per bank: [2*bank] = segment start, [2*bank+1] = segment depth
+
+    // Storage of the unit singletons that the instruction classes cast to the unit class
+    // (reinterpret_cast<Unit *>(X_Y)).
+    alignas(64) uint32_t AI2D_Ai2dInst[kAi2dWords];  // AI2D (sizeof(AI2D), larger than 1 MiB)
+    alignas(64) uint32_t Act0_act0[0x10010];         // Act0: two 128 KiB PSUM buffers + configuration words up to +0x40028
+    alignas(64) uint32_t Dm_dm[0x4000];              // Dm
+    alignas(64) uint32_t L2Load_L2LoadInst[0x4000];  // L2Load
+    alignas(64) uint32_t L2Store_L2StoreInst[0x4000];// L2Store
+
+    // On-chip buffers
+    alignas(64) uint32_t PSUM_L1[0x8000];            // L1 partial-sum buffer (0x20000 bytes)
+    alignas(64) uint8_t IF_L1[0x6000];               // L1 input-feature buffer
+    alignas(64) char pdp0_out_buffer[0x20000];       // PDP0 output buffer (0x20000 bytes)
+    uint8_t if_l1_buffer[0x6000];                    // Conv2D::Compute(void)::if_l1_buffer, function-local static in the original
+
+    // Debug / dump control
+    uint8_t debug_flag;                   // set when the next weight / feature load should be dumped
+    uint8_t debug_tcu_sel;                // 1 = dump TCU weights, otherwise Act0 data
+    int debug_dmw_h;                      // kernel row whose weights are dumped
+    uint8_t step_debug_flag;              // debug_function prompts for a command on the next call
+    uint8_t dump_data_flag;               // dump_data_proc is running
+    uint32_t debug_pc;                    // pc at which debug_function stops (-1: never)
+    uint32_t debug_dump_L2;               // non-zero: dump all GLB banks
+    uint32_t debug_dump_reg;              // non-zero: dump registers
+    uint32_t ddr_burst_len;               // bytes per DDR burst (initial value 16)
+    uint32_t ddr_burst_num;               // bursts per DDR group (initial value 256)
+};
+static_assert(std::is_trivial<Globals>::value, "Globals must stay POD so that initialize_globals() can zero it");
+
+extern Globals _G;
+
+// Resets _G to its power-on state: everything zero, except ddr_burst_len = 16 and ddr_burst_num = 256 (the initial
+// values of those variables in the original binary, .data @0x53a48c/0x53a490).
+void initialize_globals();
+
+// Offset of `ptr` inside the DDR image (ptr - _G.DDR) as a 32-bit instruction address ("pc").
+// Throws std::out_of_range when ptr lies below _G.DDR or the offset does not fit in uint32_t.
 inline uint32_t kpu_pc(const void * ptr)
 {
-    const uintptr_t base = reinterpret_cast<uintptr_t>(g_DDR);
+    const uintptr_t base = reinterpret_cast<uintptr_t>(_G.DDR);
     const uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
     if (addr < base || addr - base > UINT32_MAX)
         throw std::out_of_range("KPU_PC: pointer is outside of the 32-bit DDR address range");
     return static_cast<uint32_t>(addr - base);
 }
 #define KPU_PC(ptr) kpu_pc(ptr)
-extern uint8_t * g_GLB[16];               // base of each of the 16 GLB banks
-extern uint32_t g_glb_start[16];          // MmuConf: segment start per bank (in 32-byte lines)
-extern uint32_t g_glb_depth[16];          // MmuConf: segment depth per bank (in 32-byte lines)
-extern uint8_t g_GLB_DATA[0x400000];      // flat 4 MiB copy of all GLB segments used by dump_data_proc
-extern uint32_t MMU_MMUItem[32];          // per bank: [2*bank] = segment start, [2*bank+1] = segment depth
 
-// Storage of the unit singletons that the instruction classes cast to the unit class
-// (reinterpret_cast<Unit *>(X_Y)).  Sized to the lifted class, see globals.cpp.
-extern uint32_t AI2D_Ai2dInst[];          // AI2D       (sizeof(AI2D))
-extern uint32_t Act0_act0[0x10010];       // Act0       (0x40000 bytes of PSUM + configuration words)
-extern uint32_t Dm_dm[0x4000];            // Dm
-extern uint32_t L2Load_L2LoadInst[0x4000];// L2Load
-extern uint32_t L2Store_L2StoreInst[0x4000]; // L2Store
-
-// On-chip buffers
-extern uint32_t PSUM_L1[0x8000];          // L1 partial-sum buffer (0x20000 bytes)
-extern uint8_t IF_L1[0x6000];             // L1 input-feature buffer
-extern char pdp0_out_buffer[0x20000];          // PDP0 output buffer (pdp0.cpp, 0x20000 bytes)
-
-// Debug / dump control
-extern uint8_t debug_flag;                // set when the next weight / feature load should be dumped
+// Non-POD globals (not covered by initialize_globals()).
 extern std::string debug_file;            // path of that dump file
-extern uint8_t debug_tcu_sel;             // 1 = dump TCU weights, otherwise Act0 data
-extern int debug_dmw_h;                   // kernel row whose weights are dumped
-extern uint8_t step_debug_flag;           // debug_function prompts for a command on the next call
-extern uint8_t dump_data_flag;            // dump_data_proc is running
-extern uint32_t debug_pc;                 // pc at which debug_function stops (-1: never)
 extern std::vector<uint32_t> debug_dump_L3_start;  // DDR ranges to dump
 extern std::vector<uint32_t> debug_dump_L3_len;
-extern uint32_t debug_dump_L2;            // non-zero: dump all GLB banks
-extern uint32_t debug_dump_reg;           // non-zero: dump registers
 extern std::map<std::string, std::vector<uint32_t>> debug_map;   // parsed debug command
-extern uint32_t ddr_burst_len;            // bytes per DDR burst
-extern uint32_t ddr_burst_num;            // bursts per DDR group
 
 
 // ===================================================================================================

@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-extern uint8_t debug_flag;       // set by L2LoadW / DMLoadW when the next weight load should be dumped
 extern std::string debug_file;   // declared in globals (path of the dump file)
 
 namespace {
@@ -146,7 +145,7 @@ int64_t L2Load::PrintLoadDDRCheckPoint(uint32_t rel_offset, uint32_t num_bytes)
     while (chunk_end > cur) {
       const uint32_t lane = cur & 0xF;
       for (int k = 15 - (int)lane; k >= 0; --k)   // bytes cur+15-lane .. cur, highest address first
-        rdata << std::setw(2) << std::setfill('0') << (unsigned)g_DDR[cur + k];
+        rdata << std::setw(2) << std::setfill('0') << (unsigned)_G.DDR[cur + k];
       for (uint32_t i = 0; i < lane; ++i)         // lanes below the start
         rdata << std::setw(2) << std::setfill('0') << 0;
       rdata << std::endl;
@@ -325,7 +324,7 @@ void L2Load::LoadW()
     std::memcpy(buf, ddr_ptr_, (size_t)byte_count);
   }
 
-  if (debug_flag) {
+  if (_G.debug_flag) {
     // Hex dump of the staging buffer, one byte per line.
     // verified against asm @0x436340: byte_count (r13d) is overwritten with the packed size for the 4/6-bit formats at
     // @0x4363d2, so the dump length is the packed size (the buffer itself is expanded).
@@ -333,7 +332,7 @@ void L2Load::LoadW()
     dump << std::hex;
     for (int i = 0; i < byte_count; ++i)
       dump << std::setw(2) << std::setfill('0') << (unsigned)buf[i] << std::endl;
-    debug_flag = 0;
+    _G.debug_flag = 0;
   }
 
   // Scatter into the GLB: groups of (row_len_m1 + 1) elements at a pitch of 24 elements.

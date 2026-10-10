@@ -41,7 +41,7 @@
 struct EndInstruction : public KInstruction {
     uint8_t rs_;  // +49 raw[11:7] register (always x0 in the dumps)
     uint8_t reserved_12_;  // +50 raw[15:12] reserved, decoded but unused
-    uint32_t rs_val_;  // +52 g_gp_reg[rs] sampled at decode time
+    uint32_t rs_val_;  // +52 _G.gp_reg[rs] sampled at decode time
     void get_next_pc() override;
     ~EndInstruction() override;
 };
@@ -67,7 +67,7 @@ template <> FenceIInstruction Simulator::InstParser<FenceIInstruction, 16>(unsig
 struct IntrInstruction : public KInstruction {
     uint8_t rs_;  // +49 raw[11:7] register index
     uint8_t reserved0_;  // +50 raw[15:12] 4-bit field
-    uint32_t value_;  // +52 g_gp_reg[reg] sampled at decode time
+    uint32_t value_;  // +52 _G.gp_reg[reg] sampled at decode time
     void get_next_pc() override;
     ~IntrInstruction() override;
 };
@@ -86,7 +86,7 @@ template <> CcrClrInstruction Simulator::InstParser<CcrClrInstruction, 16>(unsig
 struct CcrDeclInstruction : public KInstruction {
     uint8_t rnum_;  // +49 raw[11:7] register holding the CCR number
     uint8_t reserved_12_;  // +50 raw[15:12] reserved, decoded but unused
-    uint32_t rnum_val_;  // +52 g_gp_reg[rnum] sampled at decode time
+    uint32_t rnum_val_;  // +52 _G.gp_reg[rnum] sampled at decode time
     void get_next_pc() override;
     ~CcrDeclInstruction() override;
 };

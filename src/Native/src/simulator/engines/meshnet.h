@@ -122,7 +122,7 @@ struct MeshNet {
     uint8_t  reserved4138_[2];                // +4138
     uint32_t a1_s1_rpt_c_;                    // +4140 src1 third repeat factor
     uint64_t a1_src1_dims_;                   // +4144 src1 logical dims (w, h, c, n)
-    uint16_t a1_src1_psum_;                   // +4152 non-zero: src1 comes from PSUM_L1 instead of GLB
+    uint16_t a1_src1_psum_;                   // +4152 non-zero: src1 comes from _G.PSUM_L1 instead of GLB
     uint8_t  reserved4154_[2];                // +4154
     uint32_t a1_s2_rpt_c_;                    // +4156 src2 third repeat factor
     uint64_t a1_src2_dims_;                   // +4160 src2 logical dims
@@ -144,7 +144,7 @@ struct MeshNet {
     uint8_t  a1_per_channel_;                 // +4199 non-zero: line-fit parameter set = channel index
     uint8_t  a1_use_mfu_fit_;                 // +4200 non-zero: mfu_linefit (16 segments), zero: act1_linefit
     uint8_t  reserved4201_[3];                // +4201
-    uint32_t a1_src1_addr_;                   // +4204 GLB (or PSUM_L1) address of src1
+    uint32_t a1_src1_addr_;                   // +4204 GLB (or _G.PSUM_L1) address of src1
     uint32_t a1_src2_addr_;                   // +4208
     uint32_t a1_dst_addr_;                    // +4212
     uint32_t a1_fit_addr_;                    // +4216 GLB address of the line-fit parameter table

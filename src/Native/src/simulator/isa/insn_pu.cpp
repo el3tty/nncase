@@ -27,7 +27,7 @@ void PuComputeInstruction::get_next_pc()
 void PuComputeInstruction::operation()
 {
     if (flag_)
-        debug_flag = 1;
+        _G.debug_flag = 1;
     Conv2D* conv = Conv2D::GetConv2D();
     conv->cfg_.shift_mode_ = of_shift_mode_;                   // +152
 
@@ -142,7 +142,7 @@ PuFetchifConf1Instruction Simulator::InstParser<PuFetchifConf1Instruction, 32>(u
     inst.stride_h_ = pu::bits(raw, 22, 5);
     inst.rstride_s_ = pu::bits(raw, 27, 3);
     inst.reserved_30_ = pu::bits(raw, 30, 2);
-    inst.rstride_s_val_ = g_shape_reg[inst.rstride_s_];
+    inst.rstride_s_val_ = _G.shape_reg[inst.rstride_s_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -193,8 +193,8 @@ PuFetchifConf2Instruction Simulator::InstParser<PuFetchifConf2Instruction, 32>(u
     inst.rgic_ = pu::bits(raw, 17, 5);
     inst.rgic_last_ = pu::bits(raw, 22, 5);
     inst.reserved_27_ = pu::bits(raw, 27, 5);
-    inst.rgic_val_ = g_gp_reg[inst.rgic_];
-    inst.rgic_last_val_ = g_gp_reg[inst.rgic_last_];
+    inst.rgic_val_ = _G.gp_reg[inst.rgic_];
+    inst.rgic_last_val_ = _G.gp_reg[inst.rgic_last_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -233,9 +233,9 @@ PuFetchifConf3Instruction Simulator::InstParser<PuFetchifConf3Instruction, 32>(u
     inst.rgroups_ = pu::bits(raw, 22, 5);
     inst.rshape_ = pu::bits(raw, 27, 3);
     inst.reserved_30_ = pu::bits(raw, 30, 2);
-    inst.raddr_s_val_ = g_gp_reg[inst.raddr_s_];
-    inst.rgroups_val_ = g_gp_reg[inst.rgroups_];
-    inst.rshape_val_ = g_shape_reg[inst.rshape_];
+    inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
+    inst.rgroups_val_ = _G.gp_reg[inst.rgroups_];
+    inst.rshape_val_ = _G.shape_reg[inst.rshape_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -286,8 +286,8 @@ PuFetchifConf4Instruction Simulator::InstParser<PuFetchifConf4Instruction, 32>(u
     inst.reserved_22_ = pu::bits(raw, 22, 5);
     inst.sspad_ = pu::bits(raw, 27, 3);
     inst.reserved_30_ = pu::bits(raw, 30, 2);
-    inst.rpad_value_val_ = g_gp_reg[inst.rpad_value_];
-    inst.sspad_val_ = g_shape_reg[inst.sspad_];
+    inst.rpad_value_val_ = _G.gp_reg[inst.rpad_value_];
+    inst.sspad_val_ = _G.shape_reg[inst.sspad_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -337,8 +337,8 @@ PuFetchifConf_deqInstruction Simulator::InstParser<PuFetchifConf_deqInstruction,
     inst.rbx_ = pu::bits(raw, 22, 5);
     inst.quant_type_ = pu::bits(raw, 27, 2);
     inst.reserved_29_ = pu::bits(raw, 29, 3);
-    inst.ric_val_ = g_gp_reg[inst.ric_];
-    inst.rbx_val_ = g_gp_reg[inst.rbx_];
+    inst.ric_val_ = _G.gp_reg[inst.ric_];
+    inst.rbx_val_ = _G.gp_reg[inst.rbx_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -398,8 +398,8 @@ PuForward_psumInstruction Simulator::InstParser<PuForward_psumInstruction, 32>(u
     inst.raddr_ = pu::bits(raw, 13, 5);
     inst.rlen_ = pu::bits(raw, 18, 5);
     inst.reserved_21_ = pu::bits(raw, 21, 9) & 0x1FD;   // verified against asm @0x4172c0: raw[29:21] with bit 1 (raw[22]) not copied
-    inst.raddr_val_ = g_gp_reg[inst.raddr_];
-    inst.rlen_val_ = g_gp_reg[inst.rlen_];
+    inst.raddr_val_ = _G.gp_reg[inst.raddr_];
+    inst.rlen_val_ = _G.gp_reg[inst.rlen_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -420,12 +420,12 @@ void PuForward_psumInstruction::operation()
     Conv2D* conv = reinterpret_cast<Conv2D*>(Conv2D::GetConv2D());
     // Act0::GetAct0() singleton lazy-init elided by the decompiler.
     // verified against asm @0x41e5d0: row count is the int at Act0+0x40004 (0x5CC764); src index = (int)((rs1>>2) + row*1024), copy size 4*rs2_val bytes
-    const int num_rows = static_cast<int>(reinterpret_cast<const Act0*>(Act0_act0)->channels_);
+    const int num_rows = static_cast<int>(reinterpret_cast<const Act0*>(_G.Act0_act0)->channels_);
     const uint64_t src_word_off = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(raddr_val_))) >> 2;
     for (int row = 0; row < num_rows; ++row) {
         // Each row is 4096 bytes (1024 words) in both PSUM_L1 and Act0_act0.
         const int src = static_cast<int>(src_word_off + static_cast<uint64_t>(row) * 1024);
-        std::memcpy(Act0_act0 + static_cast<size_t>(row) * 1024, PSUM_L1 + src, 4 * rlen_val_);
+        std::memcpy(_G.Act0_act0 + static_cast<size_t>(row) * 1024, _G.PSUM_L1 + src, 4 * rlen_val_);
     }
     conv->Activate();
 }
@@ -454,9 +454,9 @@ PuOfConf1Instruction Simulator::InstParser<PuOfConf1Instruction, 32>(uint8_t** p
     inst.rgoc_last_ = pu::bits(raw, 22, 5);
     inst.rstride_d_ = pu::bits(raw, 27, 3);
     inst.reserved_30_ = pu::bits(raw, 30, 2);
-    inst.rgoc_val_ = g_gp_reg[inst.rgoc_];
-    inst.rgoc_last_val_ = g_gp_reg[inst.rgoc_last_];
-    inst.rstride_d_val_ = g_shape_reg[inst.rstride_d_];
+    inst.rgoc_val_ = _G.gp_reg[inst.rgoc_];
+    inst.rgoc_last_val_ = _G.gp_reg[inst.rgoc_last_];
+    inst.rstride_d_val_ = _G.shape_reg[inst.rstride_d_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;
@@ -506,8 +506,8 @@ PuOfConf2Instruction Simulator::InstParser<PuOfConf2Instruction, 32>(uint8_t** p
     inst.reserved_22_ = pu::bits(raw, 22, 5);
     inst.rshape_d_ = pu::bits(raw, 27, 3);
     inst.reserved_30_ = pu::bits(raw, 30, 2);
-    inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
-    inst.rshape_d_val_ = g_shape_reg[inst.rshape_d_];
+    inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
+    inst.rshape_d_val_ = _G.shape_reg[inst.rshape_d_];
 
     inst.pc_ = cur;
     inst.info_ = pu::kInstInfo;

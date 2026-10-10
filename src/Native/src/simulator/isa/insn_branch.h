@@ -128,7 +128,7 @@ struct JalrInstruction : public KInstruction {
     uint8_t reserved0_;  // +51 raw[19:17] must be 0 (dispatch field of main)
     uint16_t offset_;  // +52 raw[31:20] 12-bit signed offset (raw)
     uint32_t link_val_;  // +56 pc + 4 (value written to rd)
-    uint32_t rs_val_;  // +60 value of rs1 (g_gp_reg[rs1], loaded by parser_operation)
+    uint32_t rs_val_;  // +60 value of rs1 (_G.gp_reg[rs1], loaded by parser_operation)
     void operation() override;
     void get_next_pc() override;
     void parser_operation();

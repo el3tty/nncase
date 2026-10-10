@@ -23,8 +23,8 @@
 //   0x54C470  +48  wconf (64 bit; low half = +48, high half = weight_count at +52)
 //   0x54C478  +56  compressed     (L2LoadWConf, load_flag != 0)
 //   0x54C47C  +60  row_len_m1     (L2LoadW, len_val)
-//   0x54C480  +64  ddr_ptr        (L2Load / L2LoadW, g_DDR + ddr_offset)
-//   0x54C488  +72  glb_ptr        (L2Load / L2LoadW, g_GLB[bank] + (glb_addr & 0xFFFFFFF))
+//   0x54C480  +64  ddr_ptr        (L2Load / L2LoadW, _G.DDR + ddr_offset)
+//   0x54C488  +72  glb_ptr        (L2Load / L2LoadW, _G.GLB[bank] + (glb_addr & 0xFFFFFFF))
 //   0x54C490  +80  mode0          (L2LoadConf)
 //   0x54C491  +81  mode1          (L2LoadConf)
 //   0x54C492  +82  w_mode0        (L2LoadWConf)
@@ -56,7 +56,7 @@ struct L2Load {
     uint32_t weight_count_;    // +52  high half of wconf: number of weight elements
     uint32_t compressed_;      // +56  non-zero: weights are stored in the 16-byte-block bitmap format
     uint32_t row_len_m1_;      // +60  elements per destination row group, minus one
-    uint8_t * ddr_ptr_;        // +64  source pointer (g_DDR + ddr_offset)
+    uint8_t * ddr_ptr_;        // +64  source pointer (_G.DDR + ddr_offset)
     uint8_t * glb_ptr_;        // +72  destination pointer inside the GLB bank
     // Data format of Load (mode == 0x201: float32 in DDR -> float16 in GLB; mode0 != 0: 16-bit
     // elements; otherwise 8-bit elements).

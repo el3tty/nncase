@@ -46,18 +46,18 @@ void LbInstruction::get_next_pc()
 // LbInstruction2.cpp  @0x422450
 void LbInstruction::parser_operation()
 {
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rs_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  MemAccessor mem(g_GLB[seg]);
+  MemAccessor mem(_G.GLB[seg]);
   int32_t value = (int8_t)mem.MemAt<uint8_t>(off);   // LB: sign-extend byte
   result_ = value;
   set_g_gp_reg(rd_, value);
-  mem_addr_ = 32 * MMU_MMUItem[2 * seg] + off;
+  mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
 // LbInstruction3.cpp  @0x429360
@@ -100,18 +100,18 @@ void LbuInstruction::get_next_pc()
 // LbuInstruction2.cpp  @0x422510
 void LbuInstruction::parser_operation()
 {
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rs_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  MemAccessor mem(g_GLB[seg]);
+  MemAccessor mem(_G.GLB[seg]);
   uint32_t value = mem.MemAt<uint8_t>(off);   // LBU: zero-extend byte
   result_ = value;
   set_g_gp_reg(rd_, value);
-  mem_addr_ = 32 * MMU_MMUItem[2 * seg] + off;
+  mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
 // LbuInstruction3.cpp  @0x429300
@@ -154,18 +154,18 @@ void LhInstruction::get_next_pc()
 // LhInstruction2.cpp  @0x4222f0
 void LhInstruction::parser_operation()
 {
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rs_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  MemAccessor mem(g_GLB[seg]);
+  MemAccessor mem(_G.GLB[seg]);
   int32_t value = (int16_t)mem.MemAt<uint16_t>(off);   // LH: sign-extend halfword
   result_ = value;
   set_g_gp_reg(rd_, value);
-  mem_addr_ = 32 * MMU_MMUItem[2 * seg] + off;
+  mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
 // LhInstruction3.cpp  @0x4267b0
@@ -208,18 +208,18 @@ void LhuInstruction::get_next_pc()
 // LhuInstruction2.cpp  @0x4223b0
 void LhuInstruction::parser_operation()
 {
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rs_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  MemAccessor mem(g_GLB[seg]);
+  MemAccessor mem(_G.GLB[seg]);
   uint32_t value = mem.MemAt<uint16_t>(off);   // LHU: zero-extend halfword
   result_ = value;
   set_g_gp_reg(rd_, value);
-  mem_addr_ = 32 * MMU_MMUItem[2 * seg] + off;
+  mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
 // LhuInstruction3.cpp  @0x426760
@@ -262,18 +262,18 @@ void LwInstruction::get_next_pc()
 // LwInstruction2.cpp  @0x420990
 void LwInstruction::parser_operation()
 {
-  rs_val_ = g_gp_reg[rs_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rs_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  MemAccessor mem(g_GLB[seg]);
+  MemAccessor mem(_G.GLB[seg]);
   uint32_t value = mem.MemAt<uint32_t>(off);   // LW: 32-bit little-endian word
   result_ = value;
   set_g_gp_reg(rd_, value);
-  mem_addr_ = 32 * MMU_MMUItem[2 * seg] + off;
+  mem_addr_ = 32 * _G.MMU_MMUItem[2 * seg] + off;
 }
 
 // LwInstruction3.cpp  @0x426800
@@ -316,17 +316,17 @@ void SbInstruction::get_next_pc()
 // SbInstruction2.cpp  @0x420e30
 void SbInstruction::parser_operation()
 {
-  rd_val_ = g_gp_reg[rd_];
-  rs_val_ = g_gp_reg[rs_];
+  rd_val_ = _G.gp_reg[rd_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rd_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  uint8_t *glb = g_GLB[seg];            // base pointer wrapped by MemAccessor(g_GLB[seg])
+  uint8_t *glb = _G.GLB[seg];            // base pointer wrapped by MemAccessor(_G.GLB[seg])
   glb[off + 0] = (uint8_t)(rs_val_ >> 0);   // little-endian store
-  mem_addr_ = off + 32 * MMU_MMUItem[2 * seg];
+  mem_addr_ = off + 32 * _G.MMU_MMUItem[2 * seg];
 }
 
 // SbInstruction3.cpp  @0x4291e0
@@ -369,18 +369,18 @@ void ShInstruction::get_next_pc()
 // ShInstruction2.cpp  @0x420d80
 void ShInstruction::parser_operation()
 {
-  rd_val_ = g_gp_reg[rd_];
-  rs_val_ = g_gp_reg[rs_];
+  rd_val_ = _G.gp_reg[rd_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rd_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  uint8_t *glb = g_GLB[seg];            // base pointer wrapped by MemAccessor(g_GLB[seg])
+  uint8_t *glb = _G.GLB[seg];            // base pointer wrapped by MemAccessor(_G.GLB[seg])
   glb[off + 0] = (uint8_t)(rs_val_ >> 0);
   glb[off + 1] = (uint8_t)(rs_val_ >> 8);   // little-endian store
-  mem_addr_ = off + 32 * MMU_MMUItem[2 * seg];
+  mem_addr_ = off + 32 * _G.MMU_MMUItem[2 * seg];
 }
 
 // ShInstruction3.cpp  @0x4266c0
@@ -423,20 +423,20 @@ void SwInstruction::get_next_pc()
 // SwInstruction2.cpp  @0x420cb0
 void SwInstruction::parser_operation()
 {
-  rd_val_ = g_gp_reg[rd_];
-  rs_val_ = g_gp_reg[rs_];
+  rd_val_ = _G.gp_reg[rd_];
+  rs_val_ = _G.gp_reg[rs_];
   int32_t simm = offset_;
   if (offset_ & 0x800)   // sign-extend the 12-bit offset
     simm -= 4096;
   uint32_t addr = simm + rd_val_;
   uint32_t seg = addr >> 28;            // GLB segment selected by the top 4 bits
   uint32_t off = addr & 0xFFFFFFF;      // offset inside the segment
-  uint8_t *glb = g_GLB[seg];            // base pointer wrapped by MemAccessor(g_GLB[seg])
+  uint8_t *glb = _G.GLB[seg];            // base pointer wrapped by MemAccessor(_G.GLB[seg])
   glb[off + 0] = (uint8_t)(rs_val_ >> 0);
   glb[off + 1] = (uint8_t)(rs_val_ >> 8);
   glb[off + 2] = (uint8_t)(rs_val_ >> 16);
   glb[off + 3] = (uint8_t)(rs_val_ >> 24);   // little-endian store
-  mem_addr_ = off + 32 * MMU_MMUItem[2 * seg];
+  mem_addr_ = off + 32 * _G.MMU_MMUItem[2 * seg];
 }
 
 // SwInstruction3.cpp  @0x426710

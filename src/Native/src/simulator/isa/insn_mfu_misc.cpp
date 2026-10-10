@@ -69,11 +69,11 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     inst.rstride_s_ = field(raw, 20, 3);
     inst.rshape_ = field(raw, 23, 3);
     inst.reserved_26_ = field(raw, 26, 6);
-    inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
-    inst.raddr_s_val_ = g_gp_reg[inst.raddr_s_];
-    inst.shape_a_ = g_shape_reg[inst.rstride_d_];
-    inst.shape_b_ = g_shape_reg[inst.rstride_s_];
-    inst.shape_c_ = g_shape_reg[inst.rshape_];
+    inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
+    inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
+    inst.shape_a_ = _G.shape_reg[inst.rstride_d_];
+    inst.shape_b_ = _G.shape_reg[inst.rstride_s_];
+    inst.shape_c_ = _G.shape_reg[inst.rshape_];
     // (IDA also computed MMU-translated rs1_val here, but the result was discarded.)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
@@ -140,12 +140,12 @@ MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** 
     inst.rshape_ = field(raw, 20, 3);
     inst.l2_datatype_ = field(raw, 23, 2);
     inst.reserved_25_ = field(raw, 25, 7);
-    inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
-    inst.rv_val_ = g_gp_reg[inst.rv_];
-    inst.shape_a_ = g_shape_reg[inst.rstride_];
-    inst.shape_b_ = g_shape_reg[inst.rshape_];
+    inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
+    inst.rv_val_ = _G.gp_reg[inst.rv_];
+    inst.shape_a_ = _G.shape_reg[inst.rstride_];
+    inst.shape_b_ = _G.shape_reg[inst.rshape_];
     // MMU translation: 28-bit offset + 32 * table[addr >> 28].
-    inst.rd_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
+    inst.rd_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;
@@ -210,9 +210,9 @@ MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8
     inst.raddr_s_ = field(raw, 12, 5);
     inst.rshape_ = field(raw, 17, 3);
     inst.reserved_20_ = field(raw, 20, 12);  // verified against asm: wider immediate (unused by operation)
-    inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
-    inst.raddr_s_val_ = g_gp_reg[inst.raddr_s_];
-    inst.rshape_val_ = g_shape_reg[inst.rshape_];
+    inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
+    inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
+    inst.rshape_val_ = _G.shape_reg[inst.rshape_];
     // (IDA also computed MMU-translated raddr_s_val here, but the result was discarded.)
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
@@ -268,8 +268,8 @@ MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 3
     inst.rstride_s_ = field(raw, 15, 3);
     inst.cfg_ = static_cast<uint16_t>(field(raw, 18, 2) | (field(raw, 20, 5) << 8));
     inst.reserved_25_ = field(raw, 25, 7);
-    inst.rstride_d_val_ = g_shape_reg[inst.rstride_d_];
-    inst.rstride_s_val_ = g_shape_reg[inst.rstride_s_];
+    inst.rstride_d_val_ = _G.shape_reg[inst.rstride_d_];
+    inst.rstride_s_val_ = _G.shape_reg[inst.rstride_s_];
     inst.info_ = 0x400000005LL;  // two u32: instruction type 5 / kind 4
     inst.pc_ = pc_abs;
     inst.pc_rel_ = pc_abs - start_pc_;

@@ -80,9 +80,9 @@ DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t *
   inst.dest_channel_   = bits(raw, 23, 1);
   inst.is_by_channel_  = bits(raw, 24, 1);
   inst.reserved_25_  = bits(raw, 25, 7);
-  inst.raddr_s_val_   = g_gp_reg[inst.raddr_s_];
-  inst.rlen_val_    = g_gp_reg[inst.rlen_];
-  inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
+  inst.raddr_s_val_   = _G.gp_reg[inst.raddr_s_];
+  inst.rlen_val_    = _G.gp_reg[inst.rlen_];
+  inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -101,7 +101,7 @@ void DmLoadAct0Instruction::operation()
 {
   char *dm = Dm::GetDm();
   // Dm singleton: LoadAct0 section
-  at<uint64_t>(dm, 96)  = (uint64_t)(uintptr_t)g_GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB source pointer
+  at<uint64_t>(dm, 96)  = (uint64_t)(uintptr_t)_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB source pointer
   at<uint8_t>(dm, 104)  = dest_channel_;          // TODO(layout): queue selector stored in the Dm
   at<uint8_t>(dm, 105)  = is_by_channel_ != 0;
 
@@ -138,7 +138,7 @@ DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8
   inst.datatype_       = bits(raw, 20, 2);
   inst.l1_type_  = bits(raw, 22, 2);
   inst.reserved_24_  = bits(raw, 24, 8);
-  inst.rstride_s_val_      = g_shape_reg[inst.rstride_s_];
+  inst.rstride_s_val_      = _G.shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -187,10 +187,10 @@ DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc
   inst.rshape_   = bits(raw, 23, 3);
   inst.l1_type_  = bits(raw, 26, 2);
   inst.reserved_28_  = bits(raw, 28, 4);
-  inst.raddr_s_val_   = g_gp_reg[inst.raddr_s_];
-  inst.rhtoc_window_val_    = g_gp_reg[inst.rhtoc_window_];
-  inst.rshape_val_      = g_shape_reg[inst.rshape_];
-  inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
+  inst.raddr_s_val_   = _G.gp_reg[inst.raddr_s_];
+  inst.rhtoc_window_val_    = _G.gp_reg[inst.rhtoc_window_];
+  inst.rshape_val_      = _G.shape_reg[inst.rshape_];
+  inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -208,7 +208,7 @@ void DmLoadL1Instruction::get_next_pc()
 void DmLoadL1Instruction::operation()
 {
   if (flag_)
-    debug_flag = 1;   // byte at 0x5cc7b0
+    _G.debug_flag = 1;   // byte at 0x5cc7b0
 
   Dm *dm = reinterpret_cast<Dm *>(Dm::GetDm());
   // Dm+64..76: the four 16-bit dims of the shape register (dim0 = [63:48] ... dim3 = [15:0])
@@ -217,7 +217,7 @@ void DmLoadL1Instruction::operation()
   dm->l1_dims_[2] = (uint32_t)((rshape_val_ >> 16) & 0xFFFF);
   dm->l1_dims_[3] = (uint32_t)(rshape_val_ & 0xFFFF);
   // Dm+80: GLB source pointer (bank[31:28] | offset[27:0])
-  dm->l1_src_ = (const uint8_t *)(g_GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF));
+  dm->l1_src_ = (const uint8_t *)(_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF));
   // Dm+88: the value of the second register (rs_aux), not the MMU-translated address
   dm->l1_layout_ = rhtoc_window_val_;
 
@@ -249,8 +249,8 @@ DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8
   inst.rgroups_        = bits(raw, 17, 5);
   inst.rgoc_        = bits(raw, 22, 5);
   inst.reserved_27_  = bits(raw, 27, 5);
-  inst.rgroups_val_lo8_ = (uint8_t)g_gp_reg[inst.rgroups_];
-  inst.rgoc_val_    = g_gp_reg[inst.rgoc_];
+  inst.rgroups_val_lo8_ = (uint8_t)_G.gp_reg[inst.rgroups_];
+  inst.rgoc_val_    = _G.gp_reg[inst.rgoc_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -327,7 +327,7 @@ DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t
   inst.kernel_h_     = bits(raw, 17, 5);
   inst.kernel_w_     = bits(raw, 22, 5);
   inst.rstride_oc_     = bits(raw, 27, 5);
-  inst.rstride_oc_val_    = g_gp_reg[inst.rstride_oc_];
+  inst.rstride_oc_val_    = _G.gp_reg[inst.rstride_oc_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -360,7 +360,7 @@ using LoadWQueue = std::deque<std::shared_ptr<DmLoadW>>;
 
 inline uint32_t mmu_translate(uint32_t glb_addr)
 {
-  return (glb_addr & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (glb_addr >> 28)];
+  return (glb_addr & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (glb_addr >> 28)];
 }
 }  // namespace
 
@@ -383,9 +383,9 @@ DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc)
   inst.r_iochannels_   = bits(raw, 23, 3);
   inst.dest_type_   = bits(raw, 26, 2);
   inst.reserved_28_  = bits(raw, 28, 4);
-  inst.raddr_s_val_  = g_gp_reg[inst.raddr_s_];
-  inst.raddr_bw_val_  = g_gp_reg[inst.raddr_bw_];
-  inst.r_iochannels_val_lo32_ = (uint32_t)g_shape_reg[inst.r_iochannels_];
+  inst.raddr_s_val_  = _G.gp_reg[inst.raddr_s_];
+  inst.raddr_bw_val_  = _G.gp_reg[inst.raddr_bw_];
+  inst.r_iochannels_val_lo32_ = (uint32_t)_G.shape_reg[inst.r_iochannels_];
   inst.raddr_s_mmu_addr_ = mmu_translate(inst.raddr_s_val_);
   inst.raddr_bw_mmu_addr_ = mmu_translate(inst.raddr_bw_val_);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
@@ -405,12 +405,12 @@ void DmLoadWInstruction::get_next_pc()
 void DmLoadWInstruction::operation()
 {
   if (flag_)
-    debug_flag = 1;
+    _G.debug_flag = 1;
 
   char *dm = Dm::GetDm();
   // Dm singleton: LoadW section
-  at<uint64_t>(dm, 24) = (uint64_t)(uintptr_t)g_GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB pointer 0
-  at<uint64_t>(dm, 32) = (uint64_t)(uintptr_t)g_GLB[raddr_bw_val_ >> 28] + (raddr_bw_val_ & 0xFFFFFFF);  // GLB pointer 1
+  at<uint64_t>(dm, 24) = (uint64_t)(uintptr_t)_G.GLB[raddr_s_val_ >> 28] + (raddr_s_val_ & 0xFFFFFFF);  // GLB pointer 0
+  at<uint64_t>(dm, 32) = (uint64_t)(uintptr_t)_G.GLB[raddr_bw_val_ >> 28] + (raddr_bw_val_ & 0xFFFFFFF);  // GLB pointer 1
   at<uint8_t>(dm, 40)  = dest_type_;
   at<uint16_t>(dm, 42) = (uint16_t)r_iochannels_val_lo32_;   // line count (byte size = Dm+12 * Dm+42)
 
@@ -446,7 +446,7 @@ DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uin
   inst.rstride_d_   = bits(raw, 17, 3);
   inst.datatype_       = bits(raw, 20, 2);
   inst.reserved_22_  = bits(raw, 22, 10);
-  inst.rstride_d_val_      = g_shape_reg[inst.rstride_d_];
+  inst.rstride_d_val_      = _G.shape_reg[inst.rstride_d_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -494,9 +494,9 @@ DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** 
   inst.rshape_   = bits(raw, 18, 3);
   inst.src_channel_   = bits(raw, 21, 1);
   inst.reserved_22_  = bits(raw, 22, 10);
-  inst.raddr_d_val_   = g_gp_reg[inst.raddr_d_];
-  inst.rshape_val_      = g_shape_reg[inst.rshape_];
-  inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
+  inst.raddr_d_val_   = _G.gp_reg[inst.raddr_d_];
+  inst.rshape_val_      = _G.shape_reg[inst.rshape_];
+  inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -517,14 +517,14 @@ void DmStoreOfInstruction::operation()
   const uint32_t bank = raddr_d_val_ >> 28;
 
   // Dm singleton: OF-store section
-  dm->of_dst_ = g_GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);          // +128  GLB destination pointer
+  dm->of_dst_ = _G.GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);          // +128  GLB destination pointer
   dm->of_full_shape_[0] = (rshape_val_ >> 48) & 0xFFFF;              // +136  shape dim0
   dm->of_full_shape_[1] = (rshape_val_ >> 32) & 0xFFFF;              // +140  shape dim1
   dm->of_full_shape_[2] = (rshape_val_ >> 16) & 0xFFFF;              // +144  shape dim2
   dm->of_full_shape_[3] = rshape_val_ & 0xFFFF;                      // +148  shape dim3
   // verified against asm @0x422750: the binary masks the offset with 0xFFFFFF (24 bits) here, while the decoder
   // (dst_mmu_addr) uses 0xFFFFFFF (28 bits); Dm+152 is recomputed from dst_addr.
-  dm->of_mmu_addr_ = 32 * MMU_MMUItem[2 * bank] + (raddr_d_val_ & 0xFFFFFF);   // +152
+  dm->of_mmu_addr_ = 32 * _G.MMU_MMUItem[2 * bank] + (raddr_d_val_ & 0xFFFFFF);   // +152
   dm->of_use_pdp0_ = src_channel_;                                 // +156
 
   std::shared_ptr<DmStoreOf> store = dm->GetStoreOf();

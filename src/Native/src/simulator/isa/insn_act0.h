@@ -22,7 +22,7 @@ struct Act0ComputeInstruction : public KInstruction {
     uint8_t  dest_datatype_;  // +54 raw[24:23] destination datatype, stored at Act0Compute+32
     uint8_t  is_by_channel_;  // +55 raw[25] stored at Act0Compute+36
     uint8_t  reserved_26_;  // +56 raw[31:26] reserved, unused
-    uint32_t raddr_d_val_;       // +60  g_gp_reg[raddr_d]
+    uint32_t raddr_d_val_;       // +60  _G.gp_reg[raddr_d]
     void get_next_pc() override;
     void operation() override;   // the IDA prototype carried a stray int64_t argument (a register leftover)
     ~Act0ComputeInstruction() override;
@@ -38,7 +38,7 @@ struct Act0Src1ConfInstruction : public KInstruction {
     uint8_t  rshape_;  // +53 raw[19:17] shape register index
     uint8_t  rshift_bits_;  // +54 raw[24:20] no operand in the dumps; stored in the Act0 singleton
     uint16_t reserved_25_;  // +56 raw[31:25] reserved, unused
-    uint64_t rshape_val_;         // +64  g_shape_reg[rshape]: four 16-bit dims, dim0 = [63:48] ... dim3 = [15:0]
+    uint64_t rshape_val_;         // +64  _G.shape_reg[rshape]: four 16-bit dims, dim0 = [63:48] ... dim3 = [15:0]
     void get_next_pc() override;
     void operation() override;
     ~Act0Src1ConfInstruction() override;

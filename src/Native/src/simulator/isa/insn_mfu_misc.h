@@ -29,11 +29,11 @@ struct MfuMemcpyInstruction : public KInstruction {
     uint8_t rstride_s_;  // +52 raw[22:20] shape register index
     uint8_t rshape_;  // +53 raw[25:23] shape register index
     uint8_t reserved_26_;  // +54 raw[31:26] reserved, unused
-    uint32_t raddr_d_val_;  // +56 g_gp_reg[rd]
-    uint32_t raddr_s_val_;  // +60 g_gp_reg[rs1]
-    uint64_t shape_a_;  // +64 g_shape_reg[shape_a_idx]
-    uint64_t shape_b_;  // +72 g_shape_reg[shape_b_idx]
-    uint64_t shape_c_;  // +80 g_shape_reg[shape_c_idx] (halfwords handed to the MFU)
+    uint32_t raddr_d_val_;  // +56 _G.gp_reg[rd]
+    uint32_t raddr_s_val_;  // +60 _G.gp_reg[rs1]
+    uint64_t shape_a_;  // +64 _G.shape_reg[shape_a_idx]
+    uint64_t shape_b_;  // +72 _G.shape_reg[shape_b_idx]
+    uint64_t shape_c_;  // +80 _G.shape_reg[shape_c_idx] (halfwords handed to the MFU)
     void get_next_pc() override;
     void operation() override;
     ~MfuMemcpyInstruction() override;
@@ -48,10 +48,10 @@ struct MfuMemsetInstruction : public KInstruction {
     uint8_t rshape_;  // +52 raw[22:20] shape register index
     uint8_t l2_datatype_;  // +53 raw[24:23] mode
     uint8_t reserved_25_;  // +54 raw[31:25] reserved, unused
-    uint32_t raddr_d_val_;  // +56 g_gp_reg[rd]
-    uint32_t rv_val_;  // +60 g_gp_reg[rs1]: fill value
-    uint64_t shape_a_;  // +64 g_shape_reg[shape_a_idx]
-    uint64_t shape_b_;  // +72 g_shape_reg[shape_b_idx] (halfwords handed to the MFU)
+    uint32_t raddr_d_val_;  // +56 _G.gp_reg[rd]
+    uint32_t rv_val_;  // +60 _G.gp_reg[rs1]: fill value
+    uint64_t shape_a_;  // +64 _G.shape_reg[shape_a_idx]
+    uint64_t shape_b_;  // +72 _G.shape_reg[shape_b_idx] (halfwords handed to the MFU)
     uint32_t rd_addr_;  // +80 MMU-translated rd_val (decoded only)
     void get_next_pc() override;
     void operation() override;
@@ -65,9 +65,9 @@ struct MfuTransposeInstruction : public KInstruction {
     uint8_t raddr_s_;  // +50 raw[16:12] register: source address
     uint8_t rshape_;  // +51 raw[19:17] shape register index
     uint16_t reserved_20_;  // +52 raw[31:20] reserved, unused
-    uint32_t raddr_d_val_;  // +56 g_gp_reg[raddr_d]
-    uint32_t raddr_s_val_;  // +60 g_gp_reg[raddr_s]
-    uint64_t rshape_val_;  // +64 g_shape_reg[rshape]
+    uint32_t raddr_d_val_;  // +56 _G.gp_reg[raddr_d]
+    uint32_t raddr_s_val_;  // +60 _G.gp_reg[raddr_s]
+    uint64_t rshape_val_;  // +64 _G.shape_reg[rshape]
     void get_next_pc() override;
     void operation() override;
     ~MfuTransposeInstruction() override;
@@ -81,8 +81,8 @@ struct MfuTransposeConfInstruction : public KInstruction {
     uint8_t rstride_s_;  // +51 raw[17:15] source stride shape register index (MFU trans_shape_src)
     uint16_t cfg_;  // +52 raw[24:18] 16-bit config: l2_datatype = raw[19:18] (low byte, trans_elem16), permute = raw[24:20] (high byte, trans_type)
     uint8_t reserved_25_;  // +54 raw[31:25] reserved, unused
-    uint64_t rstride_d_val_;  // +56 g_shape_reg[rstride_d] (MFU trans_shape_dst)
-    uint64_t rstride_s_val_;  // +64 g_shape_reg[rstride_s] (MFU trans_shape_src)
+    uint64_t rstride_d_val_;  // +56 _G.shape_reg[rstride_d] (MFU trans_shape_dst)
+    uint64_t rstride_s_val_;  // +64 _G.shape_reg[rstride_s] (MFU trans_shape_src)
     void get_next_pc() override;
     void operation() override;
     ~MfuTransposeConfInstruction() override;

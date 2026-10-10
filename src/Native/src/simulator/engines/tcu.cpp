@@ -18,9 +18,6 @@
 #include <string>
 
 // TODO(globals): not declared in globals.h (defined elsewhere in the original binary).
-extern uint8_t debug_flag;       // dump request flag (cleared after the dump)
-extern uint8_t debug_tcu_sel;    // 1 = dump the TCU weights
-extern int debug_dmw_h;          // kernel row whose weights are dumped
 extern std::string debug_file;   // dump file path
 
 namespace {
@@ -211,7 +208,7 @@ void TCU::ComputeConv(ComputeInfo& info)
             y += info.stride_y_;
         }
 
-        if (debug_flag && debug_tcu_sel == 1 && debug_dmw_h == ky) {
+        if (_G.debug_flag && _G.debug_tcu_sel == 1 && _G.debug_dmw_h == ky) {
             // Dump the weight buffer the last FillWeight wrote (hex, 8 digits, one word per line).
             std::ofstream dump(debug_file.c_str(), std::ios::app);
             for (int r = 0; r < kRows; ++r)
@@ -222,7 +219,7 @@ void TCU::ComputeConv(ComputeInfo& info)
                         dump << std::setfill('0') << std::setw(8) << std::hex
                              << static_cast<unsigned int>(pe_[r][c].weight_[weight_prev_][j]) << std::endl;
                 }
-            debug_flag = 0;
+            _G.debug_flag = 0;
             dump.close();
         }
 

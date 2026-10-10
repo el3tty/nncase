@@ -15,8 +15,8 @@
 //   0x53A6D8  +24  glb_pitch   (L2StoreConf)
 //   0x53A6DC  +28  glb_dim3    (L2StoreConf, cleared)
 //   0x53A6E0  +32  mode0/mode1 (L2StoreConf, 64-bit store: bytes +34..+39 are zero)
-//   0x53A6E8  +40  ddr_ptr     (L2StoreInstruction, g_DDR + ddr_offset)
-//   0x53A6F0  +48  glb_ptr     (L2StoreInstruction, g_GLB[bank] + (glb_addr & 0xFFFFFFF))
+//   0x53A6E8  +40  ddr_ptr     (L2StoreInstruction, _G.DDR + ddr_offset)
+//   0x53A6F0  +48  glb_ptr     (L2StoreInstruction, _G.GLB[bank] + (glb_addr & 0xFFFFFFF))
 //   0x53A6F8  +56  batch_count (L2StoreInstruction, shape >> 48)
 //   0x53A6FC  +60  plane_count (shape >> 32)
 //   0x53A700  +64  row_count   (shape >> 16)
@@ -44,7 +44,7 @@ struct L2Store {
     uint8_t mode0_;            // +32
     uint8_t mode1_;            // +33
     uint8_t pad34_[6];         // +34  zero (the conf instruction stores the mode as a 64-bit word)
-    uint8_t * ddr_ptr_;        // +40  destination pointer (g_DDR + ddr_offset)
+    uint8_t * ddr_ptr_;        // +40  destination pointer (_G.DDR + ddr_offset)
     uint8_t * glb_ptr_;        // +48  source pointer inside the GLB bank
     // Extent of the transfer.
     uint32_t batch_count_;     // +56  number of whole tensors

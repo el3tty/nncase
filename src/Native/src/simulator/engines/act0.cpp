@@ -26,9 +26,6 @@
 #include <vector>
 
 // TODO(globals): not declared in globals.h (defined elsewhere in the original binary).
-extern uint32_t PSUM_L1[];       // L1 partial-sum buffer written by the "PSUM_L1" output route
-extern uint8_t debug_flag;       // dump request flag (cleared after the dump)
-extern uint8_t debug_tcu_sel;    // one-byte flag (tested with `cmpb $0` in the asm); the TCU dump uses it too
 extern std::string debug_file;   // dump file path (COW std::string in the original)
 
 using FP16::fp16;
@@ -331,7 +328,7 @@ void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHel
     }
   }
 
-  if (debug_flag && !debug_tcu_sel) {
+  if (_G.debug_flag && !_G.debug_tcu_sel) {
     // Dump the first byte of every output element, one hex byte per line.
     std::ofstream dump(debug_file.c_str(), std::ios::out);
     for (int ch = 0; ch < in.channels_; ++ch) {
@@ -342,7 +339,7 @@ void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHel
         }
       }
     }
-    debug_flag = 0;
+    _G.debug_flag = 0;
     dump.close();
   }
 }
@@ -387,7 +384,7 @@ void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadA
 
   // L1Helper over PSUM_L1 for the L1 output route.
   L1View psum_l1;
-  psum_l1.data_ = reinterpret_cast<uint8_t*>(PSUM_L1);
+  psum_l1.data_ = reinterpret_cast<uint8_t*>(_G.PSUM_L1);
   psum_l1.max_channels_ = 32;
   psum_l1.chan_stride_ = 4096;
   psum_l1.base_ = static_cast<int32_t>(c.out_base_);

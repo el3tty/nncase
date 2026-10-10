@@ -52,7 +52,7 @@ AI2D::~AI2D()
 // Singleton: the object is the global register block AI2D_Ai2dInst (see ai2d.h).
 AI2D *AI2D::GetAI2D()
 {
-  return reinterpret_cast<AI2D *>(AI2D_Ai2dInst);
+  return reinterpret_cast<AI2D *>(_G.AI2D_Ai2dInst);
 }
 
 // @0x45d0c0 (Source AI2D2)
@@ -914,10 +914,10 @@ void AI2D::mem_delete()
 // Runs one AI2D job: latches the memory bases, then load -> coordinate calc -> resample -> store.
 void AI2D::ai2d_proc()
 {
-  ddr_ = g_DDR;
+  ddr_ = _G.DDR;
   // The decompiler showed an overlap check plus a vectorised copy; both paths copy the 16 GLB bases.
   for (int bank = 0; bank < 16; ++bank)
-    glb_[bank] = g_GLB[bank];
+    glb_[bank] = _G.GLB[bank];
   ai_2d_para_update();
   ai_2d_para_print();
   mem_init();

@@ -20,7 +20,7 @@ struct PdpWindow {
 // field at byte offset N of PDP1 is the global at 0x54A940 + N.  The writers are the MfuPdp1*Instruction::operation()
 // functions; they write PDP1::GetPDP1()->cfg (store widths verified against the asm).
 struct Pdp1Config {
-    uint32_t src_addr_;          // +164 0x54A9E4  MfuPdp1Compute rs1_val; bank[31:28] | offset[27:0] (g_GLB)
+    uint32_t src_addr_;          // +164 0x54A9E4  MfuPdp1Compute rs1_val; bank[31:28] | offset[27:0] (_G.GLB)
     uint32_t dst_addr_;          // +168 0x54A9E8  MfuPdp1Compute rd_val
     uint8_t  window_w_;          // +172 0x54A9EC  Conf4 rs1_val (<= 64)
     uint8_t  window_h_;          // +173 0x54A9ED  Conf4 rs2_val (<= 16)

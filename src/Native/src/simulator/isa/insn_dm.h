@@ -45,8 +45,8 @@ struct DmLoadAct0Instruction : public KInstruction {
     uint8_t dest_channel_;  // +53 raw[23:23] 1: pdp0, 0: pu (Conv2D)
     uint8_t is_by_channel_;  // +54 raw[24:24] by-channel flag, copied to Dm+105
     uint8_t reserved_25_;  // +55 raw[31:25] reserved, unused
-    uint32_t raddr_s_val_;  // +56  g_gp_reg[raddr_s]  GLB address: bank[31:28] | offset[27:0]
-    uint32_t rlen_val_;  // +60  g_gp_reg[rlen]
+    uint32_t raddr_s_val_;  // +56  _G.gp_reg[raddr_s]  GLB address: bank[31:28] | offset[27:0]
+    uint32_t rlen_val_;  // +60  _G.gp_reg[rlen]
     uint32_t raddr_s_mmu_addr_;  // +64  MMU-translated source address (offset + 32 * MMU item)
     void get_next_pc() override;
     void operation() override;
@@ -63,7 +63,7 @@ struct DmLoadL1ConfInstruction : public KInstruction {
     uint8_t datatype_;  // +53 raw[21:20] element datatype, copied to Dm+60
     uint8_t l1_type_;  // +54 raw[23:22] L1 buffer type, unused by operation
     uint8_t reserved_24_;  // +55 raw[31:24] reserved, unused
-    uint64_t rstride_s_val_;  // +56  g_shape_reg[rstride_s]: dim0 = [47:32], dim1 = [31:16], dim2 = [15:0]
+    uint64_t rstride_s_val_;  // +56  _G.shape_reg[rstride_s]: dim0 = [47:32], dim1 = [31:16], dim2 = [15:0]
     void get_next_pc() override;
     void operation() override;
     ~DmLoadL1ConfInstruction() override;
@@ -79,9 +79,9 @@ struct DmLoadL1Instruction : public KInstruction {
     uint8_t rshape_;  // +53 raw[25:23] shape register index
     uint8_t l1_type_;  // +54 raw[27:26] L1 buffer type (if_, ...), unused by operation
     uint16_t reserved_28_;  // +56 raw[31:28] reserved, unused
-    uint32_t raddr_s_val_;  // +60  g_gp_reg[raddr_s]  GLB address: bank[31:28] | offset[27:0]
-    uint32_t rhtoc_window_val_;  // +64  g_gp_reg[rhtoc_window]
-    uint64_t rshape_val_;  // +72  g_shape_reg[rshape]
+    uint32_t raddr_s_val_;  // +60  _G.gp_reg[raddr_s]  GLB address: bank[31:28] | offset[27:0]
+    uint32_t rhtoc_window_val_;  // +64  _G.gp_reg[rhtoc_window]
+    uint64_t rshape_val_;  // +72  _G.shape_reg[rshape]
     uint32_t raddr_s_mmu_addr_;  // +80  MMU-translated source address (offset + 32 * MMU item)
     void get_next_pc() override;
     void operation() override;   // reconstructed from the assembly @0x423140
@@ -97,9 +97,9 @@ struct DmLoadWConf2Instruction : public KInstruction {
     uint8_t rgroups_;  // +52 raw[21:17] register: number of groups
     uint8_t rgoc_;  // +53 raw[26:22] register: groups of output channels
     uint8_t reserved_27_;  // +54 raw[31:27] reserved, unused
-    uint8_t rgroups_val_lo8_;  // +55  low byte of g_gp_reg[rgroups]
+    uint8_t rgroups_val_lo8_;  // +55  low byte of _G.gp_reg[rgroups]
                             //      verified against asm @0x4151d0: the original really stores only the low byte (movb %dil,0x37) of rs1_val
-    uint64_t rgoc_val_;  // +56  g_gp_reg[rgoc] (zero-extended)
+    uint64_t rgoc_val_;  // +56  _G.gp_reg[rgoc] (zero-extended)
     void get_next_pc() override;
     ~DmLoadWConf2Instruction() override;
 };
@@ -126,7 +126,7 @@ struct DmLoadWConfInstruction : public KInstruction {
     uint8_t kernel_w_;  // +52 raw[26:22] kernel width, copied to Dm+8
     uint8_t kernel_h_;  // +53 raw[21:17] kernel height, copied to Dm+4
     uint8_t rstride_oc_;  // +54 raw[31:27] register: output-channel stride
-    uint64_t rstride_oc_val_;  // +56  g_gp_reg[rstride_oc]  copied to Dm+12 (truncated to 32 bits)
+    uint64_t rstride_oc_val_;  // +56  _G.gp_reg[rstride_oc]  copied to Dm+12 (truncated to 32 bits)
                             //      (Dm+12 * Dm+42 is the byte count in Dm::GetLoadW)
     void get_next_pc() override;
     void operation() override;
@@ -147,9 +147,9 @@ struct DmLoadWInstruction : public KInstruction {
     uint8_t r_iochannels_;  // +53 raw[25:23] shape register index (in/out channels)
     uint8_t dest_type_;  // +54 raw[27:26] non-zero: pdp0, 0: pu (Conv2D); also Dm+40
     uint8_t reserved_28_;  // +55 raw[31:28] reserved, unused
-    uint32_t raddr_s_val_;  // +56  g_gp_reg[raddr_s]  GLB address: bank[31:28] | offset[27:0]
-    uint32_t raddr_bw_val_;  // +60  g_gp_reg[raddr_bw]
-    uint32_t r_iochannels_val_lo32_;  // +64  low 32 bits of g_shape_reg[r_iochannels] (the 64-bit value is truncated by the original)
+    uint32_t raddr_s_val_;  // +56  _G.gp_reg[raddr_s]  GLB address: bank[31:28] | offset[27:0]
+    uint32_t raddr_bw_val_;  // +60  _G.gp_reg[raddr_bw]
+    uint32_t r_iochannels_val_lo32_;  // +64  low 32 bits of _G.shape_reg[r_iochannels] (the 64-bit value is truncated by the original)
     uint32_t raddr_s_mmu_addr_;  // +68  MMU-translated src0 (offset + 32 * MMU item)
     uint32_t raddr_bw_mmu_addr_;  // +72  MMU-translated src1
     void get_next_pc() override;
@@ -166,7 +166,7 @@ struct DmStoreOfConfInstruction : public KInstruction {
     uint8_t rstride_d_;  // +52 raw[19:17] stride shape register index
     uint8_t datatype_;  // +53 raw[21:20] element datatype, copied to Dm+124
     uint16_t reserved_22_;  // +54 raw[31:22] reserved, unused
-    uint64_t rstride_d_val_;  // +56  g_shape_reg[rstride_d]: dim0 = [47:32], dim1 = [31:16], dim2 = [15:0]
+    uint64_t rstride_d_val_;  // +56  _G.shape_reg[rstride_d]: dim0 = [47:32], dim1 = [31:16], dim2 = [15:0]
     void get_next_pc() override;
     void operation() override;
     ~DmStoreOfConfInstruction() override;
@@ -185,8 +185,8 @@ struct DmStoreOfInstruction : public KInstruction {
     uint8_t rshape_;  // +52 raw[20:18] shape register index
     uint8_t src_channel_;  // +53 raw[21:21] 1: pdp0, 0: pu (Conv2D); also Dm+156
     uint16_t reserved_22_;  // +54 raw[31:22] reserved, unused
-    uint32_t raddr_d_val_;  // +56  g_gp_reg[raddr_d]  GLB address: bank[31:28] | offset[27:0]
-    uint64_t rshape_val_;  // +64  g_shape_reg[rshape]: four 16-bit dims, dim0 = [63:48] ... dim3 = [15:0]
+    uint32_t raddr_d_val_;  // +56  _G.gp_reg[raddr_d]  GLB address: bank[31:28] | offset[27:0]
+    uint64_t rshape_val_;  // +64  _G.shape_reg[rshape]: four 16-bit dims, dim0 = [63:48] ... dim3 = [15:0]
     uint32_t raddr_d_mmu_addr_;  // +72  MMU-translated destination (offset + 32 * MMU item)
     void get_next_pc() override;
     void operation() override;

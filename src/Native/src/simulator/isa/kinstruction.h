@@ -33,7 +33,7 @@ inline uint32_t kinst_bits(uint64_t raw, unsigned lo, unsigned width)
 struct KInstruction {
     uint32_t opcode_;  // +8   raw & 0x7F
     uint64_t info_;  // +16  two u32: low = instruction type (6 for decoded 32-bit insns), high = kind/class (1 branch/jump, 3 mem, 4 conf)
-    uint32_t pc_;  // +24  address of this instruction relative to g_DDR
+    uint32_t pc_;  // +24  address of this instruction relative to _G.DDR
     uint32_t pc_rel_;  // +28  pc relative to the code base (Simulator::start_pc_)
     uint32_t next_pc_;  // +32  filled by get_next_pc()/operation()
     uint8_t taken_;  // +36  set by control-flow instructions when the branch/jump is taken

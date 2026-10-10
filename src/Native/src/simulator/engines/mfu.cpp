@@ -64,7 +64,7 @@ inline uint16_t BfRound(float f) { return static_cast<uint16_t>(bfloat16::round_
 inline uint8_t * MemBase(const MemAccessor & acc) { return *reinterpret_cast<uint8_t * const *>(&acc); }
 
 // GLB address -> host pointer: (addr >> 28) selects the segment, the low 28 bits are the offset.
-inline uint8_t * GlbPtr(uint32_t addr) { return g_GLB[addr >> 28] + (addr & 0xFFFFFFF); }
+inline uint8_t * GlbPtr(uint32_t addr) { return _G.GLB[addr >> 28] + (addr & 0xFFFFFFF); }
 
 inline uint16_t Load16(const uint8_t * p) { uint16_t v; std::memcpy(&v, p, 2); return v; }
 inline void Store16(uint8_t * p, uint16_t v) { std::memcpy(p, &v, 2); }

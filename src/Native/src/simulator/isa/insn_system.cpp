@@ -45,7 +45,7 @@ EndInstruction Simulator::InstParser<EndInstruction, 16>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   inst.rs_ = kinst_bits(raw, 7, 5);
   inst.reserved_12_ = kinst_bits(raw, 12, 4);
-  inst.rs_val_ = g_gp_reg[inst.rs_];
+  inst.rs_val_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x200000006LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -143,7 +143,7 @@ IntrInstruction Simulator::InstParser<IntrInstruction, 16>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   inst.rs_ = kinst_bits(raw, 7, 5);
   inst.reserved0_ = kinst_bits(raw, 12, 4);
-  inst.value_ = g_gp_reg[inst.rs_];
+  inst.value_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x200000006LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -210,7 +210,7 @@ CcrDeclInstruction Simulator::InstParser<CcrDeclInstruction, 16>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   inst.rnum_ = kinst_bits(raw, 7, 5);
   inst.reserved_12_ = kinst_bits(raw, 12, 4);
-  inst.rnum_val_ = g_gp_reg[inst.rnum_];
+  inst.rnum_val_ = _G.gp_reg[inst.rnum_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000000LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -266,8 +266,8 @@ MmuConfInstruction Simulator::InstParser<MmuConfInstruction, 32>(uint8_t ** pc)
   inst.rdepth_ = kinst_bits(raw, 12, 5);
   inst.mmu_id_ = kinst_bits(raw, 17, 4);
   inst.reserved_21_ = kinst_bits(raw, 21, 11);   // verified against asm: raw[31:21]
-  inst.rstart_val_ = g_gp_reg[inst.rstart_];
-  inst.rdepth_val_ = g_gp_reg[inst.rdepth_];
+  inst.rstart_val_ = _G.gp_reg[inst.rstart_];
+  inst.rdepth_val_ = _G.gp_reg[inst.rdepth_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000006LL;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -285,12 +285,12 @@ void MmuConfInstruction::get_next_pc()
 // MmuConfInstruction2.cpp  @0x41e840
 void MmuConfInstruction::operation()
 {
-  AI2D_Ai2dInst[mmu_id_ + 110] = rstart_val_;
-  AI2D_Ai2dInst[mmu_id_ + 126] = rdepth_val_;
-  MMU_MMUItem[2 * mmu_id_] = rstart_val_;
-  MMU_MMUItem[2 * mmu_id_ + 1] = rdepth_val_;
-  g_glb_start[mmu_id_] = rstart_val_;
-  g_glb_depth[mmu_id_] = rdepth_val_;
+  _G.AI2D_Ai2dInst[mmu_id_ + 110] = rstart_val_;
+  _G.AI2D_Ai2dInst[mmu_id_ + 126] = rdepth_val_;
+  _G.MMU_MMUItem[2 * mmu_id_] = rstart_val_;
+  _G.MMU_MMUItem[2 * mmu_id_ + 1] = rdepth_val_;
+  _G.glb_start[mmu_id_] = rstart_val_;
+  _G.glb_depth[mmu_id_] = rdepth_val_;
 }
 
 // MmuConfInstruction3.cpp  @0x426210
@@ -310,16 +310,16 @@ void MmuSetidInstruction::get_next_pc()
 // MmuSetidInstruction2.cpp  @0x41fc80
 void MmuSetidInstruction::operation()
 {
-  set_g_gp_reg(rd_, (g_gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28));
-  result_ = g_gp_reg[rd_];
+  set_g_gp_reg(rd_, (_G.gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28));
+  result_ = _G.gp_reg[rd_];
 }
 
 // MmuSetidInstruction3.cpp  @0x420f20
 void MmuSetidInstruction::parser_operation()
 {
-  // Same effect as operation(), but writes g_gp_reg directly (bypasses set_g_gp_reg).
-  result_ = (g_gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28);
-  g_gp_reg[rd_] = result_;
+  // Same effect as operation(), but writes _G.gp_reg directly (bypasses set_g_gp_reg).
+  result_ = (_G.gp_reg[rd_] & 0xFFFFFFF) | (mmu_id_ << 28);
+  _G.gp_reg[rd_] = result_;
 }
 
 // MmuSetidInstruction4.cpp  @0x4261c0
@@ -384,13 +384,13 @@ void SsPackShapeInstruction::get_next_pc()
 // SsPackShapeInstruction2.cpp  @0x420f50
 void SsPackShapeInstruction::parser_operation()
 {
-  rn_val_ = g_gp_reg[rn_];
-  rc_val_ = g_gp_reg[rc_];
-  rh_val_ = g_gp_reg[rh_];
-  rw_val_ = g_gp_reg[rw_];
+  rn_val_ = _G.gp_reg[rn_];
+  rc_val_ = _G.gp_reg[rc_];
+  rh_val_ = _G.gp_reg[rh_];
+  rw_val_ = _G.gp_reg[rw_];
   // verified against asm @0x420f50: (rs1<<48)|(rs2<<32) in 64-bit, rs3<<16 in 32-bit arithmetic, rs4 zero-extended; no masking
   packed_ = (uint64_t)(uint32_t)(rh_val_ << 16) | rw_val_ | ((uint64_t)rn_val_ << 48) | ((uint64_t)rc_val_ << 32);
-  g_shape_reg[rss_] = packed_;
+  _G.shape_reg[rss_] = packed_;
 }
 
 // SsPackShapeInstruction3.cpp  @0x426170
@@ -435,12 +435,12 @@ void SsPackStrideInstruction::get_next_pc()
 // SsPackStrideInstruction2.cpp  @0x420fb0
 void SsPackStrideInstruction::parser_operation()
 {
-  rn_val_ = g_gp_reg[rn_];
-  rc_val_ = g_gp_reg[rc_];
-  rh_val_ = g_gp_reg[rh_];
-  // verified against asm @0x420fb0: (rs1<<32)|(rs2<<16)|rs3 in 64-bit, no masking; stored in g_shape_reg (0x9f2a20)
+  rn_val_ = _G.gp_reg[rn_];
+  rc_val_ = _G.gp_reg[rc_];
+  rh_val_ = _G.gp_reg[rh_];
+  // verified against asm @0x420fb0: (rs1<<32)|(rs2<<16)|rs3 in 64-bit, no masking; stored in _G.shape_reg (0x9f2a20)
   packed_ = (uint64_t)rh_val_ | ((uint64_t)rc_val_ << 16) | ((uint64_t)rn_val_ << 32);
-  g_shape_reg[rss_] = packed_;
+  _G.shape_reg[rss_] = packed_;
 }
 
 // SsPackStrideInstruction3.cpp  @0x426120
@@ -477,7 +477,7 @@ void ExtrwInstruction::operation()
   // AI2D::GetAI2D() singleton (lazy init elided). The singleton is kept as a raw word array in
   // globals.h (AI2D_Ai2dInst); word index n is the AI2D member at byte offset 4*n.
   // TODO(layout): name the AI2D registers (ai2d.h has them as fNNN members).
-  uint32_t *ai2d = AI2D_Ai2dInst;
+  uint32_t *ai2d = _G.AI2D_Ai2dInst;
   const uint32_t v = reg_value_;
 
   if (extrd_ <= 0x8F) {
@@ -562,7 +562,7 @@ void ExtrwInstruction::operation()
 
   // Only register 35 (byte address 140) ever reaches this: writing it starts the AI2D engine.
   if (extrd_ == 140)
-    reinterpret_cast<AI2D *>(AI2D_Ai2dInst)->ai2d_proc();
+    reinterpret_cast<AI2D *>(_G.AI2D_Ai2dInst)->ai2d_proc();
 }
 
 // ExtrwInstruction3.cpp  @0x4263a0
@@ -581,7 +581,7 @@ ExtrwInstruction Simulator::InstParser<ExtrwInstruction, 32>(uint8_t ** pc)
   inst.extrd_ = kinst_bits(raw, 7, 10);
   inst.rs_ = kinst_bits(raw, 17, 5);
   inst.imm_ = kinst_bits(raw, 22, 10);
-  inst.reg_value_ = g_gp_reg[inst.rs_];
+  inst.reg_value_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
@@ -601,7 +601,7 @@ void ExtrawInstruction::operation()
   // AI2D::GetAI2D() singleton (lazy init elided), kept as a raw word array in globals.h;
   // word index n is the AI2D member at byte offset 4*n.
   // TODO(layout): name the AI2D registers (ai2d.h has them as fNNN members).
-  uint32_t *ai2d = AI2D_Ai2dInst;
+  uint32_t *ai2d = _G.AI2D_Ai2dInst;
 
   if (extrd_ <= 0x1F) {
     // verified against asm @0x41ec50: jump table (0x48046c) is indexed by reg_addr >> 2 (16-bit), the stored
@@ -635,7 +635,7 @@ ExtrawInstruction Simulator::InstParser<ExtrawInstruction, 32>(uint8_t ** pc)
   inst.extrd_ = kinst_bits(raw, 7, 10);
   inst.rs_ = kinst_bits(raw, 17, 5);
   inst.imm_ = kinst_bits(raw, 22, 10);
-  inst.reg_value_ = g_gp_reg[inst.rs_];
+  inst.reg_value_ = _G.gp_reg[inst.rs_];
   inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)

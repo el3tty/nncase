@@ -108,7 +108,7 @@ int64_t L2Store::PrintStoreDDRCheckPoint(uint32_t rel_offset, uint32_t num_bytes
       std::memset(line_buf, 0, sizeof line_buf);
       uint32_t mask = 0;
       for (; lane < 16 && cur < window_end; ++lane, ++cur) {
-        line_buf[lane] = g_DDR[cur];
+        line_buf[lane] = _G.DDR[cur];
         mask |= 1u << lane;
       }
       wdata << std::setw(4) << std::setfill('0') << mask << " ";

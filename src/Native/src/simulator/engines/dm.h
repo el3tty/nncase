@@ -50,7 +50,7 @@ struct DmStoreOf {
 
 // L1 (input-feature) load descriptor created by Dm::GetDmLoadL1() and consumed by Dm::LoadL1().
 struct DmLoadL1 {
-    uint8_t* if_snapshot_ = nullptr;     // +0   malloc(0x6000) copy of IF_L1 taken at creation time (never read back here)
+    uint8_t* if_snapshot_ = nullptr;     // +0   malloc(0x6000) copy of _G.IF_L1 taken at creation time (never read back here)
     uint32_t shape_[4] = {};             // +8   Dm+44..59 (L1 conf shape; shape[1], shape[2] are source pitches)
     uint32_t mode_ = 0;                  // +24  Dm+60: 2 = 16-bit elements (split into two byte planes)
     uint32_t dims_[4] = {};              // +28  Dm+64..79 (dims[1] = n_y, dims[2] = n_z, dims[3] = n_x; dims[0] unused)

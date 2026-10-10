@@ -35,8 +35,8 @@ L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t *
   inst.l2_datatype_      = bits(raw, 13, 2);
   inst.ddr_datatype_      = bits(raw, 15, 3);
   inst.reserved_18_  = bits(raw, 18, 14);
-  inst.rstride_d_val_     = g_shape_reg[inst.rstride_d_];
-  inst.rstride_s_val_     = g_shape_reg[inst.rstride_s_];
+  inst.rstride_d_val_     = _G.shape_reg[inst.rstride_d_];
+  inst.rstride_s_val_     = _G.shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -55,7 +55,7 @@ void L2LoadConfInstruction::operation()
 {
   // L2Load::GetL2Load() singleton (lazy init elided); the object lives at 0x54C440.
   // verified against asm @0x41ea60: dword stores at +0/+4/+8/+12/+16/+20/+24/+28, byte stores at +0x50/+0x51
-  L2Load &l2 = *reinterpret_cast<L2Load *>(L2Load_L2LoadInst);
+  L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   l2.dst_dim0_  = (rstride_d_val_ >> 32) & 0xFFFF;
   l2.dst_dim1_  = (rstride_d_val_ >> 16) & 0xFFFF;
   l2.dst_pitch_ = rstride_d_val_ & 0xFFFF;
@@ -88,10 +88,10 @@ L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc)
   inst.raddr_s_     = bits(raw, 12, 5);
   inst.rshape_   = bits(raw, 17, 3);
   inst.reserved_20_  = bits(raw, 20, 12);
-  inst.raddr_d_val_   = g_gp_reg[inst.raddr_d_];
-  inst.raddr_s_val_ = g_gp_reg[inst.raddr_s_];
-  inst.rshape_val_      = g_shape_reg[inst.rshape_];
-  inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
+  inst.raddr_d_val_   = _G.gp_reg[inst.raddr_d_];
+  inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
+  inst.rshape_val_      = _G.shape_reg[inst.rshape_];
+  inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -110,17 +110,17 @@ void L2LoadInstruction::operation()
 {
   // L2Load::GetL2Load() singleton (lazy init elided), object at 0x54C440.
   // verified against asm @0x41e260: qword stores at +0x40/+0x48, dword stores at +0x54/+0x5c/+0x20/+0x24/+0x28/+0x2c/+0x58
-  L2Load &l2 = *reinterpret_cast<L2Load *>(L2Load_L2LoadInst);
+  L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   const uint32_t bank = raddr_d_val_ >> 28;
-  l2.ddr_ptr_      = g_DDR + raddr_s_val_;
-  l2.glb_ptr_      = g_GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);
+  l2.ddr_ptr_      = _G.DDR + raddr_s_val_;
+  l2.glb_ptr_      = _G.GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);
   l2.ddr_offset_   = raddr_s_val_;
   l2.glb_bank_     = bank;
   l2.batch_count_  = (rshape_val_ >> 48) & 0xFFFF;
   l2.plane_count_  = (rshape_val_ >> 32) & 0xFFFF;
   l2.row_count_    = (rshape_val_ >> 16) & 0xFFFF;
   l2.row_len_      = rshape_val_ & 0xFFFF;
-  l2.glb_mmu_addr_ = (raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * bank];
+  l2.glb_mmu_addr_ = (raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * bank];
   l2.Load();
 }
 
@@ -146,7 +146,7 @@ L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t
   inst.ddr_datatype_      = bits(raw, 19, 3);
   inst.enable_decompress_  = bits(raw, 22, 1);
   inst.reserved_23_  = bits(raw, 23, 9);
-  inst.wconf_val_  = ((uint64_t)g_gp_reg[inst.rlen_decompressed_] << 32) | g_gp_reg[inst.rlen_compressed_];
+  inst.wconf_val_  = ((uint64_t)_G.gp_reg[inst.rlen_decompressed_] << 32) | _G.gp_reg[inst.rlen_compressed_];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -165,7 +165,7 @@ void L2LoadWConfInstruction::operation()
 {
   // L2Load::GetL2Load() singleton (lazy init elided), object at 0x54C440.
   // verified against asm @0x41e790: setne byte at +0x38, bytes at +0x53/+0x52, qword at +0x30
-  L2Load &l2 = *reinterpret_cast<L2Load *>(L2Load_L2LoadInst);
+  L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   l2.compressed_ = enable_decompress_ != 0;
   l2.w_mode1_    = ddr_datatype_;
   l2.w_mode0_    = l2_datatype_;
@@ -192,10 +192,10 @@ L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc)
   inst.raddr_s_     = bits(raw, 12, 5);
   inst.rvalid_c_num_     = bits(raw, 17, 5);
   inst.reserved_22_  = bits(raw, 22, 10);
-  inst.raddr_d_val_   = g_gp_reg[inst.raddr_d_];
-  inst.raddr_s_val_ = g_gp_reg[inst.raddr_s_];
-  inst.rvalid_c_num_val_    = g_gp_reg[inst.rvalid_c_num_];
-  inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
+  inst.raddr_d_val_   = _G.gp_reg[inst.raddr_d_];
+  inst.raddr_s_val_ = _G.gp_reg[inst.raddr_s_];
+  inst.rvalid_c_num_val_    = _G.gp_reg[inst.rvalid_c_num_];
+  inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -213,18 +213,18 @@ void L2LoadWInstruction::get_next_pc()
 void L2LoadWInstruction::operation()
 {
   if (flag_)
-    debug_flag = 1;
+    _G.debug_flag = 1;
 
   // L2Load::GetL2Load() singleton (lazy init elided), object at 0x54C440.
   // verified against asm @0x41eb50: qword stores at +0x40/+0x48, dword stores at +0x54/+0x3c/+0x5c/+0x58
-  L2Load &l2 = *reinterpret_cast<L2Load *>(L2Load_L2LoadInst);
+  L2Load &l2 = *reinterpret_cast<L2Load *>(_G.L2Load_L2LoadInst);
   const uint32_t bank = raddr_d_val_ >> 28;
-  l2.ddr_ptr_      = g_DDR + raddr_s_val_;
-  l2.glb_ptr_      = g_GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);
+  l2.ddr_ptr_      = _G.DDR + raddr_s_val_;
+  l2.glb_ptr_      = _G.GLB[bank] + (raddr_d_val_ & 0xFFFFFFF);
   l2.ddr_offset_   = raddr_s_val_;
   l2.row_len_m1_   = rvalid_c_num_val_;
   l2.glb_bank_     = bank;
-  l2.glb_mmu_addr_ = (raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * bank];
+  l2.glb_mmu_addr_ = (raddr_d_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * bank];
   l2.LoadW();
 }
 
@@ -249,8 +249,8 @@ L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t
   inst.l2_datatype_    = bits(raw, 13, 2);
   inst.ddr_datatype_    = bits(raw, 15, 3);
   inst.reserved_18_  = bits(raw, 18, 14);
-  inst.rstride_d_val_     = g_shape_reg[inst.rstride_d_];
-  inst.rstride_s_val_     = g_shape_reg[inst.rstride_s_];
+  inst.rstride_d_val_     = _G.shape_reg[inst.rstride_d_];
+  inst.rstride_s_val_     = _G.shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -268,7 +268,7 @@ void L2StoreConfInstruction::get_next_pc()
 void L2StoreConfInstruction::operation()
 {
   // L2Store::GetL2Store() singleton (lazy init elided): the object at 0x53A6C0.
-  L2Store * st = reinterpret_cast<L2Store *>(L2Store_L2StoreInst);
+  L2Store * st = reinterpret_cast<L2Store *>(_G.L2Store_L2StoreInst);
   st->ddr_dim0_ = (rstride_d_val_ >> 32) & 0xFFFF;   // +0
   st->ddr_dim1_ = (rstride_d_val_ >> 16) & 0xFFFF;   // +4
   st->ddr_pitch_ = rstride_d_val_ & 0xFFFF;          // +8
@@ -304,10 +304,10 @@ L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc)
   inst.raddr_s_     = bits(raw, 12, 5);
   inst.rshape_   = bits(raw, 17, 3);
   inst.reserved_20_  = bits(raw, 20, 12);
-  inst.raddr_d_val_ = g_gp_reg[inst.raddr_d_];
-  inst.raddr_s_val_   = g_gp_reg[inst.raddr_s_];
-  inst.rshape_val_      = g_shape_reg[inst.rshape_];
-  inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
+  inst.raddr_d_val_ = _G.gp_reg[inst.raddr_d_];
+  inst.raddr_s_val_   = _G.gp_reg[inst.raddr_s_];
+  inst.rshape_val_      = _G.shape_reg[inst.rshape_];
+  inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
   inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
@@ -325,17 +325,17 @@ void L2StoreInstruction::get_next_pc()
 void L2StoreInstruction::operation()
 {
   // L2Store::GetL2Store() singleton (lazy init elided): the object at 0x53A6C0.
-  L2Store * st = reinterpret_cast<L2Store *>(L2Store_L2StoreInst);
+  L2Store * st = reinterpret_cast<L2Store *>(_G.L2Store_L2StoreInst);
   const uint32_t bank = raddr_s_val_ >> 28;
-  st->ddr_ptr_ = g_DDR + raddr_d_val_;                                        // +40
-  st->glb_ptr_ = g_GLB[bank] + (raddr_s_val_ & 0xFFFFFFF);                      // +48
+  st->ddr_ptr_ = _G.DDR + raddr_d_val_;                                        // +40
+  st->glb_ptr_ = _G.GLB[bank] + (raddr_s_val_ & 0xFFFFFFF);                      // +48
   st->ddr_offset_ = raddr_d_val_;                                             // +72
   st->glb_bank_ = bank;                                                     // +80
   st->batch_count_ = (rshape_val_ >> 48) & 0xFFFF;                                // +56
   st->plane_count_ = (rshape_val_ >> 32) & 0xFFFF;                                // +60
   st->row_count_ = (rshape_val_ >> 16) & 0xFFFF;                                  // +64
   st->row_len_ = rshape_val_ & 0xFFFF;                                            // +68
-  st->glb_mmu_addr_ = (raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * bank]; // +76
+  st->glb_mmu_addr_ = (raddr_s_val_ & 0xFFFFFFF) + 32 * _G.MMU_MMUItem[2 * bank]; // +76
   st->Store();
 }
 

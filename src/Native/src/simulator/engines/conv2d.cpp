@@ -11,12 +11,9 @@
 #include <memory>
 
 // TODO(globals): not declared in globals.h (defined elsewhere in the original binary).
-extern uint32_t PSUM_L1[];   // L1 partial-sum buffer, 0x20000 bytes
 
 namespace {
 
-// Conv2D::Compute(void)::if_l1_buffer: function-local static in the original (0x6000 bytes).
-uint8_t if_l1_buffer[0x6000];
 
 }  // namespace
 
@@ -55,7 +52,7 @@ void Conv2D::Activate()
     act0_param_queue_.pop_front();
 
     std::shared_ptr<DmStoreOf> store;
-    if (compute->out_route_ != 0) {   // +28: 0 = PSUM_L1 only, no DM store involved
+    if (compute->out_route_ != 0) {   // +28: 0 = _G.PSUM_L1 only, no DM store involved
         store = store_queue_.front();
         store_queue_.pop_front();
     }
@@ -72,7 +69,7 @@ void Conv2D::Compute()
     const PuCompute& pu = *pu_job;
 
     if (pu.clear_psum_)
-        std::memset(PSUM_L1, 0, 0x20000);
+        std::memset(_G.PSUM_L1, 0, 0x20000);
 
     // Unpadded extent of the IF tile (the padded size minus both borders).
     const int if_height = static_cast<int>(pu.in_height_) - static_cast<int>(pu.pad_top_) - static_cast<int>(pu.pad_bottom_);
@@ -83,14 +80,14 @@ void Conv2D::Compute()
     if (pu.if_flag_ && if_area > 0) {
         std::shared_ptr<DmLoadL1> tile = if_queue_.front();
         if_queue_.pop_front();
-        std::memcpy(if_l1_buffer, tile->if_snapshot_, sizeof(if_l1_buffer));
+        std::memcpy(_G.if_l1_buffer, tile->if_snapshot_, sizeof(_G.if_l1_buffer));
     }
     if (if_area > 0 || pu.flag_142_)
         cfg_.if_flag_ = pu.flag_142_;   // sticky copy: tells the next job whether to fetch an IF tile
 
     // ---- build the TCU job (TCU::ComputeInfo, 224 bytes on the original stack) ----
     TCU::ComputeInfo info;
-    info.ifmap_.data_ = if_l1_buffer;
+    info.ifmap_.data_ = _G.if_l1_buffer;
     info.ifmap_.max_channels_ = 24;
     info.ifmap_.chan_stride_ = 1024;
     info.ifmap_.base_ = static_cast<int32_t>(pu.if_base_);
@@ -105,7 +102,7 @@ void Conv2D::Compute()
     info.kh_ = static_cast<int32_t>(pu.kernel_h_);
     info.kw_ = static_cast<int32_t>(pu.kernel_w_);
     info.weight_line_bytes_ = static_cast<int32_t>(load_w->line_bytes_);
-    info.psum_.data_ = reinterpret_cast<uint8_t*>(PSUM_L1);
+    info.psum_.data_ = reinterpret_cast<uint8_t*>(_G.PSUM_L1);
     info.psum_.max_channels_ = 32;
     info.psum_.chan_stride_ = 4096;
     // verified against asm @0x46858c / @0x4686ab: the PSUM tensor and the window steps are filled from the snapshot
@@ -174,7 +171,7 @@ void Conv2D::Compute()
         for (int ch = 0; ch < channels; ++ch) {
             const int32_t word = (base >> 2) + static_cast<int32_t>(static_cast<uint64_t>(info.psum_.chan_stride_ * ch) >> 2);
             std::memcpy(dst + (static_cast<size_t>(ch) << 12),
-                        reinterpret_cast<const uint8_t*>(PSUM_L1) + 4 * static_cast<int64_t>(word), bytes);
+                        reinterpret_cast<const uint8_t*>(_G.PSUM_L1) + 4 * static_cast<int64_t>(word), bytes);
         }
         Activate();
     }

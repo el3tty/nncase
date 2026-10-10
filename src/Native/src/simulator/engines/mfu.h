@@ -18,7 +18,7 @@ template <typename T> struct Matrix4;                  // 4-D matrix (defined by
 struct MFU {
     // ---- configuration registers (byte offsets of the original object in the comments) --------------------
     uint32_t reg0_;                // +0    not accessed by any lifted function (the ctor @0x445da0 does not write it either)
-    uint32_t src_addr_;            // +4    GLB address of the source tensor ((addr >> 28) selects g_GLB[], low 28 bits offset)
+    uint32_t src_addr_;            // +4    GLB address of the source tensor ((addr >> 28) selects _G.GLB[], low 28 bits offset)
     uint32_t dst_addr_;            // +8    GLB address of the destination tensor
     uint32_t aux_addr_;            // +12   Sample: GLB address of the sampling grid
     uint16_t reduce_init_;         // +16   ReduceFun: initial accumulator value (bfloat16 bits)

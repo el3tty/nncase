@@ -15,7 +15,7 @@ struct TCU {
     // L1 tensor view (the layout of L1Helper, see act0.cpp L1View). 40 bytes.
     struct L1Tensor {
         uint8_t* data_ = nullptr;    // +0
-        int32_t  max_channels_ = 0; // +8   channel capacity of the buffer: 24 for the IF buffer (PE rows), 32 for PSUM_L1 (PE lanes)
+        int32_t  max_channels_ = 0; // +8   channel capacity of the buffer: 24 for the IF buffer (PE rows), 32 for _G.PSUM_L1 (PE lanes)
         int32_t  chan_stride_ = 0;   // +12  bytes per channel plane (IF: 1024, PSUM: 4096)
         int32_t  base_ = 0;          // +16  byte offset of element (0,0,0)
         int32_t  row_stride_ = 0;    // +20  per row index
@@ -27,13 +27,13 @@ struct TCU {
 
     // Everything one convolution pass needs. Built by Conv2D::Compute (224 bytes on the original stack).
     struct ComputeInfo {
-        L1Tensor ifmap_;                 // +0    input feature tensor (Conv2D's if_l1_buffer); height/width are the unpadded extents
+        L1Tensor ifmap_;                 // +0    input feature tensor (Conv2D's _G.if_l1_buffer); height/width are the unpadded extents
         uint8_t  wide_rows_ = 0;         // +40   weight block height: 0 -> 24 rows, otherwise 32
         const uint8_t* weights_ = nullptr; // +48 DmLoadW::weights_
         int32_t  kh_ = 0;                // +56   kernel rows    (PuCompute::kernel_h_)
         int32_t  kw_ = 0;                // +60   kernel columns (PuCompute::kernel_w_), <= kTaps
         int32_t  weight_line_bytes_ = 0; // +64   weight bytes per output channel (DmLoadW::line_bytes_)
-        L1Tensor psum_;                  // +72   output tensor (PSUM_L1); height/width = number of output rows/columns
+        L1Tensor psum_;                  // +72   output tensor (_G.PSUM_L1); height/width = number of output rows/columns
         int32_t  stride_x_ = 0;          // +112  window step along x   (1 when PuCompute::param_148_ != 0, else PuCompute::fetch_imm17_)
         int32_t  stride_y_ = 0;          // +116  window step along y   (1, or PuCompute::fetch_imm22_)
         int32_t  pad_bottom_ = 0;        // +120  PuCompute::pad_bottom (not read by the TCU functions; role names inferred)
