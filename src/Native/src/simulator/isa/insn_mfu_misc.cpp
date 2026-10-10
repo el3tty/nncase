@@ -57,8 +57,7 @@ MfuMemcpyInstruction Simulator::InstParser<MfuMemcpyInstruction, 32>(uint8_t ** 
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -129,8 +128,7 @@ MfuMemsetInstruction Simulator::InstParser<MfuMemsetInstruction, 32>(uint8_t ** 
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -202,8 +200,7 @@ MfuTransposeInstruction Simulator::InstParser<MfuTransposeInstruction, 32>(uint8
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -260,8 +257,7 @@ MfuTransposeConfInstruction Simulator::InstParser<MfuTransposeConfInstruction, 3
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;

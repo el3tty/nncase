@@ -10,6 +10,7 @@
 // _Z12set_g_gp_reghj; the fixed-point helpers are the only plain-C symbols, but nothing links
 // against them from C so no extern "C" is used).
 #include <cstdint>
+#include <stdexcept>
 #include <cstddef>
 #include <cmath>
 #include <cstring>
@@ -131,6 +132,18 @@ int linear_quant(int add_first, int qmax, int qmin, float x, float scale, float 
 extern uint32_t g_gp_reg[32];             // RISC-V style general purpose registers (x0 stays 0)
 extern uint64_t g_shape_reg[8];           // shape registers: four 16-bit dimensions each (3-bit selector)
 extern uint8_t * g_DDR;                   // base of the simulated DDR image
+
+// Offset of `ptr` inside the DDR image (ptr - g_DDR) as a 32-bit instruction address ("pc").
+// Throws std::out_of_range when ptr lies below g_DDR or the offset does not fit in uint32_t.
+inline uint32_t kpu_pc(const void * ptr)
+{
+    const uintptr_t base = reinterpret_cast<uintptr_t>(g_DDR);
+    const uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
+    if (addr < base || addr - base > UINT32_MAX)
+        throw std::out_of_range("KPU_PC: pointer is outside of the 32-bit DDR address range");
+    return static_cast<uint32_t>(addr - base);
+}
+#define KPU_PC(ptr) kpu_pc(ptr)
 extern uint8_t * g_GLB[16];               // base of each of the 16 GLB banks
 extern uint32_t g_glb_start[16];          // MmuConf: segment start per bank (in 32-byte lines)
 extern uint32_t g_glb_depth[16];          // MmuConf: segment depth per bank (in 32-byte lines)

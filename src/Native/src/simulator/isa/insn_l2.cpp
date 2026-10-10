@@ -38,7 +38,7 @@ L2LoadConfInstruction Simulator::InstParser<L2LoadConfInstruction, 32>(uint8_t *
   inst.rstride_d_val_     = g_shape_reg[inst.rstride_d_];
   inst.rstride_s_val_     = g_shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -93,7 +93,7 @@ L2LoadInstruction Simulator::InstParser<L2LoadInstruction, 32>(uint8_t ** pc)
   inst.rshape_val_      = g_shape_reg[inst.rshape_];
   inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -148,7 +148,7 @@ L2LoadWConfInstruction Simulator::InstParser<L2LoadWConfInstruction, 32>(uint8_t
   inst.reserved_23_  = bits(raw, 23, 9);
   inst.wconf_val_  = ((uint64_t)g_gp_reg[inst.rlen_decompressed_] << 32) | g_gp_reg[inst.rlen_compressed_];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -197,7 +197,7 @@ L2LoadWInstruction Simulator::InstParser<L2LoadWInstruction, 32>(uint8_t ** pc)
   inst.rvalid_c_num_val_    = g_gp_reg[inst.rvalid_c_num_];
   inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
   inst.info_   = 0x400000001ULL;   // {kind = 1 (L2 load), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -252,7 +252,7 @@ L2StoreConfInstruction Simulator::InstParser<L2StoreConfInstruction, 32>(uint8_t
   inst.rstride_d_val_     = g_shape_reg[inst.rstride_d_];
   inst.rstride_s_val_     = g_shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -309,7 +309,7 @@ L2StoreInstruction Simulator::InstParser<L2StoreInstruction, 32>(uint8_t ** pc)
   inst.rshape_val_      = g_shape_reg[inst.rshape_];
   inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
   inst.info_   = 0x400000002ULL;   // {kind = 2 (L2 store), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;

@@ -53,7 +53,7 @@ AddInstruction Simulator::InstParser<AddInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -104,7 +104,7 @@ SubInstruction Simulator::InstParser<SubInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -150,7 +150,7 @@ MulInstruction Simulator::InstParser<MulInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -197,7 +197,7 @@ DivInstruction Simulator::InstParser<DivInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -244,7 +244,7 @@ DivuInstruction Simulator::InstParser<DivuInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -291,7 +291,7 @@ RemInstruction Simulator::InstParser<RemInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -315,7 +315,7 @@ RemuInstruction Simulator::InstParser<RemuInstruction, 32>(uint8_t ** pc)
   inst.funct5_ = kinst_bits(raw, 17, 5);
   inst.rs2_ = kinst_bits(raw, 22, 5);
   inst.reserved_27_ = kinst_bits(raw, 27, 5);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;   // (kind << 32) | type 6
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -386,7 +386,7 @@ AddiInstruction Simulator::InstParser<AddiInstruction, 32>(uint8_t ** pc)
   inst.rs_ = kinst_bits(raw, 12, 5);
   inst.funct5_ = kinst_bits(raw, 17, 3);
   inst.imm_ = kinst_bits(raw, 20, 12);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -427,7 +427,7 @@ LuiInstruction Simulator::InstParser<LuiInstruction, 32>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.imm_ = kinst_bits(raw, 12, 20);   // bit-by-bit copy loop of raw[31:12]
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();
@@ -468,7 +468,7 @@ AuipcInstruction Simulator::InstParser<AuipcInstruction, 32>(uint8_t ** pc)
   inst.opcode_ = raw & 0x7F;
   inst.rd_ = kinst_bits(raw, 7, 5);
   inst.imm_ = kinst_bits(raw, 12, 20);   // bit-by-bit copy loop of raw[31:12]
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 6;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   inst.parser_operation();

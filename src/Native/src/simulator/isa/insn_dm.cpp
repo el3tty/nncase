@@ -35,7 +35,7 @@ DmConf_broadcastInstruction Simulator::InstParser<DmConf_broadcastInstruction, 1
   inst.psum_cascade_   = bits(raw, 12, 1);
   inst.reserved0_ = bits(raw, 13, 3);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 2;   // 16-bit instruction (asm: InstParser<...,16>, addq $2)
   return inst;
@@ -84,7 +84,7 @@ DmLoadAct0Instruction Simulator::InstParser<DmLoadAct0Instruction, 32>(uint8_t *
   inst.rlen_val_    = g_gp_reg[inst.rlen_];
   inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -140,7 +140,7 @@ DmLoadL1ConfInstruction Simulator::InstParser<DmLoadL1ConfInstruction, 32>(uint8
   inst.reserved_24_  = bits(raw, 24, 8);
   inst.rstride_s_val_      = g_shape_reg[inst.rstride_s_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -192,7 +192,7 @@ DmLoadL1Instruction Simulator::InstParser<DmLoadL1Instruction, 32>(uint8_t ** pc
   inst.rshape_val_      = g_shape_reg[inst.rshape_];
   inst.raddr_s_mmu_addr_ = (inst.raddr_s_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_s_val_ >> 28)];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -252,7 +252,7 @@ DmLoadWConf2Instruction Simulator::InstParser<DmLoadWConf2Instruction, 32>(uint8
   inst.rgroups_val_lo8_ = (uint8_t)g_gp_reg[inst.rgroups_];
   inst.rgoc_val_    = g_gp_reg[inst.rgoc_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -286,7 +286,7 @@ DmLoadWConf_deqInstruction Simulator::InstParser<DmLoadWConf_deqInstruction, 32>
   inst.quant_type_   = bits(raw, 17, 2);
   inst.reserved_19_  = bits(raw, 19, 13);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -329,7 +329,7 @@ DmLoadWConfInstruction Simulator::InstParser<DmLoadWConfInstruction, 32>(uint8_t
   inst.rstride_oc_     = bits(raw, 27, 5);
   inst.rstride_oc_val_    = g_gp_reg[inst.rstride_oc_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -389,7 +389,7 @@ DmLoadWInstruction Simulator::InstParser<DmLoadWInstruction, 32>(uint8_t ** pc)
   inst.raddr_s_mmu_addr_ = mmu_translate(inst.raddr_s_val_);
   inst.raddr_bw_mmu_addr_ = mmu_translate(inst.raddr_bw_val_);
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -448,7 +448,7 @@ DmStoreOfConfInstruction Simulator::InstParser<DmStoreOfConfInstruction, 32>(uin
   inst.reserved_22_  = bits(raw, 22, 10);
   inst.rstride_d_val_      = g_shape_reg[inst.rstride_d_];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -498,7 +498,7 @@ DmStoreOfInstruction Simulator::InstParser<DmStoreOfInstruction, 32>(uint8_t ** 
   inst.rshape_val_      = g_shape_reg[inst.rshape_];
   inst.raddr_d_mmu_addr_ = (inst.raddr_d_val_ & 0xFFFFFFF) + 32 * MMU_MMUItem[2 * (inst.raddr_d_val_ >> 28)];
   inst.info_   = 0x400000004ULL;   // {kind = 4, type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;

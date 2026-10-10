@@ -44,7 +44,7 @@ Act0ComputeInstruction Simulator::InstParser<Act0ComputeInstruction, 32>(uint8_t
   inst.reserved_26_  = bits(raw, 26, 6);
   inst.raddr_d_val_    = g_gp_reg[inst.raddr_d_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;
@@ -103,7 +103,7 @@ Act0Src1ConfInstruction Simulator::InstParser<Act0Src1ConfInstruction, 32>(uint8
   inst.reserved_25_  = bits(raw, 25, 7);
   inst.rshape_val_      = g_shape_reg[inst.rshape_];
   inst.info_   = 0x400000003ULL;   // {kind = 3 (activation), type = 4}
-  inst.pc_     = (uint32_t)(uintptr_t)cur - (uint32_t)(uintptr_t)g_DDR;
+  inst.pc_     = KPU_PC(cur);
   inst.pc_rel_ = inst.pc_ - start_pc_;
   *pc += 4;
   return inst;

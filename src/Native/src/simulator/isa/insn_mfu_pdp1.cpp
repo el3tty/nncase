@@ -24,8 +24,7 @@ MfuPdp1ComputeInstruction Simulator::InstParser<MfuPdp1ComputeInstruction, 32>(u
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -81,8 +80,7 @@ MfuPdp1Conf1Instruction Simulator::InstParser<MfuPdp1Conf1Instruction, 32>(uint8
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -137,8 +135,7 @@ MfuPdp1Conf2Instruction Simulator::InstParser<MfuPdp1Conf2Instruction, 32>(uint8
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -189,8 +186,7 @@ MfuPdp1Conf3Instruction Simulator::InstParser<MfuPdp1Conf3Instruction, 32>(uint8
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -247,8 +243,7 @@ MfuPdp1Conf4Instruction Simulator::InstParser<MfuPdp1Conf4Instruction, 32>(uint8
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -303,8 +298,7 @@ MfuPdp1Conf_deqInstruction Simulator::InstParser<MfuPdp1Conf_deqInstruction, 32>
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -355,8 +349,7 @@ MfuPdp1Conf_quantInstruction Simulator::InstParser<MfuPdp1Conf_quantInstruction,
     const uint64_t *word = reinterpret_cast<const uint64_t *>(*pc);
     // IDA loads a 64-bit word; only the low 32 bits (the instruction) are decoded.
     const uint64_t raw = *word;
-    const uint32_t pc_abs = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(word)) -
-                            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(g_DDR));
+    const uint32_t pc_abs = KPU_PC(word);
 
     inst.taken_ = 0;
     inst.flag_ = 0;

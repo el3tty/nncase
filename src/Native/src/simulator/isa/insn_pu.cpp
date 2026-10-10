@@ -65,7 +65,7 @@ PuComputeInstruction Simulator::InstParser<PuComputeInstruction, 16>(uint8_t ** 
   inst.tcu_id_ = kinst_bits(raw, 7, 3);
   inst.of_shift_mode_ = kinst_bits(raw, 10, 2);
   inst.reserved_12_ = kinst_bits(raw, 12, 4);
-  inst.pc_ = (uint32_t)(uintptr_t)*pcw - (uint32_t)(uintptr_t)g_DDR;   // offset inside DDR image
+  inst.pc_ = KPU_PC(*pcw);   // offset inside DDR image
   inst.info_ = 0x400000003LL;
   inst.pc_rel_ = inst.pc_ - start_pc_;   // TODO(layout): Simulator::start_pc (code base offset)
   *pcw = (uint64_t *)((char *)*pcw + 2);
@@ -78,7 +78,7 @@ PuComputeConfInstruction Simulator::InstParser<PuComputeConfInstruction, 32>(uin
 {
     PuComputeConfInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -130,7 +130,7 @@ PuFetchifConf1Instruction Simulator::InstParser<PuFetchifConf1Instruction, 32>(u
 {
     PuFetchifConf1Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -182,7 +182,7 @@ PuFetchifConf2Instruction Simulator::InstParser<PuFetchifConf2Instruction, 32>(u
 {
     PuFetchifConf2Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -221,7 +221,7 @@ PuFetchifConf3Instruction Simulator::InstParser<PuFetchifConf3Instruction, 32>(u
 {
     PuFetchifConf3Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -274,7 +274,7 @@ PuFetchifConf4Instruction Simulator::InstParser<PuFetchifConf4Instruction, 32>(u
 {
     PuFetchifConf4Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -325,7 +325,7 @@ PuFetchifConf_deqInstruction Simulator::InstParser<PuFetchifConf_deqInstruction,
 {
     PuFetchifConf_deqInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -388,7 +388,7 @@ PuForward_psumInstruction Simulator::InstParser<PuForward_psumInstruction, 32>(u
 {
     PuForward_psumInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -442,7 +442,7 @@ PuOfConf1Instruction Simulator::InstParser<PuOfConf1Instruction, 32>(uint8_t** p
 {
     PuOfConf1Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -494,7 +494,7 @@ PuOfConf2Instruction Simulator::InstParser<PuOfConf2Instruction, 32>(uint8_t** p
 {
     PuOfConf2Instruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
@@ -545,7 +545,7 @@ PuWConfInstruction Simulator::InstParser<PuWConfInstruction, 32>(uint8_t** pc)
 {
     PuWConfInstruction inst;  // KInstruction base (vptr, empty name) is constructed by the compiler
     const uint32_t raw = *reinterpret_cast<const uint32_t*>(*pc);
-    const uint32_t cur = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(*pc) - reinterpret_cast<uintptr_t>(g_DDR));  // offset in DDR
+    const uint32_t cur = KPU_PC(*pc);  // offset in DDR
 
     inst.taken_ = 0;
     inst.flag_ = 0;
