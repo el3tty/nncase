@@ -185,8 +185,7 @@ constexpr int32_t kInt16Max = 32767, kInt16Min = -32767;
 
 [[noreturn]] void BadDestType()
 {
-  std::cerr << "Error act0 dest_datatype" << std::endl;
-  std::exit(1);
+  simulator_fail("Error act0 dest_datatype");
 }
 
 // Element index (in 4-byte words) of PSUM element (ch, row, col) inside an L1 view.

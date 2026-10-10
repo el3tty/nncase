@@ -420,13 +420,11 @@ void MFU::Memset()
 {
   const uint32_t dst = dst_addr_;
   if (elem16_ && (dst & 1)) {
-    std::printf("when data type is fp16 or int16, memset addr_d must be align with 2 bytes, addr_dest = %d! \n",
+    simulator_fail("when data type is fp16 or int16, memset addr_d must be align with 2 bytes, addr_dest = %d! \n",
                 static_cast<int>(dst & 0xFFFFFFF));
-    std::exit(1);
   }
   if (!dim_[0] || !dim_[1] || !dim_[2] || !dim_[3]) {
-    std::puts("memset tensor shape size must not be 0! ");
-    std::exit(1);
+    simulator_fail("memset tensor shape size must not be 0! ");
   }
   uint8_t * base = GlbPtr(dst);
   uint32_t c, h, w;
@@ -492,14 +490,12 @@ void MFU::Trans()
   uint32_t stride_unit = 0;
   if (trans_elem16_) {
     if (src_raw & 1) {
-      std::printf("when data type is fp16 or int16, transpose addr_s must be align with 2 bytes, addr_src = %d! \n",
+      simulator_fail("when data type is fp16 or int16, transpose addr_s must be align with 2 bytes, addr_src = %d! \n",
                   static_cast<int>(src_raw & 0xFFFFFFF));
-      std::exit(1);
     }
     if (dst_raw & 1) {
-      std::printf("when data type is fp16 or int16, transpose addr_d must be align with 2 bytes, addr_dest = %d! \n",
+      simulator_fail("when data type is fp16 or int16, transpose addr_d must be align with 2 bytes, addr_dest = %d! \n",
                   static_cast<int>(dst_off));
-      std::exit(1);
     }
     if (!keeps_inner) stride_unit = 16;
   } else if (!keeps_inner) {
@@ -507,17 +503,14 @@ void MFU::Trans()
   }
   if (stride_unit) {
     if (sw % stride_unit) {
-      std::printf("Transpose Src Stride_W must be align with 32 bytes, stride_w = %d! \n", static_cast<int>(sw));
-      std::exit(1);
+      simulator_fail("Transpose Src Stride_W must be align with 32 bytes, stride_w = %d! \n", static_cast<int>(sw));
     }
     if (dw % stride_unit) {
-      std::printf("Transpose Dst Stride_W must be align with 32 bytes, stride_w = %d! \n", static_cast<int>(dw));
-      std::exit(1);
+      simulator_fail("Transpose Dst Stride_W must be align with 32 bytes, stride_w = %d! \n", static_cast<int>(dw));
     }
     if (dst_raw & 0xF) {
-      std::printf("when transtype is ***N/***C/***H, transpose addr_d must be align with 16 bytes, addr_dest = %d! \n",
+      simulator_fail("when transtype is ***N/***C/***H, transpose addr_d must be align with 16 bytes, addr_dest = %d! \n",
                   static_cast<int>(dst_off));
-      std::exit(1);
     }
   }
 

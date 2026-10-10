@@ -132,6 +132,20 @@ int linear_quant(int add_first, int qmax, int qmin, float x, float scale, float 
 // 3. Named global state
 // ===================================================================================================
 
+// Thrown instead of terminating the process when the simulated program is invalid (bad alignment, impossible shape,
+// ...).  The simulator may run inside the host process as a DLL, so it must never call exit()/abort().
+// SimulatorMain catches it and turns it into a non-zero return code; with a debugger, break on this exception type.
+struct SimulatorError : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+// printf-style; formats the message and throws SimulatorError (trailing blanks / newlines are trimmed).
+#if defined(__GNUC__) || defined(__clang__)
+[[noreturn]] void simulator_fail(const char * fmt, ...) __attribute__((format(printf, 1, 2)));
+#else
+[[noreturn]] void simulator_fail(const char * fmt, ...);
+#endif
+
 // All trivially-copyable (POD) global state of the simulator lives in the single instance `_G`.
 // The simulator can run as a DLL that stays loaded between invocations, so initialize_globals() resets it
 // at the start of every run.  Non-POD globals (debug_file, debug_dump_L3_*, debug_map) and the function-local

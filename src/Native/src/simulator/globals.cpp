@@ -5,6 +5,7 @@
 #include "globals.h"
 
 #include <climits>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <iomanip>
@@ -18,6 +19,19 @@
 
 
 Globals _G;
+
+void simulator_fail(const char * fmt, ...)
+{
+  char buffer[512];
+  va_list args;
+  va_start(args, fmt);
+  std::vsnprintf(buffer, sizeof buffer, fmt, args);
+  va_end(args);
+  std::string message(buffer);
+  while (!message.empty() && (message.back() == '\n' || message.back() == ' '))
+    message.pop_back();
+  throw SimulatorError(message);
+}
 
 void initialize_globals()
 {
@@ -846,8 +860,7 @@ int32_t shr_rnd_int(int32_t value, int shift, int round_mode)
 int64_t shr_rnd_lint(int64_t value, int shift, int round_mode)
 {
   if (shift > 63) {
-    std::printf("the func shr_rnd_lint parameter shift should not greater than 63!!!\n ");
-    std::exit(0);
+    simulator_fail("the func shr_rnd_lint parameter shift should not greater than 63!!!\n ");
   }
   if (shift < 0)
     return shl_2_xbit(value, -shift, 64);
@@ -869,8 +882,7 @@ int64_t shr_rnd_lint(int64_t value, int shift, int round_mode)
 int32_t sat_int_xbits(int32_t value, int xbits)
 {
   if (xbits > 32) {
-    std::printf("func sat_int_xbits x should not great than 32!!!\n ");
-    std::exit(0);
+    simulator_fail("func sat_int_xbits x should not great than 32!!!\n ");
   }
   const uint32_t count = static_cast<uint8_t>(xbits - 1);
   const int64_t hi = int64_t{1} << (count & 63);
@@ -889,8 +901,7 @@ int32_t sat_int_xbits(int32_t value, int xbits)
 int64_t sat_lint_xbits(int64_t value, int xbits)
 {
   if (xbits > 64) {
-    std::puts("func sat_int_xbits x should not great than 64!!!");
-    std::exit(0);
+    simulator_fail("func sat_int_xbits x should not great than 64!!!");
   }
   const uint32_t count = static_cast<uint8_t>(xbits - 1) & 63;
   const int64_t hi = static_cast<int64_t>(uint64_t{1} << count);

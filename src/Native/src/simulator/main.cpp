@@ -370,6 +370,11 @@ static int simulator_guarded_run(int argc, const char ** argv)
         std::cerr << "simulator: " << e.what() << std::endl;
         result = 1;
     }
+    catch (...)
+    {
+        std::cerr << "simulator: unknown error" << std::endl;
+        result = 1;
+    }
     CheckPoint::GetCheckPoint()->Reset();
     Conv2D::GetConv2D()->Reset();
     PDP0::GetPDP0()->Reset();

@@ -60,8 +60,7 @@ uint16_t Fp32ToFp16(float value)
 void PrintGlbWriteBeat(std::ofstream & os, uint32_t line, uint32_t byte_mask, const uint8_t * beat)
 {
   if (line > 0x1FFFF) {
-    std::cerr << "[Error] glb addr exceed 4M" << std::endl;
-    exit(-1);
+    simulator_fail("[Error] glb addr exceed 4M");
   }
   os << std::setw(5) << std::setfill('0') << line << " "
      << std::setw(8) << std::setfill('0') << byte_mask << " ";

@@ -380,9 +380,8 @@ uint32_t MeshNet::L1_slice_rpt_buffer_len(uint32_t addr, uint64_t dims_reg, uint
       }
     }
   }
-  std::printf("slice_len is not multiples of ShapeW, slice_len = %d, ShapeW = %d! \n", static_cast<int>(slice_len),
+  simulator_fail("slice_len is not multiples of ShapeW, slice_len = %d, ShapeW = %d! \n", static_cast<int>(slice_len),
               static_cast<int>(d.w_));
-  std::exit(1);
 }
 
 // ==================================================================================================================
@@ -595,25 +594,21 @@ void MeshNet::MfuAct1()
   const bool src1_valid = s1.Valid(), src2_valid = s2.Valid();
   const uint32_t addr1 = a1_src1_addr_ & 0xFFFFFFF, addr2 = a1_src2_addr_ & 0xFFFFFFF;
 
-  // ---- parameter validation (each failure prints a message and exits) ------------------------------------------
-  auto fail = [](const char * msg) { std::puts(msg); std::exit(1); };
+  // ---- parameter validation (each failure throws SimulatorError) ------------------------------------------
+  auto fail = [](const char * msg) { simulator_fail("%s", msg); };
 
   if (!a1_src1_psum_ && src1_valid && (a1_s1_type_ == 0 || a1_s1_type_ == 3) && (a1_src1_addr_ & 1)) {
-    std::printf("when data type is fp16 or int16, act1 addr_s1 must be align with 2 bytes, addr_src1 = %d! \n", addr1);
-    std::exit(1);
+    simulator_fail("when data type is fp16 or int16, act1 addr_s1 must be align with 2 bytes, addr_src1 = %d! \n", addr1);
   }
   if (!a1_src2_psum_ && src2_valid && (a1_s2_type_ == 0 || a1_s2_type_ == 3) && (a1_src2_addr_ & 1)) {
-    std::printf("when data type is fp16 or int16, act1 addr_s2 must be align with 2 bytes, addr_src2 = %d! \n", addr2);
-    std::exit(1);
+    simulator_fail("when data type is fp16 or int16, act1 addr_s2 must be align with 2 bytes, addr_src2 = %d! \n", addr2);
   }
   if ((a1_dst_type_ == 0 || a1_dst_type_ == 3) && (a1_dst_addr_ & 1)) {
-    std::printf("when data type is fp16 or int16, act1 addr_d must be align with 2 bytes, addr_dest = %d! \n",
+    simulator_fail("when data type is fp16 or int16, act1 addr_d must be align with 2 bytes, addr_dest = %d! \n",
                 a1_dst_addr_ & 0xFFFFFFF);
-    std::exit(1);
   }
   if (a1_fit_addr_ & 1) {
-    std::printf("act1 parameter addr_arg must be align with 2 bytes, addr_arg = %d! \n", a1_fit_addr_ & 0xFFFFFFF);
-    std::exit(1);
+    simulator_fail("act1 parameter addr_arg must be align with 2 bytes, addr_arg = %d! \n", a1_fit_addr_ & 0xFFFFFFF);
   }
 
   // src1 read from GLB with repeated slices: the repeated rows must fit the 128-line RTL L1 buffer
@@ -626,9 +621,8 @@ void MeshNet::MfuAct1()
     // with src1 in PSUM the src2 channel stride (h * w elements) must be a multiple of 32 bytes
     if (a1_src1_psum_ == 1 &&
         (chw2.w_ * chw2.h_) % ((static_cast<uint8_t>(a1_s2_type_ - 1) < 2) ? 32 : 16) != 0) {
-      std::printf("conv_fuse_act1 GLB input Stride_C must be align with 32 bytes, stride_h = %d, stride_w = %d! \n",
+      simulator_fail("conv_fuse_act1 GLB input Stride_C must be align with 32 bytes, stride_h = %d, stride_w = %d! \n",
                   chw2.h_, chw2.w_);
-      std::exit(1);
     }
     if (!a1_s2_no_l1_check_ && a1_s2_rpt_b_ > 1) {
       const uint32_t elem = (a1_s2_type_ == 0 || a1_s2_type_ == 3) ? 2 : 1;

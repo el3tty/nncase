@@ -12,22 +12,6 @@
 
 namespace {
 
-// Prints a configuration error and terminates, as the original does for every invalid setting.
-[[noreturn]] void PdpFail(const char* fmt, ...)
-{
-  va_list args;
-  va_start(args, fmt);
-  std::vprintf(fmt, args);
-  va_end(args);
-  std::exit(1);
-}
-
-[[noreturn]] void PdpFailMsg(const char* msg)
-{
-  std::puts(msg);
-  std::exit(1);
-}
-
 // Byte-wide data types shared by the source and destination configuration: 1 = uint8, 2 = int8.
 bool IsByteType(uint8_t dtype) { return static_cast<uint8_t>(dtype - 1) < 2u; }
 
@@ -109,18 +93,18 @@ void PDP1::PdpRedCompute()
   unsigned max_w_large_h = 32;
   if (c.src_dtype_ == 0 || c.src_dtype_ == 3) {  // fp16 / int16
     if (c.src_addr_ & 1)
-      PdpFail("when data type is fp16 or int16, pdp addr_s must be align with 2 bytes, addr_src = %d! \n",
+      simulator_fail("when data type is fp16 or int16, pdp addr_s must be align with 2 bytes, addr_src = %d! \n",
               c.src_addr_ & 0xFFFFFFF);
     max_w_small_h = 32;
     max_w_large_h = 16;
   }
   if ((c.dst_dtype_ == 0 || c.dst_dtype_ == 3) && (c.dst_addr_ & 1))
-    PdpFail("when data type is fp16 or int16, pdp addr_d must be align with 2 bytes, addr_dest = %d! \n",
+    simulator_fail("when data type is fp16 or int16, pdp addr_d must be align with 2 bytes, addr_dest = %d! \n",
             c.dst_addr_ & 0xFFFFFFF);
   if (c.src_pitch_ % (IsByteType(c.src_dtype_) ? 32 : 16))
-    PdpFail("PDP Src Stride_W must be align with 32 bytes, stridew = %d! \n", c.src_pitch_);
+    simulator_fail("PDP Src Stride_W must be align with 32 bytes, stridew = %d! \n", c.src_pitch_);
   if (!c.enable_bw_ && c.dst_pitch_ % (IsByteType(c.dst_dtype_) ? 32 : 16))
-    PdpFail("PDP Dst Stride_W must be align with 32 bytes, stridew = %d! \n", c.dst_pitch_);
+    simulator_fail("PDP Dst Stride_W must be align with 32 bytes, stridew = %d! \n", c.dst_pitch_);
 
   for (PdpWindow& w : windows_) {  // reset all 16 window slots
     w.data_.clear();
@@ -129,36 +113,36 @@ void PDP1::PdpRedCompute()
   }
 
   if (c.window_h_ > 16)
-    PdpFailMsg("PDP WindowH cann't be bigger than 16! ");
+    simulator_fail("PDP WindowH cann't be bigger than 16! ");
   if (c.window_w_ > 64)
-    PdpFailMsg("PDP WindowW cann't be bigger than 64! ");
+    simulator_fail("PDP WindowW cann't be bigger than 64! ");
   if (c.window_w_ * c.window_h_ > 256)
-    PdpFailMsg("PDP Window Size cann't be bigger than 256! ");
+    simulator_fail("PDP Window Size cann't be bigger than 256! ");
   if (c.window_h_ > 4) {
     const unsigned max_w = (c.window_h_ <= 8) ? max_w_small_h : max_w_large_h;
     if (c.window_w_ > max_w)
-      PdpFail("Pdp WindowW bytes size must be <= (32/2^)/2*32, WindowW = %d, max WindowW = %d! \n", c.window_w_, max_w);
+      simulator_fail("Pdp WindowW bytes size must be <= (32/2^)/2*32, WindowW = %d, max WindowW = %d! \n", c.window_w_, max_w);
   }
   if (c.window_h_ <= c.pad_top_ || c.window_h_ <= c.pad_bottom_)
-    PdpFail("Pad top and bottom must be smaller than window_h, WindowH = %d, PaddingTop = %d, PaddingBottom = %d! \n",
+    simulator_fail("Pad top and bottom must be smaller than window_h, WindowH = %d, PaddingTop = %d, PaddingBottom = %d! \n",
             c.window_h_, c.pad_top_, c.pad_bottom_);
   if (c.window_w_ <= c.pad_left_ || c.window_w_ <= c.pad_right_)
-    PdpFail("Pad left and right must be smaller than window_w, WindowW = %d, PaddingLeft = %d, PaddingRight = %d! \n",
+    simulator_fail("Pad left and right must be smaller than window_w, WindowW = %d, PaddingLeft = %d, PaddingRight = %d! \n",
             c.window_w_, c.pad_left_, c.pad_right_);
 
   const int need_shape_h = c.stride_h_ * (c.out_h_ - 1) + c.window_h_ - c.pad_top_ - c.pad_bottom_;
   const int16_t need_shape_w = static_cast<int16_t>(c.stride_w_ * (c.out_w_ - 1) + c.window_w_ - c.pad_left_ - c.pad_right_);
   if (c.shape_h_ != need_shape_h)
-    PdpFail("Pdp input shape_h size doesn't match output shape_h needed size, shape_h = %d, need shape_h = %d! \n",
+    simulator_fail("Pdp input shape_h size doesn't match output shape_h needed size, shape_h = %d, need shape_h = %d! \n",
             c.shape_h_, need_shape_h);
   if (c.shape_w_ != need_shape_w)
-    PdpFail("Pdp input shape_w size doesn't match output shape_w needed size, shape_w = %d, need shape_w = %d! \n",
+    simulator_fail("Pdp input shape_w size doesn't match output shape_w needed size, shape_w = %d, need shape_w = %d! \n",
             c.shape_w_, need_shape_w);
   if (c.enable_bw_ == 1 && (c.dst_plane_rows_ != 1 || c.dst_pitch_ != 1 || c.out_w_ != 1 || c.out_h_ != 1))
-    PdpFail("when enable_bw=1, h and w and stride must be 1, h = %d, w = %d, sh = %d, sw = %d! \n", c.out_h_, c.out_w_,
+    simulator_fail("when enable_bw=1, h and w and stride must be 1, h = %d, w = %d, sh = %d, sw = %d! \n", c.out_h_, c.out_w_,
             c.dst_plane_rows_, c.dst_pitch_);
   if (c.enable_h2c_ == 1 && c.pad_top_)
-    PdpFailMsg("when enable_h2c=1, PaddingTop and PaddingBottom must be 0! ");
+    simulator_fail("when enable_h2c=1, PaddingTop and PaddingBottom must be 0! ");
 
   // --- reduction -------------------------------------------------------------------------------
   const int dst_row_step = c.dst_pitch_;

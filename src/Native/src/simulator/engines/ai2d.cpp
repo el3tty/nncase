@@ -1100,8 +1100,7 @@ void AI2D::para_parser(const char *path)
         src_x_ = w1 & 0x1FFF;
         break;
       default:
-        printf("offset not support now");
-        exit(0);
+        simulator_fail("offset not support now");
     }
     ++line_no;
   }
