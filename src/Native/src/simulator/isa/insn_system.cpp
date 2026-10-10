@@ -285,8 +285,9 @@ void MmuConfInstruction::get_next_pc()
 // MmuConfInstruction2.cpp  @0x41e840
 void MmuConfInstruction::operation()
 {
-  _G.AI2D_Ai2dInst[mmu_id_ + 110] = rstart_val_;
-  _G.AI2D_Ai2dInst[mmu_id_ + 126] = rdepth_val_;
+  AI2D *ai2d = AI2D::GetAI2D();
+  ai2d->glb_start_[mmu_id_] = rstart_val_;
+  ai2d->glb_depth_[mmu_id_] = rdepth_val_;
   _G.MMU_MMUItem[2 * mmu_id_] = rstart_val_;
   _G.MMU_MMUItem[2 * mmu_id_ + 1] = rdepth_val_;
   _G.glb_start[mmu_id_] = rstart_val_;
@@ -458,11 +459,6 @@ inline uint32_t bits(uint32_t word, unsigned lo, unsigned width)
 {
   return (word >> lo) & ((1u << width) - 1u);
 }
-// Replace byte `index` (0 = least significant) of a 32-bit register.
-inline void set_byte(uint32_t &word, unsigned index, uint8_t value)
-{
-  word = (word & ~(0xFFu << (8 * index))) | ((uint32_t)value << (8 * index));
-}
 }  // namespace
 
 // ExtrwInstruction1.cpp  @0x41dbc0
@@ -474,95 +470,92 @@ void ExtrwInstruction::get_next_pc()
 // ExtrwInstruction2.cpp  @0x41ef40
 void ExtrwInstruction::operation()
 {
-  // AI2D::GetAI2D() singleton (lazy init elided). The singleton is kept as a raw word array in
-  // globals.h (AI2D_Ai2dInst); word index n is the AI2D member at byte offset 4*n.
-  // TODO(layout): name the AI2D registers (ai2d.h has them as fNNN members).
-  uint32_t *ai2d = _G.AI2D_Ai2dInst;
+  AI2D *ai2d = AI2D::GetAI2D();
   const uint32_t v = reg_value_;
 
   if (extrd_ <= 0x8F) {
     switch (extrd_ >> 2) {
-      case 0:  ai2d[34] = v; break;                          // AI2D+136
-      case 1:  ai2d[35] = v; break;                          // AI2D+140
-      case 2:  ai2d[36] = v; break;                          // AI2D+144
-      case 3:  ai2d[37] = v; break;                          // AI2D+148
-      case 4:  ai2d[40] = v; break;                          // AI2D+160
-      case 5:  ai2d[41] = v; break;                          // AI2D+164
-      case 6:  ai2d[42] = v; break;                          // AI2D+168
-      case 7:  ai2d[43] = v; break;                          // AI2D+172
-      case 8:  ai2d[63] = bits(v, 0, 16); ai2d[64] = bits(v, 16, 16); break;   // AI2D+252 / +256
-      case 9:  ai2d[65] = bits(v, 0, 16); ai2d[66] = bits(v, 16, 16); break;   // AI2D+260 / +264
-      case 10: ai2d[67] = bits(v, 0, 16); ai2d[68] = bits(v, 16, 16); break;   // AI2D+268 / +272
-      case 11: ai2d[69] = bits(v, 0, 16); ai2d[70] = bits(v, 16, 16); break;   // AI2D+276 / +280
-      case 12: ai2d[46] = v; break;                          // AI2D+184
-      case 13: ai2d[47] = v; break;                          // AI2D+188
-      case 14: ai2d[49] = v; break;                          // AI2D+196
-      case 15: ai2d[50] = v; break;                          // AI2D+200
+      case 0:  ai2d->src_ch_ptr_[0] = v; break;
+      case 1:  ai2d->src_ch_ptr_[1] = v; break;
+      case 2:  ai2d->src_ch_ptr_[2] = v; break;
+      case 3:  ai2d->src_ch_ptr_[3] = v; break;
+      case 4:  ai2d->dst_ch_ptr_[0] = v; break;
+      case 5:  ai2d->dst_ch_ptr_[1] = v; break;
+      case 6:  ai2d->dst_ch_ptr_[2] = v; break;
+      case 7:  ai2d->dst_ch_ptr_[3] = v; break;
+      case 8:  ai2d->src_width_layout_[0] = bits(v, 0, 16); ai2d->src_width_layout_[1] = bits(v, 16, 16); break;
+      case 9:  ai2d->src_width_layout_[2] = bits(v, 0, 16); ai2d->src_width_layout_[3] = bits(v, 16, 16); break;
+      case 10: ai2d->dst_width_layout_[0] = bits(v, 0, 16); ai2d->dst_width_layout_[1] = bits(v, 16, 16); break;
+      case 11: ai2d->dst_width_layout_[2] = bits(v, 0, 16); ai2d->dst_width_layout_[3] = bits(v, 16, 16); break;
+      case 12: ai2d->m_raw_[0] = v; break;
+      case 13: ai2d->m_raw_[1] = v; break;
+      case 14: ai2d->m_raw_[3] = v; break;
+      case 15: ai2d->m_raw_[4] = v; break;
       case 16:
       case 17:
       case 27:
         break;                                               // no register behind these addresses
       case 18: {
-        ai2d[78] = v >> 28;                                  // AI2D+312
-        ai2d[77] = bits(v, 24, 4);                           // AI2D+308
-        ai2d[84] = bits(v, 20, 4);                           // AI2D+336
+        ai2d->dst_format_ = v >> 28;
+        ai2d->src_format_ = bits(v, 24, 4);
+        ai2d->bound_ind_ = bits(v, 20, 4);
         // 8-bit field [19:12]; if any of its upper nibble [19:16] is set it is treated as negative (value - 32)
         uint32_t field = bits(v, 12, 8);
-        ai2d[83] = (bits(v, 16, 4) != 0) ? (uint32_t)((int)field - 32) : field;   // AI2D+332
-        ai2d[90] = bits(v, 10, 2);                           // AI2D+360
-        ai2d[58] = bits(v, 8, 2);                            // AI2D+232
-        ai2d[59] = bits(v, 6, 2);                            // AI2D+236
-        ai2d[62] = bits(v, 3, 3);                            // AI2D+248
-        ai2d[61] = bits(v, 0, 3);                            // AI2D+244
-        ai2d[60] = bits(v, 0, 3);                            // AI2D+240
+        ai2d->shift_ = (bits(v, 16, 4) != 0) ? ((int)field - 32) : (int)field;
+        ai2d->pad_mod_ = bits(v, 10, 2);
+        ai2d->interpolation_ = bits(v, 8, 2);
+        ai2d->cord_round_ = bits(v, 6, 2);
+        ai2d->dst_channel_ = bits(v, 3, 3);
+        ai2d->channel_cfg_ = bits(v, 0, 3);
+        ai2d->channel_ = bits(v, 0, 3);
         break;
       }
       case 19:
-        *reinterpret_cast<uint8_t *>(&ai2d[79]) = bits(v, 16, 1);   // AI2D+316 (byte store)
-        ai2d[85] = bits(v, 0, 16);                           // AI2D+340
+        ai2d->bound_smooth_ = bits(v, 16, 1);
+        ai2d->bound_val_ = bits(v, 0, 16);
         break;
-      case 20: ai2d[94] = bits(v, 0, 12);  ai2d[95] = bits(v, 12, 12);  break;   // AI2D+376 / +380
-      case 21: ai2d[96] = bits(v, 0, 12);  ai2d[97] = bits(v, 12, 12);  break;   // AI2D+384 / +388
-      case 22: ai2d[98] = bits(v, 0, 12);  ai2d[99] = bits(v, 12, 12);  break;   // AI2D+392 / +396
-      case 23: ai2d[100] = bits(v, 0, 12); ai2d[101] = bits(v, 12, 12); break;   // AI2D+400 / +404
+      case 20: ai2d->yuv2rgb_coef_[0] = bits(v, 0, 12);  ai2d->yuv2rgb_coef_[1] = bits(v, 12, 12);  break;
+      case 21: ai2d->yuv2rgb_coef_[2] = bits(v, 0, 12);  ai2d->yuv2rgb_coef_[3] = bits(v, 12, 12);  break;
+      case 22: ai2d->yuv2rgb_coef_[4] = bits(v, 0, 12);  ai2d->yuv2rgb_coef_[5] = bits(v, 12, 12);  break;
+      case 23: ai2d->yuv2rgb_coef_[6] = bits(v, 0, 12); ai2d->yuv2rgb_coef_[7] = bits(v, 12, 12); break;
       case 24:
-        ai2d[104] = bits(v, 0, 12);                          // AI2D+416
-        ai2d[105] = bits(v, 12, 12);                         // AI2D+420
-        set_byte(ai2d[92], 0, bits(v, 24, 8));               // AI2D+368 byte 0
+        ai2d->yuv2rgb_coef_[10] = bits(v, 0, 12);
+        ai2d->yuv2rgb_coef_[11] = bits(v, 12, 12);
+        ai2d->const_pad_ch_[0] = bits(v, 24, 8);
         break;
       case 25:
-        *reinterpret_cast<uint8_t *>(&ai2d[93]) = bits(v, 27, 1);                      // AI2D+372 byte 0
-        *(reinterpret_cast<uint8_t *>(&ai2d[93]) + 1) = bits(v, 26, 1);                // AI2D+372 byte 1
-        ai2d[82] = bits(v, 25, 1);                           // AI2D+328
-        ai2d[81] = bits(v, 24, 1);                           // AI2D+324
-        set_byte(ai2d[92], 3, bits(v, 16, 8));               // AI2D+368 byte 3
-        set_byte(ai2d[92], 2, bits(v, 8, 8));                // AI2D+368 byte 2
-        set_byte(ai2d[92], 1, bits(v, 0, 8));                // AI2D+368 byte 1
+        ai2d->is_signed_ = bits(v, 27, 1);
+        ai2d->cmd_id_ = bits(v, 26, 1);
+        ai2d->dst_ind_ = bits(v, 25, 1);
+        ai2d->src_ind_ = bits(v, 24, 1);
+        ai2d->const_pad_ch_[3] = bits(v, 16, 8);
+        ai2d->const_pad_ch_[2] = bits(v, 8, 8);
+        ai2d->const_pad_ch_[1] = bits(v, 0, 8);
         break;
-      case 26: ai2d[102] = bits(v, 0, 12); ai2d[103] = bits(v, 12, 12); break;   // AI2D+408 / +412
-      case 28: ai2d[89] = bits(v, 16, 10); ai2d[88] = bits(v, 0, 10); break;     // AI2D+356 / +352
-      case 29: ai2d[87] = bits(v, 16, 10); ai2d[86] = bits(v, 0, 10); break;     // AI2D+348 / +344
-      case 30: ai2d[71] = bits(v, 16, 13); ai2d[72] = bits(v, 0, 13); break;     // AI2D+284 / +288
+      case 26: ai2d->yuv2rgb_coef_[8] = bits(v, 0, 12); ai2d->yuv2rgb_coef_[9] = bits(v, 12, 12); break;
+      case 28: ai2d->pad_b_ = bits(v, 16, 10); ai2d->pad_t_ = bits(v, 0, 10); break;
+      case 29: ai2d->pad_r_ = bits(v, 16, 10); ai2d->pad_l_ = bits(v, 0, 10); break;
+      case 30: ai2d->src_height_shape_ = bits(v, 16, 13); ai2d->src_width_shape_ = bits(v, 0, 13); break;
       case 31:
-        ai2d[80]  = v >> 31;                                 // AI2D+320
-        ai2d[106] = bits(v, 30, 1);                          // AI2D+424
-        ai2d[73]  = bits(v, 16, 13);                         // AI2D+292
-        ai2d[74]  = bits(v, 0, 13);                          // AI2D+296
+        ai2d->csc_en_  = v >> 31;
+        ai2d->intr_mask_ = bits(v, 30, 1);
+        ai2d->dst_height_shape_  = bits(v, 16, 13);
+        ai2d->dst_width_shape_  = bits(v, 0, 13);
         break;
-      case 32: ai2d[48] = v; break;                          // AI2D+192
-      case 33: ai2d[51] = v; break;                          // AI2D+204
-      case 34: ai2d[38] = bits(v, 0, 13); ai2d[39] = bits(v, 16, 13); break;     // AI2D+152 / +156
+      case 32: ai2d->m_raw_[2] = v; break;
+      case 33: ai2d->m_raw_[5] = v; break;
+      case 34: ai2d->src_x_ = bits(v, 0, 13); ai2d->src_y_ = bits(v, 16, 13); break;
       case 35:
-        ai2d[107] = v >> 31;                                 // AI2D+428
-        ai2d[45]  = bits(v, 16, 13);                         // AI2D+180
-        ai2d[44]  = bits(v, 0, 13);                          // AI2D+176
+        ai2d->calc_enable_ = v >> 31;
+        ai2d->dst_y_  = bits(v, 16, 13);
+        ai2d->dst_x_  = bits(v, 0, 13);
         break;
     }
   }
 
   // Only register 35 (byte address 140) ever reaches this: writing it starts the AI2D engine.
   if (extrd_ == 140)
-    reinterpret_cast<AI2D *>(_G.AI2D_Ai2dInst)->ai2d_proc();
+    ai2d->ai2d_proc();
 }
 
 // ExtrwInstruction3.cpp  @0x4263a0
@@ -598,23 +591,20 @@ void ExtrawInstruction::get_next_pc()
 // ExtrawInstruction2.cpp  @0x41ec50
 void ExtrawInstruction::operation()
 {
-  // AI2D::GetAI2D() singleton (lazy init elided), kept as a raw word array in globals.h;
-  // word index n is the AI2D member at byte offset 4*n.
-  // TODO(layout): name the AI2D registers (ai2d.h has them as fNNN members).
-  uint32_t *ai2d = _G.AI2D_Ai2dInst;
+  AI2D *ai2d = AI2D::GetAI2D();
 
   if (extrd_ <= 0x1F) {
     // verified against asm @0x41ec50: jump table (0x48046c) is indexed by reg_addr >> 2 (16-bit), the stored
     // value is reg_value (+0x38); targets map to AI2D+0x88,0x8c,0x90,0x94,0xa0,0xa4,0xa8,0xac.
     switch (extrd_ >> 2) {
-      case 0: ai2d[34] = reg_value_; break;   // AI2D+136
-      case 1: ai2d[35] = reg_value_; break;   // AI2D+140
-      case 2: ai2d[36] = reg_value_; break;   // AI2D+144
-      case 3: ai2d[37] = reg_value_; break;   // AI2D+148
-      case 4: ai2d[40] = reg_value_; break;   // AI2D+160
-      case 5: ai2d[41] = reg_value_; break;   // AI2D+164
-      case 6: ai2d[42] = reg_value_; break;   // AI2D+168
-      case 7: ai2d[43] = reg_value_; break;   // AI2D+172
+      case 0: ai2d->src_ch_ptr_[0] = reg_value_; break;
+      case 1: ai2d->src_ch_ptr_[1] = reg_value_; break;
+      case 2: ai2d->src_ch_ptr_[2] = reg_value_; break;
+      case 3: ai2d->src_ch_ptr_[3] = reg_value_; break;
+      case 4: ai2d->dst_ch_ptr_[0] = reg_value_; break;
+      case 5: ai2d->dst_ch_ptr_[1] = reg_value_; break;
+      case 6: ai2d->dst_ch_ptr_[2] = reg_value_; break;
+      case 7: ai2d->dst_ch_ptr_[3] = reg_value_; break;
     }
   }
 }

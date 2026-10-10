@@ -24,28 +24,6 @@
 #include <fstream>
 
 struct AI2D {
-    // ---- register file, as 32-bit word indices into the object (what Extrw/Extraw/MmuConf write) ----
-    enum Reg : unsigned {
-        kSrcCh0Ptr = 34, kSrcCh1Ptr = 35, kSrcCh2Ptr = 36, kSrcCh3Ptr = 37,   // +136..+148
-        kSrcX = 38, kSrcY = 39,                                                // +152, +156
-        kDstCh0Ptr = 40, kDstCh1Ptr = 41, kDstCh2Ptr = 42, kDstCh3Ptr = 43,   // +160..+172
-        kDstX = 44, kDstY = 45,                                                // +176, +180
-        kM0 = 46, kM1 = 47, kM2 = 48, kM3 = 49, kM4 = 50, kM5 = 51,            // +184..+204 (raw float bits)
-        kInterpolation = 58, kCordRound = 59, kChannel = 60, kChannelCfg = 61, kDstChannel = 62,
-        kSrcCh0WidthLayout = 63, kSrcCh1WidthLayout = 64, kSrcCh2WidthLayout = 65, kSrcCh3WidthLayout = 66,
-        kDstCh0WidthLayout = 67, kDstCh1WidthLayout = 68, kDstCh2WidthLayout = 69, kDstCh3WidthLayout = 70,
-        kSrcHeightShape = 71, kSrcWidthShape = 72, kDstHeightShape = 73, kDstWidthShape = 74,
-        kSrcFormat = 77, kDstFormat = 78,                                      // +308, +312
-        kBoundSmooth = 79,                                                     // +316 (byte)
-        kCscEn = 80, kSrcInd = 81, kDstInd = 82, kShift = 83, kBoundInd = 84, kBoundVal = 85,
-        kPadL = 86, kPadR = 87, kPadT = 88, kPadB = 89, kPadMod = 90, kConstPad = 91,
-        kConstPadCh = 92,                                                      // +368..+371 (4 bytes)
-        kSignedCmdId = 93,                                                     // +372 signed, +373 cmd_id (bytes)
-        kYuv2RgbCoef0 = 94,                                                    // +376 .. kYuv2RgbCoef0+11
-        kIntrMask = 106, kCalcEnable = 107,                                    // +424, +428
-        kGlbStart = 110, kGlbDepth = 126                                       // +440, +504 (16 words each, MmuConf)
-    };
-
     uint8_t *ddr_;                   // +0     DDR base (copied from _G.DDR by ai2d_proc)
     uint8_t *glb_[16];               // +8     GLB bank base pointers, selected by address bits [31:28]
     uint32_t src_ch_ptr_[4];         // +136   source plane addresses (bits [31:28] = GLB bank when src_ind == 0)
@@ -93,8 +71,8 @@ struct AI2D {
     uint32_t calc_enable_;           // +428
     uint32_t ddr_addr_offset_;       // +432   added to DDR addresses in the check point dumps (field name is a guess; the layout is verified)
     uint32_t glb_addr_offset_;       // +436   added to GLB addresses in the check point dumps (field name is a guess; the layout is verified)
-    uint32_t glb_start_[16];         // +440   MmuConf segment start (written as _G.AI2D_Ai2dInst[seg + 110])
-    uint32_t glb_depth_[16];         // +504   MmuConf segment depth (written as _G.AI2D_Ai2dInst[seg + 126])
+    uint32_t glb_start_[16];         // +440   MmuConf segment start
+    uint32_t glb_depth_[16];         // +504   MmuConf segment depth
     uint8_t *cur_glb_base_;          // +576   GLB bank base of the last Print*Glb call
     uint8_t  plane_in_[4][0x10000];  // +584   loaded source planes (src_height x src_width bytes each)
     uint8_t **interp_planes_;        // +262728 [4] -> 4 MiB planes: resampled image (dst_width x dst_height)
@@ -108,8 +86,6 @@ struct AI2D {
 
     // Singleton accessor: the object lives in the global register block AI2D_Ai2dInst.
     static AI2D *GetAI2D();
-    // 32-bit word view of the register file (word n == byte offset 4*n), for Extrw/Extraw/MmuConf.
-    uint32_t *regs() { return reinterpret_cast<uint32_t *>(this); }
 
     ~AI2D();
     void ai_2d_para_update();
