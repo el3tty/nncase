@@ -28,14 +28,6 @@ inline uint32_t shape_word(uint64_t shape, unsigned i)
     return static_cast<uint32_t>((shape >> (16u * i)) & 0xFFFFu);
 }
 
-// Reference to a field at a raw byte offset inside another class's singleton object.
-// TODO(layout): used where the target class layout is not yet reconstructed.
-template <class T>
-inline T& at(void* base, size_t byte_off)
-{
-    return *reinterpret_cast<T*>(static_cast<uint8_t*>(base) + byte_off);
-}
-
 // Queue of shared_ptr<...> held by Conv2D / PDP0 (16-byte elements). The element type is not
 // reconstructed; shared_ptr<void> has the same layout and ownership semantics.
 using OpaqueQueue = std::deque<std::shared_ptr<void>>;

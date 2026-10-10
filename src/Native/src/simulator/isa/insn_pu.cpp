@@ -110,12 +110,12 @@ void PuComputeConfInstruction::get_next_pc()
 void PuComputeConfInstruction::operation()
 {
     // Latch the compute-stage flags into the Conv2D singleton.
-    void* conv = Conv2D::GetConv2D();  // TODO(layout): raw offsets into Conv2D
-    pu::at<uint8_t>(conv, 140) = load_psum_ != 0;
-    pu::at<uint8_t>(conv, 141) = clr_psum_ != 0;
-    pu::at<uint32_t>(conv, 144) = dest_target_;
-    pu::at<uint32_t>(conv, 148) = mode_;
-    pu::at<uint8_t>(conv, 142) = release_if_ != 0;
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
+    cfg.accumulate_ = load_psum_ != 0;
+    cfg.clear_psum_ = clr_psum_ != 0;
+    cfg.mode_ = dest_target_;
+    cfg.param_148_ = mode_;
+    cfg.flag_142_ = release_if_ != 0;
 }
 
 // PuComputeConfInstruction3.cpp  @0x425950
@@ -160,14 +160,14 @@ void PuFetchifConf1Instruction::get_next_pc()
 // PuFetchifConf1Instruction2.cpp  @0x41e190
 void PuFetchifConf1Instruction::operation()
 {
-    uint32_t* cfg = reinterpret_cast<uint32_t*>(Conv2D::GetConv2D());  // TODO(layout): Conv2D config words
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
     // IF-map fetch configuration: two immediates plus three rstride_s_val dimensions.
-    cfg[0] = stride_w_;
-    cfg[1] = stride_h_;
-    cfg[2] = pu::shape_word(rstride_s_val_, 2);
-    cfg[3] = pu::shape_word(rstride_s_val_, 1);
-    cfg[4] = pu::shape_word(rstride_s_val_, 0);
-    cfg[5] = 0;
+    cfg.fetch_imm17_ = stride_w_;
+    cfg.fetch_imm22_ = stride_h_;
+    cfg.if_shape_d2_ = pu::shape_word(rstride_s_val_, 2);
+    cfg.if_shape_d1_ = pu::shape_word(rstride_s_val_, 1);
+    cfg.if_shape_d0_ = pu::shape_word(rstride_s_val_, 0);
+    cfg.reserved20_ = 0;
 }
 
 // PuFetchifConf1Instruction3.cpp  @0x425bd0
@@ -253,13 +253,13 @@ void PuFetchifConf3Instruction::get_next_pc()
 // PuFetchifConf3Instruction2.cpp  @0x41e0f0
 void PuFetchifConf3Instruction::operation()
 {
-    uint32_t* cfg = reinterpret_cast<uint32_t*>(Conv2D::GetConv2D());  // TODO(layout): Conv2D config words
-    cfg[6] = rgroups_val_;
-    cfg[7] = raddr_s_val_;
-    cfg[8] = pu::shape_word(rshape_val_, 3);
-    cfg[9] = pu::shape_word(rshape_val_, 2);
-    cfg[10] = pu::shape_word(rshape_val_, 1);
-    cfg[11] = pu::shape_word(rshape_val_, 0);
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
+    cfg.groups_ = rgroups_val_;
+    cfg.if_base_ = raddr_s_val_;
+    cfg.if3_d3_ = pu::shape_word(rshape_val_, 3);
+    cfg.in_channels_ = pu::shape_word(rshape_val_, 2);
+    cfg.in_height_ = pu::shape_word(rshape_val_, 1);
+    cfg.in_width_ = pu::shape_word(rshape_val_, 0);
 }
 
 // PuFetchifConf3Instruction3.cpp  @0x425b30
@@ -305,12 +305,12 @@ void PuFetchifConf4Instruction::get_next_pc()
 // PuFetchifConf4Instruction2.cpp  @0x41e220
 void PuFetchifConf4Instruction::operation()
 {
-    void* conv = Conv2D::GetConv2D();  // TODO(layout): raw byte offsets into Conv2D
-    pu::at<uint8_t>(conv, 48) = rpad_value_val_;  // low byte only
-    pu::at<uint32_t>(conv, 52) = pu::shape_word(sspad_val_, 2);
-    pu::at<uint32_t>(conv, 56) = pu::shape_word(sspad_val_, 3);
-    pu::at<uint32_t>(conv, 64) = pu::shape_word(sspad_val_, 0);
-    pu::at<uint32_t>(conv, 60) = pu::shape_word(sspad_val_, 1);
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
+    cfg.pad_value_ = static_cast<uint8_t>(rpad_value_val_);  // low byte only
+    cfg.pad_bottom_ = pu::shape_word(sspad_val_, 2);
+    cfg.pad_top_ = pu::shape_word(sspad_val_, 3);
+    cfg.pad_right_ = pu::shape_word(sspad_val_, 0);
+    cfg.pad_left_ = pu::shape_word(sspad_val_, 1);
 }
 
 // PuFetchifConf4Instruction3.cpp  @0x425ae0
@@ -356,12 +356,12 @@ void PuFetchifConf_deqInstruction::get_next_pc()
 // PuFetchifConf_deqInstruction2.cpp  @0x41fa30
 void PuFetchifConf_deqInstruction::operation()
 {
-    uint8_t* conv = reinterpret_cast<uint8_t*>(Conv2D::GetConv2D());  // TODO(layout): byte table at Conv2D+68
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
     if (ric_val_ == 31)
-        std::memset(conv + 68, static_cast<uint8_t>(rbx_val_), 24);  // broadcast to all 24 slots (68..91)
+        std::memset(cfg.if_zero_points_, static_cast<uint8_t>(rbx_val_), sizeof cfg.if_zero_points_);  // broadcast to all 24 slots
     else
-        conv[68 + ric_val_] = static_cast<uint8_t>(rbx_val_);
-    pu::at<uint32_t>(conv, 92) = quant_type_;
+        cfg.if_zero_points_[ric_val_] = static_cast<uint8_t>(rbx_val_);
+    cfg.if_deq_mode_ = quant_type_;
 
     // CheckPoint trace of the re-packed instruction word.
     // verified against asm @0x41fa30: the binary really packs the register *values* ric_val/rbx_val (0x38/0x3c)
@@ -417,7 +417,7 @@ void PuForward_psumInstruction::get_next_pc()
 // PuForward_psumInstruction2.cpp  @0x41e5d0
 void PuForward_psumInstruction::operation()
 {
-    Conv2D* conv = reinterpret_cast<Conv2D*>(Conv2D::GetConv2D());
+    Conv2D* conv = Conv2D::GetConv2D();
     // Act0::GetAct0() singleton lazy-init elided by the decompiler.
     // verified against asm @0x41e5d0: row count is the int at Act0+0x40004 (0x5CC764); src index = (int)((rs1>>2) + row*1024), copy size 4*rs2_val bytes
     const int num_rows = static_cast<int>(reinterpret_cast<const Act0*>(_G.Act0_act0)->channels_);
@@ -474,12 +474,12 @@ void PuOfConf1Instruction::get_next_pc()
 // PuOfConf1Instruction2.cpp  @0x41e1e0
 void PuOfConf1Instruction::operation()
 {
-    uint32_t* cfg = reinterpret_cast<uint32_t*>(Conv2D::GetConv2D());  // TODO(layout): Conv2D config words
-    // Output-feature-map rstride_d_val: three dimensions, cfg[29] cleared.
-    cfg[26] = pu::shape_word(rstride_d_val_, 2);
-    cfg[27] = pu::shape_word(rstride_d_val_, 1);
-    cfg[28] = pu::shape_word(rstride_d_val_, 0);
-    cfg[29] = 0;
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
+    // Output-feature-map rstride_d_val: three dimensions, of1_zero_ cleared.
+    cfg.of1_d2_ = pu::shape_word(rstride_d_val_, 2);
+    cfg.of1_d1_ = pu::shape_word(rstride_d_val_, 1);
+    cfg.of1_d0_ = pu::shape_word(rstride_d_val_, 0);
+    cfg.of1_zero_ = 0;
 }
 
 // PuOfConf1Instruction3.cpp  @0x4259f0
@@ -525,12 +525,12 @@ void PuOfConf2Instruction::get_next_pc()
 // PuOfConf2Instruction2.cpp  @0x41e140
 void PuOfConf2Instruction::operation()
 {
-    uint32_t* cfg = reinterpret_cast<uint32_t*>(Conv2D::GetConv2D());  // TODO(layout): Conv2D config words
-    cfg[30] = pu::shape_word(rshape_d_val_, 3);
-    cfg[31] = pu::shape_word(rshape_d_val_, 2);
-    cfg[32] = pu::shape_word(rshape_d_val_, 1);
-    cfg[33] = pu::shape_word(rshape_d_val_, 0);
-    cfg[34] = raddr_d_val_;
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
+    cfg.of2_d3_ = pu::shape_word(rshape_d_val_, 3);
+    cfg.of2_d2_ = pu::shape_word(rshape_d_val_, 2);
+    cfg.of2_d1_ = pu::shape_word(rshape_d_val_, 1);
+    cfg.of2_d0_ = pu::shape_word(rshape_d_val_, 0);
+    cfg.psum_base_ = raddr_d_val_;
 }
 
 // PuOfConf2Instruction3.cpp  @0x4259a0
@@ -573,9 +573,9 @@ void PuWConfInstruction::get_next_pc()
 // PuWConfInstruction2.cpp  @0x41f8c0
 void PuWConfInstruction::operation()
 {
-    void* conv = Conv2D::GetConv2D();  // TODO(layout): raw byte offsets into Conv2D
-    pu::at<uint32_t>(conv, 96) = kernel_h_;   // weight configuration word 0
-    pu::at<uint32_t>(conv, 100) = kernel_w_;  // weight configuration word 1
+    PuCompute& cfg = Conv2D::GetConv2D()->cfg_;
+    cfg.kernel_h_ = kernel_h_;
+    cfg.kernel_w_ = kernel_w_;
 
     // CheckPoint trace of the re-packed instruction word (fields back at bits 7, 10, 13, 17, 22).
     const uint64_t packed =

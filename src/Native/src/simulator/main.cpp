@@ -371,7 +371,7 @@ static int simulator_guarded_run(int argc, const char ** argv)
     }
     CheckPoint::GetCheckPoint()->Reset();
     Conv2D::GetConv2D()->Reset();
-    static_cast<PDP0 *>(PDP0::GetPDP0())->Reset();
+    PDP0::GetPDP0()->Reset();
     MeshNet::GetMeshNet()->Reset();
     static_cast<MFU *>(MFU::GetMFU())->Reset();
     return result;

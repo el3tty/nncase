@@ -47,9 +47,7 @@ struct Pdp0Compute {
 // The PDP0 singleton. The raw byte offsets in the comments are what the pu*/dm*/act0*
 // instruction files use through PDP0::GetPDP0().
 struct PDP0 {
-    uint8_t scratch_[0x10000];     // +0       64 KiB region before the registers (0x10000 offset verified by asm @0x46c2d0), unused by the lifted code
     Pdp0Compute regs_;             // +65536   configuration registers (words 16384..16408)
-    uint32_t reg_10064_;           // +65636   alignment padding word between the 100-byte register block and the 8-aligned first queue
     std::deque<std::shared_ptr<DmLoadW>>     weight_queue_;      // +65640  DmLoadWInstruction -> ComputeDW
     std::deque<std::shared_ptr<DmStoreOf>>   store_of_queue_;    // +65720  DmStoreOfInstruction -> Activate
     std::deque<std::shared_ptr<DmLoadAct0>>  load_act0_queue_;   // +65800  DmLoadAct0Instruction -> Activate
@@ -57,9 +55,8 @@ struct PDP0 {
     std::shared_ptr<Act0Compute>             cur_act0_;          // +65960  installed by Act0Src1ConfInstruction
     std::deque<std::shared_ptr<Pdp0Compute>> compute_queue_;     // +65976  PuPdp0ComputeInstruction -> Compute
 
-    // @0x42b5d0 (PDP01): Meyers singleton (function-local static). Returned as void* because
-    // the instruction files access it through raw byte offsets / 32-bit word indices.
-    static void* GetPDP0();
+    // @0x42b5d0 (PDP01): Meyers singleton (function-local static).
+    static PDP0* GetPDP0();
     // PDP02 @0x42bd40 is the destructor (releases the five deques and the shared_ptr); defaulted.
     ~PDP0() = default;
 

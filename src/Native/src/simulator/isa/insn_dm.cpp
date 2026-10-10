@@ -53,11 +53,6 @@ DmConf_broadcastInstruction::~DmConf_broadcastInstruction() = default;
 // ---- DmLoadAct0 ----
 namespace {
 
-// TODO(layout): Dm / Conv2D / PDP0 singletons are accessed by raw byte offset.
-template <class T> inline T &at(void *base, size_t off)
-{
-  return *reinterpret_cast<T *>(static_cast<char *>(base) + off);
-}
 using LoadAct0Queue = std::deque<std::shared_ptr<DmLoadAct0>>;
 }  // namespace
 
@@ -107,10 +102,8 @@ void DmLoadAct0Instruction::operation()
 
   std::shared_ptr<DmLoadAct0> load = dm->GetLoadAct0();
   if (dest_channel_) {
-    // TODO(layout): PDP0 + 65800 is its std::deque<std::shared_ptr<DmLoadAct0>>
-    static_cast<PDP0 *>(PDP0::GetPDP0())->load_act0_queue_.push_back(load);
+    PDP0::GetPDP0()->load_act0_queue_.push_back(load);
   } else {
-    // TODO(layout): Conv2D + 400 is its std::deque<std::shared_ptr<DmLoadAct0>>
     Conv2D::GetConv2D()->act0_param_queue_.push_back(load);
   }
 }
@@ -413,10 +406,8 @@ void DmLoadWInstruction::operation()
 
   std::shared_ptr<DmLoadW> load = dm->GetLoadW();
   if (dest_type_) {
-    // TODO(layout): PDP0 + 65640 is its std::deque<std::shared_ptr<DmLoadW>>
-    static_cast<PDP0 *>(PDP0::GetPDP0())->weight_queue_.push_back(load);
+    PDP0::GetPDP0()->weight_queue_.push_back(load);
   } else {
-    // TODO(layout): Conv2D + 240 is its std::deque<std::shared_ptr<DmLoadW>>
     Conv2D::GetConv2D()->weight_queue_.push_back(load);
   }
 }
@@ -460,7 +451,6 @@ void DmStoreOfConfInstruction::get_next_pc()
 // DmStoreOfConfInstruction2.cpp  @0x41e070
 void DmStoreOfConfInstruction::operation()
 {
-  // TODO(layout): Dm singleton OF-store section, accessed as 32-bit words (index = byte offset / 4).
   Dm *dm = Dm::GetDm();
   dm->of_shape_[0] = (rstride_d_val_ >> 32) & 0xFFFF;   // OF store shape dim0
   dm->of_shape_[1] = (rstride_d_val_ >> 16) & 0xFFFF;   // dim1
@@ -526,7 +516,7 @@ void DmStoreOfInstruction::operation()
 
   std::shared_ptr<DmStoreOf> store = dm->GetStoreOf();
   if (src_channel_) {
-    PDP0 * pdp0 = static_cast<PDP0 *>(PDP0::GetPDP0());
+    PDP0 * pdp0 = PDP0::GetPDP0();
     pdp0->store_of_queue_.push_back(store);
     if (!pdp0->store_of_queue_.empty())
       pdp0->Compute();

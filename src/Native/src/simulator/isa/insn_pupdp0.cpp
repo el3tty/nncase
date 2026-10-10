@@ -22,7 +22,7 @@ void PuPdp0ComputeInstruction::get_next_pc()
 // PuPdp0ComputeInstruction2.cpp  @0x422b20
 void PuPdp0ComputeInstruction::operation()
 {
-    PDP0* pdp0 = static_cast<PDP0*>(PDP0::GetPDP0());
+    PDP0* pdp0 = PDP0::GetPDP0();
     pdp0->regs_.psum_offset_ = compute_param_;                 // +65632
 
     // Queue a snapshot of the configuration registers (inlined std::deque::push_back of a shared_ptr).
@@ -97,7 +97,7 @@ void PuPdp0Conf_deqInstruction::get_next_pc()
 void PuPdp0Conf_deqInstruction::operation()
 {
     // verified against asm @0x422a50: one qword store at PDP0+0x10030 = {rs1_val, unsigned_flag}
-    PDP0 *pdp0 = static_cast<PDP0 *>(PDP0::GetPDP0());
+    PDP0 *pdp0 = PDP0::GetPDP0();
     pdp0->regs_.in_zero_point_ = rbx_val_;
     pdp0->regs_.unsigned_flag_ = quant_type_;
 }
@@ -142,9 +142,9 @@ void PuPdp0FetchifConf1Instruction::get_next_pc()
 // PuPdp0FetchifConf1Instruction2.cpp  @0x422980
 void PuPdp0FetchifConf1Instruction::operation()
 {
-    uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16385] = stride_w_;  // PDP0 + 65540
-    regs[16386] = stride_h_;  // PDP0 + 65544
+    Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
+    regs.stride_x_ = stride_w_;
+    regs.stride_y_ = stride_h_;
 }
 
 // PuPdp0FetchifConf1Instruction3.cpp  @0x425810
@@ -234,11 +234,11 @@ void PuPdp0FetchifConf3Instruction::get_next_pc()
 // PuPdp0FetchifConf3Instruction2.cpp  @0x4229b0
 void PuPdp0FetchifConf3Instruction::operation()
 {
-    uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16387] = pu::shape_word(shape_, 3);
-    regs[16388] = pu::shape_word(shape_, 2);
-    regs[16389] = pu::shape_word(shape_, 1);
-    regs[16390] = pu::shape_word(shape_, 0);
+    Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
+    regs.in_dim3_ = pu::shape_word(shape_, 3);
+    regs.in_c_ = pu::shape_word(shape_, 2);
+    regs.in_h_ = pu::shape_word(shape_, 1);
+    regs.in_w_ = pu::shape_word(shape_, 0);
 }
 
 // PuPdp0FetchifConf3Instruction3.cpp  @0x425770
@@ -283,12 +283,12 @@ void PuPdp0FetchifConf4Instruction::get_next_pc()
 // PuPdp0FetchifConf4Instruction2.cpp  @0x422a00
 void PuPdp0FetchifConf4Instruction::operation()
 {
-    uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16391] = rpad_value_val_;
-    regs[16392] = pu::shape_word(shape_, 2);
-    regs[16393] = pu::shape_word(shape_, 3);
-    regs[16394] = pu::shape_word(shape_, 1);
-    regs[16395] = pu::shape_word(shape_, 0);
+    Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
+    regs.pad_value_ = rpad_value_val_;
+    regs.pad_bottom_ = pu::shape_word(shape_, 2);
+    regs.pad_top_ = pu::shape_word(shape_, 3);
+    regs.pad_left_ = pu::shape_word(shape_, 1);
+    regs.pad_right_ = pu::shape_word(shape_, 0);
 }
 
 // PuPdp0FetchifConf4Instruction3.cpp  @0x425720
@@ -330,8 +330,7 @@ void PuPdp0ModeConfInstruction::get_next_pc()
 // PuPdp0ModeConfInstruction2.cpp  @0x422960
 void PuPdp0ModeConfInstruction::operation()
 {
-    void* pdp0 = PDP0::GetPDP0();  // TODO(layout): raw offset into PDP0
-    pu::at<uint32_t>(pdp0, 0x10000) = mode_;  // PDP0 mode register
+    PDP0::GetPDP0()->regs_.mode_ = mode_;  // PDP0 mode register
 }
 
 // PuPdp0ModeConfInstruction3.cpp  @0x425860
@@ -376,15 +375,15 @@ void PuPdp0OfConfInstruction::get_next_pc()
 // PuPdp0OfConfInstruction2.cpp  @0x422aa0
 void PuPdp0OfConfInstruction::operation()
 {
-    uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16400] = pu::shape_word(shape1_, 3);
-    regs[16401] = pu::shape_word(shape1_, 2);
-    regs[16402] = pu::shape_word(shape1_, 1);
-    regs[16403] = pu::shape_word(shape1_, 0);
-    regs[16404] = pu::shape_word(shape0_, 2);
-    regs[16405] = pu::shape_word(shape0_, 1);
-    regs[16406] = pu::shape_word(shape0_, 0);
-    regs[16407] = 0;
+    Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
+    regs.out_dim3_ = pu::shape_word(shape1_, 3);
+    regs.out_c_ = pu::shape_word(shape1_, 2);
+    regs.out_h_ = pu::shape_word(shape1_, 1);
+    regs.out_w_ = pu::shape_word(shape1_, 0);
+    regs.of_shape0_[0] = pu::shape_word(shape0_, 2);
+    regs.of_shape0_[1] = pu::shape_word(shape0_, 1);
+    regs.of_shape0_[2] = pu::shape_word(shape0_, 0);
+    regs.of_reserved_ = 0;
 }
 
 // PuPdp0OfConfInstruction3.cpp  @0x425630
@@ -427,9 +426,9 @@ void PuPdp0WConfInstruction::get_next_pc()
 // PuPdp0WConfInstruction2.cpp  @0x422a80
 void PuPdp0WConfInstruction::operation()
 {
-    uint32_t* regs = static_cast<uint32_t*>(PDP0::GetPDP0());  // TODO(layout): PDP0 register file, 32-bit word index
-    regs[16398] = kernel_w_;  // PDP0 + 65592
-    regs[16399] = kernel_h_;  // PDP0 + 65596
+    Pdp0Compute& regs = PDP0::GetPDP0()->regs_;
+    regs.kernel_w_ = kernel_w_;
+    regs.kernel_h_ = kernel_h_;
 }
 
 // PuPdp0WConfInstruction3.cpp  @0x425680

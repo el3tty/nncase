@@ -68,16 +68,14 @@ constexpr CheckPoint::StreamId kCkptPdp0Out = CheckPoint::kPdp0PeOut;   // +1075
 // PDP01.cpp  @0x42b5d0 (Source 1)
 // The original constructs the singleton in place (five empty deques, one default shared_ptr) under a
 // guard variable and registers PDP0::~PDP0 with atexit; a function-local static is equivalent.
-void* PDP0::GetPDP0()
+PDP0* PDP0::GetPDP0()
 {
   static PDP0 pdp0;
   return &pdp0;
 }
 
 void PDP0::Reset() {
-  std::memset(scratch_, 0, sizeof(scratch_));
   std::memset(&regs_, 0, sizeof(regs_));
-  reg_10064_ = 0;
   weight_queue_.clear();
   store_of_queue_.clear();
   load_act0_queue_.clear();

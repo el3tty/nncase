@@ -14,11 +14,6 @@ inline uint32_t bits(uint32_t word, unsigned lo, unsigned width)
   return (word >> lo) & ((1u << width) - 1u);
 }
 
-// TODO(layout): Conv2D / PDP0 / Act0Compute are accessed by raw byte offset.
-template <class T> inline T &at(void *base, size_t off)
-{
-  return *reinterpret_cast<T *>(static_cast<char *>(base) + off);
-}
 using Act0ComputeQueue = std::deque<std::shared_ptr<Act0Compute>>;
 }  // namespace
 
@@ -60,16 +55,13 @@ void Act0ComputeInstruction::get_next_pc()
 void Act0ComputeInstruction::operation()
 {
   // The "current" Act0Compute descriptor was installed by Act0Src1ConfInstruction.
-  // TODO(layout): current descriptor = std::shared_ptr<Act0Compute> at PDP0+65960 / Conv2D+560,
-  //               queue = std::deque<std::shared_ptr<Act0Compute>> at PDP0+65880 / Conv2D+480.
   Conv2D *conv = Conv2D::GetConv2D();
-  PDP0 *pdp0 = static_cast<PDP0 *>(PDP0::GetPDP0());
+  PDP0 *pdp0 = PDP0::GetPDP0();
   std::shared_ptr<Act0Compute> compute = channel_ ? pdp0->cur_act0_ : conv->cur_act0_;
-  void *desc = compute.get();
-  at<uint32_t>(desc, 24) = raddr_d_val_;   // Act0Compute+24
-  at<uint8_t>(desc, 28)  = target_;    // Act0Compute+28
-  at<uint32_t>(desc, 32) = dest_datatype_;    // Act0Compute+32
-  at<uint8_t>(desc, 36)  = is_by_channel_;    // Act0Compute+36
+  compute->out_base_ = raddr_d_val_;
+  compute->out_route_ = target_;
+  compute->out_type_ = dest_datatype_;
+  compute->per_channel_ = is_by_channel_;
 
   (channel_ ? pdp0->act0_queue_ : conv->act0_queue_).push_back(compute);
 }
@@ -129,9 +121,8 @@ void Act0Src1ConfInstruction::operation()
 
   // Install a fresh Act0Compute descriptor as the "current" one of the selected engine
   // (consumed later by Act0ComputeInstruction::operation()).
-  // TODO(layout): std::shared_ptr<Act0Compute> at PDP0+65960 / Conv2D+560.
   if (channel_)
-    static_cast<PDP0 *>(PDP0::GetPDP0())->cur_act0_ = act0->GetAct0Compute();
+    PDP0::GetPDP0()->cur_act0_ = act0->GetAct0Compute();
   else
     Conv2D::GetConv2D()->cur_act0_ = act0->GetAct0Compute();
 }
