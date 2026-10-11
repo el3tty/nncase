@@ -5,7 +5,7 @@ include(FetchContent)
 FetchContent_Declare(
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG        10.1.1 # или 9.1.0
+    GIT_TAG        10.1.1
 )
 
 FetchContent_Declare(
@@ -35,6 +35,16 @@ set_target_properties(nethost::nethost PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${NETHOST_NATIVE_DIR}")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../../Native/include")
+
+# Version header: <nncase/version.h> is generated into the build tree
+set(NNCASE_VERSION "2.11.0")
+if (NOT DEFINED NNCASE_VERSION_SUFFIX)
+    set(NNCASE_VERSION_SUFFIX "")
+endif ()
+set(NNCASE_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE INTERNAL "")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../../Native/include/nncase/version.h.in"
+               "${NNCASE_GENERATED_INCLUDE_DIR}/nncase/version.h")
+include_directories("${NNCASE_GENERATED_INCLUDE_DIR}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

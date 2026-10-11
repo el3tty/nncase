@@ -70,9 +70,18 @@ void LaunchDebugger() {
 #endif
 } // namespace
 
+namespace pybind11::detail {
+std::atomic_bool g_python_shutdown = false;
+}
+
 PYBIND11_MODULE(_nncaseruntime, m) {
     m.doc() = "nncase runtime Library";
     m.attr("__version__") = NNCASE_VERSION;
+
+    m.add_object("_cleanup", py::capsule([]() {
+                     pybind11::detail::g_python_shutdown.store(
+                         true, std::memory_order_release);
+                 }));
 
     // LaunchDebugger();
 

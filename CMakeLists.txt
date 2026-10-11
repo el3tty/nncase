@@ -18,7 +18,6 @@ if (RISCV64_SYSROOT)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     set(Python3_INCLUDE_DIR "${RISCV64_SYSROOT}/usr/include/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}")
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
-
-    add_subdirectory(python/nncaseruntime/native)
 endif()
 
+add_subdirectory(python/nncaseruntime/native)
