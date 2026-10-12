@@ -16,6 +16,7 @@
 #include "pytype_utils.h"
 #include "type_casters.h"
 #include <iostream>
+#include <nncase/api.h>
 #include <nncase/runtime/interpreter.h>
 #include <nncase/runtime/runtime_op_utility.h>
 #include <nncase/version.h>
@@ -116,6 +117,11 @@ PYBIND11_MODULE(_nncaseruntime, m) {
         .def("set_profiling",
              [](interpreter &interp, uint8_t enabled) {
                  interp.set_profiling(enabled);
+             })
+        .def("set_dump_root",
+             [](interpreter &interp, const std::string &path) {
+                 if (nncase_interp_set_dump_root(&interp, path.c_str()) != 0)
+                     throw std::runtime_error("Failed to set dump root");
              })
         .def("run",
              [](interpreter &interp) { interp.run().unwrap_or_throw(); });

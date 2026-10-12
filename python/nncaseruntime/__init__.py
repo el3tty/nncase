@@ -14,4 +14,4 @@
 #
 """nncase runtime."""
 from . import base
-from _nncaseruntime import MemoryRange, RuntimeTensor, Interpreter
+from _nncaseruntime import MemoryRange, RuntimeTensor, Interpreter, __version__
