@@ -1,9 +1,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <iostream>
-#ifdef DUMP_K230_INVOCATIONS
-#include <fstream>
-#endif
 
 #include <nncase/functional/k230/dynamic_gnne_matmul.h>
 #include <nncase/runtime/k230/gnne.h>
@@ -83,24 +80,6 @@ result<void> k230_runtime_module::initialize_before_functions(
     try_var(text, context.get_or_read_section(".text", text_storage_, true));
     this->text_ = text;
     this->rdata_ = rdata;
-
-#ifdef DUMP_K230_INVOCATIONS
-    // Test-case capture: see runtime_function.cpp for the other dumped files.
-    // rdata_ holds a physical address: read the contents through a mapping of rdata_storage_.
-    {
-        auto mapped = rdata_storage_->map(map_access_t::map_read);
-        bool ok_written = false;
-        if (mapped.is_ok()) {
-            auto bytes = mapped.unwrap().buffer();
-            std::ofstream out("rdata.bin", std::ios::binary | std::ios::trunc);
-            out.write(reinterpret_cast<const char *>(bytes.data()),
-                      static_cast<std::streamsize>(bytes.size()));
-            ok_written = static_cast<bool>(out);
-        }
-        if (!ok_written)
-            std::cerr << "DUMP_K230_INVOCATIONS: cannot dump rdata" << std::endl;
-    }
-#endif
 
     return ok();
 }

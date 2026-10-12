@@ -7,13 +7,6 @@
 #include "runtime_function.h"
 #include "runtime_module_impl.h"
 
-#ifdef DUMP_K230_INVOCATIONS
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <string>
-#endif
-
 using namespace nncase;
 
 namespace {
@@ -41,55 +34,6 @@ result<tensor> alloc_new_device_tensor(tensor old_tensor,
 
     return ok(new_tensor);
 }
-
-#ifdef DUMP_K230_INVOCATIONS
-// Test-case capture (enabled with -DDUMP_K230_INVOCATIONS, CMake option DUMP_K230_INVOCATIONS).
-// Files are written to the current working directory:
-//   rdata.bin       module .rdata (written by k230_runtime_module::initialize_before_functions)
-//   text_<EP>.bin   code of the function with entrypoint <EP> (hexadecimal, no padding)
-//   in_<EP>.bin     input tensors of the latest invocation, concatenated in parameter order
-//   out_<EP>.bin    output tensors of the latest invocation, concatenated in parameter order
-std::string dump_name(const char *prefix, size_t entrypoint) {
-    char buf[64];
-    std::snprintf(buf, sizeof(buf), "%s_%zx.bin", prefix, entrypoint);
-    return buf;
-}
-
-// Writes bytes [offset, offset + size) of a host buffer. The module's text_ / rdata_ spans hold physical addresses,
-// so the contents are read through a mapping of the buffer.
-result<void> dump_range(const std::string &path,
-                        nncase::runtime::host_buffer_t buffer, size_t offset,
-                        size_t size) noexcept {
-    try_var(mapped, buffer->map(map_access_t::map_read));
-    auto bytes = mapped.buffer();
-    if (offset > bytes.size() || size > bytes.size() - offset)
-        return err(std::errc::invalid_argument);
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    out.write(reinterpret_cast<const char *>(bytes.data() + offset),
-              static_cast<std::streamsize>(size));
-    return out ? ok() : err(std::errc::io_error);
-}
-
-result<void> dump_tensors(const std::string &path, gsl::span<value_t> params,
-                          size_t first, size_t count,
-                          bool invalidate) noexcept {
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out)
-        return err(std::errc::io_error);
-    for (size_t i = first; i < first + count; i++) {
-        try_var(t, params[i].as<tensor>());
-        try_var(host, t->buffer().as_host());
-        // Outputs are written by the device: drop stale cache lines first.
-        if (invalidate)
-            try_(host.sync(sync_op_t::sync_invalidate, true));
-        try_var(mapped, host.map(map_access_t::map_read));
-        auto bytes = mapped.buffer();
-        out.write(reinterpret_cast<const char *>(bytes.data()),
-                  static_cast<std::streamsize>(bytes.size()));
-    }
-    return out ? ok() : err(std::errc::io_error);
-}
-#endif
 } // end anonymous namespace
 
 BEGIN_NS_NNCASE_RT_K230
@@ -118,12 +62,6 @@ result<void> k230_runtime_function::initialize_core(
     }
     text_begin_ = mod_text.data() + entrypoint;
     text_end_   = mod_text.data() + entrypoint + text_size;
-
-#ifdef DUMP_K230_INVOCATIONS
-    if (dump_range(dump_name("text", entrypoint), k230_mod.text_storage_,
-                   entrypoint, text_size).is_err())
-        std::cerr << "DUMP_K230_INVOCATIONS: cannot dump text" << std::endl;
-#endif
 
     return context.read_section(
         ".desc", [&](auto &reader, size_t) -> result<void> {
@@ -195,13 +133,6 @@ result<value_t> k230_runtime_function::invoke_core(
 
     l2_mem[next + 1] = 0;
 
-#ifdef DUMP_K230_INVOCATIONS
-    const size_t dump_ep = static_cast<size_t>(text_begin_ - mod.text_.data());
-    if (dump_tensors(dump_name("in", dump_ep), parameters, 0,
-                     input_descs_.size(), false).is_err())
-        std::cerr << "DUMP_K230_INVOCATIONS: cannot dump inputs" << std::endl;
-#endif
-
     // --- Stage 4: dispatch ---
     gnne_set_time_out(200000);
 
@@ -214,12 +145,6 @@ result<value_t> k230_runtime_function::invoke_core(
     fds.fd = mod.gnne_fd_;
     fds.events = POLLIN;
     poll(&fds, 1, -1);
-
-#ifdef DUMP_K230_INVOCATIONS
-    if (dump_tensors(dump_name("out", dump_ep), parameters,
-                     input_descs_.size(), output_descs_.size(), true).is_err())
-        std::cerr << "DUMP_K230_INVOCATIONS: cannot dump outputs" << std::endl;
-#endif
 
     return ok(new tuple_node());
 }
