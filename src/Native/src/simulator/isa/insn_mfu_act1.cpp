@@ -373,8 +373,10 @@ void MfuAct1ConfStrideInstruction::get_next_pc() {
 }
 
 void MfuAct1ConfStrideInstruction::operation() {
-    // Act1 destination pitches.
+    // Act1 source strides and destination pitches (each a packed {c, h, w} halfword triple, see MFU::GetCHW).
     MeshNet * const mn = MeshNet::GetMeshNet();
+    mn->a1_src1_chw_ = rstride_s1_val_;
+    mn->a1_src2_chw_ = rstride_s2_val_;
     mn->a1_dst_chw_ = rstride_d1_val_;
 }
 
