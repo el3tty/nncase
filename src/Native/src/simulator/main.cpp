@@ -114,6 +114,34 @@ static inline void step(Simulator & sim, uint8_t *& pc) {
 #define PO16(I)  step<I, 16, true>(sim, pc)
 #define P16(I)   step<I, 16>(sim, pc)
 
+// At the end of a program every queued DM load / store / compute descriptor must have been consumed by a compute or
+// activation step. Anything left over means the instruction stream (i.e. the compiler) is malformed.
+static void check_engine_queues_empty() {
+    std::string leftovers;
+    auto check = [&](const char * name, size_t size) {
+        if (size)
+            leftovers += std::string(leftovers.empty() ? "" : ", ") + name + "=" + std::to_string(size);
+    };
+
+    const Conv2D * conv = Conv2D::GetConv2D();
+    check("conv.if_queue", conv->if_queue_.size());
+    check("conv.weight_queue", conv->weight_queue_.size());
+    check("conv.store_queue", conv->store_queue_.size());
+    check("conv.act0_param_queue", conv->act0_param_queue_.size());
+    check("conv.act0_queue", conv->act0_queue_.size());
+    check("conv.compute_queue", conv->compute_queue_.size());
+
+    const PDP0 * pdp0 = PDP0::GetPDP0();
+    check("pdp0.weight_queue", pdp0->weight_queue_.size());
+    check("pdp0.store_of_queue", pdp0->store_of_queue_.size());
+    check("pdp0.load_act0_queue", pdp0->load_act0_queue_.size());
+    check("pdp0.act0_queue", pdp0->act0_queue_.size());
+    check("pdp0.compute_queue", pdp0->compute_queue_.size());
+
+    if (!leftovers.empty())
+        throw std::runtime_error("Engine queues are not empty at the end of the program (compiler bug?): " + leftovers);
+}
+
 static int simulator_run(int argc, const char ** argv) {
     // The DLL build stays loaded between invocations: start every run from a clean global state.
     initialize_globals();
@@ -241,11 +269,13 @@ static int simulator_run(int argc, const char ** argv) {
         case OP_END:                                                    // decode, then leave the loop
             sim.InstParser<EndInstruction, 16>(&pc);
             sim.bit_offset_ += 16;
+            check_engine_queues_empty();
             return 0;
         case OP_FENCEI:
             sim.InstParser<FenceIInstruction, 16>(&pc);
             sim.bit_offset_ += 16;
             sim.has_base_ = 1;                                           // movb $1,0x21c(%rsp), then jmp to the exit path
+            check_engine_queues_empty();
             return 0;
         case OP_FENCE:    P16(FenceInstruction);   break;
         case OP_CCR_DECL: P16(CcrDeclInstruction); break;               // (no operation call)
