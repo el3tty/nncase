@@ -14,15 +14,7 @@ FetchContent_Declare(xxhash
   GIT_SHALLOW    TRUE
   SOURCE_SUBDIR  build/cmake)
 
-set(LIBMMZ_REV ea816b267c431edd9a1a80574bded229010b1f15)
-set(LIBMMZ_BASE https://raw.githubusercontent.com/kendryte/k230_linux_sdk/${LIBMMZ_REV}/buildroot-overlay/package/libmmz)
-FetchContent_Declare(mmz_c URL ${LIBMMZ_BASE}/mmz.c DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_Declare(mmz_h URL ${LIBMMZ_BASE}/mmz.h DOWNLOAD_NO_EXTRACT TRUE)
-
-FetchContent_MakeAvailable(cxxopts xxhash mmz_c mmz_h)
-
-add_library(mmz STATIC ${mmz_c_SOURCE_DIR}/mmz.c)
-target_include_directories(mmz PUBLIC ${mmz_h_SOURCE_DIR})
+FetchContent_MakeAvailable(cxxopts xxhash)
 
 add_executable(ai2d_test
   ai2d_test.cpp  

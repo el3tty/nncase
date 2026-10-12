@@ -22,7 +22,10 @@ pybind11_add_module(nncaseruntime_python ${SRCS})
 target_link_libraries(nncaseruntime_python PRIVATE nlohmann_json::nlohmann_json)
 
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64")
-    target_link_libraries(nncaseruntime_python PRIVATE nncaseruntime functional_k230 nncase.rt_modules.k230)
+    set_target_properties(nncaseruntime_python PROPERTIES
+        PREFIX ""
+        SUFFIX ".cpython-${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}-riscv64-linux-gnu.so")
+    target_link_libraries(nncaseruntime_python PRIVATE nncaseruntime functional_k230 nncase.rt_modules.k230 mmz)
 else()
     target_link_libraries(nncaseruntime_python PRIVATE nncaseruntime nncase.simulator.k230)
 endif()

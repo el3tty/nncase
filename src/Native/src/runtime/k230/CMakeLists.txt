@@ -37,4 +37,16 @@ endfunction()
 configure_k230_runtime_target(functional_k230)
 configure_k230_runtime_target(nncase.rt_modules.k230)
 
+# mmz is required for python bindings and for ai2d_test, so build it as part of runtime
+set(LIBMMZ_REV ea816b267c431edd9a1a80574bded229010b1f15)
+set(LIBMMZ_BASE https://raw.githubusercontent.com/kendryte/k230_linux_sdk/${LIBMMZ_REV}/buildroot-overlay/package/libmmz)
+FetchContent_Declare(mmz_c URL ${LIBMMZ_BASE}/mmz.c DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_Declare(mmz_h URL ${LIBMMZ_BASE}/mmz.h DOWNLOAD_NO_EXTRACT TRUE)
+
+FetchContent_MakeAvailable(mmz_c mmz_h)
+
+add_library(mmz STATIC ${mmz_c_SOURCE_DIR}/mmz.c)
+set_target_properties(mmz PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(mmz PUBLIC ${mmz_h_SOURCE_DIR})
+
 add_subdirectory(ai2d_test)
