@@ -28,6 +28,7 @@ if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64")
     target_link_libraries(nncaseruntime_python PRIVATE nncaseruntime functional_k230 nncase.rt_modules.k230 mmz)
 else()
     target_link_libraries(nncaseruntime_python PRIVATE nncaseruntime nncase.simulator.k230)
+    target_compile_definitions(nncaseruntime_python PRIVATE $<$<CONFIG:Debug>:Py_DEBUG>)
 endif()
 target_include_directories(nncaseruntime_python PRIVATE
                   ${CMAKE_CURRENT_SOURCE_DIR}/../../common
