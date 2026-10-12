@@ -98,6 +98,16 @@ PYBIND11_MODULE(_nncaseruntime, m) {
         .def_property_readonly("outputs_size", &interpreter::outputs_size)
         .def("get_input_desc", &interpreter::input_desc)
         .def("get_output_desc", &interpreter::output_desc)
+        .def("get_input_shape",
+             [](interpreter &interp, size_t index) {
+                 auto shape = interp.input_shape(index);
+                 return to_py_shape({shape.data(), shape.size()});
+             })
+        .def("get_output_shape",
+             [](interpreter &interp, size_t index) {
+                 auto shape = interp.output_shape(index);
+                 return to_py_shape({shape.data(), shape.size()});
+             })
         .def("get_input_tensor",
              [](interpreter &interp, size_t index) {
                  return interp.input_tensor(index).unwrap_or_throw();
