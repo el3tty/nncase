@@ -21,17 +21,38 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(fmt gsl-lite json)
 
-FetchContent_Declare(
-    nethost
-    URL      "https://www.nuget.org/api/v2/package/runtime.win-x64.Microsoft.NETCore.DotNetAppHost/8.0.0"
-)
+if (WIN32)
+    FetchContent_Declare(
+        nethost
+        URL      "https://www.nuget.org/api/v2/package/runtime.win-x64.Microsoft.NETCore.DotNetAppHost/8.0.0"
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    FetchContent_Declare(
+        nethost
+        URL "https://www.nuget.org/api/v2/package/runtime.linux-x64.Microsoft.NETCore.DotNetAppHost/8.0.0"
+    )
+else()
+    message(FATAL_ERROR "nethost is only supported on Windows x64 and Linux x64 (current system: ${CMAKE_SYSTEM_NAME})")
+endif()
 
 FetchContent_Populate(nethost)
 
+# NETHOST_NATIVE_DIR is also used by the root CMakeLists.txt, which installs NETHOST_RUNTIME_FILE
+if (WIN32)
+    set(NETHOST_NATIVE_DIR "${nethost_SOURCE_DIR}/runtimes/win-x64/native" CACHE INTERNAL "")
+    set(NETHOST_LIBRARY "${NETHOST_NATIVE_DIR}/nethost.lib")
+    set(NETHOST_RUNTIME_FILE "${NETHOST_NATIVE_DIR}/nethost.dll" CACHE INTERNAL "")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(NETHOST_NATIVE_DIR "${nethost_SOURCE_DIR}/runtimes/linux-x64/native" CACHE INTERNAL "")
+    set(NETHOST_LIBRARY "${NETHOST_NATIVE_DIR}/libnethost.so")
+    set(NETHOST_RUNTIME_FILE "${NETHOST_LIBRARY}" CACHE INTERNAL "")
+else()
+    message(FATAL_ERROR "nethost is only supported on Windows x64 and Linux x64 (current system: ${CMAKE_SYSTEM_NAME})")
+endif()
+
 add_library(nethost::nethost UNKNOWN IMPORTED)
-set(NETHOST_NATIVE_DIR "${nethost_SOURCE_DIR}/runtimes/win-x64/native")
 set_target_properties(nethost::nethost PROPERTIES
-        IMPORTED_LOCATION "${NETHOST_NATIVE_DIR}/nethost.lib"
+        IMPORTED_LOCATION "${NETHOST_LIBRARY}"
         INTERFACE_INCLUDE_DIRECTORIES "${NETHOST_NATIVE_DIR}")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../../Native/include")

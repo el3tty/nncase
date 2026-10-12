@@ -22,12 +22,12 @@ endif()
 
 add_subdirectory(python/nncaseruntime/native)
 
-# Windows install layout: every exe, dll and python file goes to
-# <prefix>/nncaseruntime, so the exes find the dlls next to them and the
-# python module finds them next to the .pyd.
-if (WIN32)
-    set(NNCASE_WIN_INSTALL_DIR nncaseruntime)
-    set(NNCASE_WIN_INSTALL_TARGETS
+# Install layout (host builds): every exe, shared library and python file goes
+# to <prefix>/nncaseruntime, so the exes find the shared libraries next to them
+# and the python module finds them next to the extension module.
+if (NOT BUILDING_RUNTIME)
+    set(NNCASE_INSTALL_DIR nncaseruntime)
+    set(NNCASE_INSTALL_TARGETS
         nncaseruntime
         nncase.simulator.k230
         nncase.simulator.k230.sc
@@ -36,29 +36,26 @@ if (WIN32)
         nncasetest_dynamic_cli
         nncaseruntime_python)
 
-    foreach (_target IN LISTS NNCASE_WIN_INSTALL_TARGETS)
+    foreach (_target IN LISTS NNCASE_INSTALL_TARGETS)
         if (TARGET ${_target})
             install(TARGETS ${_target}
-                    RUNTIME DESTINATION ${NNCASE_WIN_INSTALL_DIR}
-                    LIBRARY DESTINATION ${NNCASE_WIN_INSTALL_DIR})
+                    RUNTIME DESTINATION ${NNCASE_INSTALL_DIR}
+                    LIBRARY DESTINATION ${NNCASE_INSTALL_DIR})
             # The subdirectories also install some of these to bin/ or lib/;
             # drop those copies so there is only one set of binaries.
             install(CODE "file(REMOVE \"\${CMAKE_INSTALL_PREFIX}/bin/$<TARGET_FILE_NAME:${_target}>\" \"\${CMAKE_INSTALL_PREFIX}/lib/$<TARGET_FILE_NAME:${_target}>\")")
         endif ()
     endforeach ()
 
-    # nethost.dll comes from the package fetched in src/Native/src
-    include(FetchContent)
-    FetchContent_GetProperties(nethost)
-    if (nethost_SOURCE_DIR)
-        install(FILES "${nethost_SOURCE_DIR}/runtimes/win-x64/native/nethost.dll"
-                DESTINATION ${NNCASE_WIN_INSTALL_DIR})
+    # nethost.dll / libnethost.so (NETHOST_RUNTIME_FILE is set in src/Native/src)
+    if (EXISTS "${NETHOST_RUNTIME_FILE}")
+        install(FILES "${NETHOST_RUNTIME_FILE}" DESTINATION ${NNCASE_INSTALL_DIR})
     else ()
-        message(WARNING "nethost was not fetched; nethost.dll will not be installed")
+        message(WARNING "nethost library not found (${NETHOST_RUNTIME_FILE}); it will not be installed")
     endif ()
 
     install(FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/python/nncaseruntime/__init__.py
             ${CMAKE_CURRENT_SOURCE_DIR}/python/nncaseruntime/base.py
-            DESTINATION ${NNCASE_WIN_INSTALL_DIR})
+            DESTINATION ${NNCASE_INSTALL_DIR})
 endif ()
