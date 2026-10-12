@@ -128,7 +128,7 @@ internal partial class Program
             }
             else if (datasetFormat == DatasetFormat.Image)
             {
-                compileOptions.QuantizeOptions.CalibrationDataset = new Quantization.ImageCalibrationDatasetProvider(((IR.Function)module.Entry!).Parameters.ToArray(), dataset);
+                compileOptions.QuantizeOptions.CalibrationDataset = new Quantization.ImageCalibrationDatasetProvider(((IR.Function)module.Entry!).Parameters.ToArray(), dataset, compileOptions.InputRange);
             }
             else
             {

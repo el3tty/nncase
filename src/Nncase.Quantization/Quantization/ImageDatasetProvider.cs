@@ -12,7 +12,8 @@ namespace Nncase.Quantization;
 /// <see cref="ICalibrationDatasetProvider"/> for standard image dataset folders (JPG, PNG, BMP).
 /// Images already at the model input resolution are used as is; others are letterboxed (gray 114 padding).
 /// Output is RGB in NCHW layout, in the element type of the model input:
-/// <c>uint8</c> input gives raw 0..255 bytes, <c>float32</c> input gives values normalized to 0..1.
+/// <c>uint8</c> input gives raw 0..255 bytes, <c>float32</c> input gives values mapped from 0..255 to the given
+/// input range (default 0..1), so <c>--input-range 0 255</c> keeps raw pixel values.
 /// Decoding and resizing use SkiaSharp (MIT).
 /// </summary>
 public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvider
@@ -21,8 +22,16 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
 
     private static readonly string[] SupportedExtensions = { ".jpg", ".jpeg", ".png", ".bmp" };
 
-    public ImageCalibrationDatasetProvider(IReadOnlyList<Var> vars, string datasetPath)
+    public ImageCalibrationDatasetProvider(IReadOnlyList<Var> vars, string datasetPath, IReadOnlyList<float>? inputRange = null)
     {
+        float rangeMin = 0f;
+        float rangeMax = 1f;
+        if (inputRange is { Count: 2 })
+        {
+            rangeMin = inputRange[0];
+            rangeMax = inputRange[1];
+        }
+
         Trace.Assert(Directory.Exists(datasetPath), "The dataset folder path must be valid!");
         Trace.Assert(vars.Count == 1, "Currently ImageProvider supports single-input models (e.g. YOLO).");
 
@@ -67,7 +76,7 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
                 var floats = new float[planar.Length];
                 for (int i = 0; i < planar.Length; i++)
                 {
-                    floats[i] = planar[i] / 255.0f;
+                    floats[i] = rangeMin + (planar[i] / 255.0f * (rangeMax - rangeMin));
                 }
 
                 tensor = Tensor.From<float>(floats, shape);
