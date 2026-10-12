@@ -456,7 +456,9 @@ void DmStoreOfInstruction::operation() {
   } else {
     Conv2D * conv = Conv2D::GetConv2D();
     conv->store_queue_.push_back(store);
-    if (!conv->store_queue_.empty())
+    // Only release a compute that is already waiting (mode 1 defers it until its store is queued);
+    // otherwise the store just stays queued until PuCompute / Act0 consume it.
+    if (!conv->compute_queue_.empty())
       conv->Compute();
   }
 }
