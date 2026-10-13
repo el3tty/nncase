@@ -11,14 +11,14 @@
     extraw 4, x1      # src_ch1_ptr
     li x1, 0x4200
     extraw 8, x1      # src_ch2_ptr
-    extraw 12, x0      # (unused)
+    extraw 12, x0      # (unused, must be 0)
     li x1, 0x5000
     extraw 16, x1      # dst_ch0_ptr
     li x1, 0x5100
     extraw 20, x1      # dst_ch1_ptr
     li x1, 0x5200
     extraw 24, x1      # dst_ch2_ptr
-    extraw 28, x0      # (unused)
+    extraw 28, x0      # (unused, must be 0)
     li x1, 0x40004
     extrw 32, x1      # src width/layout 0,1
     li x1, 0x4
@@ -33,20 +33,20 @@
     extrw 56, x0      # M3
     li x1, 0x44800000
     extrw 60, x1      # M4
-    extrw 64, x0      # (unused)
-    extrw 68, x0      # (unused)
+    extrw 64, x0      # (unused, must be 0)
+    extrw 68, x0      # (unused, must be 0)
     li x1, 0x3300001b
     extrw 72, x1      # formats and mode
     extrw 76, x0      # bound_val
-    extrw 80, x0      # (unused)
-    extrw 84, x0      # (unused)
-    extrw 88, x0      # (unused)
-    extrw 92, x0      # (unused)
+    extrw 80, x0      # (unused, must be 0)
+    extrw 84, x0      # (unused, must be 0)
+    extrw 88, x0      # (unused, must be 0)
+    extrw 92, x0      # (unused, must be 0)
     extrw 96, x0      # const_pad ch0
     li x1, 0x4000000
     extrw 100, x1      # cmd_id, dst_ind/src_ind, const_pad ch1..3
-    extrw 104, x0      # (unused)
-    extrw 108, x0      # (unused)
+    extrw 104, x0      # (unused, must be 0)
+    extrw 108, x0      # (unused, must be 0)
     extrw 112, x0      # pad bottom/top
     extrw 116, x0      # pad right/left
     li x1, 0x40004

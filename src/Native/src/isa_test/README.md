@@ -81,7 +81,7 @@ comparison is always bit exact.
 | `asm/mfu` | `mfu_memset`, `mfu_memcpy`, `mfu_transpose`, PDP1 pooling (min / max / average / sum, padding, u8 quantisation) and ACT1 (add, mul, line fits incl. 16 segments and shifts, broadcast, per channel) |
 | `asm/sim_only` | tests that pass only on the simulator (`pu_forward_psum`; the board does nothing for it). Do not run them on the board |
 | `asm/conv` | DM -> PU -> ACT0 -> DM store convolutions (1x1, 3x3, padding, stride, zero points, output types) accumulation over input channel groups, `pu_forward_psum`, and PDP0 pooling / depthwise |
-| `asm/ai2d` | AI2D (`extrw` / `extraw` then `ai2d_compute` + `fence`), GLB to GLB: copy with pitch, crop / destination offset, nearest and bilinear resize, constant / replicate / mirror padding, planar <-> packed RGB888 |
+| `asm/ai2d` | AI2D (`extrw` / `extraw` then `ai2d_compute` + `fence`), GLB to GLB: copy with pitch, crop / destination offset, nearest and bilinear resize, constant padding, three planes |
 
 The expected values of the engine tests were computed independently with numpy (convolutions, pooling, fp16 rounding), not
 taken from the simulator. Most programs are short enough to read as a description of how the unit is driven.
@@ -98,7 +98,9 @@ Hardware notes for the `asm/conv` tests (found on a K230 board): the PU only con
 ### AI2D on the board
 
 * The engine runs on `ai2d_compute`, not on the write to register 35: `extrw` / `extraw` only queue register writes.
-  Write all 36 registers (pointers 0..7 with `extraw`), then `ai2d_compute` and `fence`, as the compiler does.
+  Write all 36 registers in ascending order (pointers 0..7 with `extraw`, the others with `extrw`), then `ai2d_compute` and `fence`.
+  The registers keep their values between operations, so every register the operation does not use has to be written as 0
+  (marked `unused, must be 0` in the tests), like the compiler does.
 * In the NPU instruction stream the AI2D only works on GLB (`src_ind = dst_ind = 0`); pointers are GLB offsets
   (`offset + (mmu id << 28)`). DDR pointers written with `extraw` are truncated to 22 bits.
 * The AI2D timeout register (+0xC0) has to be set to 0x1388 before the run (done by `platform_k230.cpp`).

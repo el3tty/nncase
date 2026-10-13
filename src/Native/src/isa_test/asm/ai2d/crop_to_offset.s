@@ -3,14 +3,14 @@
 # OUT @0x5000: u8 [165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 251, 189, 192, 34, 56, 165, 165, 165, 165, 4, 238, 137, 87, 227, 165, 165, 165, 165, 176, 1, 192, 144, 118, 165, 165, 165, 165, 92, 252, 71, 23, 10, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165]
     li x1, 0x4000
     extraw 0, x1      # src_ch0_ptr
-    extraw 4, x0      # (unused)
-    extraw 8, x0      # (unused)
-    extraw 12, x0      # (unused)
+    extraw 4, x0      # (unused, must be 0)
+    extraw 8, x0      # (unused, must be 0)
+    extraw 12, x0      # (unused, must be 0)
     li x1, 0x5000
     extraw 16, x1      # dst_ch0_ptr
-    extraw 20, x0      # (unused)
-    extraw 24, x0      # (unused)
-    extraw 28, x0      # (unused)
+    extraw 20, x0      # (unused, must be 0)
+    extraw 24, x0      # (unused, must be 0)
+    extraw 28, x0      # (unused, must be 0)
     li x1, 0x8
     extrw 32, x1      # src width/layout 0,1
     extrw 36, x0      # src width/layout 2,3
@@ -23,20 +23,20 @@
     extrw 56, x0      # M3
     li x1, 0x44800000
     extrw 60, x1      # M4
-    extrw 64, x0      # (unused)
-    extrw 68, x0      # (unused)
+    extrw 64, x0      # (unused, must be 0)
+    extrw 68, x0      # (unused, must be 0)
     li x1, 0x33000009
     extrw 72, x1      # formats and mode
     extrw 76, x0      # bound_val
-    extrw 80, x0      # (unused)
-    extrw 84, x0      # (unused)
-    extrw 88, x0      # (unused)
-    extrw 92, x0      # (unused)
+    extrw 80, x0      # (unused, must be 0)
+    extrw 84, x0      # (unused, must be 0)
+    extrw 88, x0      # (unused, must be 0)
+    extrw 92, x0      # (unused, must be 0)
     extrw 96, x0      # const_pad ch0
     li x1, 0x4000000
     extrw 100, x1      # cmd_id, dst_ind/src_ind, const_pad ch1..3
-    extrw 104, x0      # (unused)
-    extrw 108, x0      # (unused)
+    extrw 104, x0      # (unused, must be 0)
+    extrw 108, x0      # (unused, must be 0)
     extrw 112, x0      # pad bottom/top
     extrw 116, x0      # pad right/left
     li x1, 0x40005
