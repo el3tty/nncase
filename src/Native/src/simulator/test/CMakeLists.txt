@@ -17,11 +17,10 @@ else()
     target_compile_definitions(k230_isa_test PRIVATE "K230_SIMULATOR_EXE=\"$<TARGET_FILE:nncase.simulator.k230.sc>\"")
 endif()
 
-# Runs every asm/*.s test: cmake --build . --target run_isa_tests
+# Runs every .s test below asm/ (k230_isa_test accepts a directory): cmake --build . --target run_isa_tests
 # K230_SIMULATOR points the test app to the simulator that was just built (the library is not next to the test app).
 add_custom_target(run_isa_tests
     COMMAND ${CMAKE_COMMAND} -E env K230_SIMULATOR=$<TARGET_FILE:nncase.simulator.k230.sc>
-            ${CMAKE_COMMAND} -DTEST_EXE=$<TARGET_FILE:k230_isa_test> -DTEST_DIR=${CMAKE_CURRENT_SOURCE_DIR}/asm
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_tests.cmake
+            $<TARGET_FILE:k230_isa_test> ${CMAKE_CURRENT_SOURCE_DIR}/asm
     DEPENDS k230_isa_test
     USES_TERMINAL)

@@ -1,5 +1,5 @@
 #pragma once
-// A small assembler for the K230 NPU instruction set (see ../isa/README.md for the encodings).
+// A small assembler for the K230 NPU instruction set (see ../README.md for the encodings).
 //
 // Syntax (one instruction per line):
 //

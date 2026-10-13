@@ -82,6 +82,9 @@ void MfuMemcpyInstruction::operation() {
     // Hand the operands to the MFU.
     mfu->src_addr_ = raddr_s_val_;
     mfu->dst_addr_ = raddr_d_val_;
+    // Latch the stride registers: without this Memcpy() runs with zero (or stale, left by a memset) strides.
+    mfu->shape_dst_ = shape_a_;
+    mfu->shape_src_ = shape_b_;
     mfu->busy_ = 1;
     store_shape_halfwords(mfu, shape_c_);
     mfu->Memcpy();
