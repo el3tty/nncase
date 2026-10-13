@@ -19,3 +19,5 @@ endif()
 target_include_directories(nncase.simulator.k230.sc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # shared_memory comes from the runtime library (also brings the nncase and gsl include paths)
 target_link_libraries(nncase.simulator.k230.sc PRIVATE nncase.simulator.k230)
+
+add_subdirectory(test)

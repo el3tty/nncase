@@ -34,7 +34,7 @@ if (NOT BUILDING_RUNTIME)
         nncasetest
         nncasetest_cli
         nncasetest_dynamic_cli
-        nncaseruntime_python)
+        nncaseruntime_python k230_isa_test)
 
     foreach (_target IN LISTS NNCASE_INSTALL_TARGETS)
         if (TARGET ${_target})
