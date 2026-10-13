@@ -1,7 +1,7 @@
 # l2_store of a dense 4x4 tile to DDR rows of 8 bytes; the other 4 bytes of every DDR row keep the 0xA5 fill
 # IN @0x4000: u8 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 # DDR_OUT: u8 [1, 2, 3, 4, 165, 165, 165, 165, 5, 6, 7, 8, 165, 165, 165, 165, 9, 10, 11, 12, 165, 165, 165, 165, 13, 14, 15, 16, 165, 165, 165, 165]
-    li x1, 0x200000      # DDR destination offset
+    li x1, DDR_OUT      # DDR destination offset
     li x2, 0x4000           # GLB source
     li x3, 1
     li x4, 4

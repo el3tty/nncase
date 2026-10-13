@@ -4,7 +4,7 @@
 # Registers are written with extrw (byte address of the 32-bit register); the write to byte address 140 runs the engine.
 # DDR_IN: u8 [175, 196, 25, 246, 67, 211, 151, 103, 92, 185, 142, 23, 72, 89, 110, 42, 218, 136, 167, 230, 68, 176, 127, 135, 172, 0, 75, 55, 250, 6]
 # OUT @0x4000: u8 [175, 196, 25, 246, 67, 211, 165, 165, 151, 103, 92, 185, 142, 23, 165, 165, 72, 89, 110, 42, 218, 136, 165, 165, 167, 230, 68, 176, 127, 135, 165, 165, 172, 0, 75, 55, 250, 6, 165, 165]
-    li x1, 0x100000
+    li x1, DDR_IN
     extraw 0, x1      # src_ch0_ptr
     li x1, 0x4000
     extraw 16, x1      # dst_ch0_ptr

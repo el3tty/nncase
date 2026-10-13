@@ -104,6 +104,7 @@ set(K230_SIMULATOR_DLL ON)
 add_subdirectory(compiler)
 add_subdirectory(runtime)
 add_subdirectory(kernels)
+add_subdirectory(isa_test)
 
 if (NOT BUILDING_RUNTIME)
     add_executable(nncasetest test.cpp)

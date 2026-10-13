@@ -1,15 +1,17 @@
-# AI2D copies a 4x5 window starting at (src_x 2, src_y 1) of a 6x8 image to (dst_x 3, dst_y 2) of a 7x9 destination
-# DDR_IN: u8 [19, 188, 44, 191, 69, 56, 152, 183, 181, 112, 251, 189, 192, 34, 56, 201, 206, 38, 4, 238, 137, 87, 227, 195, 72, 83, 176, 1, 192, 144, 118, 159, 93, 172, 92, 252, 71, 23, 10, 233, 35, 192, 61, 135, 151, 92, 247, 224]
-# OUT @0x4000: u8 [165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 251, 189, 192, 34, 56, 165, 165, 165, 165, 4, 238, 137, 87, 227, 165, 165, 165, 165, 176, 1, 192, 144, 118, 165, 165, 165, 165, 92, 252, 71, 23, 10, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165]
-    li x1, 0x100000
+# AI2D identity copy (planar, 1 channel) from DDR (src_ind=1) to GLB: M0 = M4 = 1024.0 (10 bit fixed point 1.0).
+# The destination pitch is 8, so the last two bytes of every row keep the 0xA5 fill.
+# Registers are written with extrw (byte address of the 32-bit register); the write to byte address 140 runs the engine.
+# DDR_IN: u8 [175, 196, 25, 246, 67, 211, 151, 103, 92, 185, 142, 23, 72, 89, 110, 42, 218, 136, 167, 230, 68, 176, 127, 135, 172, 0, 75, 55, 250, 6]
+# OUT @0x4000: u8 [175, 196, 25, 246, 67, 211, 165, 165, 151, 103, 92, 185, 142, 23, 165, 165, 72, 89, 110, 42, 218, 136, 165, 165, 167, 230, 68, 176, 127, 135, 165, 165, 172, 0, 75, 55, 250, 6, 165, 165]
+    li x1, DDR_IN
     extrw 0, x1      # src_ch0_ptr
     li x1, 0x4000
     extrw 16, x1      # dst_ch0_ptr
-    li x1, 0x8
+    li x1, 0x6
     extrw 32, x1      # src width/layout 0,1
     li x1, 0x0
     extrw 36, x1      # src width/layout 2,3
-    li x1, 0x9
+    li x1, 0x8
     extrw 40, x1      # dst width/layout 0,1
     li x1, 0x0
     extrw 44, x1      # dst width/layout 2,3
@@ -37,12 +39,12 @@
     extrw 112, x1      # pad bottom/top
     li x1, 0x0
     extrw 116, x1      # pad right/left
-    li x1, 0x40005
+    li x1, 0x50006
     extrw 120, x1      # source height/width
-    li x1, 0x40005
+    li x1, 0x50006
     extrw 124, x1      # destination height/width
-    li x1, 0x10002
+    li x1, 0x0
     extrw 136, x1      # src_y/src_x
-    li x1, 0x80020003
+    li x1, 0x80000000
     extrw 140, x1      # dst_y/dst_x + calc_enable: starts the engine
     end

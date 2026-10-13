@@ -1,7 +1,7 @@
 # l2_store with mode 0x201: float16 in GLB -> float32 in DDR (exact widening, subnormals included)
 # IN @0x4000: f16 [1.0, -2.5, 0.0999755859375, 65504.0, 6.097555160522461e-05, 5.960464477539063e-08]
 # DDR_OUT: f32 [1.0, -2.5, 0.0999755859375, 65504.0, 6.097555160522461e-05, 5.960464477539063e-08]
-    li x1, 0x200000
+    li x1, DDR_OUT
     li x2, 0x4000
     li x3, 1
     li x4, 6

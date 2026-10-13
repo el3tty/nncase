@@ -1,7 +1,7 @@
 # l2_load of 2 planes: the source plane stride is pitch * dim1 = 4 * 3, the destination plane stride is 3 * 2
 # DDR_IN: u8 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 # OUT @0x4000: u8 [0, 1, 2, 4, 5, 6, 12, 13, 14, 16, 17, 18]
-    li x1, 0x100000
+    li x1, DDR_IN
     li x2, 0x4000
     li x3, 1
     li x4, 2          # planes / rows

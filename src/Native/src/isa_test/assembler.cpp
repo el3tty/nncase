@@ -332,7 +332,7 @@ std::vector<std::string> split_operands(std::string_view text, int line) {
 }
 
 // Expands pseudo instructions into real ones.
-std::vector<Item> expand(const Item &it) {
+std::vector<Item> expand(const Item &it, const SymbolTable &symbols) {
     auto need = [&](size_t n) {
         if (it.args.size() != n)
             throw AsmError(it.line, it.mnemonic + " expects " + std::to_string(n) + " operand(s), got " + std::to_string(it.args.size()));
@@ -351,9 +351,9 @@ std::vector<Item> expand(const Item &it) {
     }
     if (it.mnemonic == "li") {
         need(2);
-        auto v = parse_integer(it.args[1]);
+        auto v = evaluate(it.args[1], symbols);
         if (!v)
-            throw AsmError(it.line, "li expects an integer, got '" + it.args[1] + "'");
+            throw AsmError(it.line, "li expects an integer or a symbol, got '" + it.args[1] + "'");
         if (*v < -(int64_t(1) << 31) || *v > int64_t(0xFFFFFFFFll))
             throw AsmError(it.line, "li value " + it.args[1] + " does not fit in 32 bits");
         if (*v >= -2048 && *v <= 2047)
@@ -397,7 +397,34 @@ std::optional<int64_t> parse_integer(std::string_view text) {
     return negative ? -static_cast<int64_t>(value) : static_cast<int64_t>(value);
 }
 
-AsmProgram assemble(std::string_view source) {
+std::optional<int64_t> evaluate(std::string_view text, const SymbolTable &symbols) {
+    text = trim(text);
+    if (auto v = parse_integer(text))
+        return v;
+    size_t end = 0;
+    while (end < text.size() && (std::isalnum(static_cast<unsigned char>(text[end])) || text[end] == '_'))
+        ++end;
+    if (end == 0 || std::isdigit(static_cast<unsigned char>(text[0])))
+        return std::nullopt;
+    auto it = symbols.find(std::string(text.substr(0, end)));
+    if (it == symbols.end())
+        return std::nullopt;
+    auto rest = trim(text.substr(end));
+    if (rest.empty())
+        return it->second;
+    if (rest[0] != '+' && rest[0] != '-')
+        return std::nullopt;
+    std::string digits;   // "+ 16" is accepted as well
+    for (char ch : rest)
+        if (!std::isspace(static_cast<unsigned char>(ch)))
+            digits += ch;
+    auto offset = parse_integer(digits);   // "+16" / "-16"
+    if (!offset)
+        return std::nullopt;
+    return it->second + *offset;
+}
+
+AsmProgram assemble(std::string_view source, const SymbolTable &symbols) {
     AsmProgram prog;
 
     // Pass 1: parse, expand pseudo instructions, assign addresses, collect labels.
@@ -436,7 +463,7 @@ AsmProgram assemble(std::string_view source) {
             ++ws;
         Item item{line_no, lower(text.substr(0, ws)), split_operands(text.substr(ws), line_no)};
 
-        for (auto &real : expand(item)) {
+        for (auto &real : expand(item, symbols)) {
             auto spec = lookup(real.mnemonic);
             if (!spec)
                 throw AsmError(line_no, "unknown instruction '" + real.mnemonic + "'");
