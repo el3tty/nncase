@@ -38,6 +38,19 @@ int main(int argc, char **argv) {
     kd_mpi_sys_mmz_flush_cache(in_phys, in_virt, 0x1000);
     kd_mpi_sys_mmz_flush_cache(out_phys, out_virt, 0x1000);
 
+    // variant & 16: GLB -> GLB (src_ind = dst_ind = 0), pointers are byte offsets into the 4 MiB L2 mapped below
+    volatile uint8_t *l2 = nullptr;
+    if (variant & 16) {
+        l2 = (volatile uint8_t *)mmap(nullptr, 0x400000, PROT_READ | PROT_WRITE, MAP_SHARED, mmz_fd, 0x80000000);
+        if (l2 == MAP_FAILED) {
+            std::perror("mmap L2");
+            return 1;
+        }
+        for (int i = 0; i < 30; i++)
+            l2[0x4000 + i] = uint8_t(i * 7 + 1);
+        for (int i = 0; i < 64; i++)
+            l2[0x5000 + i] = 0xA5;
+    }
     uint32_t w[36] = {};
     w[0] = (uint32_t)in_phys;
     w[4] = (uint32_t)out_phys;
@@ -61,6 +74,11 @@ int main(int argc, char **argv) {
     }
     if (variant & 8) // cmd_id 0 like the standalone driver (the compiler's NPU stream uses 1)
         w[25] &= ~(1u << 26);
+    if (variant & 16) {
+        w[0] = 0x4000;
+        w[4] = 0x5000;
+        w[25] &= ~(3u << 24);
+    }
     if (variant & 4) // dst_y/dst_x = 0 but written as separate single writes in descending order (probe of the write order)
         w[35] = 0x80000000;
 
@@ -86,6 +104,8 @@ int main(int argc, char **argv) {
     for (int i = 0; i < 36; i += 4)
         std::printf("reg[%2d..%2d] = %08x %08x %08x %08x\n", i, i + 3, regs[i], regs[i + 1], regs[i + 2], regs[i + 3]);
     kd_mpi_sys_mmz_flush_cache(out_phys, out_virt, 0x1000);
+    if (variant & 16)
+        out = (uint8_t *)(l2 + 0x5000);
     for (int y = 0; y < 5; y++) {
         for (int x = 0; x < 7; x++)
             std::printf("%02x ", out[y * 7 + x]);
