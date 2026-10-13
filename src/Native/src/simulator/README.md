@@ -285,7 +285,7 @@ All are 16-bit.
 |---|---|---|---|
 | 0x03 | `end rs` | `rs[11:7]`, `[15:12]` rsvd | Terminates the program (the compiler always uses `x0`). Runs the end-of-program queue check (see section 14) and returns 0. |
 | 0x05 | `fence` | `[15:7]` rsvd | No effect (decoded only). |
-| 0x07 | `fence_i` | `[15:7]` rsvd | Also terminates the program (sets `has_base_`). Not present in compiler dumps. The queue check runs here as well. |
+| 0x07 | `fence_i` | `[15:7]` rsvd | No effect (decoded only). The original simulator ends the program here, but a K230 board runs past it (checked with `isa_test`), so it is a no-op in this reimplementation. Not present in compiler dumps. |
 | 0x01 | `intr` | `rs[11:7]`, `[15:12]` rsvd | Throws `std::runtime_error("INTR!")`. |
 | 0x41 | `ccr_decl rnum` | `rnum[11:7]` | Decoded only; samples `gp_reg[rnum]`. |
 | 0x43 | `ccr_set ccr, value` | `ccr[11:7] value[15:12]` | No effect. Compiler ranges: `ccr` 0..13, `value` 1..2. |
@@ -588,7 +588,7 @@ Compute trigger rules (derived from `PuComputeInstruction` / `DmStoreOfInstructi
 
 ### 14.1 End-of-program invariant
 
-When the stream reaches `end` (or `fence_i`) **all engine queues must be empty**. A leftover descriptor means a load or
+When the stream reaches `end` **all engine queues must be empty**. A leftover descriptor means a load or
 compute was configured but never consumed, i.e. the instruction stream is malformed (compiler bug). `main.cpp` throws
 `std::runtime_error("Engine queues are not empty at the end of the program (compiler bug?): conv.store_queue=1, ...")`
 and lists every non-empty queue.

@@ -79,6 +79,7 @@ comparison is always bit exact.
 | `asm/scalar` | ALU (incl. edge cases), `mul`, loads / stores, branches, `jal` / `jalr`, `fence_i`, `mmu_*` / `ccr_*` no-ops, 3x3 matrix multiplication |
 | `asm/l2` | `l2_load` / `l2_store`: crops, planes and batches, 16 bit elements, float32 <-> float16; `l2_load_w` weight loads (8/16 bit, f32->f16, packed 4/6 bit, compressed) |
 | `asm/mfu` | `mfu_memset`, `mfu_memcpy`, `mfu_transpose`, PDP1 pooling (min / max / average / sum, padding, u8 quantisation) and ACT1 (add, mul, line fits incl. 16 segments and shifts, broadcast, per channel) |
+| `asm/sim_only` | tests that pass only on the simulator (`pu_forward_psum`; the board does nothing for it). Do not run them on the board |
 | `asm/conv` | DM -> PU -> ACT0 -> DM store convolutions (1x1, 3x3, padding, stride, zero points, output types) accumulation over input channel groups, `pu_forward_psum`, and PDP0 pooling / depthwise |
 | `asm/ai2d` | AI2D (`extrw` / `extraw`; the write to byte address 140 starts the engine): copies between DDR and GLB, crop / destination offset, nearest and bilinear resize, constant / replicate / mirror padding, planar <-> packed RGB888 |
 
@@ -92,4 +93,4 @@ Syntax and encodings follow `../simulator/README.md`; operands are written in co
 supported. Mnemonics are looked up with `StringSwitch` (`string_switch.h`, same interface as `llvm::StringSwitch`); the
 instruction layouts are the table in `assembler.cpp`.
 
-Hardware notes for the `asm/conv` tests (found on a K230 board): the PU only convolves unsigned data, so signed values are stored as value + 128 with zero point 128 (`*_conf_deq` type 1); `dm_load_w_conf2`, `pu_fetchif_conf2` and `pu_of_conf1` need real `rgroups` / `rgic` / `rgoc` values or the convolution does not run; the CCR instructions must not be used without a producer (`ccr_clr` stalls the program).
+Hardware notes for the `asm/conv` tests (found on a K230 board): the PU only convolves unsigned data, so signed values are stored as value + 128 with zero point 128 (`*_conf_deq` type 1); `dm_load_w_conf2`, `pu_fetchif_conf2` and `pu_of_conf1` need real `rgroups` / `rgic` / `rgoc` values or the convolution does not run; the CCR instructions must not be used without a producer (`ccr_clr` stalls the program). On the board the 3x3 stride-2 convolution only works when the windows fit the padded input exactly, i.e. `(size - kernel) % stride == 0` in both directions; otherwise the output row pitch is larger than the output shape. Signed int8 output must be stored with `dm_store_of_conf` type 0 (type 1 is a 16-bit mode).

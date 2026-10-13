@@ -56,7 +56,7 @@
     pu_of_conf2 0, 0, x0, s3
     pu_compute_conf 0, 0, 0, 0, 1, 1, 0 # forward the result to ACT0
     dm_load_act0 0, 0, x3, x17, 0, 1
-    dm_store_of_conf 0, 0, s4, 2
+    dm_store_of_conf 0, 0, s4, 2   # the board stores 2 byte elements for type 1, so int8 uses the 1 byte mode
     dm_store_of 0, 0, x4, s3, 0
     act0_src1_conf 0, 0, 0, s3, 3
     act0_compute x0, 0, 0, 1, 2, 1

@@ -271,12 +271,9 @@ static int simulator_run(int argc, const char ** argv) {
             sim.bit_offset_ += 16;
             check_engine_queues_empty();
             return 0;
-        case OP_FENCEI:
-            sim.InstParser<FenceIInstruction, 16>(&pc);
-            sim.bit_offset_ += 16;
-            sim.has_base_ = 1;                                           // movb $1,0x21c(%rsp), then jmp to the exit path
-            check_engine_queues_empty();
-            return 0;
+        // The original simulator ends the program at fence_i (movb $1,0x21c(%rsp), then the exit path). A K230 board runs
+        // straight past it, so it is a no-op here, like fence.
+        case OP_FENCEI:   P16(FenceIInstruction); break;
         case OP_FENCE:    P16(FenceInstruction);   break;
         case OP_CCR_DECL: P16(CcrDeclInstruction); break;               // (no operation call)
         case OP_CCR_SET:  PO16(CcrSetInstruction); break;               // (operation is the empty stub 0x41d820)
