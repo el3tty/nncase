@@ -7,8 +7,9 @@
 //                    (0x80400000); the DDR tensors and the program live in buffers allocated with libmmz
 //   * /dev/k230-gnne signals the end of a run (poll)
 //
-// Every buffer is allocated uncached with kd_mpi_sys_mmz_alloc and freed again at the end of the test, so no cache
-// maintenance is needed. The program is started with gnne_enable(), which is the register level driver of the runtime
+// Buffers are allocated cached (kd_mpi_sys_mmz_alloc_cached, like the runtime does) and freed again at the end of the
+// test. They are flushed (kd_mpi_sys_mmz_flush_cache, write back + invalidate) after the CPU has filled them and
+// before the CPU reads the outputs. The L2 memory is mapped through /dev/mmz and accessed directly. The program is started with gnne_enable(), which is the register level driver of the runtime
 // (runtime/k230/gnne.c), linked in unchanged.
 #include "test_runner.h"
 
@@ -44,9 +45,9 @@ std::string errno_text(const char *what) { return std::string(what) + ": " + std
 class MmzBuffer {
 public:
     MmzBuffer(size_t bytes, const char *name) : size_(align_to(bytes ? bytes : 1, kPage)) {
-        const int ret = kd_mpi_sys_mmz_alloc(&phys_, &virt_, name, "anonymous", static_cast<unsigned int>(size_));
+        const int ret = kd_mpi_sys_mmz_alloc_cached(&phys_, &virt_, name, "anonymous", static_cast<unsigned int>(size_));
         if (ret != 0 || !virt_)
-            throw PlatformError(std::string("kd_mpi_sys_mmz_alloc(") + name + ", " + std::to_string(size_) + ") failed: " + std::to_string(ret));
+            throw PlatformError(std::string("kd_mpi_sys_mmz_alloc_cached(") + name + ", " + std::to_string(size_) + ") failed: " + std::to_string(ret));
     }
     ~MmzBuffer() {
         if (virt_)
@@ -54,6 +55,13 @@ public:
     }
     MmzBuffer(const MmzBuffer &) = delete;
     MmzBuffer &operator=(const MmzBuffer &) = delete;
+
+    // Write back the CPU's changes and drop the cached copy, so the NPU sees the data and the CPU sees the NPU's.
+    void flush() const {
+        const int ret = kd_mpi_sys_mmz_flush_cache(phys_, virt_, static_cast<unsigned int>(size_));
+        if (ret != 0)
+            throw PlatformError("kd_mpi_sys_mmz_flush_cache failed: " + std::to_string(ret));
+    }
 
     uint8_t *data() const { return static_cast<uint8_t *>(virt_); }
     uint64_t phys() const { return phys_; }
@@ -95,7 +103,7 @@ public:
 
     // Runs [begin, end) and waits for the end. Returns false (after printing the reason) if the NPU did not finish
     // cleanly: timeout, or an exception (illegal instruction, CCR error, watchdog).
-    bool run(uint64_t begin, uint64_t end) {
+    bool run(uint64_t begin, uint64_t end, bool verbose) {
         gnne_init(); // disables the engine and waits for the reset
         gnne_set_time_out(kGnneTimeout);
         if (gnne_enable(begin, end, 0) != 0) {
@@ -116,6 +124,11 @@ public:
             std::fprintf(stderr, "  NPU exception %u (1 illegal instruction, 2 CCR error, 3 timeout)\n",
                 unsigned(status.bits.exception_status));
             ok = false;
+        }
+        if (verbose && ok) {
+            std::printf("NPU status after the run:\n");
+            gnne_dump_status();
+            gnne_dump_pc();
         }
         if (!ok) {
             gnne_dump_status();
@@ -160,8 +173,11 @@ int run_test(TestCase &tc, const RunOptions &options) {
         MmzBuffer text(prog.text.size(), "isa_text");
         std::memcpy(text.data(), prog.text.data(), prog.text.size());
         init_memory(tc, layout, mem);
+        text.flush();
+        ddr_in.flush();
+        ddr_out.flush(); // the 0xA5 fill must not be written back over the NPU's results later
 
-        const bool finished = device.run(text.phys(), text.phys() + prog.text.size());
+        const bool finished = device.run(text.phys(), text.phys() + prog.text.size(), options.verbose);
         if (tc.expect_fail) {
             if (finished) {
                 std::fprintf(stderr, "FAIL %s: the NPU accepted a program that has to fail\n", tc.path.c_str());
@@ -175,6 +191,7 @@ int run_test(TestCase &tc, const RunOptions &options) {
             return kPlatformFailure;
         }
 
+        ddr_out.flush();
         if (const int mismatches = verify_outputs(tc, layout, mem)) {
             std::fprintf(stderr, "FAIL %s: %d element(s) differ\n", tc.path.c_str(), mismatches);
             return kMismatch;

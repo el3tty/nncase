@@ -101,23 +101,7 @@ SymbolTable program_symbols(const MemoryImage &mem) {
 }
 
 AsmProgram assemble_test(const TestCase &tc, const RunOptions &options, const SymbolTable &symbols) {
-    AsmProgram prog;
-    if (!options.prologue_path.empty()) {
-        std::ifstream f(options.prologue_path, std::ios::binary);
-        if (!f)
-            throw TestError("cannot open the prologue " + options.prologue_path);
-        std::stringstream ss;
-        ss << f.rdbuf();
-        prog = assemble(ss.str(), symbols);
-    }
-    // Branches are relative, so the two parts can simply be put behind each other.
-    AsmProgram body = assemble(tc.source, symbols);
-    const uint32_t shift = static_cast<uint32_t>(prog.text.size());
-    for (auto off : body.offsets)
-        prog.offsets.push_back(off + shift);
-    for (auto &[name, off] : body.labels)
-        prog.labels.emplace(name, off + shift);
-    prog.text.insert(prog.text.end(), body.text.begin(), body.text.end());
+    AsmProgram prog = assemble(tc.source, symbols);
 
     if (options.verbose) {
         for (size_t i = 0; i < prog.offsets.size(); ++i) {

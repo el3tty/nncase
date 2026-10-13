@@ -1,6 +1,6 @@
 # K230 ISA tests
 
-`k230_isa_test [-v] [--prologue file.s] <program.s | directory>` assembles one program, sets up the memory, runs it and
+`k230_isa_test [-v] <program.s | directory>` assembles one program, sets up the memory, runs it and
 checks the output. With a directory every `*.s` below it is run (sorted, each in its own process, because the simulator
 keeps global state and a hanging program must not take the others down) and a summary is printed.
 
@@ -25,8 +25,7 @@ use the nncase runtime. It opens `/dev/mmz` and `/dev/k230-gnne`, maps the 4 MiB
 GLB bank 0 and the GNNE registers (`0x80400000`), allocates the DDR tensors and the program with libmmz (`kd_mpi_sys_mmz_alloc`, freed after
 every test) and starts the program with `gnne_enable()` (`runtime/k230/gnne.c`, linked in unchanged). A test fails when
 the NPU does not signal the end within 10 s or reports an exception. Nothing is set up in the NPU before the program
-starts; if the board needs e.g. `mmu_conf` instructions first, put them into a file and pass it with `--prologue`: it is
-assembled in front of every program.
+starts.
 
 Exit code: 0 pass, 1 output mismatch, 2 usage / assembly / test description error, 3 simulator / device failure (for
 example a missing `end`, an unsupported instruction, a timeout). `-v` prints the machine code.

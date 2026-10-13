@@ -1,7 +1,7 @@
 // Test runner for the K230 NPU ISA tests: assembles one .s file, runs it on the simulator or on a K230 board
 // (depending on how the app was built) and verifies the output.
 //
-//   k230_isa_test [-v] [--prologue <file.s>] <program.s | directory>
+//   k230_isa_test [-v] <program.s | directory>
 //
 // With a directory, every *.s file below it is run (sorted by path), each in a separate process (the simulator keeps
 // global state and a misbehaving program must not take the other tests down); a summary is printed and the exit code is
@@ -109,17 +109,13 @@ int main(int argc, char **argv) {
         if (std::strcmp(argv[i], "-v") == 0) {
             options.verbose = true;
             forward.push_back("-v");
-        } else if (std::strcmp(argv[i], "--prologue") == 0 && i + 1 < argc) {
-            options.prologue_path = argv[++i];
-            forward.push_back("--prologue");
-            forward.push_back(options.prologue_path);
         } else if (path.empty())
             path = argv[i];
         else
             usage_error = true;
     }
     if (path.empty() || usage_error) {
-        std::fprintf(stderr, "usage: %s [-v] [--prologue <file.s>] <program.s | directory>\n", argv[0]);
+        std::fprintf(stderr, "usage: %s [-v] <program.s | directory>\n", argv[0]);
         return kBadTest;
     }
     try {

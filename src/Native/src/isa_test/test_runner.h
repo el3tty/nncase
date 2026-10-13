@@ -21,8 +21,6 @@ enum ExitCode {
 
 struct RunOptions {
     bool verbose = false;
-    // Assembly file that is placed in front of every program (e.g. the MMU setup the device needs). Optional.
-    std::string prologue_path;
 };
 
 // Runs one test on the platform this test app was built for (simulator or k230 device) and returns an ExitCode.
@@ -66,7 +64,7 @@ int verify_outputs(const TestCase &tc, const Layout &layout, const MemoryImage &
 // Symbols the programs may use with `li`: DDR_IN, DDR_OUT (first address of the DDR tensors).
 SymbolTable program_symbols(const MemoryImage &mem);
 
-// Assembles prologue + program. With verbose set the machine code listing is printed.
+// Assembles the program. With verbose set the machine code listing is printed.
 AsmProgram assemble_test(const TestCase &tc, const RunOptions &options, const SymbolTable &symbols);
 
 } // namespace k230::isa_test
