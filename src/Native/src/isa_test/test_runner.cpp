@@ -11,6 +11,28 @@ size_t align_to(size_t v, size_t a) { return (v + a - 1) & ~(a - 1); }
 
 namespace {
 
+// All accesses to the test memory are single byte accesses. On the device the GLB is a mapping of device memory
+// (/dev/mmz): library memcpy / memset / memcmp may use wide or misaligned accesses, which can fault there.
+void write_bytes(uint8_t *dst, const uint8_t *src, size_t n) {
+    volatile uint8_t *d = dst;
+    for (size_t i = 0; i < n; ++i)
+        d[i] = src[i];
+}
+
+void fill_bytes(uint8_t *dst, uint8_t value, size_t n) {
+    volatile uint8_t *d = dst;
+    for (size_t i = 0; i < n; ++i)
+        d[i] = value;
+}
+
+std::vector<uint8_t> read_bytes(const uint8_t *src, size_t n) {
+    const volatile uint8_t *s = src;
+    std::vector<uint8_t> r(n);
+    for (size_t i = 0; i < n; ++i)
+        r[i] = s[i];
+    return r;
+}
+
 // Size of the automatically laid out tensors (tensors with an explicit address are not counted).
 size_t layout_size(const std::vector<Tensor> &tensors, size_t align) {
     size_t n = 0;
@@ -64,13 +86,13 @@ Layout make_layout(const TestCase &tc) {
 
 void init_memory(const TestCase &tc, const Layout &l, const MemoryImage &mem) {
     for (size_t i = 0; i < tc.outputs.size(); ++i)
-        std::memset(mem.glb + l.out_at[i], 0xA5, tc.outputs[i].bytes.size());
+        fill_bytes(mem.glb + l.out_at[i], 0xA5, tc.outputs[i].bytes.size());
     for (size_t i = 0; i < tc.ddr_outputs.size(); ++i)
-        std::memset(mem.ddr_out + l.ddr_out_at[i], 0xA5, tc.ddr_outputs[i].bytes.size());
+        fill_bytes(mem.ddr_out + l.ddr_out_at[i], 0xA5, tc.ddr_outputs[i].bytes.size());
     for (size_t i = 0; i < tc.inputs.size(); ++i)
-        std::memcpy(mem.glb + l.in_at[i], tc.inputs[i].bytes.data(), tc.inputs[i].bytes.size());
+        write_bytes(mem.glb + l.in_at[i], tc.inputs[i].bytes.data(), tc.inputs[i].bytes.size());
     for (size_t i = 0; i < tc.ddr_inputs.size(); ++i)
-        std::memcpy(mem.ddr_in + l.ddr_in_at[i], tc.ddr_inputs[i].bytes.data(), tc.ddr_inputs[i].bytes.size());
+        write_bytes(mem.ddr_in + l.ddr_in_at[i], tc.ddr_inputs[i].bytes.data(), tc.ddr_inputs[i].bytes.size());
 }
 
 int verify_outputs(const TestCase &tc, const Layout &l, const MemoryImage &mem) {
@@ -79,7 +101,8 @@ int verify_outputs(const TestCase &tc, const Layout &l, const MemoryImage &mem) 
         for (size_t ti = 0; ti < tensors.size(); ++ti) {
             const auto &t = tensors[ti];
             const size_t o = at[ti];
-            const uint8_t *actual = base + o;
+            const std::vector<uint8_t> snapshot = read_bytes(base + o, t.bytes.size());
+            const uint8_t *actual = snapshot.data();
             for (size_t i = 0; i < t.count; ++i) {
                 const uint8_t *e = t.bytes.data() + i * t.type->size;
                 const uint8_t *a = actual + i * t.type->size;

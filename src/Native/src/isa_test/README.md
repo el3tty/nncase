@@ -23,7 +23,9 @@ environment variable `K230_SIMULATOR` to the library / executable to use a speci
 **K230 board.** Build with the runtime toolchain and run as root on the board (`k230_isa_test asm/`). The app does not
 use the nncase runtime. It opens `/dev/mmz` and `/dev/k230-gnne`, maps the 4 MiB L2 memory (physical `0x80000000`) as
 GLB bank 0 and the GNNE registers (`0x80400000`), allocates the DDR tensors and the program with libmmz (`kd_mpi_sys_mmz_alloc`, freed after
-every test) and starts the program with `gnne_enable()` (`runtime/k230/gnne.c`, linked in unchanged). A test fails when
+every test) and starts the program with `gnne_enable()` (`runtime/k230/gnne.c`, linked in unchanged). The L2 mapping is device memory: a misaligned access to it
+faults (SIGSEGV), and the library `memcpy` does exactly that, so the test app reads and writes the GLB only byte by byte.
+A test fails when
 the NPU does not signal the end within 10 s or reports an exception. Nothing is set up in the NPU before the program
 starts.
 
