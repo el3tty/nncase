@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
         w[26] = 0x00208100;
         w[31] &= ~(1u << 30);
     }
+    if (variant & 8) // cmd_id 0 like the standalone driver (the compiler's NPU stream uses 1)
+        w[25] &= ~(1u << 26);
     if (variant & 4) // dst_y/dst_x = 0 but written as separate single writes in descending order (probe of the write order)
         w[35] = 0x80000000;
 
@@ -76,7 +78,7 @@ int main(int argc, char **argv) {
         ai2d_fd, POLLIN, 0
     };
     int pr = 0;
-    for (int i = 0; i < 30 && !pr; i++) {
+    for (int i = 0; i < 10 && !pr; i++) {
         pr = poll(&fds, 1, 100);
         std::printf("t=%d00ms intr_num=0x%04x w35=0x%08x\n", i, *(volatile uint16_t *)(page + 0xC00 + 0x90), regs[35]);
     }
