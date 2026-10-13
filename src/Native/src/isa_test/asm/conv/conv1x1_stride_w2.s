@@ -1,0 +1,64 @@
+# 1x1 convolution with stride 2 horizontally and 1 vertically (5x7 -> 5x4)
+# Convolution through the whole PU pipeline: l2-less (the tensors are already in GLB) dm_load_l1 / dm_load_w -> PU (TCU) -> PSUM
+# -> ACT0 (per channel line fit: slope_lo, slope_hi, offset_lo, offset_hi, lower clamp, upper clamp, knee; the PSUM is
+# scaled by 2^-shift first) -> dm_store_of -> GLB.
+# Signed int8 values stored as uint8 (value + 128); the zero points (128) are subtracted by the PU (conf_deq type 1).
+# Input 4x5x7, weights 3x4x1x1 (one 24 byte line per output channel: byte (kx + kw*ky) * 24 + channel),
+# padding t/b/l/r 0/0/0/0, stride 1x2, output 3x5x4
+# IN @0x4000: u8 [132, 129, 128, 122, 123, 121, 122, 132, 132, 127, 122, 130, 126, 120, 129, 122, 126, 126, 122, 127, 127, 120, 126, 135, 125, 121, 130, 124, 126, 120, 126, 125, 133, 121, 122, 121, 125, 124, 130, 120, 127, 133, 128, 129, 125, 127, 120, 129, 123, 129, 121, 134, 133, 124, 124, 131, 126, 133, 128, 131, 135, 128, 131, 129, 122, 127, 125, 125, 124, 125, 128, 125, 128, 133, 131, 121, 121, 135, 133, 128, 134, 133, 127, 120, 132, 130, 133, 123, 124, 122, 134, 134, 120, 133, 135, 131, 123, 125, 133, 121, 122, 124, 123, 120, 126, 120, 133, 132, 127, 122, 135, 132, 134, 130, 128, 133, 123, 120, 128, 124, 133, 122, 135, 129, 120, 132, 123, 128, 121, 130, 124, 132, 135, 134, 131, 134, 123, 123, 131, 130]
+# IN @0x5000: u8 [128, 131, 128, 130, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 131, 129, 128, 127, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 129, 129, 125, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
+# IN @0x5800: u8 [128, 128, 128]
+# IN @0x6000: f16 [1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0, 0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0, 0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0, 0.0]
+# OUT @0x7000: f16 [-37.0, -4.0, -36.0, 23.0, 12.0, -9.0, -34.0, -15.0, -5.0, 6.0, -10.0, 17.0, -16.0, -14.0, 13.0, 23.0, 15.0, 9.0, -19.0, -5.0, 13.0, -8.0, -17.0, -17.0, 6.0, -6.0, 3.0, -29.0, 8.0, 6.0, -23.0, -4.0, -21.0, 28.0, -10.0, -16.0, -11.0, -13.0, 17.0, -23.0, -3.0, -4.0, -22.0, 20.0, -17.0, -4.0, -21.0, 11.0, -10.0, -11.0, 2.0, -16.0, -28.0, -8.0, -9.0, 8.0, -16.0, 15.0, 17.0, -3.0]
+    li x1, 0x4000                       # input
+    li x2, 0x5000                       # weights
+    li x3, 0x6000                       # ACT0 parameters
+    li x4, 0x7000                       # output
+    li x5, 1
+    li x6, 4
+    li x7, 5
+    li x8, 7
+    li x9, 3
+    li x10, 5
+    li x11, 4
+    li x12, 24                  # bytes per weight line
+    li x13, 0
+    li x14, 0
+    li x15, 0
+    li x16, 0
+    li x17, 112
+    li x23, 31                          # "all channels"
+    li x20, 128                         # input zero point
+    li x21, 1                           # weight groups
+    li x22, 0x5800                      # weight zero points
+    ss_pack_shape x5, x6, x7, x8, s1    # input 4x5x7
+    ss_pack_stride x6, x7, x8, s2       # input strides: planes, rows per plane, pitch
+    ss_pack_shape x5, x9, x10, x11, s3  # output 3x5x4
+    ss_pack_stride x9, x10, x11, s4     # output strides
+    ss_pack_stride x0, x0, x9, s5       # r_iochannels: low half = number of weight lines
+    ss_pack_shape x13, x14, x15, x16, s6
+    li x18, 5
+    li x19, 7
+    ss_pack_shape x5, x6, x18, x19, s7  # pu_fetchif_conf3 wants the padded input shape
+    dm_load_l1_conf 0, 0, s2, 0, 0
+    dm_load_l1 0, 0, x1, x0, s1, 0
+    dm_load_w_conf 0, 0, 1, 1, x12
+    dm_load_w_conf_deq 0, 0, 1
+    dm_load_w_conf2 0, 0, x21, x9       # rgroups, rgoc = output channels
+    dm_load_w 0, 0, x2, x22, s5, 0
+    pu_fetchif_conf1 0, 0, 2, 1, s2
+    pu_fetchif_conf2 0, 0, x6, x0       # rgic = input channels
+    pu_fetchif_conf3 0, 0, x0, x5, s7
+    pu_fetchif_conf4 0, 0, x0, s6       # pad value 0 (the pad value is fed after the zero point subtraction)
+    pu_fetchif_conf_deq 0, 0, x23, x20, 1
+    pu_w_conf 0, 0, 1, 1
+    pu_of_conf1 0, 0, x9, x0, s4
+    pu_of_conf2 0, 0, x0, s3
+    pu_compute_conf 0, 0, 0, 0, 1, 1, 0 # forward the result to ACT0
+    dm_load_act0 0, 0, x3, x17, 0, 1
+    dm_store_of_conf 0, 0, s4, 2   # the board stores 2 byte elements for type 1, so int8 uses the 1 byte mode
+    dm_store_of 0, 0, x4, s3, 0
+    act0_src1_conf 0, 0, 0, s3, 0
+    act0_compute x0, 0, 0, 1, 2, 1
+    pu_compute 0, 0
+    end

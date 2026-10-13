@@ -81,7 +81,7 @@ comparison is always bit exact.
 | `asm/mfu` | `mfu_memset`, `mfu_memcpy`, `mfu_transpose`, PDP1 pooling (min / max / average / sum, padding, u8 quantisation) and ACT1 (add, mul, line fits incl. 16 segments and shifts, broadcast, per channel) |
 | `asm/sim_only` | tests that pass only on the simulator (`pu_forward_psum`; the board does nothing for it). Do not run them on the board |
 | `asm/conv` | DM -> PU -> ACT0 -> DM store convolutions (1x1, 3x3, padding, stride, zero points, output types) accumulation over input channel groups, `pu_forward_psum`, and PDP0 pooling / depthwise |
-| `asm/ai2d` | AI2D (`extrw` / `extraw`; the write to byte address 140 starts the engine): copies between DDR and GLB, crop / destination offset, nearest and bilinear resize, constant / replicate / mirror padding, planar <-> packed RGB888 |
+| `asm/ai2d` | AI2D (`extrw` / `extraw` then `ai2d_compute` + `fence`), GLB to GLB: copy with pitch, crop / destination offset, nearest and bilinear resize, constant / replicate / mirror padding, planar <-> packed RGB888 |
 
 The expected values of the engine tests were computed independently with numpy (convolutions, pooling, fp16 rounding), not
 taken from the simulator. Most programs are short enough to read as a description of how the unit is driven.
@@ -94,3 +94,11 @@ supported. Mnemonics are looked up with `StringSwitch` (`string_switch.h`, same 
 instruction layouts are the table in `assembler.cpp`.
 
 Hardware notes for the `asm/conv` tests (found on a K230 board): the PU only convolves unsigned data, so signed values are stored as value + 128 with zero point 128 (`*_conf_deq` type 1); `dm_load_w_conf2`, `pu_fetchif_conf2` and `pu_of_conf1` need real `rgroups` / `rgic` / `rgoc` values or the convolution does not run; the CCR instructions must not be used without a producer (`ccr_clr` stalls the program). On the board the 3x3 stride-2 convolution only works when the windows fit the padded input exactly, i.e. `(size - kernel) % stride == 0` in both directions; otherwise the output row pitch is larger than the output shape. Signed int8 output must be stored with `dm_store_of_conf` type 0 (type 1 is a 16-bit mode).
+
+### AI2D on the board
+
+* The engine runs on `ai2d_compute`, not on the write to register 35: `extrw` / `extraw` only queue register writes.
+  Write all 36 registers (pointers 0..7 with `extraw`), then `ai2d_compute` and `fence`, as the compiler does.
+* In the NPU instruction stream the AI2D only works on GLB (`src_ind = dst_ind = 0`); pointers are GLB offsets
+  (`offset + (mmu id << 28)`). DDR pointers written with `extraw` are truncated to 22 bits.
+* The AI2D timeout register (+0xC0) has to be set to 0x1388 before the run (done by `platform_k230.cpp`).

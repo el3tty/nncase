@@ -4,51 +4,55 @@
 # OUT @0x5100: u8 [199, 41, 43, 63, 133, 32, 223, 168, 142, 42, 95, 230, 201, 171, 142]
 # OUT @0x5200: u8 [85, 230, 59, 156, 35, 117, 161, 116, 45, 96, 112, 146, 13, 1, 208]
     li x1, 0x4000
-    extrw 0, x1      # src_ch0_ptr
+    extraw 0, x1      # src_ch0_ptr
+    extraw 4, x0      # (unused)
+    extraw 8, x0      # (unused)
+    extraw 12, x0      # (unused)
     li x1, 0x5000
-    extrw 16, x1      # dst_ch0_ptr
+    extraw 16, x1      # dst_ch0_ptr
     li x1, 0x5100
-    extrw 20, x1      # dst_ch1_ptr
+    extraw 20, x1      # dst_ch1_ptr
     li x1, 0x5200
-    extrw 24, x1      # dst_ch2_ptr
+    extraw 24, x1      # dst_ch2_ptr
+    extraw 28, x0      # (unused)
     li x1, 0xf
     extrw 32, x1      # src width/layout 0,1
-    li x1, 0x0
-    extrw 36, x1      # src width/layout 2,3
+    extrw 36, x0      # src width/layout 2,3
     li x1, 0x50005
     extrw 40, x1      # dst width/layout 0,1
     li x1, 0x5
     extrw 44, x1      # dst width/layout 2,3
     li x1, 0x44800000
     extrw 48, x1      # M0
-    li x1, 0x0
-    extrw 52, x1      # M1
-    li x1, 0x0
-    extrw 128, x1      # M2
-    li x1, 0x0
-    extrw 56, x1      # M3
+    extrw 52, x0      # M1
+    extrw 56, x0      # M3
     li x1, 0x44800000
     extrw 60, x1      # M4
-    li x1, 0x0
-    extrw 132, x1      # M5
+    extrw 64, x0      # (unused)
+    extrw 68, x0      # (unused)
     li x1, 0x3400001b
     extrw 72, x1      # formats and mode
-    li x1, 0x0
-    extrw 76, x1      # bound_val
-    li x1, 0x0
-    extrw 96, x1      # const_pad ch0
-    li x1, 0x0
-    extrw 100, x1      # dst_ind/src_ind, const_pad ch1..3
-    li x1, 0x0
-    extrw 112, x1      # pad bottom/top
-    li x1, 0x0
-    extrw 116, x1      # pad right/left
+    extrw 76, x0      # bound_val
+    extrw 80, x0      # (unused)
+    extrw 84, x0      # (unused)
+    extrw 88, x0      # (unused)
+    extrw 92, x0      # (unused)
+    extrw 96, x0      # const_pad ch0
+    li x1, 0x4000000
+    extrw 100, x1      # cmd_id, dst_ind/src_ind, const_pad ch1..3
+    extrw 104, x0      # (unused)
+    extrw 108, x0      # (unused)
+    extrw 112, x0      # pad bottom/top
+    extrw 116, x0      # pad right/left
     li x1, 0x30005
     extrw 120, x1      # source height/width
     li x1, 0x30005
     extrw 124, x1      # destination height/width
-    li x1, 0x0
-    extrw 136, x1      # src_y/src_x
+    extrw 128, x0      # M2
+    extrw 132, x0      # M5
+    extrw 136, x0      # src_y/src_x
     li x1, 0x80000000
     extrw 140, x1      # dst_y/dst_x + calc_enable: starts the engine
+    ai2d_compute
+    fence
     end
