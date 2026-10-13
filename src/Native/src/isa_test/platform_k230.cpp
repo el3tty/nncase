@@ -33,6 +33,7 @@ namespace {
 
 constexpr int kTimeoutMs = 10000; // a test is a handful of instructions
 constexpr uint32_t kGnneTimeout = 200000; // value of the GNNE watchdog register (same as the runtime)
+constexpr uint32_t kAi2dTimeout = 0x1388; // AI2D timeout register (same as the standalone AI2D driver)
 constexpr size_t kPage = 0x1000;
 
 struct PlatformError : std::runtime_error {
@@ -85,6 +86,8 @@ public:
         l2_ = map(L2_BASE_ADDR, kGlbSize, "mmap L2");
         regs_ = map(GNNE_BASE_ADDR, kPage, "mmap GNNE registers");
         gnne_set_base(regs_);
+        // The AI2D driver is optional for the tests, but opening it lets its kernel module set the engine up.
+        ai2d_fd_ = ::open("/dev/k230-ai2d", O_RDWR);
     }
     ~Device() {
         if (l2_)
@@ -95,6 +98,8 @@ public:
             ::close(mmz_fd_);
         if (gnne_fd_ >= 0)
             ::close(gnne_fd_);
+        if (ai2d_fd_ >= 0)
+            ::close(ai2d_fd_);
     }
     Device(const Device &) = delete;
     Device &operator=(const Device &) = delete;
@@ -106,6 +111,14 @@ public:
     bool run(uint64_t begin, uint64_t end, bool verbose) {
         gnne_init(); // disables the engine and waits for the reset
         gnne_set_time_out(kGnneTimeout);
+        // The AI2D engine has its own timeout register (offset 0xC0 of the AI2D registers, which sit at 0xC00 of the GNNE
+        // register page). The standalone AI2D driver (runtime/k230/ai2d_builder.cpp) sets it to 5000 before every use;
+        // with the reset value 0 the engine does not run the commands queued by extrw / extraw.
+        volatile uint32_t *ai2d = reinterpret_cast<volatile uint32_t *>(static_cast<uint8_t *>(regs_) + 0xC00);
+        ai2d[48] = kAi2dTimeout;
+        ai2d[49] = 0;
+        ai2d[50] = 0;
+        ai2d[51] = 0;
         if (gnne_enable(begin, end, 0) != 0) {
             std::fprintf(stderr, "  the NPU is busy\n");
             return false;
@@ -161,6 +174,7 @@ private:
     }
 
     int gnne_fd_ = -1;
+    int ai2d_fd_ = -1;
     int mmz_fd_ = -1;
     void *l2_ = nullptr;
     void *regs_ = nullptr;
