@@ -393,6 +393,8 @@ size code in `ddr_datatype` is: 0 = 1 byte, 1 = 2 bytes, 2 = 4 bytes, 3 = packed
 `l2_load_w raddr_d, raddr_s, rvalid_c_num` — `raddr_d[11:7] raddr_s[16:12] rvalid_c_num[21:17]`: copy (and optionally
 decompress) the weights from DDR offset `gp_reg[raddr_s]` to the GLB address `gp_reg[raddr_d]`;
 `gp_reg[rvalid_c_num]` is the number of valid output channels per destination row group.
+The scatter works on the bytes of the GLB data, whatever the element size: groups of `rvalid_c_num + 1` bytes, every group
+starts a new 24-byte row (with 16-bit weights an odd group splits an element between two rows). Verified on a board.
 
 ### 8.4 `l2_store_conf` / `l2_store` — GLB->DDR (0x4A / 0x4E)
 

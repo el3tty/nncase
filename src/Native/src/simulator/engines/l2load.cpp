@@ -321,20 +321,28 @@ void L2Load::LoadW() {
     _G.debug_flag = 0;
   }
 
-  // Scatter into the GLB: groups of (row_len_m1 + 1) elements at a pitch of 24 elements.
+  // Scatter into the GLB. The scatter works on the bytes of the GLB data, whatever the element size: groups of
+  // (row_len_m1 + 1) bytes, every group starts a new row of 24 bytes (a 16 bit element can be split between two rows).
+  // verified on a K230 board with 16 bit and float32 -> float16 weights (tests l2/loadw_16bit, l2/loadw_f32_to_f16); with
+  // 8 bit weights bytes and elements are the same thing.
   const uint16_t mode = WMode();
   const unsigned group = row_len_m1_ + 1;
+  std::vector<uint8_t> glb_data;   // the weights in the format they have in the GLB
+  glb_data.reserve(2 * (size_t)weight_count_);
   for (int i = 0; i < (int)weight_count_; ++i) {
-    const int64_t d = (int)((unsigned)i % group) + 24LL * (int)((unsigned)i / group);
     if (mode == 513) {
       float f;
       std::memcpy(&f, buf + 4 * (size_t)i, sizeof f);
       const uint16_t h = Fp32ToFp16(f);
-      std::memcpy(glb_ptr_ + 2 * d, &h, sizeof h);
+      glb_data.push_back((uint8_t)h);
+      glb_data.push_back((uint8_t)(h >> 8));
     } else if (w_mode0_) {
-      std::memcpy(glb_ptr_ + 2 * d, buf + 2 * (size_t)i, 2);
+      glb_data.push_back(buf[2 * (size_t)i]);
+      glb_data.push_back(buf[2 * (size_t)i + 1]);
     } else {
-      glb_ptr_[d] = buf[i];
+      glb_data.push_back(buf[i]);
     }
   }
+  for (size_t j = 0; j < glb_data.size(); ++j)
+    glb_ptr_[(unsigned)(j % group) + 24 * (j / group)] = glb_data[j];
 }
