@@ -129,6 +129,7 @@ public:
             std::printf("NPU status after the run:\n");
             gnne_dump_status();
             gnne_dump_pc();
+            dump_ai2d();
         }
         if (!ok) {
             gnne_dump_status();
@@ -136,6 +137,19 @@ public:
             gnne_disable();
         }
         return ok;
+    }
+
+    // Prints the state of the AI2D engine: queue / busy bits, its PC, and the register file as the CPU sees it (the
+    // registers sit at offset 0xC00 of the GNNE register page; the interrupt number at +0x90, the timeout at +0xC0).
+    void dump_ai2d() const {
+        const gnne_status status = gnne_get_status();
+        std::printf("ai2d: que_no_empty = %u, busy = %u, pc = 0x%08x\n", unsigned(status.bits.ai2d_que_no_empty),
+            unsigned(status.bits.ai2d_busy), gnne_get_ai2d_pc());
+        const volatile uint32_t *r = reinterpret_cast<const volatile uint32_t *>(static_cast<uint8_t *>(regs_) + 0xC00);
+        std::printf("ai2d: intr_num = 0x%04x, timeout = 0x%08x\n", unsigned(*reinterpret_cast<const volatile uint16_t *>(
+            reinterpret_cast<const volatile uint8_t *>(r) + 0x90)), unsigned(r[48]));
+        for (int i = 0; i < 36; ++i)
+            std::printf("ai2d: reg[%2d] (byte %3d) = 0x%08x\n", i, 4 * i, unsigned(r[i]));
     }
 
 private:
