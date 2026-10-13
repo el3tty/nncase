@@ -91,3 +91,5 @@ Syntax and encodings follow `../simulator/README.md`; operands are written in co
 `sw base, src, offset`, `blt rs1, rs2, label`). Labels, `#` comments, and the pseudo instructions `nop`, `mv`, `li`, `j` are
 supported. Mnemonics are looked up with `StringSwitch` (`string_switch.h`, same interface as `llvm::StringSwitch`); the
 instruction layouts are the table in `assembler.cpp`.
+
+Hardware notes for the `asm/conv` tests (found on a K230 board): the PU only convolves unsigned data, so signed values are stored as value + 128 with zero point 128 (`*_conf_deq` type 1); `dm_load_w_conf2`, `pu_fetchif_conf2` and `pu_of_conf1` need real `rgroups` / `rgic` / `rgoc` values or the convolution does not run; the CCR instructions must not be used without a producer (`ccr_clr` stalls the program).

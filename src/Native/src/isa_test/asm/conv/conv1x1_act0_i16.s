@@ -2,10 +2,12 @@
 # Convolution through the whole PU pipeline: l2-less (the tensors are already in GLB) dm_load_l1 / dm_load_w -> PU (TCU) -> PSUM
 # -> ACT0 (per channel line fit: slope_lo, slope_hi, offset_lo, offset_hi, lower clamp, upper clamp, knee; the PSUM is
 # scaled by 2^-shift first) -> dm_store_of -> GLB.
-# Input 4x1x8 int8, weights 3x4x1x1 int8 (one 24 byte line per output channel: byte (kx + kw*ky) * 24 + channel),
+# Signed int8 values stored as uint8 (value + 128); the zero points (128) are subtracted by the PU (conf_deq type 1).
+# Input 4x1x8, weights 3x4x1x1 (one 24 byte line per output channel: byte (kx + kw*ky) * 24 + channel),
 # padding t/b/l/r 0/0/0/0, stride 1x1, output 3x1x8
-# IN @0x4000: i8 [1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1, -1, -2, -3, -4, 1, 2, 3, 4, 0, 1, 0, 1, 0, 1, 0, 1]
-# IN @0x5000: i8 [20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 20, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, -20, 60, -40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+# IN @0x4000: u8 [129, 130, 131, 132, 133, 134, 135, 136, 136, 135, 134, 133, 132, 131, 130, 129, 127, 126, 125, 124, 129, 130, 131, 132, 128, 129, 128, 129, 128, 129, 128, 129]
+# IN @0x5000: u8 [148, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 148, 148, 148, 148, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 168, 108, 188, 88, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
+# IN @0x5800: u8 [128, 128, 128]
 # IN @0x6000: f16 [1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0, 0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0, 0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0, 0.0]
 # OUT @0x7000: i16 [20, 40, 60, 80, 100, 120, 140, 160, 160, 160, 120, 120, 200, 240, 240, 280, -180, -220, -180, -220, 180, 260, 420, 500]
     li x1, 0x4000                       # input
@@ -25,6 +27,10 @@
     li x15, 0
     li x16, 0
     li x17, 112
+    li x23, 31                          # "all channels"
+    li x20, 128                         # input zero point
+    li x21, 1                           # weight groups
+    li x22, 0x5800                      # weight zero points
     ss_pack_shape x5, x6, x7, x8, s1    # input 4x1x8
     ss_pack_stride x6, x7, x8, s2       # input strides: planes, rows per plane, pitch
     ss_pack_shape x5, x9, x10, x11, s3  # output 3x1x8
@@ -37,12 +43,16 @@
     dm_load_l1_conf 0, 0, s2, 0, 0
     dm_load_l1 0, 0, x1, x0, s1, 0
     dm_load_w_conf 0, 0, 1, 1, x12
-    dm_load_w 0, 0, x2, x2, s5, 0
+    dm_load_w_conf_deq 0, 0, 1
+    dm_load_w_conf2 0, 0, x21, x9       # rgroups, rgoc = output channels
+    dm_load_w 0, 0, x2, x22, s5, 0
     pu_fetchif_conf1 0, 0, 1, 1, s2
+    pu_fetchif_conf2 0, 0, x6, x0       # rgic = input channels
     pu_fetchif_conf3 0, 0, x0, x5, s7
-    pu_fetchif_conf4 0, 0, x0, s6
+    pu_fetchif_conf4 0, 0, x0, s6       # pad value 0 (the pad value is fed after the zero point subtraction)
+    pu_fetchif_conf_deq 0, 0, x23, x20, 1
     pu_w_conf 0, 0, 1, 1
-    pu_of_conf1 0, 0, x0, x0, s4
+    pu_of_conf1 0, 0, x9, x0, s4
     pu_of_conf2 0, 0, x0, s3
     pu_compute_conf 0, 0, 0, 0, 1, 1, 0 # forward the result to ACT0
     dm_load_act0 0, 0, x3, x17, 0, 1

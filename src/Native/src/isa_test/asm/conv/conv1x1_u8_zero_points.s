@@ -32,13 +32,15 @@
     dm_load_l1 0, 0, x1, x0, s1, 0
     dm_load_w_conf 0, 0, 1, 1, x12
     dm_load_w_conf_deq 0, 0, 1
+    dm_load_w_conf2 0, 0, x5, x9
     dm_load_w 0, 0, x2, x18, s5, 0
     pu_fetchif_conf1 0, 0, 1, 1, s2
+    pu_fetchif_conf2 0, 0, x6, x0
     pu_fetchif_conf3 0, 0, x0, x5, s1
     pu_fetchif_conf4 0, 0, x0, s6
     pu_fetchif_conf_deq 0, 0, x19, x20, 1
     pu_w_conf 0, 0, 1, 1
-    pu_of_conf1 0, 0, x0, x0, s4
+    pu_of_conf1 0, 0, x9, x0, s4
     pu_of_conf2 0, 0, x0, s3
     pu_compute_conf 0, 0, 0, 0, 1, 1, 0
     dm_load_act0 0, 0, x3, x17, 0, 1
