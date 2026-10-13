@@ -50,6 +50,17 @@ int main(int argc, char **argv) {
     w[30] = 0x00050006;
     w[31] = 0x00050006 | (variant ? 1u << 30 : 0);
     w[35] = 0x80000000;
+    if (variant & 2) { // reset values of the registers the driver also writes (YUV coefficients, README section 5.3)
+        w[20] = 0x00000100;
+        w[21] = 0x00F6E124;
+        w[22] = 0x00F9B100;
+        w[23] = 0x0007DF6B;
+        w[24] = 0x00EFC000;
+        w[26] = 0x00208100;
+        w[31] &= ~(1u << 30);
+    }
+    if (variant & 4) // dst_y/dst_x = 0 but written as separate single writes in descending order (probe of the write order)
+        w[35] = 0x80000000;
 
     regs[48] = 0x1388;
     regs[49] = regs[50] = regs[51] = 0;
@@ -64,7 +75,11 @@ int main(int argc, char **argv) {
     struct pollfd fds {
         ai2d_fd, POLLIN, 0
     };
-    int pr = poll(&fds, 1, 3000);
+    int pr = 0;
+    for (int i = 0; i < 30 && !pr; i++) {
+        pr = poll(&fds, 1, 100);
+        std::printf("t=%d00ms intr_num=0x%04x w35=0x%08x\n", i, *(volatile uint16_t *)(page + 0xC00 + 0x90), regs[35]);
+    }
     std::printf("poll = %d, intr_num = 0x%04x\n", pr, *(volatile uint16_t *)(page + 0xC00 + 0x90));
     for (int i = 0; i < 36; i += 4)
         std::printf("reg[%2d..%2d] = %08x %08x %08x %08x\n", i, i + 3, regs[i], regs[i + 1], regs[i + 2], regs[i + 3]);
