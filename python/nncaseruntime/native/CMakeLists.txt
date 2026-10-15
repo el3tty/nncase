@@ -36,4 +36,8 @@ target_include_directories(nncaseruntime_python PRIVATE
                   ${NNCASE_GENERATED_INCLUDE_DIR})
 set_target_properties(nncaseruntime_python PROPERTIES
                                  OUTPUT_NAME _nncaseruntime)
-install(TARGETS nncaseruntime_python DESTINATION lib)
+# The target is always built. Host builds install it into <prefix>/nncaseruntime from the root CMakeLists.txt,
+# so this lib/ install is only for runtime (cross) builds.
+if (BUILDING_RUNTIME)
+    install(TARGETS nncaseruntime_python DESTINATION lib)
+endif ()

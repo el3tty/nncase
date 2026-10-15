@@ -126,16 +126,4 @@ endif()
 
 if(BUILDING_RUNTIME)
     install(TARGETS nncasebase EXPORT nncaseruntimeTargets)
-else()
-    install(TARGETS nncasebase EXPORT nncaseTargets
-            COMPONENT nncase-runtime
-            ARCHIVE DESTINATION lib
-            LIBRARY DESTINATION lib
-            RUNTIME DESTINATION bin
-            INCLUDES DESTINATION include
-            )
-
-    install(EXPORT nncaseTargets DESTINATION lib/cmake/nncase)
-    configure_file(${CMAKE_CURRENT_LIST_DIR}/../../../cmake/nncaseConfig.cmake.in nncaseConfig.cmake @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nncaseConfig.cmake DESTINATION lib/cmake/nncase)
 endif()

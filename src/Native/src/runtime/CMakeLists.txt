@@ -75,24 +75,7 @@ else()
     set_target_properties(nncaseruntime PROPERTIES
                                         OUTPUT_NAME "Nncase.Runtime.Native")
 
-    install(TARGETS nncaseruntime EXPORT nncaseTargets
-        COMPONENT nncase-runtime
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-    )
-    install(EXPORT nncaseTargets
-        DESTINATION lib/cmake/nncase)
-
-    # if (WIN32)
-    #     install(FILES ${CONAN_NETHOST_ROOT}/bin/nethost.dll
-    #         COMPONENT nncase-runtime
-    #         DESTINATION bin)
-    # endif()
-
-    configure_file(${CMAKE_CURRENT_LIST_DIR}/../../../../cmake/nncaseConfig.cmake.in nncaseConfig.cmake @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nncaseConfig.cmake DESTINATION lib/cmake/nncase)
+    # Host builds are installed by the root CMakeLists.txt into <prefix>/nncaseruntime.
 
     add_subdirectory(k230-simulator)
 endif()

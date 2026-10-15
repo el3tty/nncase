@@ -31,9 +31,7 @@ if (NOT BUILDING_RUNTIME)
         nncaseruntime
         nncase.simulator.k230
         nncase.simulator.k230.sc
-        nncasetest
         nncasetest_cli
-        nncasetest_dynamic_cli
         nncaseruntime_python k230_isa_test)
 
     foreach (_target IN LISTS NNCASE_INSTALL_TARGETS)
@@ -41,9 +39,6 @@ if (NOT BUILDING_RUNTIME)
             install(TARGETS ${_target}
                     RUNTIME DESTINATION ${NNCASE_INSTALL_DIR}
                     LIBRARY DESTINATION ${NNCASE_INSTALL_DIR})
-            # The subdirectories also install some of these to bin/ or lib/;
-            # drop those copies so there is only one set of binaries.
-            install(CODE "file(REMOVE \"\${CMAKE_INSTALL_PREFIX}/bin/$<TARGET_FILE_NAME:${_target}>\" \"\${CMAKE_INSTALL_PREFIX}/lib/$<TARGET_FILE_NAME:${_target}>\")")
         endif ()
     endforeach ()
 
@@ -53,6 +48,10 @@ if (NOT BUILDING_RUNTIME)
     else ()
         message(WARNING "nethost library not found (${NETHOST_RUNTIME_FILE}); it will not be installed")
     endif ()
+
+    # assembly tests for k230_isa_test
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/Native/src/isa_test/asm/
+            DESTINATION ${NNCASE_INSTALL_DIR}/isa_tests)
 
     install(FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/python/nncaseruntime/__init__.py
