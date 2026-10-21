@@ -97,6 +97,14 @@ internal sealed class CompileCommand : Command
           name: "--export-quant-scheme",
           description: $"model quant scheme export path",
           getDefaultValue: () => false);
+        QuantScheme = new Option<string>(
+          name: "--quant-scheme",
+          description: $"path of a quant scheme json file to import; ranges are read from it and calibration is skipped, so --dataset is not required",
+          getDefaultValue: () => string.Empty);
+        QuantSchemeStrictMode = new Option<bool>(
+          name: "--quant-scheme-strict-mode",
+          description: $"strict mode for --quant-scheme: tensors missing in the scheme are not quantized (float16) and weight ranges are not recomputed",
+          getDefaultValue: () => false);
         FixedVars = new Option<IEnumerable<(string, int)>>(
           name: "--fixed-vars",
           description: $"dynamic shape fixed vars, default is empty. \nset by `n:123`",
@@ -181,6 +189,8 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(CalibMethod);
         AddGlobalOption(ExportQuantScheme);
         AddGlobalOption(ExportQuantSchemePath);
+        AddGlobalOption(QuantScheme);
+        AddGlobalOption(QuantSchemeStrictMode);
         AddGlobalOption(FixedVars);
         AddGlobalOption(PreProcess);
         AddGlobalOption(InputLayout);
@@ -226,6 +236,10 @@ internal sealed class CompileCommand : Command
     public Option<bool> ExportQuantScheme { get; }
 
     public Option<string> ExportQuantSchemePath { get; }
+
+    public Option<string> QuantScheme { get; }
+
+    public Option<bool> QuantSchemeStrictMode { get; }
 
     public Option<IEnumerable<(string Name, int Value)>> FixedVars { get; }
 

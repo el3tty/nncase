@@ -116,7 +116,9 @@ internal partial class Program
         IR.IRModule module = await compiler.ImportModuleAsync(Path.GetExtension(compileOptions.InputFile).Trim('.'), compileOptions.InputFile);
 
         // 3. create the calib dataset
-        if (compileOptions.QuantizeOptions.ModelQuantMode == Quantization.ModelQuantMode.UsePTQ)
+        // with an imported quant scheme the ranges come from the file, no calibration data is needed
+        if (compileOptions.QuantizeOptions.ModelQuantMode == Quantization.ModelQuantMode.UsePTQ &&
+            string.IsNullOrEmpty(compileOptions.QuantizeOptions.QuantScheme))
         {
             if (datasetFormat == DatasetFormat.Random)
             {
@@ -204,6 +206,8 @@ internal partial class Program
                     _ => throw new ArgumentException("Invalid weights quant type"),
                 },
                 ModelQuantMode = context.ParseResult.GetValueForOption(compilecmd.ModelQuantMode),
+                QuantScheme = context.ParseResult.GetValueForOption(compilecmd.QuantScheme) ?? string.Empty,
+                QuantSchemeStrictMode = context.ParseResult.GetValueForOption(compilecmd.QuantSchemeStrictMode),
                 ExportQuantSchemePath = exportQuantSchemePath,
                 ExportQuantScheme = context.ParseResult.GetValueForOption(compilecmd.ExportQuantScheme) ||
                                     !string.IsNullOrEmpty(exportQuantSchemePath),
