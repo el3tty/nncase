@@ -187,7 +187,7 @@ public class TilePad : RewriteRule<Pattern>
             {
                 if (!(dataType == DataTypes.Float16))
                 {
-                    goto InvalidDataType;
+                    throw new ArgumentOutOfRangeException(checkedDataType.GetDisplayName());
                 }
 
                 padValueBits = BitConverter.ToInt16(
@@ -277,8 +277,6 @@ public class TilePad : RewriteRule<Pattern>
             return actions;
         }
 
-        goto InvalidDataType;
-        InvalidDataType:
         throw new ArgumentOutOfRangeException(checkedDataType.GetDisplayName());
     }
 

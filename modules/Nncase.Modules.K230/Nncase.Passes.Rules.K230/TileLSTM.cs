@@ -1090,7 +1090,7 @@ public class TileLSTM : RewriteRule<Pattern>
                                                     }
 
                                                     bool releaseIf = false;
-                                                    int isLastPass;
+                                                    int isLastPass = 0;
                                                     if (kernelColSlice == kernelColSlices[
                                                             kernelColSlices.Count - 1])
                                                     {
@@ -1098,13 +1098,9 @@ public class TileLSTM : RewriteRule<Pattern>
                                                                 kernelRowSlices.Count - 1] && i == weightPasses - 1)
                                                         {
                                                             isLastPass = ((inputPass == inputPasses - 1) ? 1 : 0);
-                                                            goto SetReleaseIf;
                                                         }
                                                     }
 
-                                                    isLastPass = 0;
-                                                    goto SetReleaseIf;
-                                                    SetReleaseIf:
                                                     if (((uint)isLastPass & (hasIfmapLoad ? 1u : 0u)) != 0)
                                                     {
                                                         releaseIf = true;

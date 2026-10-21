@@ -288,33 +288,22 @@ public class TileResize : RewriteRule<Pattern>
                                         }
                                         else
                                         {
-                                            if (chunkC == chunksC[chunksC.Count - 1])
-                                            {
-                                                if (chunkH == chunksH[chunksH.Count - 1])
-                                                {
-                                                    if (chunkW == chunksW[
-                                                            chunksW.Count - 1])
-                                                    {
-                                                        config.IntrMask = 0u;
-                                                        goto EmitAi2dResize;
-                                                    }
-                                                }
-                                            }
-
-                                            config.IntrMask = 1u;
+                                            config.IntrMask = (chunkC == chunksC[chunksC.Count - 1] && chunkH == chunksH[chunksH.Count - 1] &&
+                                                               chunkW == chunksW[chunksW.Count - 1])
+                                                ? 0u
+                                                : 1u;
                                         }
 
-                                        goto EmitAi2dResize;
+                                        gnneActionUpdater.UpdateAi2dResize(config, ofmapCcrsToSet, pendingCcrClr, writeAll);
+                                        if (config.IntrMask == 0)
+                                        {
+                                            pendingCcrClr.Clear();
+                                        }
                                     }
-
-                                    _r2GOfRec[pingPongIndex].Add(new Tuple<SegmentND, TensorStat>(outputSegment,
-                                        new TensorStat(isFirstSlice: false, isLastSlice: false)));
-                                    continue;
-                                    EmitAi2dResize:
-                                    gnneActionUpdater.UpdateAi2dResize(config, ofmapCcrsToSet, pendingCcrClr, writeAll);
-                                    if (config.IntrMask == 0)
+                                    else
                                     {
-                                        pendingCcrClr.Clear();
+                                        _r2GOfRec[pingPongIndex].Add(new Tuple<SegmentND, TensorStat>(outputSegment,
+                                            new TensorStat(isFirstSlice: false, isLastSlice: false)));
                                     }
                                 }
                             }

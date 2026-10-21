@@ -127,10 +127,6 @@ public class TileConv2D : RewriteRule<Pattern>
 
     private PrimFunction GetReplace(Call call, Call ld, Call st, Fusion fusion)
     {
-        //IL_03d6: Unknown result type (might be due to invalid IL or missing references)
-        //IL_03db: Unknown result type (might be due to invalid IL or missing references)
-        //IL_03eb: Unknown result type (might be due to invalid IL or missing references)
-        //IL_03f0: Unknown result type (might be due to invalid IL or missing references)
         _count++;
         InitParameters(call, ld, st);
         TileConv2DGlb glb = SearchGlbParameters();
@@ -1433,7 +1429,7 @@ public class TileConv2D : RewriteRule<Pattern>
                                                     }
 
                                                     bool releaseIf = false;
-                                                    int isLastPass;
+                                                    int isLastPass = 0;
                                                     if (kernelColSlice == kernelColSlices[
                                                             kernelColSlices.Count - 1])
                                                     {
@@ -1441,13 +1437,9 @@ public class TileConv2D : RewriteRule<Pattern>
                                                                 kernelRowSlices.Count - 1] && weightPass == weightPasses - 1)
                                                         {
                                                             isLastPass = ((inputPass == inputPasses - 1) ? 1 : 0);
-                                                            goto SetReleaseIf;
                                                         }
                                                     }
 
-                                                    isLastPass = 0;
-                                                    goto SetReleaseIf;
-                                                    SetReleaseIf:
                                                     if (((uint)isLastPass & (hasIfmapLoad ? 1u : 0u)) != 0)
                                                     {
                                                         releaseIf = true;
