@@ -34,9 +34,9 @@ public class FoldMaxAndFakeActivation : RewriteRule<Pattern>, IRewriteRule
             return null;
         }
 
-        int num = outChannels.Value.ToScalar<int>();
-        ActParam2 actParam = new ActParam2(num);
-        for (int i = 0; i < num; i++)
+        int actChannels = outChannels.Value.ToScalar<int>();
+        ActParam2 actParam = new ActParam2(actChannels);
+        for (int i = 0; i < actChannels; i++)
         {
             if (act.Value.Cast<int>()[new int[3] { 1, 0, i }] == 1)
             {
@@ -64,9 +64,9 @@ public class FoldMaxAndFakeActivation : RewriteRule<Pattern>, IRewriteRule
             }
         }
 
-        act = new TensorConst(new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 }));
+        act = new TensorConst(new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 }));
         return Nncase.IR.K230.F.Tensors
-            .FakeActivation(inputA, inputB, act, num, 0, 0, 0, false, GnneActivationType.Uninitialized, actParam,
+            .FakeActivation(inputA, inputB, act, actChannels, 0, 0, 0, false, GnneActivationType.Uninitialized, actParam,
                 call.CheckedShape.ToValueArray()).InheritMetaData(binaryCall);
     }
 

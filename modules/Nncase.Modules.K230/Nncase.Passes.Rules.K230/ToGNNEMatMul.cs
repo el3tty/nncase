@@ -37,17 +37,17 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
             dataType = DataTypes.UInt8;
         }
 
-        DataType dataType2 =
+        DataType inputBDataType =
             ((mixQuantInfo2?.MarkerQuantType == null) ? base.QuantType : mixQuantInfo2.MarkerQuantType);
         Call inputA2 = LoadQuantInA(inputARange, dataType, inputAMarker);
         Call inputB2 = ((inputB is TensorConst)
-            ? LoadInB((TensorConst)inputB, inputBRange.AsValueRange(), dataType2)
-            : LoadQuantInB(inputB, inputBRange, dataType2, inputBMarker));
+            ? LoadInB((TensorConst)inputB, inputBRange.AsValueRange(), inputBDataType)
+            : LoadQuantInB(inputB, inputBRange, inputBDataType, inputBMarker));
         Call inputABias = LoadInABias(inputA, inputARange.AsValueRange(), dataType);
-        Call act = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, dataType2);
+        Call act = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, inputBDataType);
         Call input = Nncase.IR.K230.F.Tensors.GNNEMatMul(actParam, DataTypes.Float16, inputA2, inputB2, act, inputABias,
             0, 0, 0,
-            Enumerable.Repeat(GetInBDeqQuantParam(dataType2, inputBRange.AsValueRange()).ZeroPoint,
+            Enumerable.Repeat(GetInBDeqQuantParam(inputBDataType, inputBRange.AsValueRange()).ZeroPoint,
                 call.CheckedShape[1].FixedValue).ToArray());
         Call call2 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32, input);
         call2.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
@@ -65,10 +65,10 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private Call LoadQuantInB(Expr prevInput, Tensor<float> inBRange, DataType quanType, Expr prevInputMarker)
     {
         DeQuantizeParam inBDeqQuantParam = GetInBDeqQuantParam(quanType, inBRange.AsValueRange());
-        int num = 4 - prevInput.CheckedShape.Rank;
-        if (num > 0)
+        int missingRank = 4 - prevInput.CheckedShape.Rank;
+        if (missingRank > 0)
         {
-            Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, num).ToArray());
+            Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, missingRank).ToArray());
         }
 
         Call input = Nncase.IR.F.Math.Quantize(prevInputMarker,
@@ -79,13 +79,13 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private Call LoadInABias(Expr prevInput, ValueRange<float> inARange, DataType quanType)
     {
         DeQuantizeParam inADeqQuantParam = GetInADeqQuantParam(quanType, inARange);
-        byte[] array = new byte[prevInput.CheckedShape[1].FixedValue * prevInput.CheckedShape[2].FixedValue];
-        for (int i = 0; i < array.Length; i++)
+        byte[] biasBytes = new byte[prevInput.CheckedShape[1].FixedValue * prevInput.CheckedShape[2].FixedValue];
+        for (int i = 0; i < biasBytes.Length; i++)
         {
-            array[i] = checked((byte)inADeqQuantParam.ZeroPoint);
+            biasBytes[i] = checked((byte)inADeqQuantParam.ZeroPoint);
         }
 
-        return Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.UInt8, array);
+        return Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.UInt8, biasBytes);
     }
 
     private Call LoadInB(TensorConst inputb, ValueRange<float> inBRange, DataType quanType)
@@ -114,8 +114,8 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private byte[] GetQuantInBu8(TensorConst inputB, ValueRange<float> inBRange, DataType quanType)
     {
         Shape checkedShape = inputB.CheckedShape;
-        float[] array = inputB.Value.ToArray<float>();
-        byte[] array2 = new byte[array.Length];
+        float[] weights = inputB.Value.ToArray<float>();
+        byte[] quantWeights = new byte[weights.Length];
         QuantizeParam inBQuantParam = GetInBQuantParam(quanType, inBRange);
         for (int i = 0; i < checkedShape[1].FixedValue; i++)
         {
@@ -123,21 +123,21 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
             {
                 for (int k = 0; k < checkedShape[3].FixedValue; k++)
                 {
-                    int num = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
+                    int flatIndex = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
                               j * checkedShape[3].FixedValue + k;
-                    array2[num] = Quantize<byte>(array[num], inBQuantParam);
+                    quantWeights[flatIndex] = Quantize<byte>(weights[flatIndex], inBQuantParam);
                 }
             }
         }
 
-        return array2;
+        return quantWeights;
     }
 
     private sbyte[] GetQuantInBI8(TensorConst inputB, ValueRange<float> inBRange, DataType quanType)
     {
         Shape checkedShape = inputB.CheckedShape;
-        float[] array = inputB.Value.ToArray<float>();
-        sbyte[] array2 = new sbyte[array.Length];
+        float[] weights = inputB.Value.ToArray<float>();
+        sbyte[] quantWeights = new sbyte[weights.Length];
         QuantizeParam inBQuantParam = GetInBQuantParam(quanType, inBRange);
         for (int i = 0; i < checkedShape[1].FixedValue; i++)
         {
@@ -145,22 +145,22 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
             {
                 for (int k = 0; k < checkedShape[3].FixedValue; k++)
                 {
-                    int num = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
+                    int flatIndex = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
                               j * checkedShape[3].FixedValue + k;
-                    array2[num] = (sbyte)System.Math.Clamp(Convert.ToInt32(Quantize<sbyte>(array[num], inBQuantParam)),
+                    quantWeights[flatIndex] = (sbyte)System.Math.Clamp(Convert.ToInt32(Quantize<sbyte>(weights[flatIndex], inBQuantParam)),
                         -127, 127);
                 }
             }
         }
 
-        return array2;
+        return quantWeights;
     }
 
     private short[] GetQuantInBi16(TensorConst inputB, ValueRange<float> inBRange, DataType quanType)
     {
         Shape checkedShape = inputB.CheckedShape;
-        float[] array = inputB.Value.ToArray<float>();
-        short[] array2 = new short[array.Length];
+        float[] weights = inputB.Value.ToArray<float>();
+        short[] quantWeights = new short[weights.Length];
         QuantizeParam inBQuantParam = GetInBQuantParam(quanType, inBRange);
         for (int i = 0; i < checkedShape[1].FixedValue; i++)
         {
@@ -168,14 +168,14 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
             {
                 for (int k = 0; k < checkedShape[3].FixedValue; k++)
                 {
-                    int num = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
+                    int flatIndex = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
                               j * checkedShape[3].FixedValue + k;
-                    array2[num] = Quantize<short>(array[num], inBQuantParam);
+                    quantWeights[flatIndex] = Quantize<short>(weights[flatIndex], inBQuantParam);
                 }
             }
         }
 
-        return array2;
+        return quantWeights;
     }
 
     private T Quantize<T>(float data, QuantizeParam qp)

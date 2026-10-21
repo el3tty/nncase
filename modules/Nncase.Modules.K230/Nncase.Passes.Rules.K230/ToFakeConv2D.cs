@@ -66,8 +66,8 @@ public sealed class ToFakeConv2D : RewriteRule<Pattern>
         bool splitWeightsToAct = GNNETypePatternUtility.IsDepthWise(input, weights, groups) &&
                                  (compileOptions.QuantizeOptions.QuantScheme == string.Empty ||
                                   !compileOptions.QuantizeOptions.QuantSchemeStrictMode);
-        float[] array = weights.Value.ToArray<float>();
-        ActParam2 fakeConvActParam = ActParam2.GetFakeConvActParam(weights, bias, splitWeightsToAct, array);
+        float[] weightValues = weights.Value.ToArray<float>();
+        ActParam2 fakeConvActParam = ActParam2.GetFakeConvActParam(weights, bias, splitWeightsToAct, weightValues);
         int fixedValue = weights.CheckedShape[0].FixedValue;
         for (int i = 0; i < fixedValue; i++)
         {
@@ -75,7 +75,7 @@ public sealed class ToFakeConv2D : RewriteRule<Pattern>
             fakeConvActParam.FusedClamp[i].Max = fusedClamp[new int[1] { 1 }];
         }
 
-        Marker weights2 = Nncase.IR.F.Math.RangeOfMarker(Tensor.From(array, weights.CheckedShape), weightsRange)
+        Marker weights2 = Nncase.IR.F.Math.RangeOfMarker(Tensor.From(weightValues, weights.CheckedShape), weightsRange)
             .With(null, null, null, adaQuantInfo: weightsMarker.AdaQuantInfo, mixQuantInfo: weightsMarker.MixQuantInfo);
         return Nncase.IR.F.Math
             .RangeOfMarker(

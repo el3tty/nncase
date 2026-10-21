@@ -63,9 +63,9 @@ public class CcrHandler
 
     public void SetItems(List<CcrSet> ccrsToSet)
     {
-        foreach (CcrSet item in ccrsToSet)
+        foreach (CcrSet ccrSet in ccrsToSet)
         {
-            _ccrs[item.Ccr].Value = item.Value;
+            _ccrs[ccrSet.Ccr].Value = ccrSet.Value;
         }
     }
 
@@ -86,9 +86,9 @@ public class CcrHandler
 
     public void ClearItems(List<CcrClr> ccrsToClr)
     {
-        foreach (CcrClr item in ccrsToClr)
+        foreach (CcrClr ccrClr in ccrsToClr)
         {
-            _ccrs[item.Ccr].Clear();
+            _ccrs[ccrClr.Ccr].Clear();
         }
     }
 

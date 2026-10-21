@@ -40,26 +40,26 @@ public sealed class Expand1x1Conv : RewriteRule<Pattern>
             ldCall.CheckedShape[2].FixedValue * ldCall.CheckedShape[3].FixedValue <= 512 &&
             lwCall.CheckedShape[1].FixedValue > 24 && lwCall.CheckedShape[1].FixedValue % 24 != 0)
         {
-            byte[] array = ((TensorConst)lwCall[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
-            byte[] array2 = ((TensorConst)lwBiasCall[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
-            int num = (24 - lwCall.CheckedShape[1].FixedValue % 24) % 24;
-            int num2 = ((!(lwCall.CheckedDataType == DataTypes.Float16)) ? 1 : 2);
-            int num3 = array.Length / lwCall.CheckedShape[0].FixedValue;
-            int num4 = num3 / lwCall.CheckedShape[1].FixedValue * (lwCall.CheckedShape[1].FixedValue + num);
-            byte[] array3 = new byte[num4 * lwCall.CheckedShape[0].FixedValue];
+            byte[] weightBytes = ((TensorConst)lwCall[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
+            byte[] bias = ((TensorConst)lwBiasCall[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
+            int padChannels = (24 - lwCall.CheckedShape[1].FixedValue % 24) % 24;
+            int elementScale = ((!(lwCall.CheckedDataType == DataTypes.Float16)) ? 1 : 2);
+            int bytesPerOutChannel = weightBytes.Length / lwCall.CheckedShape[0].FixedValue;
+            int paddedBytesPerOutChannel = bytesPerOutChannel / lwCall.CheckedShape[1].FixedValue * (lwCall.CheckedShape[1].FixedValue + padChannels);
+            byte[] newWeights = new byte[paddedBytesPerOutChannel * lwCall.CheckedShape[0].FixedValue];
             for (int i = 0; i < lwCall.CheckedShape[0].FixedValue; i++)
             {
-                byte[] array4 = Enumerable.Repeat(array2[i], num * num2).ToArray();
-                byte[] array5 = new byte[num4];
-                Array.Copy(array, i * num3, array5, 0, num3);
-                Array.Copy(array4, 0, array5, num3, array4.Length);
-                Array.Copy(array5, 0, array3, i * num4, array5.Length);
+                byte[] biasPadding = Enumerable.Repeat(bias[i], padChannels * elementScale).ToArray();
+                byte[] channelBytes = new byte[paddedBytesPerOutChannel];
+                Array.Copy(weightBytes, i * bytesPerOutChannel, channelBytes, 0, bytesPerOutChannel);
+                Array.Copy(biasPadding, 0, channelBytes, bytesPerOutChannel, biasPadding.Length);
+                Array.Copy(channelBytes, 0, newWeights, i * paddedBytesPerOutChannel, channelBytes.Length);
             }
 
-            int[] array6 = lwCall.CheckedShape.ToValueArray();
-            array6[1] += num;
+            int[] newShape = lwCall.CheckedShape.ToValueArray();
+            newShape[1] += padChannels;
             Call weights = Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)lwCall.CheckedDataType,
-                Tensor.FromBytes(new TensorType(lwCall.CheckedDataType, array6), array3));
+                Tensor.FromBytes(new TensorType(lwCall.CheckedDataType, newShape), newWeights));
             return Nncase.IR.K230.F.Tensors.GNNEConv2D((PrimType)convCall.CheckedDataType, ldCall, weights,
                 weightsQInt8, lwBiasCall, weightsBiasQint8, act, actQint8, deqBias, shiftBits, shiftBitsQint8, qint8Qp,
                 padding, stride, dilation, groups, is16Quant, padValue, conv.ActParam, conv.ActParamQInt8);

@@ -402,10 +402,10 @@ public sealed class ToGNNELSTM : IRewriteRule
         var storeFields = new Expr[outputSize];
         for (int i = 0; i < outputSize; i++)
         {
-            Call item = Nncase.IR.F.Tensors.GetItem(gnneLstm, i);
+            Call outputItem = Nncase.IR.F.Tensors.GetItem(gnneLstm, i);
             storeFields[i] = i == 2
-                ? Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32, item)
-                : Nncase.IR.K230.F.Tensors.GNNEStore(quantType, item);
+                ? Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32, outputItem)
+                : Nncase.IR.K230.F.Tensors.GNNEStore(quantType, outputItem);
         }
 
         var stores = new Nncase.IR.Tuple(storeFields);

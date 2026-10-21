@@ -33,12 +33,12 @@ public class BroadcastToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(shape.Value.ToArray<int>(), 0, array, array.Length - shape.Value.Length, shape.Value.Length);
-        int num = array[1];
-        ActParam2 actParam = new ActParam2(num);
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, false,
+        int[] broadcastShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(shape.Value.ToArray<int>(), 0, broadcastShape, broadcastShape.Length - shape.Value.Length, shape.Value.Length);
+        int actChannels = broadcastShape[1];
+        ActParam2 actParam = new ActParam2(actChannels);
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
             GnneActivationType.Add, actParam, call.CheckedShape.ToValueArray());
     }
 

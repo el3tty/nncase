@@ -38,10 +38,10 @@ public sealed class ReplaceFakeConv2DWeightsRangeToByChannel : RewriteRule<Patte
             weightsMarker.MixQuantInfo = new K230Target.K230MixQuantInfo();
         }
 
-        float[] array = ((TensorConst)weights).Value.ToArray<float>();
+        float[] weightValues = ((TensorConst)weights).Value.ToArray<float>();
         int fixedValue = weights.CheckedShape[0].FixedValue;
         TensorConst range = new TensorConst(Tensor.From(
-            QuantUtility.GetWeightsRangesByChannel(array, fixedValue).ToArray(), new int[2] { fixedValue, 2 }));
+            QuantUtility.GetWeightsRangesByChannel(weightValues, fixedValue).ToArray(), new int[2] { fixedValue, 2 }));
         Marker marker = Nncase.IR.F.Math.RangeOfMarker(weights, range);
         if (marker.MixQuantInfo == null)
         {

@@ -29,17 +29,17 @@ public sealed class MarkActivationInputBL1Fuse : RewriteRule<Pattern>, IRewriteR
     private Expr? GetReplace(GNNEActivation act, Call stCall, Call ldCall, Call actCall, Call convCall,
         IReadOnlyList<Expr> actCallParams, RunPassContext context, Call quantCall)
     {
-        int[] array = convCall[GNNEConv2D.Input].CheckedShape.ToValueArray();
-        int[] array2 = convCall.CheckedShape.ToValueArray();
-        int[] array3 = convCall[GNNEConv2D.Weights].CheckedShape.ToValueArray();
+        int[] convInputShape = convCall[GNNEConv2D.Input].CheckedShape.ToValueArray();
+        int[] convOutputShape = convCall.CheckedShape.ToValueArray();
+        int[] weightsShape = convCall[GNNEConv2D.Weights].CheckedShape.ToValueArray();
         int[] source = ((TensorConst)convCall[GNNEConv2D.Padding]).Value.ToArray<int>();
-        int num = ((TensorConst)convCall[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
-        int num2 = ((TensorConst)convCall[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
-        int num3 = ((TensorConst)convCall[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
-        int num4 = ((TensorConst)convCall[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
-        int num5 = ((TensorConst)convCall[GNNEConv2D.Groups]).Value.ToScalar<int>();
-        if (array[0] > 1 && array2[2] == 1 && array2[3] == 1 && array[2] == 1 && array[3] == 1 && array3[2] == 1 &&
-            array3[3] == 1 && num == 1 && num2 == 1 && num3 == 1 && num4 == 1 && source.Sum() == 0 && num5 == 1)
+        int strideH = ((TensorConst)convCall[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
+        int strideW = ((TensorConst)convCall[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
+        int dilationH = ((TensorConst)convCall[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
+        int dilationW = ((TensorConst)convCall[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
+        int groups = ((TensorConst)convCall[GNNEConv2D.Groups]).Value.ToScalar<int>();
+        if (convInputShape[0] > 1 && convOutputShape[2] == 1 && convOutputShape[3] == 1 && convInputShape[2] == 1 && convInputShape[3] == 1 && weightsShape[2] == 1 &&
+            weightsShape[3] == 1 && strideH == 1 && strideW == 1 && dilationH == 1 && dilationW == 1 && source.Sum() == 0 && groups == 1)
         {
             return null;
         }
@@ -57,10 +57,10 @@ public sealed class MarkActivationInputBL1Fuse : RewriteRule<Pattern>, IRewriteR
             return null;
         }
 
-        Call item = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, stCall);
+        Call actLoad = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16, stCall);
         IRArray<bool>? inputFromL = new bool[2] { false, true };
         return ReplaceUtility.ReplaceCallParams(act.With(null, null, null, null, inputFromL), actCallParams,
-            (ldCall, item));
+            (ldCall, actLoad));
     }
 
     public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)

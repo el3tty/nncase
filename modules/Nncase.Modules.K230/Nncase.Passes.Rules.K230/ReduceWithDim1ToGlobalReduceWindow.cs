@@ -25,9 +25,9 @@ public sealed class ReduceWithDim1ToGlobalReduceWindow : IRewriteRule
     private Expr? GetReplace(Reduce reduce, Call call, Expr input, TensorConst axis, TensorConst initValue,
         Marker inputMarker, Marker outputMarker, Expr inputRange, Expr outputRange)
     {
-        int[] array = input.CheckedShape.ToValueArray();
+        int[] inputShape = input.CheckedShape.ToValueArray();
         int[] axisValue = axis.Value.ToArray<int>();
-        if (!TryMatch(call.CheckedShape.ToValueArray(), array, axisValue) || reduce.ReduceOp == ReduceOp.Prod)
+        if (!TryMatch(call.CheckedShape.ToValueArray(), inputShape, axisValue) || reduce.ReduceOp == ReduceOp.Prod)
         {
             return null;
         }
@@ -36,7 +36,7 @@ public sealed class ReduceWithDim1ToGlobalReduceWindow : IRewriteRule
             .RangeOfMarker(Nncase.IR.F.Tensors.Transpose(inputMarker, new int[4] { 2, 3, 0, 1 }), inputRange).With(null,
                 null, null, adaQuantInfo: inputMarker.AdaQuantInfo, mixQuantInfo: inputMarker.MixQuantInfo);
         return Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Math.RangeOfMarker(
-                    Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input2, initValue, new int[2] { array[0], array[1] },
+                    Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input2, initValue, new int[2] { inputShape[0], inputShape[1] },
                         new int[2] { 1, 1 }, new int[2, 2], new int[2] { 1, 1 }, false, false), outputRange)
                 .With(null, null, null, adaQuantInfo: outputMarker.AdaQuantInfo,
                     mixQuantInfo: outputMarker.MixQuantInfo),

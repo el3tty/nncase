@@ -20,22 +20,22 @@ public class TensorStat
 
     public int Stat_cnt()
     {
-        int num = 0;
+        int count = 0;
         if (IsFirstSlice)
         {
-            num++;
+            count++;
         }
 
         if (IsLastSlice)
         {
-            num++;
+            count++;
         }
 
         if (IsFirstSlice && IsLastSlice)
         {
-            num = 1;
+            count = 1;
         }
 
-        return num;
+        return count;
     }
 }

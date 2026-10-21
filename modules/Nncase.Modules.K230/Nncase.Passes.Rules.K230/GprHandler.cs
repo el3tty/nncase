@@ -38,11 +38,11 @@ public class GprHandler
             return new Gpr(-1, -1, needRenewal: false);
         }
 
-        KeyValuePair<GprKey, int> item = _gprIdxMap[key];
+        KeyValuePair<GprKey, int> gprItem = _gprIdxMap[key];
         _gprIdx.Remove(_gprIdxMap[key]);
-        _gprIdx.Insert(0, item);
+        _gprIdx.Insert(0, gprItem);
         _gprIdxMap[key] = _gprIdx[0];
-        return new Gpr(item.Value, _gprValMap[key], needRenewal: false);
+        return new Gpr(gprItem.Value, _gprValMap[key], needRenewal: false);
     }
 
     public Gpr SetGprItem(int value, bool basement = false)
@@ -58,10 +58,10 @@ public class GprHandler
         {
             if (_gprIdx.Count == _nGpr)
             {
-                KeyValuePair<GprKey, int> item = _gprIdx[_nGpr - 1];
-                _idxToUse = item.Value;
-                _gprIdxMap.Remove(item.Key);
-                _gprIdx.Remove(item);
+                KeyValuePair<GprKey, int> gprItem = _gprIdx[_nGpr - 1];
+                _idxToUse = gprItem.Value;
+                _gprIdxMap.Remove(gprItem.Key);
+                _gprIdx.Remove(gprItem);
             }
             else
             {
@@ -98,10 +98,10 @@ public class GprHandler
         GprKey key = new GprKey(-1, basement: true);
         if (_gprIdx.Count == _nGpr)
         {
-            KeyValuePair<GprKey, int> item = _gprIdx[_nGpr - 1];
-            _idxToUse = item.Value;
-            _gprIdxMap.Remove(item.Key);
-            _gprIdx.Remove(item);
+            KeyValuePair<GprKey, int> gprItem = _gprIdx[_nGpr - 1];
+            _idxToUse = gprItem.Value;
+            _gprIdxMap.Remove(gprItem.Key);
+            _gprIdx.Remove(gprItem);
         }
         else
         {

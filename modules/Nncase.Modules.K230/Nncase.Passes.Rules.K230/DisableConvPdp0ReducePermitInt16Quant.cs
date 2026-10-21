@@ -35,9 +35,9 @@ public sealed class DisableConvPdp0ReducePermitInt16Quant : RewriteRule<Pattern>
 
     private Expr? GetReplace(Call call1, TensorConst groups1, Marker marker, TensorConst filter2)
     {
-        bool flag = call1.Arguments[0].CheckedShape[1] == call1.CheckedShape[1] &&
+        bool isDepthwise = call1.Arguments[0].CheckedShape[1] == call1.CheckedShape[1] &&
                     call1.CheckedShape[1] == groups1.Value.ToScalar<int>() && groups1 != 1;
-        if (base.CompileSession.CompileOptions.QuantizeOptions.QuantType != DataTypes.Int16 && !flag &&
+        if (base.CompileSession.CompileOptions.QuantizeOptions.QuantType != DataTypes.Int16 && !isDepthwise &&
             filter2.Value.ToArray<int>()[0] <= 3 && filter2.Value.ToArray<int>()[1] <= 3)
         {
             if (marker.MixQuantInfo == null)

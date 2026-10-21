@@ -25,16 +25,16 @@ public sealed class ReduceWithDim12ToGlobalReduceWindow : IRewriteRule
     private Expr? GetReplace(Reduce reduce, Call call, Expr input, TensorConst axis, TensorConst initValue,
         Marker inputMarker, Marker outputMarker, Expr inputRange, Expr outputRange)
     {
-        int[] array = input.CheckedShape.ToValueArray();
-        int[] array2 = axis.Value.ToArray<int>();
-        if (array.Length == 3 && array2.Length == 1 && (array2[0] == 2 || array2[0] == -1) &&
+        int[] inputShape = input.CheckedShape.ToValueArray();
+        int[] axes = axis.Value.ToArray<int>();
+        if (inputShape.Length == 3 && axes.Length == 1 && (axes[0] == 2 || axes[0] == -1) &&
             reduce.ReduceOp != ReduceOp.Prod)
         {
             Marker input2 = Nncase.IR.F.Math
                 .RangeOfMarker(Nncase.IR.F.Tensors.Unsqueeze(input, new int[1] { 2 }), inputRange).With(null, null,
                     null, adaQuantInfo: inputMarker.AdaQuantInfo, mixQuantInfo: inputMarker.MixQuantInfo);
             return Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Math.RangeOfMarker(
-                        Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input2, initValue, new int[2] { 1, array[2] },
+                        Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input2, initValue, new int[2] { 1, inputShape[2] },
                             new int[2] { 1, 1 }, new int[2, 2], new int[2] { 1, 1 }, false, false), outputRange)
                     .With(null, null, null, adaQuantInfo: outputMarker.AdaQuantInfo,
                         mixQuantInfo: outputMarker.MixQuantInfo),
@@ -42,7 +42,7 @@ public sealed class ReduceWithDim12ToGlobalReduceWindow : IRewriteRule
                 mixQuantInfo: outputMarker.MixQuantInfo);
         }
 
-        if (!TryMatch(call.CheckedShape.ToValueArray(), array, array2) || reduce.ReduceOp == ReduceOp.Prod)
+        if (!TryMatch(call.CheckedShape.ToValueArray(), inputShape, axes) || reduce.ReduceOp == ReduceOp.Prod)
         {
             return null;
         }

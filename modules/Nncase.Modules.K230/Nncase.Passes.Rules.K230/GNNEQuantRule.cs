@@ -51,8 +51,8 @@ public abstract class GNNEQuantRule : QuantRule
 
     public ValueRange<float> GetValueRange(string name)
     {
-        float[] array = ((TensorConst)base.MatchResult[name]).Value.ToArray<float>();
-        return new ValueRange<float>(array[0], array[1]);
+        float[] rangeValues = ((TensorConst)base.MatchResult[name]).Value.ToArray<float>();
+        return new ValueRange<float>(rangeValues[0], rangeValues[1]);
     }
 
     public override void Init()

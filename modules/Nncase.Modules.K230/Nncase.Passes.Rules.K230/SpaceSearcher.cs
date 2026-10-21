@@ -44,18 +44,18 @@ internal static class SpaceSearcher
 
     public static int GetInputHeight(int e, int inH, int r, int outH, int uh, int dh, in Padding p)
     {
-        List<Segment1D> list = TileUtilities.SegmentBy(0, e, outH).ToList();
-        int num = 0;
-        foreach (Segment1D item in list)
+        List<Segment1D> outputSegments = TileUtilities.SegmentBy(0, e, outH).ToList();
+        int maxInputHeight = 0;
+        foreach (Segment1D segment in outputSegments)
         {
-            int length = TileUtilities.GetInputRowSegment(item.Start, e, inH, r, uh, dh, in p).Length;
-            if (length > num)
+            int length = TileUtilities.GetInputRowSegment(segment.Start, e, inH, r, uh, dh, in p).Length;
+            if (length > maxInputHeight)
             {
-                num = length;
+                maxInputHeight = length;
             }
         }
 
-        return num;
+        return maxInputHeight;
     }
 
     public static int GetInputWidth(int f, int inW, int s, int outW, int uw, int dw, in Padding p)
@@ -65,19 +65,19 @@ internal static class SpaceSearcher
 
     public static int GetDeconvInputHeight(int e, int inH, int r, int outH, int uh, int dh, Padding p)
     {
-        List<Segment1D> list = TileUtilities.SegmentBy(0, e, outH).ToList();
-        int num = 0;
-        foreach (Segment1D item in list)
+        List<Segment1D> outputSegments = TileUtilities.SegmentBy(0, e, outH).ToList();
+        int maxInputHeight = 0;
+        foreach (Segment1D segment in outputSegments)
         {
-            int length = TileUtilities.GetDeconvInputRowSegment(item.Start, item.Length, p.Before, inH, uh, r, dh)
+            int length = TileUtilities.GetDeconvInputRowSegment(segment.Start, segment.Length, p.Before, inH, uh, r, dh)
                 .Length;
-            if (length > num)
+            if (length > maxInputHeight)
             {
-                num = length;
+                maxInputHeight = length;
             }
         }
 
-        return num;
+        return maxInputHeight;
     }
 
     public static int GetDeconvInputWidth(int f, int inW, int s, int outW, int uw, int dw, Padding p)
@@ -91,42 +91,42 @@ internal static class SpaceSearcher
         int[] v = boxes.Select((BoxOnGlb b) => b.Box[1]).ToArray();
         int[] boxOrderByDepth = SortIndexes(v);
         boxOrderByDepth.Select((int i) => boxes[i]).ToArray();
-        int[] array = (from i in SortIndexes(boxes.Select((BoxOnGlb b) => b.Box[0]).ToArray())
+        int[] sortedIndexes = (from i in SortIndexes(boxes.Select((BoxOnGlb b) => b.Box[0]).ToArray())
             select boxOrderByDepth[i]).ToArray();
-        List<int> list = array.ToList();
-        int[] array2 = array;
-        foreach (int num2 in array2)
+        List<int> allocOrder = sortedIndexes.ToList();
+        int[] sortedIndexesCopy = sortedIndexes;
+        foreach (int boxIndex in sortedIndexesCopy)
         {
-            if (bp.Boxes[num2].OwnerName == ItemName.Basement)
+            if (bp.Boxes[boxIndex].OwnerName == ItemName.Basement)
             {
-                list.Remove(num2);
-                list.Insert(0, num2);
+                allocOrder.Remove(boxIndex);
+                allocOrder.Insert(0, boxIndex);
                 break;
             }
         }
 
-        array = list.ToArray();
-        Dictionary<ItemName, MmuItem> dictionary = new Dictionary<ItemName, MmuItem>();
+        sortedIndexes = allocOrder.ToArray();
+        Dictionary<ItemName, MmuItem> mmuItems = new Dictionary<ItemName, MmuItem>();
         bool isOk = true;
-        for (int num3 = 0; num3 < boxes.Count; num3++)
+        for (int index = 0; index < boxes.Count; index++)
         {
-            MmuItem mmuItem = bp.Allocate_item(boxes[array[num3]].Box[0], boxes[array[num3]].Box[1]);
+            MmuItem mmuItem = bp.Allocate_item(boxes[sortedIndexes[index]].Box[0], boxes[sortedIndexes[index]].Box[1]);
             if (mmuItem != null && mmuItem.Depth == 0 && mmuItem.Width == 0)
             {
                 isOk = false;
                 break;
             }
 
-            dictionary[boxes[array[num3]].OwnerName] = mmuItem;
+            mmuItems[boxes[sortedIndexes[index]].OwnerName] = mmuItem;
         }
 
-        return new AllocateResult { IsOk = isOk, Items = dictionary, Boxes = bp.Boxes };
+        return new AllocateResult { IsOk = isOk, Items = mmuItems, Boxes = bp.Boxes };
     }
 
     private static int[] SortIndexes<T>(T[] v) where T : unmanaged, IEquatable<T>
     {
-        List<int> list = Enumerable.Range(0, v.Length).ToList();
-        list.Sort((int i1, int i2) => Comparer<T>.Default.Compare(v[i2], v[i1]));
-        return list.ToArray();
+        List<int> indexes = Enumerable.Range(0, v.Length).ToList();
+        indexes.Sort((int i1, int i2) => Comparer<T>.Default.Compare(v[i2], v[i1]));
+        return indexes.ToArray();
     }
 }

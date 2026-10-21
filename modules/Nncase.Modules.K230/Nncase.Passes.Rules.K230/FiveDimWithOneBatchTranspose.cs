@@ -28,13 +28,13 @@ public sealed class FiveDimWithOneBatchTranspose : IRewriteRule
                 transpose.CheckedShape[0], transpose.CheckedShape[1], transpose.CheckedShape[2],
                 transpose.CheckedShape[3]
             });
-        int[] array = new int[4];
+        int[] fourDimPerm = new int[4];
         for (int i = 0; i < 4; i++)
         {
-            array[i] = perm.Value.Cast<int>()[new int[1] { i + 1 }] - 1;
+            fourDimPerm[i] = perm.Value.Cast<int>()[new int[1] { i + 1 }] - 1;
         }
 
-        return Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Tensors.Transpose(input2, array), transpose.CheckedShape);
+        return Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Tensors.Transpose(input2, fourDimPerm), transpose.CheckedShape);
     }
 
     private bool OnTryMatch(Expr input, TensorConst perm)

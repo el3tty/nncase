@@ -43,8 +43,8 @@ public class DdrBandwidth
                 return 2;
             }
 
-            DataType dataType2 = type;
-            if (dataType2 == DataTypes.Float32 || dataType2 == DataTypes.UInt32 || dataType2 == DataTypes.Int32)
+            DataType typeCopy = type;
+            if (typeCopy == DataTypes.Float32 || typeCopy == DataTypes.UInt32 || typeCopy == DataTypes.Int32)
             {
                 return 4;
             }
@@ -55,36 +55,36 @@ public class DdrBandwidth
 
     public void CalcBw(GnneAction action)
     {
-        long num = 0L;
+        long bytes = 0L;
         switch (action.Name)
         {
             case GnneActionName.L2Load:
                 {
-                    GnneActionL2Load obj3 = (GnneActionL2Load)action;
-                    int shape_size2 = obj3.SliceInfo.Shape_size;
-                    int bytesPerElement3 = GetBytesPerElement(obj3.Input[GNNELoad.Input].CheckedDataType);
-                    IfBw[0] += shape_size2 * bytesPerElement3;
-                    TotalBw[0] += shape_size2 * bytesPerElement3;
+                    GnneActionL2Load l2Load = (GnneActionL2Load)action;
+                    int loadSize = l2Load.SliceInfo.Shape_size;
+                    int bytesPerElement3 = GetBytesPerElement(l2Load.Input[GNNELoad.Input].CheckedDataType);
+                    IfBw[0] += loadSize * bytesPerElement3;
+                    TotalBw[0] += loadSize * bytesPerElement3;
                     break;
                 }
             case GnneActionName.L2LoadWConf:
                 {
-                    GnneActionL2LoadWConf obj2 = (GnneActionL2LoadWConf)action;
-                    int bytesPerElement2 = GetBytesPerElement(obj2.DdrDatatype);
-                    num = ((TensorConst)obj2.LenCompressed.Value).Value.ToScalar<int>() * bytesPerElement2;
+                    GnneActionL2LoadWConf l2LoadWConf = (GnneActionL2LoadWConf)action;
+                    int bytesPerElement2 = GetBytesPerElement(l2LoadWConf.DdrDatatype);
+                    bytes = ((TensorConst)l2LoadWConf.LenCompressed.Value).Value.ToScalar<int>() * bytesPerElement2;
                     break;
                 }
             case GnneActionName.L2LoadW:
-                WBw[0] += num;
-                TotalBw[0] += num;
+                WBw[0] += bytes;
+                TotalBw[0] += bytes;
                 break;
             case GnneActionName.L2Store:
                 {
-                    GnneActionL2Store obj = (GnneActionL2Store)action;
-                    int bytesPerElement = GetBytesPerElement(obj.Output.CheckedDataType);
-                    int shape_size = obj.SliceInfo.Shape_size;
-                    _ofBw[0] += shape_size * bytesPerElement;
-                    TotalBw[0] += shape_size * bytesPerElement;
+                    GnneActionL2Store l2Store = (GnneActionL2Store)action;
+                    int bytesPerElement = GetBytesPerElement(l2Store.Output.CheckedDataType);
+                    int storeSize = l2Store.SliceInfo.Shape_size;
+                    _ofBw[0] += storeSize * bytesPerElement;
+                    TotalBw[0] += storeSize * bytesPerElement;
                     break;
                 }
             case GnneActionName.L2StoreConf:

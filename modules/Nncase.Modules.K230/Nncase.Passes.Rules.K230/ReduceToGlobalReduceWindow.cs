@@ -19,18 +19,18 @@ public sealed class ReduceToGlobalReduceWindow : IRewriteRule
 
     private Expr? GetReplace(Reduce reduce, Call call, Expr input, TensorConst axis, TensorConst initValue)
     {
-        int[] array = input.CheckedShape.ToValueArray();
+        int[] inputShape = input.CheckedShape.ToValueArray();
         int[] axisValue = axis.Value.ToArray<int>();
-        if (!TryMatch(call.CheckedShape.ToValueArray(), array, axisValue) || reduce.ReduceOp == ReduceOp.Prod)
+        if (!TryMatch(call.CheckedShape.ToValueArray(), inputShape, axisValue) || reduce.ReduceOp == ReduceOp.Prod)
         {
             return null;
         }
 
-        int[] array2 = new int[2] { array[2], array[3] };
-        int[] array3 = new int[2] { 1, 1 };
-        int[] array4 = new int[2] { 1, 1 };
-        int[,] array5 = new int[2, 2];
-        return Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input, initValue, array2, array3, array5, array4, false,
+        int[] filter = new int[2] { inputShape[2], inputShape[3] };
+        int[] stride = new int[2] { 1, 1 };
+        int[] dilation = new int[2] { 1, 1 };
+        int[,] padding = new int[2, 2];
+        return Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input, initValue, filter, stride, padding, dilation, false,
             false);
     }
 

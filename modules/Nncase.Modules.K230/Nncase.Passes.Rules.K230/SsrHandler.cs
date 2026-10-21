@@ -37,11 +37,11 @@ public class SsrHandler
             return new Ssr(-1, -1L, needRenewal: false);
         }
 
-        KeyValuePair<SsrKey, int> item = _ssrIdxMap[key];
+        KeyValuePair<SsrKey, int> ssrItem = _ssrIdxMap[key];
         _ssrIdx.Remove(_ssrIdxMap[key]);
-        _ssrIdx.Insert(0, item);
+        _ssrIdx.Insert(0, ssrItem);
         _ssrIdxMap[key] = _ssrIdx[0];
-        return new Ssr(item.Value, _ssrValMap[key], needRenewal: false);
+        return new Ssr(ssrItem.Value, _ssrValMap[key], needRenewal: false);
     }
 
     public Ssr SetSsrItem(long value, bool forceNew = false)
@@ -52,10 +52,10 @@ public class SsrHandler
         {
             if (_ssrIdx.Count == _nSsr)
             {
-                KeyValuePair<SsrKey, int> item = _ssrIdx[_nSsr - 1];
-                _idxToUse = item.Value;
-                _ssrIdxMap.Remove(item.Key);
-                _ssrIdx.Remove(item);
+                KeyValuePair<SsrKey, int> ssrItem = _ssrIdx[_nSsr - 1];
+                _idxToUse = ssrItem.Value;
+                _ssrIdxMap.Remove(ssrItem.Key);
+                _ssrIdx.Remove(ssrItem);
             }
             else
             {

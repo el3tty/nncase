@@ -25,19 +25,19 @@ public class ToGNNEPad : RewriteRule<Pattern>
 
     private Expr? GetReplace(Expr input, TensorConst pads, TensorConst value, Call call)
     {
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(input.CheckedShape.ToValueArray(), 0, array, array.Length - input.CheckedShape.Count,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(input.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - input.CheckedShape.Count,
             input.CheckedShape.Count);
-        Call input2 = Nncase.IR.F.Tensors.Reshape(input, array);
-        int[] array2 = pads.Value.ToArray<int>();
-        int[] array3 = Enumerable.Repeat(0, 8).ToArray();
-        Array.Copy(array2, 0, array3, array3.Length - array2.Length, array2.Length);
+        Call input2 = Nncase.IR.F.Tensors.Reshape(input, inputShape);
+        int[] padValues = pads.Value.ToArray<int>();
+        int[] paddings = Enumerable.Repeat(0, 8).ToArray();
+        Array.Copy(padValues, 0, paddings, paddings.Length - padValues.Length, padValues.Length);
         DataType dataType = ((input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType);
         Expr input3 = ((value.Value.Rank == 0) ? value : value[0]);
         return Nncase.IR.F.Tensors.Reshape(
             Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,
                 Nncase.IR.K230.F.Tensors.GNNEPad(Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, input2),
-                    Tensor.From(array3, new int[2] { 4, 2 }),
+                    Tensor.From(paddings, new int[2] { 4, 2 }),
                     Const.FromValue(Nncase.IR.F.Tensors.Cast(input3, dataType).Evaluate()))), call.CheckedShape);
     }
 

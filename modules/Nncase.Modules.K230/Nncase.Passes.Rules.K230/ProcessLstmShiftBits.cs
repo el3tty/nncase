@@ -30,19 +30,19 @@ public sealed class ProcessLstmShiftBits : IRewriteRule
     private Expr? GetReplace(GNNELSTM lstm, IMatchResult result, RunPassContext options)
     {
         ActParam2 actParam = new ActParam2(lstm.ActivationParamXc);
-        int num = actParam.FusedShiftBits();
+        int xcShiftBits = actParam.FusedShiftBits();
         Expr expr = GetReplaceHelper.LoadAct0(actParam);
         ActParam2 actParam2 = new ActParam2(lstm.ActivationParamRc0);
-        int num2 = actParam2.FusedShiftBits();
+        int rc0ShiftBits = actParam2.FusedShiftBits();
         Expr expr2 = GetReplaceHelper.LoadAct0(actParam2);
         ActParam2 actParam3 = new ActParam2(lstm.ActivationParamRc1);
-        int num3 = actParam3.FusedShiftBits();
+        int rc1ShiftBits = actParam3.FusedShiftBits();
         Expr expr3 = GetReplaceHelper.LoadAct0(actParam3);
         Call expr4 = new Call(lstm, (Expr)result["input"], (Expr)result["wXc"], expr, (Expr)result["wRc"], expr2, expr3,
             (Expr)result["initH"], (Expr)result["initC"], (Expr)result["segFittingParamFt"],
             (Expr)result["segFittingParamGt"], (Expr)result["wXcQarg"], (Expr)result["wRcQarg"], (Expr)result["actBin"],
-            (Expr)result["actBinQ"], (Expr)result["ifDeqBias"], num, (Expr)result["hDeqBias0"],
-            (Expr)result["hDeqBias1"], (Expr)result["cShiftBits"], num2, num3, (Expr)result["outHShiftBits"],
+            (Expr)result["actBinQ"], (Expr)result["ifDeqBias"], xcShiftBits, (Expr)result["hDeqBias0"],
+            (Expr)result["hDeqBias1"], (Expr)result["cShiftBits"], rc0ShiftBits, rc1ShiftBits, (Expr)result["outHShiftBits"],
             (Expr)result["outCShiftBits"], (Expr)result["hasStatic"], (Expr)result["outputSize"]);
         return GetReplaceHelper.SuppressPattern(options, expr4, Pattern);
     }

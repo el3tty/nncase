@@ -38,8 +38,8 @@ public abstract class GNNEDIFQuantRule : QuantRule
     {
         if (base.MatchResult.GetValueOrDefault(name) is TensorConst tensorConst)
         {
-            float[] array = tensorConst.Value.ToArray<float>();
-            return new ValueRange<float>(array[0], array[1]);
+            float[] rangeValues = tensorConst.Value.ToArray<float>();
+            return new ValueRange<float>(rangeValues[0], rangeValues[1]);
         }
 
         return new ValueRange<float>(0f, 0f);

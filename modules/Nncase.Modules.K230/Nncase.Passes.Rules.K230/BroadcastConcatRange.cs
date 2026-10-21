@@ -19,7 +19,7 @@ public sealed class BroadcastConcatRange : RewriteRule<Pattern>
 
     private Expr? GetReplace(Marker marker, Tensor<float> range, Expr input, RunPassContext context)
     {
-        float num = 2f;
+        float rangeThreshold = 2f;
         IExprUserAnalysisResult analysis = context.GetAnalysis<IExprUserAnalysisResult>();
         if (analysis[marker].Count((Expr u) => u is Nncase.IR.Tuple) == 1)
         {
@@ -39,7 +39,7 @@ public sealed class BroadcastConcatRange : RewriteRule<Pattern>
                             range[new int[1] { 1 }] / (tensor[new int[1] { 1 }] + float.Epsilon),
                             tensor[new int[1]] / (range[new int[1]] + float.Epsilon),
                             tensor[new int[1] { 1 }] / (range[new int[1] { 1 }] + float.Epsilon)
-                        }.Max()) < num)
+                        }.Max()) < rangeThreshold)
                     {
                         return Nncase.IR.F.Math.RangeOfMarker(input, tensor).With(null, null, null,
                             adaQuantInfo: marker.AdaQuantInfo, mixQuantInfo: marker.MixQuantInfo);

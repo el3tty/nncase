@@ -41,24 +41,24 @@ public sealed class DWToPdp : RewriteRule<Pattern>, IRewriteRule
         IExprUserAnalysisResult analysis = context.GetAnalysis<IExprUserAnalysisResult>();
         int fixedValue = ldCall.CheckedShape[1].FixedValue;
         int fixedValue2 = dwCall.CheckedShape[1].FixedValue;
-        bool flag = fixedValue == fixedValue2 && fixedValue2 == groups && groups != 1;
+        bool isDwConv = fixedValue == fixedValue2 && fixedValue2 == groups && groups != 1;
         int[] subArray = weightsCall.CheckedShape.ToValueArray()[2..];
         int fixedValue3 = convInputCall.CheckedShape[1].FixedValue;
         int fixedValue4 = convCall.CheckedShape[1].FixedValue;
-        bool flag2 = fixedValue3 == fixedValue4 && fixedValue4 == convGroups && convGroups != 1;
-        DataType checkedDataType = ldCall.CheckedDataType;
-        DataType checkedDataType2 = weightsCall.CheckedDataType;
-        if (analysis[stCall].Count() <= 1 && analysis[ldCall].Count() <= 1 && flag && subArray[0] <= 3 &&
-            subArray[1] <= 3 && !flag2 && (checkedDataType == DataTypes.UInt8 || checkedDataType == DataTypes.Int8) &&
-            (checkedDataType2 == DataTypes.UInt8 || checkedDataType2 == DataTypes.Int8))
+        bool isConvDepthwise = fixedValue3 == fixedValue4 && fixedValue4 == convGroups && convGroups != 1;
+        DataType inputDataType = ldCall.CheckedDataType;
+        DataType weightsDataType = weightsCall.CheckedDataType;
+        if (analysis[stCall].Count() <= 1 && analysis[ldCall].Count() <= 1 && isDwConv && subArray[0] <= 3 &&
+            subArray[1] <= 3 && !isConvDepthwise && (inputDataType == DataTypes.UInt8 || inputDataType == DataTypes.Int8) &&
+            (weightsDataType == DataTypes.UInt8 || weightsDataType == DataTypes.Int8))
         {
-            int[] array = dwCall[GNNEConv2D.Weights].CheckedShape.ToValueArray();
-            array[0] = TileUtilities.GetAlignedNum(array[0], GNNEEnv.PuWidth);
-            byte[] array2 = ((TensorConst)weightsCall[GNNELoadW.Input]).Value.ToArray<byte>();
-            byte[] array3 = Enumerable.Repeat((byte)0, array.Aggregate((int d0, int d1) => d0 * d1)).ToArray();
-            Array.Copy(array2, array3, array2.Length);
+            int[] dwWeightShape = dwCall[GNNEConv2D.Weights].CheckedShape.ToValueArray();
+            dwWeightShape[0] = TileUtilities.GetAlignedNum(dwWeightShape[0], GNNEEnv.PuWidth);
+            byte[] weightBytes = ((TensorConst)weightsCall[GNNELoadW.Input]).Value.ToArray<byte>();
+            byte[] paddedWeightBytes = Enumerable.Repeat((byte)0, dwWeightShape.Aggregate((int d0, int d1) => d0 * d1)).ToArray();
+            Array.Copy(weightBytes, paddedWeightBytes, weightBytes.Length);
             weightsCall =
-                Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)checkedDataType2, Tensor.FromBytes<byte>(array3, array));
+                Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)weightsDataType, Tensor.FromBytes<byte>(paddedWeightBytes, dwWeightShape));
             return Nncase.IR.K230.F.Tensors.GNNEPdp0DW(dw.DestType, ldCall, weightsCall, weightsQInt8, weightsBias,
                 weightsBiasQint8, act, actQint8, deqBias, shiftBits, shiftBitsQint8, qint8Qp, padding, stride, dilation,
                 groups, is16Quant, padValue, dw.ActParam, dw.ActParamQInt8);

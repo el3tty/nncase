@@ -49,13 +49,13 @@ public sealed class SquantFineTuneFakeConv2DWeights : RewriteRule<Pattern>
         TensorConst tensorConst2 = ((weightsMarker.MixQuantInfo.I8FineTunedWeightsRangesByChannel == null)
             ? weightsRange
             : weightsMarker.MixQuantInfo.I8FineTunedWeightsRangesByChannel);
-        TensorConst obj =
+        TensorConst weightsRangeConst =
             ((((K230Target.K230MixQuantInfo)weightsMarker.MixQuantInfo).I16FineTunedWeightsRangesByChannel == null)
                 ? weightsRange
                 : ((K230Target.K230MixQuantInfo)weightsMarker.MixQuantInfo).I16FineTunedWeightsRangesByChannel);
         Tensor<float> inputWeightsRanges = Tensor.From(tensorConst.Value.ToArray<float>(), weightsRange.CheckedShape);
         Tensor<float> inputWeightsRanges2 = Tensor.From(tensorConst2.Value.ToArray<float>(), weightsRange.CheckedShape);
-        Tensor<float> inputWeightsRanges3 = Tensor.From(obj.Value.ToArray<float>(), weightsRange.CheckedShape);
+        Tensor<float> inputWeightsRanges3 = Tensor.From(weightsRangeConst.Value.ToArray<float>(), weightsRange.CheckedShape);
         Tensor<float> tensor = QuantAlgorithmUtility.SquantWeights(inputWeights, inputWeightsRanges,
             weights.CheckedShape, QuantMode.UnsignedMode, 8, isByChannel: true);
         Tensor<float> tensor2 = QuantAlgorithmUtility.SquantWeights(inputWeights, inputWeightsRanges2,

@@ -33,22 +33,22 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
         Expr stride, Expr padding, Expr countIncludePad, Expr outputMarker, Expr outputRange, RunPassContext context)
     {
         IExprUserAnalysisResult analysis = context.GetAnalysis<IExprUserAnalysisResult>();
-        bool flag = false;
+        bool usePdp0 = false;
         Call call2 = ((!(call[FakePdp.Input] is Marker { Target: Call target }) || !(target.Target is FakeConv2D))
             ? null
             : target);
         Call call3 = call2;
         if ((object)call3 != null)
         {
-            int[] array = call3[FakeConv2D.Input].CheckedShape.ToValueArray();
-            int[] array2 = call3.CheckedShape.ToValueArray();
-            int num = ((TensorConst)call3[FakeConv2D.Groups]).Value.ToScalar<int>();
-            bool flag2 = array[1] == array2[1] && array2[1] == num && num != 1;
-            int[] array3 = ((TensorConst)call[FakePdp.Filter]).Value.ToArray<int>();
-            if (analysis[input_marker].Count() == 1 && !flag2 && HasValidPdp0Kernel(array3[0], array3[1]) &&
+            int[] convInputShape = call3[FakeConv2D.Input].CheckedShape.ToValueArray();
+            int[] convOutputShape = call3.CheckedShape.ToValueArray();
+            int convGroups = ((TensorConst)call3[FakeConv2D.Groups]).Value.ToScalar<int>();
+            bool isDepthwise = convInputShape[1] == convOutputShape[1] && convOutputShape[1] == convGroups && convGroups != 1;
+            int[] filterSize = ((TensorConst)call[FakePdp.Filter]).Value.ToArray<int>();
+            if (analysis[input_marker].Count() == 1 && !isDepthwise && HasValidPdp0Kernel(filterSize[0], filterSize[1]) &&
                 (r.ReduceOp == ReduceOp.Max || r.ReduceOp == ReduceOp.Min))
             {
-                flag = true;
+                usePdp0 = true;
             }
         }
 
@@ -67,10 +67,10 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
         QuantMode quantMode =
             ((!(dataType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
         QuantParam quantParam = QuantUtility.GetQuantParam(base.InputRange, bits, quantMode);
-        DeQuantizeParam[] array4 = GNNETypePatternUtility.GNNEGetDeqParams(1, quantParam.Scale, quantParam.ZeroPoint);
+        DeQuantizeParam[] deqParams = GNNETypePatternUtility.GNNEGetDeqParams(1, quantParam.Scale, quantParam.ZeroPoint);
         QuantParam quantParam2 = QuantUtility.GetQuantParam(base.OutputRange, bits, quantMode);
-        QuantizeParam[] array5 = GNNETypePatternUtility.GNNEGetQuantParams(1, quantParam2.Scale, quantParam2.ZeroPoint);
-        if (flag)
+        QuantizeParam[] quantParams = GNNETypePatternUtility.GNNEGetQuantParams(1, quantParam2.Scale, quantParam2.ZeroPoint);
+        if (usePdp0)
         {
             QuantParam quantParam3 = QuantUtility.GetQuantParam(base.InputRange, 8, QuantMode.UnsignedMode);
             PrimType targetType = ((dataType == DataTypes.Int8) ? DataTypes.Int8 : DataTypes.UInt8);
@@ -80,14 +80,14 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
             }
 
             QuantParam quantizeParam = quantParam;
-            float num2 = ((dataType == DataTypes.UInt8)
+            float reducePadValue = ((dataType == DataTypes.UInt8)
                 ? GetPadValueByte(r.ReduceOp)
                 : ((dataType == DataTypes.Int8) ? GetPadValueSbyte(r.ReduceOp) : GetPadValueInt16(r.ReduceOp)));
             if (GetReplaceHelper.ToScalar<bool>(countIncludePad) || r.ReduceOp != ReduceOp.Mean)
             {
                 int value = (int)System.Math.Round(padValue.GetValue(0) / quantizeParam.Scale +
                                                    (float)quantizeParam.ZeroPoint);
-                num2 = ((base.QuantType == DataTypes.UInt8)
+                reducePadValue = ((base.QuantType == DataTypes.UInt8)
                     ? ((byte)System.Math.Clamp(value, 0, 255))
                     : ((base.QuantType == DataTypes.Int8)
                         ? ((sbyte)System.Math.Clamp(value, -127, 127))
@@ -103,30 +103,30 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
                 Nncase.IR.K230.F.Tensors.GNNEPdp0Reduce(ToPUPdpOp(r.ReduceOp), DataTypes.Float16, actParam,
                     Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType,
                         Nncase.IR.F.Math.Quantize(input_marker, new QuantParam(quantParam.ZeroPoint, quantParam.Scale),
-                            targetType)), filter, stride, padding, array4, (int)num2, 0, countIncludePad, act));
+                            targetType)), filter, stride, padding, deqParams, (int)reducePadValue, 0, countIncludePad, act));
             call4.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
             return Nncase.IR.F.Math.RangeOfMarker(call4, outputRange).With(null, null, null,
                 adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo, mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
         }
 
-        float num3 = ((dataType == DataTypes.UInt8)
+        float padValueBits = ((dataType == DataTypes.UInt8)
             ? GetPadValueByte(r.ReduceOp)
             : ((dataType == DataTypes.Int8) ? GetPadValueSbyte(r.ReduceOp) : GetPadValueInt16(r.ReduceOp)));
         if (GetReplaceHelper.ToScalar<bool>(countIncludePad))
         {
-            int value2 = (int)System.Math.Round(padValue.GetValue(0) / quantParam.Scale + (float)quantParam.ZeroPoint);
-            num3 = ((base.QuantType == DataTypes.UInt8)
-                ? ((byte)System.Math.Clamp(value2, 0, 255))
+            int quantizedPad = (int)System.Math.Round(padValue.GetValue(0) / quantParam.Scale + (float)quantParam.ZeroPoint);
+            padValueBits = ((base.QuantType == DataTypes.UInt8)
+                ? ((byte)System.Math.Clamp(quantizedPad, 0, 255))
                 : ((base.QuantType == DataTypes.Int8)
-                    ? ((sbyte)System.Math.Clamp(value2, -127, 127))
-                    : ((short)System.Math.Clamp(value2, -32767, 32767))));
+                    ? ((sbyte)System.Math.Clamp(quantizedPad, -127, 127))
+                    : ((short)System.Math.Clamp(quantizedPad, -32767, 32767))));
         }
 
         Call call5 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
             Nncase.IR.K230.F.Tensors.GNNEPdp1(DataTypes.Float16, ToMFUPdpOp(r.ReduceOp),
                 Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType,
-                    Nncase.IR.F.Math.Quantize(input_marker, quantParam, dataType)), filter, stride, padding, array5,
-                array4, num3, 0, countIncludePad));
+                    Nncase.IR.F.Math.Quantize(input_marker, quantParam, dataType)), filter, stride, padding, quantParams,
+                deqParams, padValueBits, 0, countIncludePad));
         call5.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
         return Nncase.IR.F.Math.RangeOfMarker(call5, outputRange).With(null, null, null,
             adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo, mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
@@ -206,7 +206,7 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
     {
         FakePdp r = (FakePdp)__result["r"];
         Call call = (Call)__result["call"];
-        Marker input_marker = (Marker)__result["input_marker"];
+        Marker inputMarker = (Marker)__result["input_marker"];
         Tensor<float> padValue = ((TensorConst)__result["padValue"]).Value.Cast<float>();
         Expr filter = (Expr)__result["filter"];
         Expr stride = (Expr)__result["stride"];
@@ -217,7 +217,7 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
         base.Option = __context;
         base.MatchResult = __result;
         Init();
-        return GetReplace(r, call, input_marker, padValue, filter, stride, padding, countIncludePad, outputMarker,
+        return GetReplace(r, call, inputMarker, padValue, filter, stride, padding, countIncludePad, outputMarker,
             outputRange, __context);
     }
 }

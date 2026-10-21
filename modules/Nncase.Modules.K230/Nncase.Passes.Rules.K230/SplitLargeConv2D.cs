@@ -41,24 +41,24 @@ public sealed class SplitLargeConv2D : RewriteRule<Pattern>
 
     public Expr? GetReplace(Call call, Expr input, Expr weights, Tensor<int> paddings, int[] strides, int[] dilation)
     {
-        int[] array = call.CheckedShape.ToValueArray();
-        int oh = array[2];
-        int ow = array[3];
-        return SplitLarge.Split(call, input, array, ((int Dim, int Axis) pair) => pair.Dim > 65535, (int _) => 1,
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int oh = outputShape[2];
+        int ow = outputShape[3];
+        return SplitLarge.Split(call, input, outputShape, ((int Dim, int Axis) pair) => pair.Dim > 65535, (int _) => 1,
             (int axis) => axis, delegate((int Count, int ChunkSize, int CurrentSize, int Index, int Axis) param)
             {
-                (int Count, int ChunkSize, int CurrentSize, int Index, int Axis) tuple = param;
-                int item = tuple.CurrentSize;
-                int item2 = tuple.Index;
-                int item3 = tuple.Axis;
-                int num = item3 - 2;
-                Padding p = new Padding(paddings[new int[2] { num, 0 }], paddings[new int[2] { num, 1 }]);
-                List<Segment1D> segmentStartEndLength =
-                    TileUtilities.GetSegmentStartEndLength(0, item, input.CheckedShape[item3].FixedValue);
-                int h = ((item3 == 3) ? ow : oh);
-                Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(segmentStartEndLength[item2].Start,
-                    Math.Min(item, segmentStartEndLength[item2].Length), h, weights.CheckedShape[item3].FixedValue,
-                    strides[num], dilation[num], in p);
+                (int Count, int ChunkSize, int CurrentSize, int Index, int Axis) chunkInfo = param;
+                int currentSize = chunkInfo.CurrentSize;
+                int chunkIndex = chunkInfo.Index;
+                int axisIndex = chunkInfo.Axis;
+                int dimIndex = axisIndex - 2;
+                Padding p = new Padding(paddings[new int[2] { dimIndex, 0 }], paddings[new int[2] { dimIndex, 1 }]);
+                List<Segment1D> outputSegments =
+                    TileUtilities.GetSegmentStartEndLength(0, currentSize, input.CheckedShape[axisIndex].FixedValue);
+                int h = ((axisIndex == 3) ? ow : oh);
+                Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(outputSegments[chunkIndex].Start,
+                    Math.Min(currentSize, outputSegments[chunkIndex].Length), h, weights.CheckedShape[axisIndex].FixedValue,
+                    strides[dimIndex], dilation[dimIndex], in p);
                 return (NewBegin: inputRowSegment.Start, NewEnd: inputRowSegment.End, Pads: inputRowSegment.Padding);
             }, delegate(Expr slice, Padding padding, int axis)
             {

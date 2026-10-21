@@ -73,11 +73,11 @@ internal class BoxPacker
             return new MmuItem(0, 0, 0, 0, 0);
         }
 
-        int[] array = Find_space_(width, height);
+        int[] position = Find_space_(width, height);
         int id = GetId();
-        if (id >= 0 && array[0] >= 0 && array[1] >= 0)
+        if (id >= 0 && position[0] >= 0 && position[1] >= 0)
         {
-            MmuItem mmuItem = new MmuItem(id, array[0], width, array[1], height);
+            MmuItem mmuItem = new MmuItem(id, position[0], width, position[1], height);
             FillSpace(mmuItem);
             _items.Add(mmuItem);
             return mmuItem;
@@ -92,52 +92,52 @@ internal class BoxPacker
         _logger.LogTrace("GLB allocation:");
         for (int i = 0; i < _nMaxMmuNum; i++)
         {
-            int num = -1;
-            int num2 = -1;
-            int num3 = _width;
-            int num4 = _height;
+            int left = -1;
+            int top = -1;
+            int right = _width;
+            int bottom = _height;
             for (int j = 0; j < _height; j++)
             {
                 for (int k = 0; k < _width; k++)
                 {
                     if (_space[j, k] == i)
                     {
-                        num = k;
-                        num2 = j;
+                        left = k;
+                        top = j;
                         break;
                     }
                 }
 
-                if (num >= 0)
+                if (left >= 0)
                 {
                     break;
                 }
             }
 
-            if (num < 0)
+            if (left < 0)
             {
                 continue;
             }
 
-            for (int l = num2 + 1; l < _height; l++)
+            for (int l = top + 1; l < _height; l++)
             {
-                if (_space[l, num] != i)
+                if (_space[l, left] != i)
                 {
-                    num4 = l;
+                    bottom = l;
                     break;
                 }
             }
 
-            for (int m = num + 1; m < _width; m++)
+            for (int m = left + 1; m < _width; m++)
             {
-                if (_space[num2, m] != i)
+                if (_space[top, m] != i)
                 {
-                    num3 = m;
+                    right = m;
                     break;
                 }
             }
 
-            _logger.LogTrace($"{_space[num2, num]} : ({num}, {num3}, {num3 - num}) ({num2}, {num4}, {num4 - num2} )");
+            _logger.LogTrace($"{_space[top, left]} : ({left}, {right}, {right - left}) ({top}, {bottom}, {bottom - top} )");
         }
 
         _logger.LogTrace("--------------------------");
@@ -154,20 +154,20 @@ internal class BoxPacker
                     continue;
                 }
 
-                bool flag = true;
+                bool isFree = true;
                 for (int k = 0; k < height; k++)
                 {
                     for (int l = 0; l < width; l++)
                     {
                         if (_space[i + k, j + l] != -1)
                         {
-                            flag = false;
+                            isFree = false;
                             break;
                         }
                     }
                 }
 
-                if (flag)
+                if (isFree)
                 {
                     return new int[2] { j, i };
                 }

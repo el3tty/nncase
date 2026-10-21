@@ -1204,7 +1204,7 @@ public class TileLayerGroup
                                                         int offsetWS;
                                                         if (_weightBufIdx != -1)
                                                         {
-                                                            Tuple<SegmentND, TensorStat> weightRec =
+                                                            Tuple<SegmentND, TensorStat> weightRecEntry =
                                                                 _nodesWeightRec[_conv][_weightBufIdx][0];
                                                             Tuple<SegmentND, TensorStat> g2rwRec =
                                                                 _nodesG2RWRec[_conv][_weightBufIdx][0];
@@ -1218,7 +1218,7 @@ public class TileLayerGroup
                                                                 _nodesG2RWSliceRec[_conv][_weightBufIdx][0];
                                                             _nodesG2RWSliceRec[_conv][_weightBufIdx].RemoveAt(0);
                                                             TileUtilities.Assert(
-                                                                w2 == g2rwSliceRec.Item1 && g2rwRec.Item1 == weightRec.Item1,
+                                                                w2 == g2rwSliceRec.Item1 && g2rwRec.Item1 == weightRecEntry.Item1,
                                                                 "l2RW == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1",
                                                                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                                                                 1210);
@@ -2268,8 +2268,8 @@ public class TileLayerGroup
             Call op = fusedNode.Op;
             if ((object)op != null && op.Target is GNNEConv2D)
             {
-                DataType checkedDataType = fusedNode.Op[GNNEConv2D.Weights].CheckedDataType;
-                _weightGroups.Add(fusedNode.Op, new WeightGroupHandler(checkedDataType, checkedDataType));
+                DataType weightDataType = fusedNode.Op[GNNEConv2D.Weights].CheckedDataType;
+                _weightGroups.Add(fusedNode.Op, new WeightGroupHandler(weightDataType, weightDataType));
                 _weightSplitPattern.Add(fusedNode.Op, new Tuple<int, int>(0, 0));
             }
         }
@@ -4038,10 +4038,10 @@ public class TileLayerGroup
             recs[recs.Count - 1].Item2.IsLastSlice = true;
         }
 
-        foreach (KeyValuePair<Call, List<List<Tuple<SegmentND, TensorStat>>>> sliceRec in _nodesG2RWSliceRec)
+        foreach (KeyValuePair<Call, List<List<Tuple<SegmentND, TensorStat>>>> nodeRecEntry in _nodesG2RWSliceRec)
         {
-            List<List<Tuple<SegmentND, TensorStat>>> g2rwRec = _nodesG2RWRec[sliceRec.Key];
-            for (int dimIdx = 0; dimIdx < sliceRec.Value.Count; dimIdx++)
+            List<List<Tuple<SegmentND, TensorStat>>> g2rwRec = _nodesG2RWRec[nodeRecEntry.Key];
+            for (int dimIdx = 0; dimIdx < nodeRecEntry.Value.Count; dimIdx++)
             {
                 List<SegmentND> uniqueSlices = new List<SegmentND>();
                 List<SegmentND> allSlices = new List<SegmentND>();
@@ -4055,13 +4055,13 @@ public class TileLayerGroup
                         sliceRecs.Clear();
                     }
 
-                    if (!uniqueSlices.Contains(sliceRec.Value[dimIdx][recIdx].Item1))
+                    if (!uniqueSlices.Contains(nodeRecEntry.Value[dimIdx][recIdx].Item1))
                     {
-                        uniqueSlices.Add(sliceRec.Value[dimIdx][recIdx].Item1);
+                        uniqueSlices.Add(nodeRecEntry.Value[dimIdx][recIdx].Item1);
                     }
 
-                    allSlices.Add(sliceRec.Value[dimIdx][recIdx].Item1);
-                    sliceRecs.Add(sliceRec.Value[dimIdx][recIdx]);
+                    allSlices.Add(nodeRecEntry.Value[dimIdx][recIdx].Item1);
+                    sliceRecs.Add(nodeRecEntry.Value[dimIdx][recIdx]);
                     if (!g2rwRec[dimIdx][recIdx].Item2.IsLastSlice)
                     {
                         continue;
@@ -4076,33 +4076,33 @@ public class TileLayerGroup
                     for (int entryIdx = 0; entryIdx < allSlices.Count; entryIdx++)
                     {
                         sliceRecs[entryIdx].Item2.SliceIdx = uniqueSlices.IndexOf(allSlices[entryIdx]);
-                        sliceRec.Value[dimIdx][recIdx - allSlices.Count + 1 + entryIdx] = sliceRecs[entryIdx];
+                        nodeRecEntry.Value[dimIdx][recIdx - allSlices.Count + 1 + entryIdx] = sliceRecs[entryIdx];
                     }
                 }
 
-                Call conv = sliceRec.Key;
+                Call conv = nodeRecEntry.Key;
                 if ((object)conv == null || !(conv.Target is GNNEConv2D) ||
                     conv[GNNEConv2D.Weights].CheckedDataType != DataTypes.Int16)
                 {
                     continue;
                 }
 
-                for (int revIdx = 1; revIdx < sliceRec.Value[dimIdx].Count; revIdx++)
+                for (int revIdx = 1; revIdx < nodeRecEntry.Value[dimIdx].Count; revIdx++)
                 {
-                    if (sliceRec.Value[dimIdx][sliceRec.Value[dimIdx].Count - revIdx - 1].Item2.IsFirstSlice)
+                    if (nodeRecEntry.Value[dimIdx][nodeRecEntry.Value[dimIdx].Count - revIdx - 1].Item2.IsFirstSlice)
                     {
-                        sliceRec.Value[dimIdx][sliceRec.Value[dimIdx].Count - revIdx].Item2.IsFirstSlice = true;
+                        nodeRecEntry.Value[dimIdx][nodeRecEntry.Value[dimIdx].Count - revIdx].Item2.IsFirstSlice = true;
                     }
 
-                    if (sliceRec.Value[dimIdx][revIdx].Item2.IsLastSlice)
+                    if (nodeRecEntry.Value[dimIdx][revIdx].Item2.IsLastSlice)
                     {
-                        sliceRec.Value[dimIdx][revIdx - 1].Item2.IsLastSlice = true;
+                        nodeRecEntry.Value[dimIdx][revIdx - 1].Item2.IsLastSlice = true;
                     }
                 }
 
-                for (int sliceIdx = 0; sliceIdx < sliceRec.Value[dimIdx].Count; sliceIdx++)
+                for (int sliceIdx = 0; sliceIdx < nodeRecEntry.Value[dimIdx].Count; sliceIdx++)
                 {
-                    sliceRec.Value[dimIdx][sliceIdx].Item2.SliceIdx = sliceRec.Value[dimIdx][sliceIdx].Item2.SliceIdx * 2 + (sliceIdx & 1);
+                    nodeRecEntry.Value[dimIdx][sliceIdx].Item2.SliceIdx = nodeRecEntry.Value[dimIdx][sliceIdx].Item2.SliceIdx * 2 + (sliceIdx & 1);
                 }
             }
         }

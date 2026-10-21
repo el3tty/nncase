@@ -20,10 +20,10 @@ public sealed class ProcessMatmulShiftBits : IRewriteRule
     private Expr? GetReplace(GNNEMatMul mm, IMatchResult result, RunPassContext options)
     {
         ActParam2 actParam = new ActParam2(mm.ActParam);
-        int num = actParam.FusedShiftBits();
+        int shiftBits = actParam.FusedShiftBits();
         Expr expr = GetReplaceHelper.LoadAct0(actParam);
         Call expr2 = new Call(mm, (Expr)result["inputA"], (Expr)result["inputB"], expr, (Expr)result["inputABias"],
-            (Expr)result["inputAShiftbits"], (Expr)result["inputBShiftbits"], num, (Expr)result["deqBBias"]);
+            (Expr)result["inputAShiftbits"], (Expr)result["inputBShiftbits"], shiftBits, (Expr)result["deqBBias"]);
         return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
     }
 

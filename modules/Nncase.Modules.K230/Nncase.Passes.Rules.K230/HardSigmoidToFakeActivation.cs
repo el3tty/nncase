@@ -20,11 +20,11 @@ public class HardSigmoidToFakeActivation : RewriteRule<Pattern>
 
     private Expr? GetReplace(Call call, Expr input, float alpha, float beta)
     {
-        int[] array = input.CheckedShape.ToValueArray();
-        int[] array2 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(array, 0, array2, array2.Length - array.Length, array.Length);
-        int num = array2[1];
-        ActParam2 actParam = new ActParam2(num);
+        int[] inputShape = input.CheckedShape.ToValueArray();
+        int[] paddedShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(inputShape, 0, paddedShape, paddedShape.Length - inputShape.Length, inputShape.Length);
+        int actChannels = paddedShape[1];
+        ActParam2 actParam = new ActParam2(actChannels);
         actParam.ForEachChannel(delegate(ActParam2 param, int i)
         {
             param.Ks[0, i] = alpha;
@@ -34,8 +34,8 @@ public class HardSigmoidToFakeActivation : RewriteRule<Pattern>
             param.Bs[1, i] = beta;
         });
         actParam.SetFusedClamp(new ValueRange<float>(0f, 1f));
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, false,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 

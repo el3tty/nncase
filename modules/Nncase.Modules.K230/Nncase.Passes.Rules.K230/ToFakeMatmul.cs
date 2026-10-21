@@ -44,19 +44,19 @@ public sealed class ToFakeMatmul : IRewriteRule
             return null;
         }
 
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(inputAMarker.CheckedShape.ToValueArray(), 0, array, array.Length - inputAMarker.CheckedShape.Count,
+        int[] inputAShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(inputAMarker.CheckedShape.ToValueArray(), 0, inputAShape, inputAShape.Length - inputAMarker.CheckedShape.Count,
             inputAMarker.CheckedShape.Count);
-        int[] array2 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(inputBMarker.CheckedShape.ToValueArray(), 0, array2, array2.Length - inputBMarker.CheckedShape.Count,
+        int[] inputBShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(inputBMarker.CheckedShape.ToValueArray(), 0, inputBShape, inputBShape.Length - inputBMarker.CheckedShape.Count,
             inputBMarker.CheckedShape.Count);
-        int[] array3 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(call.CheckedShape.ToValueArray(), 0, array3, array3.Length - call.CheckedShape.Count,
+        int[] outputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(call.CheckedShape.ToValueArray(), 0, outputShape, outputShape.Length - call.CheckedShape.Count,
             call.CheckedShape.Count);
-        ActParam2 actParam = new ActParam2(array3[1] * array3[2], new QuantParam(0, 1f));
-        Marker inputA2 = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(inputAMarker, array), inputARange)
+        ActParam2 actParam = new ActParam2(outputShape[1] * outputShape[2], new QuantParam(0, 1f));
+        Marker inputA2 = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(inputAMarker, inputAShape), inputARange)
             .With(null, null, null, adaQuantInfo: inputAMarker.AdaQuantInfo, mixQuantInfo: inputAMarker.MixQuantInfo);
-        Marker inputB2 = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(inputBMarker, array2), inputBRange)
+        Marker inputB2 = Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(inputBMarker, inputBShape), inputBRange)
             .With(null, null, null, adaQuantInfo: inputBMarker.AdaQuantInfo, mixQuantInfo: inputBMarker.MixQuantInfo);
         return Nncase.IR.F.Math
             .RangeOfMarker(

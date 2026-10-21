@@ -85,30 +85,30 @@ public class BinaryToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(lhs.CheckedShape.ToValueArray(), 0, array, array.Length - lhs.CheckedShape.Count,
+        int[] lhsShape4 = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(lhs.CheckedShape.ToValueArray(), 0, lhsShape4, lhsShape4.Length - lhs.CheckedShape.Count,
             lhs.CheckedShape.Count);
-        int[] array2 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(rhs.CheckedShape.ToValueArray(), 0, array2, array2.Length - rhs.CheckedShape.Count,
+        int[] rhsShape4 = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(rhs.CheckedShape.ToValueArray(), 0, rhsShape4, rhsShape4.Length - rhs.CheckedShape.Count,
             rhs.CheckedShape.Count);
-        int[] array3 = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
+        int[] longShape = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
             ? lhs.CheckedShape.ToValueArray()
             : rhs.CheckedShape.ToValueArray());
-        int[] array4 = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
+        int[] shortShape = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
             ? rhs.CheckedShape.ToValueArray()
             : lhs.CheckedShape.ToValueArray());
-        for (int i = 0; i < array3.Length; i++)
+        for (int i = 0; i < longShape.Length; i++)
         {
-            if (i >= array3.Length - array4.Length && array3[i] < array4[i - (array3.Length - array4.Length)])
+            if (i >= longShape.Length - shortShape.Length && longShape[i] < shortShape[i - (longShape.Length - shortShape.Length)])
             {
-                array3[i] = array4[i - (array3.Length - array4.Length)];
+                longShape[i] = shortShape[i - (longShape.Length - shortShape.Length)];
             }
         }
 
-        int[] array5 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(array3, 0, array5, array5.Length - array3.Length, array3.Length);
-        int num = array5[1];
-        ActParam2 actParam = new ActParam2(num);
+        int[] broadcastShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(longShape, 0, broadcastShape, broadcastShape.Length - longShape.Length, longShape.Length);
+        int channels = broadcastShape[1];
+        ActParam2 actParam = new ActParam2(channels);
         if (tensorConst.CheckedShape.IsScalar)
         {
             float v = tensorConst.Value.ToScalar<float>();
@@ -128,7 +128,7 @@ public class BinaryToFakeActivation : RewriteRule<Pattern>
             });
         }
 
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { channels, 7 });
         return Nncase.IR.F.Math
             .RangeOfMarker(
                 Nncase.IR.K230.F.Tensors.FakeActivation(
@@ -137,23 +137,23 @@ public class BinaryToFakeActivation : RewriteRule<Pattern>
                             adaQuantInfo: inputMarkerL?.AdaQuantInfo, mixQuantInfo: inputMarkerL?.MixQuantInfo)
                         : Nncase.IR.F.Math.RangeOfMarker(rhs, inputRangeR).With(null, null, null,
                             adaQuantInfo: inputMarkerR?.AdaQuantInfo, mixQuantInfo: inputMarkerR?.MixQuantInfo),
-                    None.Default, tensor, num, 0, 0, 0, false, GnneActivationType.Uninitialized, actParam,
+                    None.Default, tensor, channels, 0, 0, 0, false, GnneActivationType.Uninitialized, actParam,
                     call.CheckedShape.ToValueArray()), outputRange).With(null, null, null,
                 adaQuantInfo: outputMarker.AdaQuantInfo, mixQuantInfo: outputMarker.MixQuantInfo);
     }
 
     private bool TryMatch(Binary bn, Expr lhs, Expr rhs)
     {
-        int[] array = lhs.CheckedShape.ToValueArray();
-        int[] array2 = rhs.CheckedShape.ToValueArray();
-        if (IsChannelwiseBinary(array, array2))
+        int[] lhsShape = lhs.CheckedShape.ToValueArray();
+        int[] rhsShape = rhs.CheckedShape.ToValueArray();
+        if (IsChannelwiseBinary(lhsShape, rhsShape))
         {
             if (rhs is TensorConst && rhs.CheckedDataType == DataTypes.Float32)
             {
                 return true;
             }
         }
-        else if (CanSupportedConstantLhs && IsChannelwiseBinary(array2, array) && lhs is TensorConst &&
+        else if (CanSupportedConstantLhs && IsChannelwiseBinary(rhsShape, lhsShape) && lhs is TensorConst &&
                  lhs.CheckedDataType == DataTypes.Float32)
         {
             return true;

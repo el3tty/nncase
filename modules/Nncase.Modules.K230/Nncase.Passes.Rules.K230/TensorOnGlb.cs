@@ -108,19 +108,19 @@ public class TensorOnGlb : IBufferView<TensorOnGlb>
             "dim3 < Dimensions[3] || (dim3 == 0 && dim3 == Dimensions[3])",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
             220);
-        int num = 0;
+        int bufOffset = 0;
         if (pp > 0)
         {
-            num = Mmu.Width * GNNEEnv.GlbBankWidth * Mmu.Depth / bufNum;
-            while (num % 4 != 0)
+            bufOffset = Mmu.Width * GNNEEnv.GlbBankWidth * Mmu.Depth / bufNum;
+            while (bufOffset % 4 != 0)
             {
-                num--;
+                bufOffset--;
             }
 
-            num *= pp;
+            bufOffset *= pp;
         }
 
-        return num + dim0 * Stride[0] + dim1 * Stride[1] + dim2 * Stride[2] + dim3 * Stride[3];
+        return bufOffset + dim0 * Stride[0] + dim1 * Stride[1] + dim2 * Stride[2] + dim3 * Stride[3];
     }
 
     public void SetGlbStride(int noconflictH = 0, int noconflictC = 0, int noconflictN = 0, int alignedFactor = 1)

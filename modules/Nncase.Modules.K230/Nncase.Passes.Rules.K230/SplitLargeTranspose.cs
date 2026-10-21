@@ -24,11 +24,11 @@ public sealed class SplitLargeTranspose : RewriteRule<Pattern>
             (int axis) => ArrayTools.IndexOf<int>(perm.ToArray(), axis),
             delegate((int Count, int ChunkSize, int CurrentSize, int Index, int Axis) param)
             {
-                (int Count, int ChunkSize, int CurrentSize, int Index, int Axis) tuple = param;
-                int item = tuple.ChunkSize;
-                int item2 = tuple.CurrentSize;
-                int item3 = tuple.Index;
-                return (NewBegin: item3 * item, NewEnd: item3 * item + item2, Pads: Padding.Zero());
+                (int Count, int ChunkSize, int CurrentSize, int Index, int Axis) chunkInfo = param;
+                int chunkSize = chunkInfo.ChunkSize;
+                int currentSize = chunkInfo.CurrentSize;
+                int chunkIndex = chunkInfo.Index;
+                return (NewBegin: chunkIndex * chunkSize, NewEnd: chunkIndex * chunkSize + currentSize, Pads: Padding.Zero());
             }, delegate(Expr slice, Padding padding, int i)
             {
                 slice.InferenceType();

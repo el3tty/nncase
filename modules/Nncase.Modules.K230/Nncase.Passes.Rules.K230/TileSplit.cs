@@ -52,18 +52,18 @@ public class TileSplit : RewriteRule<Pattern>
             InitParameters(tupleInputs);
             T.CreateBuffer(new TensorType(_sofs[0].CheckedDataType, _lif.CheckedShape), MemoryLocation.Input,
                 out Nncase.TIR.Buffer buffer, "var ddrIf");
-            List<Nncase.TIR.Buffer> list = new List<Nncase.TIR.Buffer>();
+            List<Nncase.TIR.Buffer> buffers = new List<Nncase.TIR.Buffer>();
             for (int i = 0; i < _sofs.Length; i++)
             {
                 T.CreateBuffer(new TensorType(_sofs[i].CheckedDataType, _sofs[i].CheckedShape), MemoryLocation.Output,
                     out Nncase.TIR.Buffer buffer2, "ddrOf_" + i);
-                list.Add(buffer2);
+                buffers.Add(buffer2);
             }
 
-            List<GnneAction> actions = BuildSchedule(buffer, list);
+            List<GnneAction> actions = BuildSchedule(buffer, buffers);
             ActionToInstruct actionToInstruct = new ActionToInstruct();
             return T.PrimFunc($"TileSplit_{_count}", K230RtModule.Kind,
-                    new Nncase.TIR.Buffer[1] { buffer }.Concat(list).ToArray())
+                    new Nncase.TIR.Buffer[1] { buffer }.Concat(buffers).ToArray())
                 .Body(actionToInstruct.Instructions(actions), I.END(GP_REGISTER.x0, 0)).Build();
         }
         catch (Exception ex)
@@ -93,175 +93,175 @@ public class TileSplit : RewriteRule<Pattern>
         int i = 1;
         int j = 1;
         int k = 1;
-        GNNEShape gNNEShape = _outputShapes[index];
-        int w = gNNEShape[3];
-        int num = gNNEShape[3];
+        GNNEShape outputShape = _outputShapes[index];
+        int w = outputShape[3];
+        int width = outputShape[3];
         int nPingPongSplit = 1;
-        AllocateResult allocateResult = HandleAllocate(i, j, k, w, k, num, nPingPongSplit);
+        AllocateResult allocateResult = HandleAllocate(i, j, k, w, k, width, nPingPongSplit);
         if (!allocateResult.IsOk)
         {
             nPingPongSplit = 1;
         }
 
-        for (; k < gNNEShape[2] && k < 65535; k++)
+        for (; k < outputShape[2] && k < 65535; k++)
         {
-            int num2 = k + 1;
-            allocateResult = HandleAllocate(i, j, num2, w, num2, num, nPingPongSplit);
+            int nextRows = k + 1;
+            allocateResult = HandleAllocate(i, j, nextRows, w, nextRows, width, nPingPongSplit);
             if (!allocateResult.IsOk)
             {
                 break;
             }
         }
 
-        for (; j < gNNEShape[1] && j < 65535; j++)
+        for (; j < outputShape[1] && j < 65535; j++)
         {
-            allocateResult = HandleAllocate(i, j + 1, k, w, k, num, nPingPongSplit);
+            allocateResult = HandleAllocate(i, j + 1, k, w, k, width, nPingPongSplit);
             if (!allocateResult.IsOk)
             {
                 break;
             }
         }
 
-        for (; i < gNNEShape[0] && i < 65535; i++)
+        for (; i < outputShape[0] && i < 65535; i++)
         {
-            allocateResult = HandleAllocate(i + 1, j, k, w, k, num, nPingPongSplit);
+            allocateResult = HandleAllocate(i + 1, j, k, w, k, width, nPingPongSplit);
             if (!allocateResult.IsOk)
             {
                 break;
             }
         }
 
-        allocateResult = HandleAllocate(i, j, k, w, k, num, nPingPongSplit, isFinal: true);
+        allocateResult = HandleAllocate(i, j, k, w, k, width, nPingPongSplit, isFinal: true);
         TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileSplit.cs",
             154);
-        GNNEShape gNNEShape2 = new GNNEShape(i, j, k, num);
-        return new TileSplitGlb(allocateResult.GlbMap, allocateResult.Items, gNNEShape2.Dims, GNNEEnv.NPingPongSplit,
+        GNNEShape glbShape = new GNNEShape(i, j, k, width);
+        return new TileSplitGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
     }
 
     private AllocateResult HandleAllocate(int n, int c, int h, int w, int e, int f, int nPingPongSplit,
         bool isFinal = false)
     {
-        List<BoxOnGlb> list = new List<BoxOnGlb>();
-        Dictionary<ItemName, TensorOnGlb> dictionary = new Dictionary<ItemName, TensorOnGlb>();
-        int num = (int)Math.Ceiling(1.0 * (double)c / (double)nPingPongSplit);
-        TensorOnGlb tensorOnGlb = new TensorOnGlb(new int[4] { n, num, h, w }, _inputType, 0);
-        int value = tensorOnGlb.AllocatedBytes * nPingPongSplit;
+        List<BoxOnGlb> boxes = new List<BoxOnGlb>();
+        Dictionary<ItemName, TensorOnGlb> glbMap = new Dictionary<ItemName, TensorOnGlb>();
+        int channelsPerPass = (int)Math.Ceiling(1.0 * (double)c / (double)nPingPongSplit);
+        TensorOnGlb ifmapTensor = new TensorOnGlb(new int[4] { n, channelsPerPass, h, w }, _inputType, 0);
+        int value = ifmapTensor.AllocatedBytes * nPingPongSplit;
         value = TileUtilities.GetAlignedNum(value, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
-        TensorOnGlb tensorOnGlb2 = new TensorOnGlb(new int[4] { n, num, h, w }, _inputType, 0);
+        TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, channelsPerPass, h, w }, _inputType, 0);
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
-        list.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.Basement));
-        list.Add(new BoxOnGlb(
+        boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.IfmapBankWidth, value / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.Ifmap));
-        AllocateResult allocateResult = SpaceSearcher.TryAllocate(new BoxPacker(16) { Boxes = list });
+        AllocateResult allocateResult = SpaceSearcher.TryAllocate(new BoxPacker(16) { Boxes = boxes });
         if (allocateResult.IsOk)
         {
-            tensorOnGlb.Mmu = allocateResult.Items[ItemName.Ifmap];
-            tensorOnGlb2.Mmu = allocateResult.Items[ItemName.Ifmap];
+            ifmapTensor.Mmu = allocateResult.Items[ItemName.Ifmap];
+            ofmapTensor.Mmu = allocateResult.Items[ItemName.Ifmap];
         }
 
-        dictionary.Add(ItemName.Ifmap, tensorOnGlb);
-        dictionary.Add(ItemName.Ofmap, tensorOnGlb2);
-        return new AllocateResult { IsOk = allocateResult.IsOk, Items = allocateResult.Items, GlbMap = dictionary };
+        glbMap.Add(ItemName.Ifmap, ifmapTensor);
+        glbMap.Add(ItemName.Ofmap, ofmapTensor);
+        return new AllocateResult { IsOk = allocateResult.IsOk, Items = allocateResult.Items, GlbMap = glbMap };
     }
 
     private List<GnneAction> BuildSchedule(Nncase.TIR.Buffer ddrIf, List<Nncase.TIR.Buffer> ddrOfs)
     {
-        List<GnneAction> list = new List<GnneAction>();
+        List<GnneAction> actions = new List<GnneAction>();
         int[] strides = ((TensorConst)_sofs[0][GNNEStore.Strides]).Value.ToArray<int>();
         Func<int, int, int, Segment1D> func = delegate(int start, int end, int dim)
         {
-            int num4 = (int)Math.Ceiling(1.0 * (double)start / (double)strides[dim]);
+            int scaledStart = (int)Math.Ceiling(1.0 * (double)start / (double)strides[dim]);
             return new Segment1D(
-                new System.Range(end: (int)Math.Ceiling(1.0 * (double)end / (double)strides[dim]), start: num4),
+                new System.Range(end: (int)Math.Ceiling(1.0 * (double)end / (double)strides[dim]), start: scaledStart),
                 new Padding(0, 0));
         };
-        int num = 0;
-        int num2 = 0;
-        for (int num3 = 0; num3 < _sofs.Length; num3++)
+        int splitOffset = 0;
+        int ifmapIndex = 0;
+        for (int outputIndex = 0; outputIndex < _sofs.Length; outputIndex++)
         {
             GprHandler gpr = new GprHandler(GNNEEnv.GprNum);
             SsrHandler ssr = new SsrHandler(GNNEEnv.SsrNum);
             CcrHandler ccrHandler = new CcrHandler();
-            TiledGlb tiledGlb = SearchGlbParameters(num3);
-            GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(list, tiledGlb, ccrHandler, gpr, ssr);
+            TiledGlb tiledGlb = SearchGlbParameters(outputIndex);
+            GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(actions, tiledGlb, ccrHandler, gpr, ssr);
             gnneActionUpdater.UpdateMmuConf();
-            foreach (Segment1D item in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[0],
-                         _outputShapes[num3][0]))
+            foreach (Segment1D segmentN in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[0],
+                         _outputShapes[outputIndex][0]))
             {
-                func(item.Start, item.End, 0);
+                func(segmentN.Start, segmentN.End, 0);
                 if (_axis == 0)
                 {
-                    func(item.Start + num, item.End + num, 0);
+                    func(segmentN.Start + splitOffset, segmentN.End + splitOffset, 0);
                 }
 
-                foreach (Segment1D item2 in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[1],
-                             _outputShapes[num3][1]))
+                foreach (Segment1D segmentC in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[1],
+                             _outputShapes[outputIndex][1]))
                 {
-                    Segment1D segment1D = func(item2.Start, item2.End, 1);
+                    Segment1D shiftedC = func(segmentC.Start, segmentC.End, 1);
                     if (_axis == 1)
                     {
-                        segment1D = func(item2.Start + num, item2.End + num, 1);
+                        shiftedC = func(segmentC.Start + splitOffset, segmentC.End + splitOffset, 1);
                     }
 
-                    foreach (Segment1D item3 in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[2],
-                                 _outputShapes[num3][2]))
+                    foreach (Segment1D segmentH in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[2],
+                                 _outputShapes[outputIndex][2]))
                     {
-                        Segment1D segment1D2 = func(item3.Start, item3.End, 2);
+                        Segment1D shiftedH = func(segmentH.Start, segmentH.End, 2);
                         if (_axis == 2)
                         {
-                            segment1D2 = func(item3.Start + num, item3.End + num, 2);
+                            shiftedH = func(segmentH.Start + splitOffset, segmentH.End + splitOffset, 2);
                         }
 
-                        foreach (Segment1D item4 in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[3],
-                                     _outputShapes[num3][3]))
+                        foreach (Segment1D segmentW in TileUtilities.GetSegmentStartEndLength(0, tiledGlb.LastOutShape[3],
+                                     _outputShapes[outputIndex][3]))
                         {
-                            Segment1D segment1D3 = func(item4.Start, item4.End, 3);
+                            Segment1D shiftedW = func(segmentW.Start, segmentW.End, 3);
                             if (_axis == 3)
                             {
-                                segment1D3 = func(item4.Start + num, item4.End + num, 3);
+                                shiftedW = func(segmentW.Start + splitOffset, segmentW.End + splitOffset, 3);
                             }
 
-                            SegmentND segmentND = new SegmentND(item, item2, item3, item4);
-                            SegmentND slice = new SegmentND(item, segment1D, segment1D2, segment1D3);
+                            SegmentND ofmapSegment = new SegmentND(segmentN, segmentC, segmentH, segmentW);
+                            SegmentND slice = new SegmentND(segmentN, shiftedC, shiftedH, shiftedW);
                             List<CcrSet> ccrsToSet = new List<CcrSet>
                             {
-                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, num2)), 1)
+                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1)
                             };
                             SegmentND tensor = slice;
                             List<int> stridesS = new int[3] { _inputShape[1], _inputShape[2], _inputShape[3] }.ToList();
                             int sliceOffsetInTensor = TileUtilities.GetSliceOffsetInTensor(in tensor, in slice);
                             GNNEShape shape = new GNNEShape(tensor[0].Length, tensor[1].Length, tensor[2].Length,
                                 tensor[3].Length);
-                            gnneActionUpdater.UpdateLoadIf(tensor, _lif, num2, ddrIf, sliceOffsetInTensor, null,
+                            gnneActionUpdater.UpdateLoadIf(tensor, _lif, ifmapIndex, ddrIf, sliceOffsetInTensor, null,
                                 ItemName.Ifmap, ccrsToSet, null, h2c: false, 0, stridesS, shape);
                             List<CcrClr> ccrsToClr = new List<CcrClr>
                             {
-                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, num2)))
+                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)))
                             };
-                            SegmentND segmentND2 = segmentND;
+                            SegmentND storeSegment = ofmapSegment;
                             List<int> stridesD = new int[3]
                             {
-                                segmentND2[1].Length, segmentND2[2].Length, segmentND2[3].Length
+                                storeSegment[1].Length, storeSegment[2].Length, storeSegment[3].Length
                             }.ToList();
-                            gnneActionUpdater.UpdateStoreT(segmentND2, _sofs[num3], num2, ddrOfs[num3], 0, null, null,
+                            gnneActionUpdater.UpdateStoreT(storeSegment, _sofs[outputIndex], ifmapIndex, ddrOfs[outputIndex], 0, null, null,
                                 ccrsToClr, ItemName.Ofmap, null, stridesD);
                         }
                     }
                 }
             }
 
-            num += _outputShapes[num3][_axis];
+            splitOffset += _outputShapes[outputIndex][_axis];
             TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileSplit.cs",
                 296);
         }
 
-        return list;
+        return actions;
     }
 
     public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)

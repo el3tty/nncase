@@ -275,13 +275,13 @@ public class ActionToInstruct
     private Expr ToDdrAddrOffset(Nncase.TIR.Buffer alloc, SegmentND sliceInfo, bool inputIsSlice = false,
         int nextConcatStart = -1, int[] layout = null)
     {
-        ulong num = (ulong)((layout != null)
+        ulong offset = (ulong)((layout != null)
             ? TileUtilities.GetSliceOffsetInTensor(
                 new SegmentND(0..layout[0], 0..layout[1], 0..layout[2], 0..layout[3]), in sliceInfo)
             : TileUtilities.GetSliceOffsetInTensor(
                 new SegmentND(0..alloc.FixedDimensions(0), 0..alloc.FixedDimensions(1), 0..alloc.FixedDimensions(2),
                     0..alloc.FixedDimensions(3)), in sliceInfo));
-        return ToDdrAddrOffset(alloc, (ulong)TileUtilities.GetBytesPerElement(alloc.ElemType) * num);
+        return ToDdrAddrOffset(alloc, (ulong)TileUtilities.GetBytesPerElement(alloc.ElemType) * offset);
     }
 
     private QUANT_TYPE ToQuantType(DataType type)
@@ -382,8 +382,8 @@ public class ActionToInstruct
     private void Visit(GnneActionPackStrideReg action)
     {
         Expr value = action.N.Value;
-        Expr value2 = action.C.Value;
-        Expr value3 = action.H.Value;
+        Expr cValue = action.C.Value;
+        Expr hValue = action.H.Value;
         if (action.N.NeedRenewal)
         {
             InstSeq.Add(I.LoadImm((GP_REGISTER)action.N.Index, value));
@@ -391,12 +391,12 @@ public class ActionToInstruct
 
         if (action.C.NeedRenewal)
         {
-            InstSeq.Add(I.LoadImm((GP_REGISTER)action.C.Index, value2));
+            InstSeq.Add(I.LoadImm((GP_REGISTER)action.C.Index, cValue));
         }
 
         if (action.H.NeedRenewal)
         {
-            InstSeq.Add(I.LoadImm((GP_REGISTER)action.H.Index, value3));
+            InstSeq.Add(I.LoadImm((GP_REGISTER)action.H.Index, hValue));
         }
 
         InstSeq.Add(I.SS_PACK_STRIDE((GP_REGISTER)action.N.Index, (GP_REGISTER)action.C.Index,
@@ -431,32 +431,32 @@ public class ActionToInstruct
 
     private void Visit(Gnne_action_mmu_conf action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Start.Index, action.Start.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Depth.Index, action.Depth.Value);
-        Call item3 = I.MMU_CONF((GP_REGISTER)action.Start.Index, (GP_REGISTER)action.Depth.Index, action.Item.Id);
+        Call loadStart = I.LoadImm((GP_REGISTER)action.Start.Index, action.Start.Value);
+        Call loadDepth = I.LoadImm((GP_REGISTER)action.Depth.Index, action.Depth.Value);
+        Call mmuConf = I.MMU_CONF((GP_REGISTER)action.Start.Index, (GP_REGISTER)action.Depth.Index, action.Item.Id);
         if (action.Start.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadStart);
         }
 
         if (action.Depth.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadDepth);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(mmuConf);
     }
 
     private void Visit(GnneActionIntr action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.IntrNum.Index, action.IntrNum.Value);
-        Call item2 = I.INTR((GP_REGISTER)action.IntrNum.Index, action.IntrNum.Value);
+        Call loadIntrNum = I.LoadImm((GP_REGISTER)action.IntrNum.Index, action.IntrNum.Value);
+        Call intr = I.INTR((GP_REGISTER)action.IntrNum.Index, action.IntrNum.Value);
         if (action.IntrNum.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadIntrNum);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(intr);
     }
 
     private void Visit(GnneActionFence action)
@@ -471,9 +471,9 @@ public class ActionToInstruct
 
     private void Visit(Gnne_action_l2_load_conf action)
     {
-        Call item = I.L2_LOAD_CONF((SHAPE_REGISTER)action.StrideD.Index, (SHAPE_REGISTER)action.StrideS.Index,
+        Call l2LoadConf = I.L2_LOAD_CONF((SHAPE_REGISTER)action.StrideD.Index, (SHAPE_REGISTER)action.StrideS.Index,
             ToL2Type(action.L2Datatype), ToDdrType(action.DdrDatatype));
-        InstSeq.Add(item);
+        InstSeq.Add(l2LoadConf);
     }
 
     private void Visit(GnneActionL2Load action)
@@ -492,22 +492,22 @@ public class ActionToInstruct
 
     private void Visit(GnneActionL2LoadWConf action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.LenCompressed.Index, action.LenCompressed.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.LenDecompressed.Index, action.LenDecompressed.Value);
-        Call item3 = I.L2_LOAD_W_CONF((GP_REGISTER)action.LenCompressed.Index,
+        Call loadLenCompressed = I.LoadImm((GP_REGISTER)action.LenCompressed.Index, action.LenCompressed.Value);
+        Call loadLenDecompressed = I.LoadImm((GP_REGISTER)action.LenDecompressed.Index, action.LenDecompressed.Value);
+        Call l2LoadWConf = I.L2_LOAD_W_CONF((GP_REGISTER)action.LenCompressed.Index,
             (GP_REGISTER)action.LenDecompressed.Index, ToL2Type(action.L2Datatype), ToDdrType(action.DdrDatatype),
             action.EnableDecompress);
         if (action.LenCompressed.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadLenCompressed);
         }
 
         if (action.LenDecompressed.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadLenDecompressed);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(l2LoadWConf);
     }
 
     private void Visit(GnneActionL2LoadW action)
@@ -530,9 +530,9 @@ public class ActionToInstruct
 
     private void Visit(GnneActionL2StoreConf action)
     {
-        Call item = I.L2_STORE_CONF((SHAPE_REGISTER)action.StrideD.Index, (SHAPE_REGISTER)action.StrideS.Index,
+        Call l2StoreConf = I.L2_STORE_CONF((SHAPE_REGISTER)action.StrideD.Index, (SHAPE_REGISTER)action.StrideS.Index,
             ToL2Type(action.L2Datatype), ToDdrType(action.DdrDatatype));
-        InstSeq.Add(item);
+        InstSeq.Add(l2StoreConf);
     }
 
     private void Visit(GnneActionL2Store action)
@@ -551,285 +551,285 @@ public class ActionToInstruct
 
     private void Visit(GnneActionDmLoadL1Conf action)
     {
-        Call item = I.DM_LOAD_L1_CONF(action.TcuId, action.PuId, (SHAPE_REGISTER)action.StrideS.Index,
+        Call dmLoadL1Conf = I.DM_LOAD_L1_CONF(action.TcuId, action.PuId, (SHAPE_REGISTER)action.StrideS.Index,
             ToL2Type(action.L2Datatype), action.L1Type);
-        InstSeq.Add(item);
+        InstSeq.Add(dmLoadL1Conf);
     }
 
     private void Visit(GnneActionDmLoadL1 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.HtocWindow.Index, action.HtocWindow.Value);
-        Call item3 = I.DM_LOAD_L1(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
+        Call loadAddrS = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
+        Call loadHtocWindow = I.LoadImm((GP_REGISTER)action.HtocWindow.Index, action.HtocWindow.Value);
+        Call dmLoadL1 = I.DM_LOAD_L1(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
             (GP_REGISTER)action.HtocWindow.Index, (SHAPE_REGISTER)action.Shape.Index, action.L1Type);
         if (action.AddrS.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrS);
         }
 
         if (action.HtocWindow.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadHtocWindow);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(dmLoadL1);
     }
 
     private void Visit(GnneActionDmLoadWConf action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.StrideOc.Index, action.StrideOc.Value);
-        Call item2 = I.DM_LOAD_W_CONF(action.TcuId, action.PuId, action.KernelH, action.KernelW,
+        Call loadStrideOc = I.LoadImm((GP_REGISTER)action.StrideOc.Index, action.StrideOc.Value);
+        Call dmLoadWConf = I.DM_LOAD_W_CONF(action.TcuId, action.PuId, action.KernelH, action.KernelW,
             (GP_REGISTER)action.StrideOc.Index);
         if (action.StrideOc.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadStrideOc);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(dmLoadWConf);
     }
 
     private void Visit(GnneActionDmLoadWConf2 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Groups.Index, action.Groups.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Goc.Index, action.Goc.Value);
-        Call item3 = I.DM_LOAD_W_CONF2(action.TcuId, action.PuId, (GP_REGISTER)action.Groups.Index,
+        Call loadGroups = I.LoadImm((GP_REGISTER)action.Groups.Index, action.Groups.Value);
+        Call loadGoc = I.LoadImm((GP_REGISTER)action.Goc.Index, action.Goc.Value);
+        Call dmLoadWConf2 = I.DM_LOAD_W_CONF2(action.TcuId, action.PuId, (GP_REGISTER)action.Groups.Index,
             (GP_REGISTER)action.Goc.Index);
         if (action.Groups.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadGroups);
         }
 
         if (action.Goc.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadGoc);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(dmLoadWConf2);
     }
 
     private void Visit(GnneActionDmLoadWConfDeq action)
     {
-        Call item = I.DM_LOAD_W_CONF_DEQ(action.TcuId, action.PuId, ToQuantType(action.QuantType));
-        InstSeq.Add(item);
+        Call dmLoadWConfDeq = I.DM_LOAD_W_CONF_DEQ(action.TcuId, action.PuId, ToQuantType(action.QuantType));
+        InstSeq.Add(dmLoadWConfDeq);
     }
 
     private void Visit(GnneActionDmLoadW action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.AddrBw.Index, action.AddrBw.Value);
-        Call item3 = I.DM_LOAD_W(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
+        Call loadAddrS = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
+        Call loadAddrBw = I.LoadImm((GP_REGISTER)action.AddrBw.Index, action.AddrBw.Value);
+        Call dmLoadW = I.DM_LOAD_W(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
             (GP_REGISTER)action.AddrBw.Index, (SHAPE_REGISTER)action.Iochannels.Index, action.DestType);
         if (action.AddrS.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrS);
         }
 
         if (action.AddrBw.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadAddrBw);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(dmLoadW);
     }
 
     private void Visit(GnneActionPuFetchifConf1 action)
     {
-        Call item = I.PU_FETCHIF_CONF1(action.TcuId, action.PuId, action.StrideW, action.StrideH,
+        Call puFetchifConf1 = I.PU_FETCHIF_CONF1(action.TcuId, action.PuId, action.StrideW, action.StrideH,
             (SHAPE_REGISTER)action.StrideS.Index);
-        InstSeq.Add(item);
+        InstSeq.Add(puFetchifConf1);
     }
 
     private void Visit(GnneActionPuFetchifConf2 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Gic.Index, action.Gic.Value);
-        Call item2 = I.PU_FETCHIF_CONF2(action.TcuId, action.PuId, (GP_REGISTER)action.Gic.Index, GP_REGISTER.x0);
+        Call loadGic = I.LoadImm((GP_REGISTER)action.Gic.Index, action.Gic.Value);
+        Call puFetchifConf2 = I.PU_FETCHIF_CONF2(action.TcuId, action.PuId, (GP_REGISTER)action.Gic.Index, GP_REGISTER.x0);
         if (action.Gic.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadGic);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(puFetchifConf2);
     }
 
     private void Visit(GnneActionPuFetchifConf3 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Groups.Index, action.Groups.Value);
-        Call item3 = I.PU_FETCHIF_CONF3(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
+        Call loadAddrS = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
+        Call loadGroups = I.LoadImm((GP_REGISTER)action.Groups.Index, action.Groups.Value);
+        Call puFetchifConf3 = I.PU_FETCHIF_CONF3(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
             (GP_REGISTER)action.Groups.Index, (SHAPE_REGISTER)action.Shape.Index);
         if (action.AddrS.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrS);
         }
 
         if (action.Groups.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadGroups);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(puFetchifConf3);
     }
 
     private void Visit(GnneActionPuFetchifConf4 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.PadValue.Index, action.PadValue.Value);
-        Call item2 = I.PU_FETCHIF_CONF4(action.TcuId, action.PuId, (GP_REGISTER)action.PadValue.Index,
+        Call loadPadValue = I.LoadImm((GP_REGISTER)action.PadValue.Index, action.PadValue.Value);
+        Call puFetchifConf4 = I.PU_FETCHIF_CONF4(action.TcuId, action.PuId, (GP_REGISTER)action.PadValue.Index,
             (SHAPE_REGISTER)action.Pad.Index);
         if (action.PadValue.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadPadValue);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(puFetchifConf4);
     }
 
     private void Visit(GnneActionPuFetchifConfDeq action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Ic.Index, action.Ic.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Bx.Index, action.Bx.Value);
-        Call item3 = I.PU_FETCHIF_CONF_DEQ(action.TcuId, action.PuId, (GP_REGISTER)action.Ic.Index,
+        Call loadIc = I.LoadImm((GP_REGISTER)action.Ic.Index, action.Ic.Value);
+        Call loadBx = I.LoadImm((GP_REGISTER)action.Bx.Index, action.Bx.Value);
+        Call puFetchifConfDeq = I.PU_FETCHIF_CONF_DEQ(action.TcuId, action.PuId, (GP_REGISTER)action.Ic.Index,
             (GP_REGISTER)action.Bx.Index, ToQuantType(action.QuantType));
         if (action.Ic.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadIc);
         }
 
         if (action.Bx.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadBx);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(puFetchifConfDeq);
     }
 
     private void Visit(GnneActionPuWConf action)
     {
-        Call item = I.PU_W_CONF(action.TcuId, action.PuId, action.KernelH, action.KernelW);
-        InstSeq.Add(item);
+        Call puWConf = I.PU_W_CONF(action.TcuId, action.PuId, action.KernelH, action.KernelW);
+        InstSeq.Add(puWConf);
     }
 
     private void Visit(GnneActionPuOfConf1 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Goc.Index, action.Goc.Value);
-        Call item2 = I.PU_OF_CONF1(action.TcuId, action.PuId, (GP_REGISTER)action.Goc.Index, GP_REGISTER.x0,
+        Call loadGoc = I.LoadImm((GP_REGISTER)action.Goc.Index, action.Goc.Value);
+        Call puOfConf1 = I.PU_OF_CONF1(action.TcuId, action.PuId, (GP_REGISTER)action.Goc.Index, GP_REGISTER.x0,
             (SHAPE_REGISTER)action.StrideD.Index);
         if (action.Goc.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadGoc);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(puOfConf1);
     }
 
     private void Visit(GnneActionPuOfConf2 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrD.Index, action.AddrD.Value);
-        Call item2 = I.PU_OF_CONF2(action.TcuId, action.PuId, (GP_REGISTER)action.AddrD.Index,
+        Call loadAddrD = I.LoadImm((GP_REGISTER)action.AddrD.Index, action.AddrD.Value);
+        Call puOfConf2 = I.PU_OF_CONF2(action.TcuId, action.PuId, (GP_REGISTER)action.AddrD.Index,
             (SHAPE_REGISTER)action.ShapeD.Index);
         if (action.AddrD.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrD);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(puOfConf2);
     }
 
     private void Visit(GnneActionPuComputeConf action)
     {
-        Call item = I.PU_COMPUTE_CONF(action.TcuId, action.PuId, action.LoadPsum, action.ClrPsum, action.DestTarget,
+        Call puComputeConf = I.PU_COMPUTE_CONF(action.TcuId, action.PuId, action.LoadPsum, action.ClrPsum, action.DestTarget,
             action.ReleaseIf, action.Mode);
-        InstSeq.Add(item);
+        InstSeq.Add(puComputeConf);
     }
 
     private void Visit(GnneActionPuForwardPsum action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Addr.Index, action.Addr.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Len.Index, action.Len.Value);
-        Call item3 = I.PU_FORWARD_PSUM(action.TcuId, action.PuId, (GP_REGISTER)action.Addr.Index,
+        Call loadAddr = I.LoadImm((GP_REGISTER)action.Addr.Index, action.Addr.Value);
+        Call loadLen = I.LoadImm((GP_REGISTER)action.Len.Index, action.Len.Value);
+        Call puForwardPsum = I.PU_FORWARD_PSUM(action.TcuId, action.PuId, (GP_REGISTER)action.Addr.Index,
             (GP_REGISTER)action.Len.Index);
         if (action.Addr.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddr);
         }
 
         if (action.Len.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadLen);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(puForwardPsum);
     }
 
     private void Visit(GnneActionPuCompute action)
     {
-        Call item = I.PU_COMPUTE(action.TcuId, action.Mode);
-        InstSeq.Add(item);
+        Call puCompute = I.PU_COMPUTE(action.TcuId, action.Mode);
+        InstSeq.Add(puCompute);
     }
 
     private void Visit(GnneActionDmLoadAct0 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Len.Index, action.Len.Value);
-        Call item3 = I.DM_LOAD_ACT0(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
+        Call loadAddrS = I.LoadImm((GP_REGISTER)action.AddrS.Index, action.AddrS.Value);
+        Call loadLen = I.LoadImm((GP_REGISTER)action.Len.Index, action.Len.Value);
+        Call dmLoadAct0 = I.DM_LOAD_ACT0(action.TcuId, action.PuId, (GP_REGISTER)action.AddrS.Index,
             (GP_REGISTER)action.Len.Index, action.DestChannel, action.IsByChannel);
         if (action.AddrS.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrS);
         }
 
         if (action.Len.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadLen);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(dmLoadAct0);
     }
 
     private void Visit(GnneActionDmStoreOf action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrD.Index, action.AddrD.Value);
-        Call item2 = I.DM_STORE_OF(action.TcuId, action.PuId, (GP_REGISTER)action.AddrD.Index,
+        Call loadAddrD = I.LoadImm((GP_REGISTER)action.AddrD.Index, action.AddrD.Value);
+        Call dmStoreOf = I.DM_STORE_OF(action.TcuId, action.PuId, (GP_REGISTER)action.AddrD.Index,
             (SHAPE_REGISTER)action.Shape.Index, action.SrcChannel);
         if (action.AddrD.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrD);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(dmStoreOf);
     }
 
     private void Visit(GnneActionDmStoreOfConf action)
     {
-        Call item = I.DM_STORE_OF_CONF(action.TcuId, action.PuId, (SHAPE_REGISTER)action.StrideD.Index,
+        Call dmStoreOfConf = I.DM_STORE_OF_CONF(action.TcuId, action.PuId, (SHAPE_REGISTER)action.StrideD.Index,
             ToL2Type(action.Datatype));
-        InstSeq.Add(item);
+        InstSeq.Add(dmStoreOfConf);
     }
 
     private void Visit(GnneActionAct0Src1Conf action)
     {
-        Call item = I.ACT0_SRC1_CONF(action.TcuId, action.PuId, action.Channel, (SHAPE_REGISTER)action.Shape.Index,
+        Call act0Src1Conf = I.ACT0_SRC1_CONF(action.TcuId, action.PuId, action.Channel, (SHAPE_REGISTER)action.Shape.Index,
             ACT0_CONF_FUNCTION.act_src1_conf, action.RshiftBits);
-        InstSeq.Add(item);
+        InstSeq.Add(act0Src1Conf);
     }
 
     private void Visit(GnneActionAct0Compute action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.AddrD.Index, action.AddrD.Value);
-        Call item2 = I.ACT0_COMPUTE((GP_REGISTER)action.AddrD.Index, action.TcuId, action.Channel, action.Target,
+        Call loadAddrD = I.LoadImm((GP_REGISTER)action.AddrD.Index, action.AddrD.Value);
+        Call act0Compute = I.ACT0_COMPUTE((GP_REGISTER)action.AddrD.Index, action.TcuId, action.Channel, action.Target,
             ToActOutputType(action.DestDatatype), action.IsByChannel);
         if (action.AddrD.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadAddrD);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(act0Compute);
     }
 
     private void Visit(GnneActionMfuAct1ConfStride action)
     {
-        Call item = I.MFU_ACT1_CONF_STRIDE((SHAPE_REGISTER)action.StrideS1.Index, (SHAPE_REGISTER)action.StrideS2.Index,
+        Call mfuAct1ConfStride = I.MFU_ACT1_CONF_STRIDE((SHAPE_REGISTER)action.StrideS1.Index, (SHAPE_REGISTER)action.StrideS2.Index,
             (SHAPE_REGISTER)action.StrideD1.Index);
-        InstSeq.Add(item);
+        InstSeq.Add(mfuAct1ConfStride);
     }
 
     private void Visit(GnneActionMfuAct1ConfSrc1 action)
@@ -855,59 +855,59 @@ public class ActionToInstruct
 
     private void Visit(GnneActionMfuAct1ConfSrc2 action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.LeftRepeats.Index, action.LeftRepeats.Value);
-        Call item2 = I.MFU_ACT1_CONF_SRC2((GP_REGISTER)action.LeftRepeats.Index, (SHAPE_REGISTER)action.Shape.Index,
+        Call loadLeftRepeats = I.LoadImm((GP_REGISTER)action.LeftRepeats.Index, action.LeftRepeats.Value);
+        Call mfuAct1ConfSrc2 = I.MFU_ACT1_CONF_SRC2((GP_REGISTER)action.LeftRepeats.Index, (SHAPE_REGISTER)action.Shape.Index,
             action.Sid, action.SourceType);
         if (action.LeftRepeats.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadLeftRepeats);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(mfuAct1ConfSrc2);
     }
 
     private void Visit(GnneActionMfuAct1ConfDest action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Len.Index, action.Len.Value);
-        Call item2 = I.MFU_ACT1_CONF_DEST((GP_REGISTER)action.Len.Index, (SHAPE_REGISTER)action.Shape.Index);
+        Call loadLen = I.LoadImm((GP_REGISTER)action.Len.Index, action.Len.Value);
+        Call mfuAct1ConfDest = I.MFU_ACT1_CONF_DEST((GP_REGISTER)action.Len.Index, (SHAPE_REGISTER)action.Shape.Index);
         if (action.Len.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadLen);
         }
 
-        InstSeq.Add(item2);
+        InstSeq.Add(mfuAct1ConfDest);
     }
 
     private void Visit(GnneActionMfuAct1ConfDeq action)
     {
-        Call item = I.LoadImm((GP_REGISTER)action.Scale.Index, action.Scale.Value);
-        Call item2 = I.LoadImm((GP_REGISTER)action.Bias.Index, action.Bias.Value);
-        Call item3 = I.MFU_ACT1_CONF_DEQ((GP_REGISTER)action.Scale.Index, (GP_REGISTER)action.Bias.Index,
+        Call loadScale = I.LoadImm((GP_REGISTER)action.Scale.Index, action.Scale.Value);
+        Call loadBias = I.LoadImm((GP_REGISTER)action.Bias.Index, action.Bias.Value);
+        Call mfuAct1ConfDeq = I.MFU_ACT1_CONF_DEQ((GP_REGISTER)action.Scale.Index, (GP_REGISTER)action.Bias.Index,
             ToQuantType(action.QuantType), action.Sid, MFU_CONF_FUNCTION.act1_conf_deq, action.RshiftBits);
         if (action.Scale.NeedRenewal)
         {
-            InstSeq.Add(item);
+            InstSeq.Add(loadScale);
         }
 
         if (action.Bias.NeedRenewal)
         {
-            InstSeq.Add(item2);
+            InstSeq.Add(loadBias);
         }
 
-        InstSeq.Add(item3);
+        InstSeq.Add(mfuAct1ConfDeq);
     }
 
     private void Visit(GnneActionMfuAct1ConfQuant action)
     {
-        Call item = I.MFU_ACT1_CONF_QUANT(ToQuantType(action.QuantType), MFU_CONF_FUNCTION.act1_conf_quant,
+        Call mfuAct1ConfQuant = I.MFU_ACT1_CONF_QUANT(ToQuantType(action.QuantType), MFU_CONF_FUNCTION.act1_conf_quant,
             action.RshiftBits);
-        InstSeq.Add(item);
+        InstSeq.Add(mfuAct1ConfQuant);
     }
 
     private void Visit(GnneActionMfuAct1Conf action)
     {
-        Call item = I.MFU_ACT1_CONF(action.Funct4, action.IsByChannel, action.Is16Segments);
-        InstSeq.Add(item);
+        Call mfuAct1Conf = I.MFU_ACT1_CONF(action.Funct4, action.IsByChannel, action.Is16Segments);
+        InstSeq.Add(mfuAct1Conf);
     }
 
     private void Visit(GnneActionMfuAct1Compute action)
@@ -938,9 +938,9 @@ public class ActionToInstruct
 
     private void Visit(GnneActionMfuTransposeConf action)
     {
-        Call item = I.MFU_TRANSPOSE_CONF((SHAPE_REGISTER)action.StrideD.Index, (SHAPE_REGISTER)action.StrideS.Index,
+        Call mfuTransposeConf = I.MFU_TRANSPOSE_CONF((SHAPE_REGISTER)action.StrideD.Index, (SHAPE_REGISTER)action.StrideS.Index,
             ToL2Type(action.L2Datatype), action.Permute);
-        InstSeq.Add(item);
+        InstSeq.Add(mfuTransposeConf);
     }
 
     private void Visit(GnneActionMfuTranspose action)
@@ -961,9 +961,9 @@ public class ActionToInstruct
 
     private void Visit(GnneActionMfuPdp1Conf1 action)
     {
-        Call item = I.MFU_PDP1_CONF1(action.StrideW, action.StrideH, (SHAPE_REGISTER)action.StrideS.Index,
+        Call mfuPdp1Conf1 = I.MFU_PDP1_CONF1(action.StrideW, action.StrideH, (SHAPE_REGISTER)action.StrideS.Index,
             action.Funct2, (SHAPE_REGISTER)action.StrideD.Index);
-        InstSeq.Add(item);
+        InstSeq.Add(mfuPdp1Conf1);
     }
 
     private void Visit(GnneActionMfuPdp1Conf2 action)
@@ -1206,7 +1206,7 @@ public class ActionToInstruct
 
     private void Visit(GnneActionAi2dCompute action)
     {
-        Call item = I.AI2D_COMPUTE();
-        InstSeq.Add(item);
+        Call ai2dCompute = I.AI2D_COMPUTE();
+        InstSeq.Add(ai2dCompute);
     }
 }

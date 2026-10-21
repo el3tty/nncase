@@ -38,40 +38,40 @@ public sealed class ReplaceFakeDynamicMatMulConstInBRangeToByChannel : RewriteRu
 
         Expr act = new ActivationParameter<float>((from d in inputA.CheckedShape.SkipLast(1)
             select (!d.IsFixed) ? 1 : d.FixedValue).ToArray(), ValueRange<float>.Full).ToAct0Data<float>();
-        float[] array = ((TensorConst)inputB).Value.ToArray<float>();
+        float[] weights = ((TensorConst)inputB).Value.ToArray<float>();
         int fixedValue = inputB.CheckedShape[-1].FixedValue;
-        float num = float.MaxValue;
-        float num2 = float.MinValue;
-        List<float> list = new List<float>();
-        for (int num3 = 0; num3 < fixedValue; num3++)
+        float channelMin = float.MaxValue;
+        float channelMax = float.MinValue;
+        List<float> channelRanges = new List<float>();
+        for (int channel = 0; channel < fixedValue; channel++)
         {
-            for (int num4 = num3; num4 < array.Length; num4 += fixedValue)
+            for (int flatIndex = channel; flatIndex < weights.Length; flatIndex += fixedValue)
             {
-                if (num4 < fixedValue)
+                if (flatIndex < fixedValue)
                 {
-                    num = float.MaxValue;
-                    num2 = float.MinValue;
+                    channelMin = float.MaxValue;
+                    channelMax = float.MinValue;
                 }
 
-                if (array[num4] < num)
+                if (weights[flatIndex] < channelMin)
                 {
-                    num = array[num4];
+                    channelMin = weights[flatIndex];
                 }
 
-                if (array[num4] > num2)
+                if (weights[flatIndex] > channelMax)
                 {
-                    num2 = array[num4];
+                    channelMax = weights[flatIndex];
                 }
 
-                if (num4 >= array.Length - fixedValue)
+                if (flatIndex >= weights.Length - fixedValue)
                 {
-                    list.Add(num);
-                    list.Add(num2);
+                    channelRanges.Add(channelMin);
+                    channelRanges.Add(channelMax);
                 }
             }
         }
 
-        TensorConst range = new TensorConst(Tensor.From(list.ToArray(), new int[2] { fixedValue, 2 }));
+        TensorConst range = new TensorConst(Tensor.From(channelRanges.ToArray(), new int[2] { fixedValue, 2 }));
         Marker marker = Nncase.IR.F.Math.RangeOfMarker(inputB, range);
         if (marker.MixQuantInfo == null)
         {

@@ -34,19 +34,19 @@ public class ToFakePdpReduce : RewriteRule<Pattern>
             return null;
         }
 
-        int[,] array = new int[2, 2] { { padding[0], padding[1] }, { padding[2], padding[3] } };
+        int[,] paddings = new int[2, 2] { { padding[0], padding[1] }, { padding[2], padding[3] } };
         if (ceilMode)
         {
             Func<int, int, int, int, int> func = (int outSize, int k, int s, int p) => (outSize - 1) * s + k - p;
-            int num = func(call.CheckedShape[2].FixedValue, filter[0], stride[0], array[0, 0] + array[0, 1]) -
+            int extraPadH = func(call.CheckedShape[2].FixedValue, filter[0], stride[0], paddings[0, 0] + paddings[0, 1]) -
                       input.CheckedShape[2].FixedValue;
-            int num2 = func(call.CheckedShape[3].FixedValue, filter[1], stride[1], array[1, 0] + array[1, 1]) -
+            int extraPadW = func(call.CheckedShape[3].FixedValue, filter[1], stride[1], paddings[1, 0] + paddings[1, 1]) -
                        input.CheckedShape[3].FixedValue;
-            array[0, 1] = ((num > 0) ? (array[0, 1] + num) : array[0, 1]);
-            array[1, 1] = ((num2 > 0) ? (array[1, 1] + num2) : array[1, 1]);
+            paddings[0, 1] = ((extraPadH > 0) ? (paddings[0, 1] + extraPadH) : paddings[0, 1]);
+            paddings[1, 1] = ((extraPadW > 0) ? (paddings[1, 1] + extraPadW) : paddings[1, 1]);
         }
 
-        return Nncase.IR.K230.F.Tensors.FakePdp(r.ReduceOp, input, 0, filter, stride, array, countIncludePad);
+        return Nncase.IR.K230.F.Tensors.FakePdp(r.ReduceOp, input, 0, filter, stride, paddings, countIncludePad);
     }
 
     private float GetPadValue(ReduceOp reduceOp)

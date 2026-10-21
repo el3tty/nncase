@@ -27,12 +27,12 @@ public class LeakyReluReshape : RewriteRule<Pattern>
             return null;
         }
 
-        int[] array = leakyCall.CheckedShape.ToValueArray();
-        array[^1] = leakyCall.CheckedShape.ToValueArray()[^2];
-        array[^2] = leakyCall.CheckedShape.ToValueArray()[^1];
+        int[] reshapedShape = leakyCall.CheckedShape.ToValueArray();
+        reshapedShape[^1] = leakyCall.CheckedShape.ToValueArray()[^2];
+        reshapedShape[^2] = leakyCall.CheckedShape.ToValueArray()[^1];
         if (leakyCall.CheckedShape.Size < 65536)
         {
-            array = leakyCall.CheckedShape.ToValueArray().Select((int dim, int idx) =>
+            reshapedShape = leakyCall.CheckedShape.ToValueArray().Select((int dim, int idx) =>
                 (idx < leakyCall.CheckedShape.Count - 1) ? 1 : leakyCall.CheckedShape.Size).ToArray();
         }
 
@@ -43,7 +43,7 @@ public class LeakyReluReshape : RewriteRule<Pattern>
                         .RangeOfMarker(
                             Nncase.IR.F.NN.LeakyRelu(
                                 Nncase.IR.F.Math
-                                    .RangeOfMarker(Nncase.IR.F.Tensors.Reshape(input, array), ((Marker)input).Attribute)
+                                    .RangeOfMarker(Nncase.IR.F.Tensors.Reshape(input, reshapedShape), ((Marker)input).Attribute)
                                     .With(null, null, null, adaQuantInfo: ((Marker)input).AdaQuantInfo,
                                         mixQuantInfo: ((Marker)input).MixQuantInfo), alpha), outputRange)
                         .With(null, null, null, adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo,

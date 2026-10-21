@@ -30,10 +30,10 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
     private static Call LoadQuantInA(Expr prevInput, ValueRange<float> inARange, DataType quanType)
     {
         DeQuantizeParam inADeqQuantParam = NonConstQuantManager.GetInADeqQuantParam(quanType, inARange);
-        int num = 4 - prevInput.CheckedShape.Rank;
-        if (num > 0)
+        int missingRank = 4 - prevInput.CheckedShape.Rank;
+        if (missingRank > 0)
         {
-            prevInput = Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, num).ToArray());
+            prevInput = Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, missingRank).ToArray());
         }
 
         return Nncase.IR.F.Math.Quantize(prevInput,
@@ -43,10 +43,10 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
     private static Call LoadQuantInB(Expr prevInput, ValueRange<float> inBRange, DataType quanType)
     {
         DeQuantizeParam inBDeqQuantParam = NonConstQuantManager.GetInBDeqQuantParam(quanType, inBRange);
-        int num = 4 - prevInput.CheckedShape.Rank;
-        if (num > 0)
+        int missingRank = 4 - prevInput.CheckedShape.Rank;
+        if (missingRank > 0)
         {
-            prevInput = Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, num).ToArray());
+            prevInput = Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, missingRank).ToArray());
         }
 
         return Nncase.IR.F.Math.Quantize(prevInput,
@@ -65,42 +65,42 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
         DataType dataType = ((mixQuantInfo?.MarkerQuantType == null)
             ? quantizeOptions.QuantType
             : mixQuantInfo.MarkerQuantType);
-        DataType dataType2 = ((mixQuantInfo2?.MarkerQuantType == null)
+        DataType inputBDataType = ((mixQuantInfo2?.MarkerQuantType == null)
             ? quantizeOptions.QuantType
             : mixQuantInfo2.MarkerQuantType);
         Call call2 = LoadQuantInA(inputA, inputARange.AsValueRange(), dataType);
-        Call call3 = LoadQuantInB(inputB, inputBRange.AsValueRange(), dataType2);
-        Expr expr = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, dataType2);
+        Call call3 = LoadQuantInB(inputB, inputBRange.AsValueRange(), inputBDataType);
+        Expr expr = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, inputBDataType);
         Shape checkedShape = inputA.CheckedShape;
         Expr expr2;
         if (checkedShape[checkedShape.Count - 2].IsFixed)
         {
             Shape checkedShape2 = inputA.CheckedShape;
-            byte[] array = LoadInABias(checkedShape2[checkedShape2.Count - 2].FixedValue, inputARange.AsValueRange(),
+            byte[] biasBytes = LoadInABias(checkedShape2[checkedShape2.Count - 2].FixedValue, inputARange.AsValueRange(),
                 dataType);
-            int[] obj = new int[4] { 1, 1, 1, 0 };
+            int[] biasShape = new int[4] { 1, 1, 1, 0 };
             Shape checkedShape3 = inputA.CheckedShape;
-            obj[3] = checkedShape3[checkedShape3.Count - 2].FixedValue;
-            expr2 = new TensorConst(Tensor.From(array, obj));
+            biasShape[3] = checkedShape3[checkedShape3.Count - 2].FixedValue;
+            expr2 = new TensorConst(Tensor.From(biasBytes, biasShape));
         }
         else
         {
-            byte[] array2 = LoadInABias(1, inputARange.AsValueRange(), dataType);
+            byte[] biasBytes2 = LoadInABias(1, inputARange.AsValueRange(), dataType);
             Call call4 = Nncase.IR.F.Tensors.Slice(Nncase.IR.F.Tensors.ShapeOf(inputA), new int[1] { -2 },
                 new int[1] { -1 }, 1);
             expr2 = Nncase.IR.F.Tensors.Reshape(
-                Nncase.IR.F.Tensors.Tile(new TensorConst(Tensor.From(array2, new int[1] { 1 })), call4),
+                Nncase.IR.F.Tensors.Tile(new TensorConst(Tensor.From(biasBytes2, new int[1] { 1 })), call4),
                 Nncase.IR.F.Tensors.Concat(new Nncase.IR.Tuple(new long[3] { 1L, 1L, 1L }, call4), 0));
         }
 
-        int num = checked((byte)NonConstQuantManager.GetInBQuantParam(dataType2, inputBRange.AsValueRange()).ZeroPoint);
+        int inputBZeroPoint = checked((byte)NonConstQuantManager.GetInBQuantParam(inputBDataType, inputBRange.AsValueRange()).ZeroPoint);
         Const instructions = GetInstructions(options);
         Call call5 = Nncase.IR.F.NN.CustomCall(new DynamicGNNEMatMul((PrimType)call.CheckedDataType), instructions,
-            call2, call3, expr2, num, expr, 0, Convert.ToInt32(fakeMatmul.DynamicChannel));
-        int num2 = 4 - call.CheckedShape.Rank;
-        if (num2 > 0)
+            call2, call3, expr2, inputBZeroPoint, expr, 0, Convert.ToInt32(fakeMatmul.DynamicChannel));
+        int missingRank = 4 - call.CheckedShape.Rank;
+        if (missingRank > 0)
         {
-            call5 = Nncase.IR.F.Tensors.Squeeze(call5, Enumerable.Range(0, num2).ToArray());
+            call5 = Nncase.IR.F.Tensors.Squeeze(call5, Enumerable.Range(0, missingRank).ToArray());
         }
 
         return call5;
@@ -116,26 +116,26 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
         CSourceGModelBuilder cSourceGModelBuilder = new CSourceGModelBuilder(
             Path.Join(Path.GetDirectoryName(GetType().Assembly.Location), "Functional", "dynamic_gnne_matmul.c"));
         cSourceGModelBuilder.Serialize();
-        byte[] array = File.ReadAllBytes(cSourceGModelBuilder.GModelBuilder.BinFilePath);
+        byte[] instructionBytes = File.ReadAllBytes(cSourceGModelBuilder.GModelBuilder.BinFilePath);
         if (DumpScope.Current.IsEnabled(DumpFlags.Rewrite))
         {
             cSourceGModelBuilder.Dump("ToDynamicGNNEMatMul", DumpScope.Current.Directory);
         }
 
-        _instructions = Const.FromTensor(Tensor.From(array));
+        _instructions = Const.FromTensor(Tensor.From(instructionBytes));
         return _instructions;
     }
 
     private byte[] LoadInABias(int channels, ValueRange<float> inARange, DataType quanType)
     {
         DeQuantizeParam inADeqQuantParam = NonConstQuantManager.GetInADeqQuantParam(quanType, inARange);
-        byte[] array = new byte[channels];
-        for (int i = 0; i < array.Length; i++)
+        byte[] biasBytes = new byte[channels];
+        for (int i = 0; i < biasBytes.Length; i++)
         {
-            array[i] = checked((byte)inADeqQuantParam.ZeroPoint);
+            biasBytes[i] = checked((byte)inADeqQuantParam.ZeroPoint);
         }
 
-        return array;
+        return biasBytes;
     }
 
     private Tensor<Half> LoadAct(ActivationParameter<float> actParam, ValueRange<float> inARange,

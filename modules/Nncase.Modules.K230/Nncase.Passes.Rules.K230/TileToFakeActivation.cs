@@ -40,25 +40,25 @@ public class TileToFakeActivation : RewriteRule<Pattern>
 
         int[] newRepeats = new int[4] { 1, 1, 1, 1 };
         Array.Copy(repeats, 0, newRepeats, newRepeats.Length - repeats.Length, repeats.Length);
-        for (int num = 0; num < repeats.Length - 1; num++)
+        for (int repeatIndex = 0; repeatIndex < repeats.Length - 1; repeatIndex++)
         {
-            newRepeats[num + newRepeats.Length - repeats.Length] = repeats[num + 1];
+            newRepeats[repeatIndex + newRepeats.Length - repeats.Length] = repeats[repeatIndex + 1];
         }
 
         newRepeats[^1] = 1;
         newRepeats[0] *= ((repeats.Length != 4) ? 1 : repeats[0]);
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(input.CheckedShape.ToValueArray(), 0, array, array.Length - input.CheckedShape.Rank,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(input.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - input.CheckedShape.Rank,
             input.CheckedShape.Rank);
-        array = array.Select((int x, int i) => x * newRepeats[i]).ToArray();
-        int num2 = array[1];
-        ActParam2 actParam = new ActParam2(num2);
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num2, 7 });
+        inputShape = inputShape.Select((int x, int i) => x * newRepeats[i]).ToArray();
+        int actChannels = inputShape[1];
+        ActParam2 actParam = new ActParam2(actChannels);
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
         return Nncase.IR.F.Tensors.Reshape(
             Nncase.IR.F.Math
                 .RangeOfMarker(
-                    Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num2, 0, 0, 0, false,
-                        GnneActivationType.Add, actParam, array), range).With(null, null, null,
+                    Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
+                        GnneActivationType.Add, actParam, inputShape), range).With(null, null, null,
                     ((Marker)marker).MixQuantInfo, ((Marker)marker).AdaQuantInfo), call.CheckedShape);
     }
 

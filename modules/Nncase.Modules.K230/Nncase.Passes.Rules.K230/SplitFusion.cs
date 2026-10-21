@@ -30,9 +30,9 @@ internal sealed class SplitFusion : FusionMaker
 
     private Call? GetReplace(Expr input, Call splitCall, Split split, int axis, int[] sections)
     {
-        DataType obj = ((input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType);
+        DataType loadDataType = ((input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType);
         Var var = new Var(input.CheckedType);
-        Call input2 = Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)obj, var);
+        Call input2 = Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)loadDataType, var);
         Call newSplitCall = Nncase.IR.F.Tensors.Split(input2, axis, sections);
         IEnumerable<Call> source = from i in Enumerable.Range(0, sections.Length)
             select Nncase.IR.K230.F.Tensors.GNNEStore(input.CheckedDataType,

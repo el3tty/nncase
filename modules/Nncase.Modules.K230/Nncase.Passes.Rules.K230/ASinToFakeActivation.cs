@@ -39,32 +39,32 @@ public class ASinToFakeActivation : RewriteRule<Pattern>
     public void Set_seg_fitting_param(ActParam16 actParam, ActFun f)
     {
         float[,] xs = actParam.Xs;
-        int num = 0;
-        xs[0, num] = f.SplitPoint0;
-        xs[14, num] = f.SplitPoint14;
+        int channel = 0;
+        xs[0, channel] = f.SplitPoint0;
+        xs[14, channel] = f.SplitPoint14;
         int centerPoint = f.CenterPoint;
-        xs[centerPoint, num] = f.SplitPointCenter;
+        xs[centerPoint, channel] = f.SplitPointCenter;
         for (int i = 1; i < centerPoint; i++)
         {
-            xs[i, num] = (xs[centerPoint, num] - xs[0, num]) / (float)centerPoint * (float)i + xs[0, num];
+            xs[i, channel] = (xs[centerPoint, channel] - xs[0, channel]) / (float)centerPoint * (float)i + xs[0, channel];
         }
 
         for (int j = centerPoint + 1; j < 15; j++)
         {
-            xs[j, num] = (xs[14, num] - xs[centerPoint, num]) / (float)(14 - centerPoint) * (float)(j - centerPoint) +
-                         xs[centerPoint, num];
+            xs[j, channel] = (xs[14, channel] - xs[centerPoint, channel]) / (float)(14 - centerPoint) * (float)(j - centerPoint) +
+                         xs[centerPoint, channel];
         }
 
-        actParam.Ks[0, num] = f.MinParam[0];
-        actParam.Bs[0, num] = f.MinParam[1];
-        actParam.Ks[15, num] = f.MaxParam[0];
-        actParam.Bs[15, num] = f.MaxParam[1];
+        actParam.Ks[0, channel] = f.MinParam[0];
+        actParam.Bs[0, channel] = f.MinParam[1];
+        actParam.Ks[15, channel] = f.MaxParam[0];
+        actParam.Bs[15, channel] = f.MaxParam[1];
         for (int k = 1; k < 15; k++)
         {
-            float num2 = (f.Func(xs[k, num]) - f.Func(xs[k - 1, num])) / (xs[k, num] - xs[k - 1, num]);
-            float num3 = f.Func(xs[k, num]) - num2 * xs[k, num];
-            actParam.Ks[k, num] = num2;
-            actParam.Bs[k, num] = num3;
+            float slope = (f.Func(xs[k, channel]) - f.Func(xs[k - 1, channel])) / (xs[k, channel] - xs[k - 1, channel]);
+            float intercept = f.Func(xs[k, channel]) - slope * xs[k, channel];
+            actParam.Ks[k, channel] = slope;
+            actParam.Bs[k, channel] = intercept;
         }
 
         actParam.SetFusedClamp(ValueRange<float>.Full);

@@ -30,92 +30,92 @@ public sealed class OptSlice : IRewriteRule
                 strides.Value.ToArray<int>()[strides.Value.ToArray<int>().Length - 1] == 0 ||
                 strides.Value.ToArray<int>()[strides.Value.ToArray<int>().Length - 1] == 1)
             {
-                int[] array;
+                int[] strideValues;
                 if (strides.Value.Length == 4)
                 {
-                    int num = 0;
-                    array = strides.Value.ToArray<int>();
-                    for (int i = 0; i < array.Length; i++)
+                    int stridedDimCount = 0;
+                    strideValues = strides.Value.ToArray<int>();
+                    for (int i = 0; i < strideValues.Length; i++)
                     {
-                        if (array[i] > 1 && ++num == 4)
+                        if (strideValues[i] > 1 && ++stridedDimCount == 4)
                         {
                             return null;
                         }
                     }
                 }
 
-                array = strides.CheckedShape.ToValueArray();
-                for (int i = 0; i < array.Length; i++)
+                strideValues = strides.CheckedShape.ToValueArray();
+                for (int i = 0; i < strideValues.Length; i++)
                 {
-                    if (array[i] < 0)
+                    if (strideValues[i] < 0)
                     {
                         return null;
                     }
                 }
 
-                List<int> list = new List<int>();
-                List<int> list2 = new List<int>();
-                List<int> list3 = new List<int>();
-                List<int> list4 = new List<int>();
+                List<int> beginDims = new List<int>();
+                List<int> endDims = new List<int>();
+                List<int> strideDims = new List<int>();
+                List<int> inputDims = new List<int>();
                 for (int j = 0; j < input.CheckedShape.Count; j++)
                 {
                     if (input.CheckedShape[j].FixedValue > 1)
                     {
-                        list.Add(begin.Value.ToArray<int>()[j]);
-                        list2.Add(ends.Value.ToArray<int>()[j]);
-                        list3.Add(strides.Value.ToArray<int>()[j]);
-                        list4.Add(input.CheckedShape[j].FixedValue);
+                        beginDims.Add(begin.Value.ToArray<int>()[j]);
+                        endDims.Add(ends.Value.ToArray<int>()[j]);
+                        strideDims.Add(strides.Value.ToArray<int>()[j]);
+                        inputDims.Add(input.CheckedShape[j].FixedValue);
                     }
                 }
 
                 if (strides.Value.ToArray<int>()[3] > 1)
                 {
-                    int num2 = list[list.Count - 1];
-                    int num3 = list3[list3.Count - 1];
-                    int num4 = list2[list2.Count - 1];
-                    int num5 = list4[list4.Count - 1];
-                    if (list.Count != 0)
+                    int lastBegin = beginDims[beginDims.Count - 1];
+                    int lastStride = strideDims[strideDims.Count - 1];
+                    int lastEnd = endDims[endDims.Count - 1];
+                    int lastInputDim = inputDims[inputDims.Count - 1];
+                    if (beginDims.Count != 0)
                     {
-                        list.RemoveAt(list.Count - 1);
+                        beginDims.RemoveAt(beginDims.Count - 1);
                     }
 
-                    if (list3.Count != 0)
+                    if (strideDims.Count != 0)
                     {
-                        list3.RemoveAt(list3.Count - 1);
+                        strideDims.RemoveAt(strideDims.Count - 1);
                     }
 
-                    if (list2.Count != 0)
+                    if (endDims.Count != 0)
                     {
-                        list2.RemoveAt(list2.Count - 1);
+                        endDims.RemoveAt(endDims.Count - 1);
                     }
 
-                    if (list4.Count != 0)
+                    if (inputDims.Count != 0)
                     {
-                        list4.RemoveAt(list4.Count - 1);
+                        inputDims.RemoveAt(inputDims.Count - 1);
                     }
 
-                    list.Add(num2 / num3);
-                    list.Add(num2 % num3);
-                    list3.Add(1);
-                    list3.Add(1);
-                    list2.Add(num4 / num3 + ((num4 % num3 > num2 % num3) ? 1 : 0));
-                    list2.Add(num2 % num3 + 1);
-                    list4.Add(num5 / num3);
-                    list4.Add(num3);
+                    beginDims.Add(lastBegin / lastStride);
+                    beginDims.Add(lastBegin % lastStride);
+                    strideDims.Add(1);
+                    strideDims.Add(1);
+                    endDims.Add(lastEnd / lastStride + ((lastEnd % lastStride > lastBegin % lastStride) ? 1 : 0));
+                    endDims.Add(lastBegin % lastStride + 1);
+                    inputDims.Add(lastInputDim / lastStride);
+                    inputDims.Add(lastStride);
                 }
 
-                for (int k = list4.Count; k < 4; k++)
+                for (int k = inputDims.Count; k < 4; k++)
                 {
-                    list.Insert(list[0], 0);
-                    list2.Insert(list2[0], 1);
-                    list3.Insert(list3[0], 1);
+                    beginDims.Insert(beginDims[0], 0);
+                    endDims.Insert(endDims[0], 1);
+                    strideDims.Insert(strideDims[0], 1);
                 }
 
-                Call input2 = Nncase.IR.F.Tensors.Slice(Nncase.IR.F.Tensors.Reshape(input, Enumerable.ToArray(list4)),
-                    list.ToArray(), list2.ToArray(), new int[4], new int[4] { 1, 1, 1, 1 });
-                DataType obj = ((call.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : call.CheckedDataType);
+                Call input2 = Nncase.IR.F.Tensors.Slice(Nncase.IR.F.Tensors.Reshape(input, Enumerable.ToArray(inputDims)),
+                    beginDims.ToArray(), endDims.ToArray(), new int[4], new int[4] { 1, 1, 1, 1 });
+                DataType storeType = ((call.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : call.CheckedDataType);
                 return Nncase.IR.F.Tensors.Reshape(
-                    Nncase.IR.K230.F.Tensors.GNNEStore(obj, Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)obj, input2)),
+                    Nncase.IR.K230.F.Tensors.GNNEStore(storeType, Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)storeType, input2)),
                     call.CheckedShape);
             }
         }

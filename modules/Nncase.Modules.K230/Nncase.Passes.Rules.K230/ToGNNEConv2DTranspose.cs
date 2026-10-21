@@ -47,31 +47,31 @@ public class ToGNNEConv2DTranspose : GNNEQuantRule
 
     private static short GetPadValue(Tensor<float> padValue, QuantizeParam qP, DataType realType)
     {
-        int num = (int)System.Math.Round(padValue.ToScalar() / qP.Scale + (float)qP.ZeroPoint);
+        int quantizedPad = (int)System.Math.Round(padValue.ToScalar() / qP.Scale + (float)qP.ZeroPoint);
         if (!(realType == DataTypes.UInt8))
         {
             if (!(realType == DataTypes.Int8))
             {
-                return (short)num;
+                return (short)quantizedPad;
             }
 
-            return (sbyte)num;
+            return (sbyte)quantizedPad;
         }
 
-        return (byte)num;
+        return (byte)quantizedPad;
     }
 
     private void FuseScale(DeQuantizeParam qint8Qp)
     {
         _actParamQint8.FusedScale(qint8Qp.Scale);
-        QuantizeParam[] array = _quantize.WeightsByChannelQPQint8();
-        float[] array2 = new float[array.Length];
-        for (int i = 0; i < array.Length; i++)
+        QuantizeParam[] quantParams = _quantize.WeightsByChannelQPQint8();
+        float[] deqScales = new float[quantParams.Length];
+        for (int i = 0; i < quantParams.Length; i++)
         {
-            array2[i] = QuantHelper.GetDeqParamFromQuantParam(array[i]).Scale;
+            deqScales[i] = QuantHelper.GetDeqParamFromQuantParam(quantParams[i]).Scale;
         }
 
-        _actParamQint8.FusedChannelScale(array2);
+        _actParamQint8.FusedChannelScale(deqScales);
         _actParamQint8.FusedXs();
     }
 
@@ -164,7 +164,7 @@ public class ToGNNEConv2DTranspose : GNNEQuantRule
         QuantizeParam ifQuantParam = _quantize.GetIfQuantParam(dataType);
         short padValue2 = GetPadValue(padValue, ifQuantParam, dataType);
         Expr weights2 = LoadWeights(oldWeights, isPdp0dw: false, groups);
-        bool flag = _conf.QuantType == DataTypes.Int16 ||
+        bool isInt16 = _conf.QuantType == DataTypes.Int16 ||
                     (_conf.WQuantType == DataTypes.Int16 && _conf.QuantType == DataTypes.Int8);
         Call call2 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
             Nncase.IR.K230.F.Tensors.GNNEConv2DTranspose(DataTypes.Float16, input2, weights2,
@@ -172,7 +172,7 @@ public class ToGNNEConv2DTranspose : GNNEQuantRule
                 Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.UInt8, _qWeightsBiasQint8), act2,
                 Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, _actParamQint8.ToAct0Data()),
                 ifQuantParam.ZeroPoint, 0, 0, Tensor.FromScalar(ifDeqQuantParam), padding, stride, dilation, groups,
-                flag, padValue2, _actParam, _actParamQint8, outputPadding, outputshape));
+                isInt16, padValue2, _actParam, _actParamQint8, outputPadding, outputshape));
         call2.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
         return Nncase.IR.F.Math.RangeOfMarker(call2, outputRange).With(null, null, null,
             adaQuantInfo: ((Marker)outputMarker).AdaQuantInfo, mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
@@ -211,48 +211,48 @@ public class ToGNNEConv2DTranspose : GNNEQuantRule
     {
         if (_conf.WQuantType != DataTypes.Int16 || isPdp0dw)
         {
-            QuantT[] array = _quantize.GetQuantWeights(isMatmul: false, groupsConvTranspose);
+            QuantT[] quantWeights = _quantize.GetQuantWeights(isMatmul: false, groupsConvTranspose);
             _qWeightsQint8 = _quantize.GetQuantWeightsU8(isMatmul: false, groupsConvTranspose).ToArray();
             if (oldWeights.Shape != _originWeights.Shape)
             {
                 QuantT[] second = Enumerable.Repeat(new QuantT(_conf.WQuantType == DataTypes.UInt8),
-                    oldWeights.Shape.Prod().FixedValue - array.Length).ToArray();
-                array = array.Concat(second).ToArray();
+                    oldWeights.Shape.Prod().FixedValue - quantWeights.Length).ToArray();
+                quantWeights = quantWeights.Concat(second).ToArray();
             }
 
-            DataType? obj = (isPdp0dw ? DataTypes.UInt8 : _conf.WQuantType);
+            DataType? weightsType = (isPdp0dw ? DataTypes.UInt8 : _conf.WQuantType);
             return Nncase.IR.K230.F.Tensors.GNNELoadW(
                 input: (_conf.WQuantType == DataTypes.UInt8)
-                    ? ((Tensor)Tensor.From(array.Select((QuantT w) => w.U8).ToArray(), oldWeights.Shape))
-                    : ((Tensor)Tensor.From(array.Select((QuantT w) => w.I8).ToArray(), oldWeights.Shape)),
-                destType: (PrimType)obj);
+                    ? ((Tensor)Tensor.From(quantWeights.Select((QuantT w) => w.U8).ToArray(), oldWeights.Shape))
+                    : ((Tensor)Tensor.From(quantWeights.Select((QuantT w) => w.I8).ToArray(), oldWeights.Shape)),
+                destType: (PrimType)weightsType);
         }
 
-        short[] array2 = _quantize.GetQuantWeightsI16();
+        short[] quantWeightsI16 = _quantize.GetQuantWeightsI16();
         _qWeightsQint8 = _quantize.GetQuantWeightsU8().ToArray();
         if (oldWeights.Shape != _originWeights.Shape)
         {
-            short[] second2 = Enumerable.Repeat((short)0, oldWeights.Shape.Prod().FixedValue - array2.Length).ToArray();
-            array2 = array2.Concat(second2).ToArray();
+            short[] second2 = Enumerable.Repeat((short)0, oldWeights.Shape.Prod().FixedValue - quantWeightsI16.Length).ToArray();
+            quantWeightsI16 = quantWeightsI16.Concat(second2).ToArray();
         }
 
-        return Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)_conf.WQuantType, Tensor.From(array2, oldWeights.Shape));
+        return Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)_conf.WQuantType, Tensor.From(quantWeightsI16, oldWeights.Shape));
     }
 
     private Call LoadWeightsBias()
     {
-        byte[] array = _quantize.GetWeightsQuantBias();
+        byte[] biasBytes = _quantize.GetWeightsQuantBias();
         _qWeightsBiasQint8 = _quantize.GetWeightsQuantBiasQint8();
         if (_conf.WQuantType == DataTypes.Int16)
         {
-            array = Enumerable.Repeat((byte)0, array.Length).ToArray();
+            biasBytes = Enumerable.Repeat((byte)0, biasBytes.Length).ToArray();
         }
 
         PrimType uInt = DataTypes.UInt8;
-        byte[] array2 = array;
-        int[] obj = new int[4] { 1, 1, 1, 0 };
-        obj[3] = array.Length;
-        return Nncase.IR.K230.F.Tensors.GNNELoadW(uInt, Tensor.From(array2, obj));
+        byte[] biasBytesCopy = biasBytes;
+        int[] biasShape = new int[4] { 1, 1, 1, 0 };
+        biasShape[3] = biasBytes.Length;
+        return Nncase.IR.K230.F.Tensors.GNNELoadW(uInt, Tensor.From(biasBytesCopy, biasShape));
     }
 
     private Expr LoadAct()

@@ -79,8 +79,8 @@ public class TileMatMul : RewriteRule<Pattern>
         _count++;
         InitParameters(call, ld, st);
         TileMatMulGlb glb = SearchGlbParameters();
-        int[] array = ((Call)_mm[GNNEMatMul.InputB])[GNNELoad.Input].CheckedShape.ToValueArray();
-        List<Nncase.TIR.Buffer> list = new List<Nncase.TIR.Buffer>();
+        int[] inputBShape = ((Call)_mm[GNNEMatMul.InputB])[GNNELoad.Input].CheckedShape.ToValueArray();
+        List<Nncase.TIR.Buffer> buffers = new List<Nncase.TIR.Buffer>();
         Nncase.TIR.Buffer buffer;
         if (((Call)_mm[GNNEMatMul.InputB])[GNNELoad.Input] is TensorConst)
         {
@@ -88,13 +88,13 @@ public class TileMatMul : RewriteRule<Pattern>
         }
         else
         {
-            T.CreateBuffer(new TensorType(((Call)_mm[GNNEMatMul.InputB])[GNNELoad.Input].CheckedDataType, array),
+            T.CreateBuffer(new TensorType(((Call)_mm[GNNEMatMul.InputB])[GNNELoad.Input].CheckedDataType, inputBShape),
                 MemoryLocation.Input, out buffer, "ddrIf");
-            list.Add(buffer);
+            buffers.Add(buffer);
             _ifBufferMap.Add((Var)((Call)_mm[GNNEMatMul.InputB])[GNNELoad.Input], buffer);
         }
 
-        int[] array2 = ((Call)_mm[GNNEMatMul.InputA])[GNNELoad.Input].CheckedShape.ToValueArray();
+        int[] inputAShape = ((Call)_mm[GNNEMatMul.InputA])[GNNELoad.Input].CheckedShape.ToValueArray();
         Nncase.TIR.Buffer buffer2;
         if (((Call)_mm[GNNEMatMul.InputA])[GNNELoad.Input] is TensorConst)
         {
@@ -102,40 +102,40 @@ public class TileMatMul : RewriteRule<Pattern>
         }
         else
         {
-            T.CreateBuffer(new TensorType(((Call)_mm[GNNEMatMul.InputA])[GNNELoad.Input].CheckedDataType, array2),
+            T.CreateBuffer(new TensorType(((Call)_mm[GNNEMatMul.InputA])[GNNELoad.Input].CheckedDataType, inputAShape),
                 MemoryLocation.Input, out buffer2, "ddrW");
-            list.Add(buffer2);
+            buffers.Add(buffer2);
             _ifBufferMap.Add((Var)((Call)_mm[GNNEMatMul.InputA])[GNNELoad.Input], buffer2);
         }
 
-        if (list.Count == 2)
+        if (buffers.Count == 2)
         {
-            list.Reverse();
+            buffers.Reverse();
         }
 
         T.CreateBuffer(new TensorType(st.CheckedDataType, st.CheckedShape), MemoryLocation.Output,
             out Nncase.TIR.Buffer buffer3, "var ddrOf");
-        list.Add(buffer3);
+        buffers.Add(buffer3);
         T.AttachBuffer((TensorConst)((Call)call[GNNEMatMul.InputABias])[GNNELoadW.Input], out Nncase.TIR.Buffer buffer4,
             "var ddrWQarg");
         T.AttachBuffer((TensorConst)((Call)call[GNNEMatMul.Act])[GNNELoadW.Input], out Nncase.TIR.Buffer buffer5,
             "var ddrAct");
-        List<GnneAction> list2 = new List<GnneAction>();
+        List<GnneAction> actions = new List<GnneAction>();
         ItemRecStatusInit();
         BuildSchedule(glb, call, ld, st, buffer, buffer3, buffer2, buffer4, buffer5, weightGroupOnly: true,
             _weightGroup);
-        list2 = BuildSchedule(glb, call, ld, st, buffer, buffer3, buffer2, buffer4, buffer5, weightGroupOnly: false,
+        actions = BuildSchedule(glb, call, ld, st, buffer, buffer3, buffer2, buffer4, buffer5, weightGroupOnly: false,
             _weightGroup);
         ActionToInstruct actionToInstruct = new ActionToInstruct();
-        return T.PrimFunc($"TileMatMul_{_count}", K230RtModule.Kind, list.ToArray())
-            .Body(actionToInstruct.Instructions(list2), I.END(GP_REGISTER.x0, 0)).Build();
+        return T.PrimFunc($"TileMatMul_{_count}", K230RtModule.Kind, buffers.ToArray())
+            .Body(actionToInstruct.Instructions(actions), I.END(GP_REGISTER.x0, 0)).Build();
     }
 
     private List<GnneAction> BuildSchedule(TiledGlb glb, Call conv, Call ld, Call st, Nncase.TIR.Buffer ddrIf,
         Nncase.TIR.Buffer ddrOf, Nncase.TIR.Buffer ddrW, Nncase.TIR.Buffer ddrWQarg, Nncase.TIR.Buffer ddrAct,
         bool weightGroupOnly, WeightGroupHandler weightGroup)
     {
-        List<GnneAction> list = new List<GnneAction>();
+        List<GnneAction> actions = new List<GnneAction>();
         if (!weightGroupOnly)
         {
             _gpr = new GprHandler(GNNEEnv.GprNum);
@@ -143,7 +143,7 @@ public class TileMatMul : RewriteRule<Pattern>
             _ccrHandler = new CcrHandler();
         }
 
-        GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(list, glb, _ccrHandler, _gpr, _ssr);
+        GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(actions, glb, _ccrHandler, _gpr, _ssr);
         if (!weightGroupOnly)
         {
             UpdateCcrRecStat();
@@ -154,17 +154,17 @@ public class TileMatMul : RewriteRule<Pattern>
             gnneActionUpdater.UpdateMmuConf();
         }
 
-        int num = 0;
-        int num2 = -1;
-        int num3 = -1;
+        int ofmapPp = 0;
+        int ifmapPp = -1;
+        int weightPp = -1;
         int nPingPongSplit = GNNEEnv.NPingPongSplit;
-        List<Segment1D> segmentStartEndLength =
+        List<Segment1D> segmentsN =
             TileUtilities.GetSegmentStartEndLength(0, glb.LastOutShape[0], _outputShape[1]);
-        List<Segment1D> segmentStartEndLength2 =
+        List<Segment1D> segmentsW =
             TileUtilities.GetSegmentStartEndLength(0, glb.LastOutShape[3], _outputShape[3]);
-        List<Segment1D> segmentStartEndLength3 =
+        List<Segment1D> segmentsC =
             TileUtilities.GetSegmentStartEndLength(0, glb.LastOutShape[1], _outputShape[2]);
-        List<Segment1D> segmentStartEndLength4 =
+        List<Segment1D> icSegments =
             TileUtilities.GetSegmentStartEndLength(0, glb.GlbMap[ItemName.Ifmap].Dimensions[1], _weightsShape[3]);
         if (!weightGroupOnly)
         {
@@ -178,88 +178,88 @@ public class TileMatMul : RewriteRule<Pattern>
             }
         }
 
-        Segment1D segment1D = new Segment1D(..0, new Padding(0, 0));
-        Segment1D segment1D2 = new Segment1D(..1, new Padding(0, 0));
-        List<SegmentND> list2 = new List<SegmentND>();
-        list2.Add(new SegmentND(segment1D, segment1D, segment1D, segment1D));
-        list2.Add(new SegmentND(segment1D, segment1D, segment1D, segment1D));
-        List<SegmentND> list3 = list2;
-        list2 = new List<SegmentND>();
-        list2.Add(new SegmentND(segment1D, segment1D, segment1D, segment1D));
-        list2.Add(new SegmentND(segment1D, segment1D, segment1D, segment1D));
-        List<SegmentND> list4 = list2;
-        Segment1D segment1D3 = segment1D2;
-        Segment1D segment1D4 = segment1D3;
-        foreach (Segment1D item2 in segmentStartEndLength3)
+        Segment1D emptySegment = new Segment1D(..0, new Padding(0, 0));
+        Segment1D oneSegment = new Segment1D(..1, new Padding(0, 0));
+        List<SegmentND> segmentHistory = new List<SegmentND>();
+        segmentHistory.Add(new SegmentND(emptySegment, emptySegment, emptySegment, emptySegment));
+        segmentHistory.Add(new SegmentND(emptySegment, emptySegment, emptySegment, emptySegment));
+        List<SegmentND> ifmapHistory = segmentHistory;
+        segmentHistory = new List<SegmentND>();
+        segmentHistory.Add(new SegmentND(emptySegment, emptySegment, emptySegment, emptySegment));
+        segmentHistory.Add(new SegmentND(emptySegment, emptySegment, emptySegment, emptySegment));
+        List<SegmentND> weightHistory = segmentHistory;
+        Segment1D oneSegmentRef = oneSegment;
+        Segment1D oneSegmentRef2 = oneSegmentRef;
+        foreach (Segment1D segmentC in segmentsC)
         {
-            foreach (Segment1D item3 in segmentStartEndLength)
+            foreach (Segment1D segmentN in segmentsN)
             {
-                foreach (Segment1D item4 in segmentStartEndLength2)
+                foreach (Segment1D segmentW in segmentsW)
                 {
-                    SegmentND psum = new SegmentND(item3, item2, segment1D3, item4);
-                    SegmentND segmentND = new SegmentND(segment1D2, item3, item2, item4);
-                    foreach (Segment1D item5 in segmentStartEndLength4)
+                    SegmentND psum = new SegmentND(segmentN, segmentC, oneSegmentRef, segmentW);
+                    SegmentND ofmapSegment = new SegmentND(oneSegment, segmentN, segmentC, segmentW);
+                    foreach (Segment1D icSegment in icSegments)
                     {
-                        Segment1D segment1D5 = item4;
-                        SegmentND weight = new SegmentND(item2, item5, segment1D2, segment1D2);
-                        SegmentND segmentND2 =
-                            new SegmentND(segment1D2, _broadcastW ? segment1D2 : item3, item2, item5);
-                        if (list4[0] == segmentND2)
+                        Segment1D segmentWRef = segmentW;
+                        SegmentND weight = new SegmentND(segmentC, icSegment, oneSegment, oneSegment);
+                        SegmentND weightSegment =
+                            new SegmentND(oneSegment, _broadcastW ? oneSegment : segmentN, segmentC, icSegment);
+                        if (weightHistory[0] == weightSegment)
                         {
-                            num3 = 0;
+                            weightPp = 0;
                         }
-                        else if (list4[1] == segmentND2)
+                        else if (weightHistory[1] == weightSegment)
                         {
-                            num3 = 1;
+                            weightPp = 1;
                         }
                         else
                         {
-                            num3 = (num3 + 1) % 2;
-                            if (!weightGroupOnly && _g2RWRec[num3].Count > 0 && _g2RWRec[num3][0].Item1 == segmentND2)
+                            weightPp = (weightPp + 1) % 2;
+                            if (!weightGroupOnly && _g2RWRec[weightPp].Count > 0 && _g2RWRec[weightPp][0].Item1 == weightSegment)
                             {
-                                TensorStat item = _g2RWRec[num3][0].Item2;
-                                int value = ((item != null && item.IsFirstSlice && item.IsLastSlice) ? 1 : 2);
+                                TensorStat loadStat = _g2RWRec[weightPp][0].Item2;
+                                int weightCcrCount = ((loadStat != null && loadStat.IsFirstSlice && loadStat.IsLastSlice) ? 1 : 2);
                                 List<CcrSet> ccrsToSet = new List<CcrSet>
                                 {
-                                    new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Weight, num3)),
-                                        value)
+                                    new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Weight, weightPp)),
+                                        weightCcrCount)
                                 };
                                 List<int> stridesD = new List<int>
                                 {
-                                    segmentND2[1].Length,
-                                    item2.Length,
-                                    TileUtilities.GetAlignedNum(item5.Length, GNNEEnv.WAlignNum)
+                                    weightSegment[1].Length,
+                                    segmentC.Length,
+                                    TileUtilities.GetAlignedNum(icSegment.Length, GNNEEnv.WAlignNum)
                                 };
-                                gnneActionUpdater.UpdateLoadIf(segmentND2, _lw, num3, ddrW, 0, stridesD,
+                                gnneActionUpdater.UpdateLoadIf(weightSegment, _lw, weightPp, ddrW, 0, stridesD,
                                     ItemName.Weight, ccrsToSet);
                             }
 
-                            list4[num3] = segmentND2;
+                            weightHistory[weightPp] = weightSegment;
                         }
 
-                        SegmentND ifmap = new SegmentND(_broadcastIf ? segment1D2 : item3, item5, segment1D4,
-                            segment1D5);
-                        SegmentND segmentND3 = new SegmentND(segment1D2, _broadcastIf ? segment1D2 : item3, item5,
-                            segment1D5);
-                        if (list3[0] == segmentND3)
+                        SegmentND ifmap = new SegmentND(_broadcastIf ? oneSegment : segmentN, icSegment, oneSegmentRef2,
+                            segmentWRef);
+                        SegmentND ifmapSegment = new SegmentND(oneSegment, _broadcastIf ? oneSegment : segmentN, icSegment,
+                            segmentWRef);
+                        if (ifmapHistory[0] == ifmapSegment)
                         {
-                            num2 = 0;
+                            ifmapPp = 0;
                         }
-                        else if (list3[1] == segmentND3)
+                        else if (ifmapHistory[1] == ifmapSegment)
                         {
-                            num2 = 1;
+                            ifmapPp = 1;
                         }
                         else
                         {
-                            num2 = (num2 + 1) % 2;
-                            if (!weightGroupOnly && _g2LIfRec[num2].Count > 0 && _g2LIfRec[num2][0].Item1 == segmentND3)
+                            ifmapPp = (ifmapPp + 1) % 2;
+                            if (!weightGroupOnly && _g2LIfRec[ifmapPp].Count > 0 && _g2LIfRec[ifmapPp][0].Item1 == ifmapSegment)
                             {
-                                TensorStat item = _g2LIfRec[num2][0].Item2;
-                                int value2 = ((item != null && item.IsFirstSlice && item.IsLastSlice) ? 1 : 2);
+                                TensorStat loadStat = _g2LIfRec[ifmapPp][0].Item2;
+                                int ifmapCcrCount = ((loadStat != null && loadStat.IsFirstSlice && loadStat.IsLastSlice) ? 1 : 2);
                                 List<CcrSet> ccrsToSet2 = new List<CcrSet>
                                 {
-                                    new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap, num2)),
-                                        value2)
+                                    new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap, ifmapPp)),
+                                        ifmapCcrCount)
                                 };
                                 List<int> stridesD2 = new List<int>
                                 {
@@ -267,31 +267,31 @@ public class TileMatMul : RewriteRule<Pattern>
                                     glb.GlbMap[ItemName.Ifmap].Dimensions[1],
                                     glb.GlbMap[ItemName.Ifmap].Dimensions[3]
                                 };
-                                gnneActionUpdater.UpdateLoadIf(segmentND3, _lif, num2, ddrIf, 0, stridesD2,
+                                gnneActionUpdater.UpdateLoadIf(ifmapSegment, _lif, ifmapPp, ddrIf, 0, stridesD2,
                                     ItemName.Ifmap, ccrsToSet2);
                             }
 
-                            list3[num2] = segmentND3;
+                            ifmapHistory[ifmapPp] = ifmapSegment;
                         }
 
-                        BuildL1Schedule(gnneActionUpdater, glb, ifmap, weight, psum, num2, num, num3, weightGroupOnly,
+                        BuildL1Schedule(gnneActionUpdater, glb, ifmap, weight, psum, ifmapPp, ofmapPp, weightPp, weightGroupOnly,
                             weightGroup);
                     }
 
                     if (!weightGroupOnly)
                     {
-                        bool num4 = !_ofmapRec[num][0].Item2.IsLastSlice;
-                        _ofmapRec[num].RemoveAt(0);
-                        List<CcrSet> list5 = new List<CcrSet>();
-                        if ((num4 ? 1 : 0) > (false ? 1 : 0))
+                        bool notLastSlice = !_ofmapRec[ofmapPp][0].Item2.IsLastSlice;
+                        _ofmapRec[ofmapPp].RemoveAt(0);
+                        List<CcrSet> ofmapFakeCcrsToSet = new List<CcrSet>();
+                        if ((notLastSlice ? 1 : 0) > (false ? 1 : 0))
                         {
-                            list5.Add(new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.OfmapFake, num)),
+                            ofmapFakeCcrsToSet.Add(new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.OfmapFake, ofmapPp)),
                                 1));
                         }
 
                         List<CcrClr> ccrsToClr = new List<CcrClr>
                         {
-                            new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, num)))
+                            new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, ofmapPp)))
                         };
                         List<int> stridesS = new List<int>
                         {
@@ -299,16 +299,16 @@ public class TileMatMul : RewriteRule<Pattern>
                             glb.GlbMap[ItemName.Ofmap].Dimensions[1],
                             glb.GlbMap[ItemName.Ofmap].Dimensions[3]
                         };
-                        gnneActionUpdater.UpdateStoreT(segmentND, _sof, num, ddrOf, 0, null, list5, ccrsToClr,
+                        gnneActionUpdater.UpdateStoreT(ofmapSegment, _sof, ofmapPp, ddrOf, 0, null, ofmapFakeCcrsToSet, ccrsToClr,
                             ItemName.Ofmap, stridesS);
                     }
                     else
                     {
-                        _ofmapRec[num].Add(new Tuple<SegmentND, TensorStat>(segmentND,
+                        _ofmapRec[ofmapPp].Add(new Tuple<SegmentND, TensorStat>(ofmapSegment,
                             new TensorStat(isFirstSlice: false, isLastSlice: false)));
                     }
 
-                    num = (num + 1) % nPingPongSplit;
+                    ofmapPp = (ofmapPp + 1) % nPingPongSplit;
                 }
             }
         }
@@ -316,19 +316,19 @@ public class TileMatMul : RewriteRule<Pattern>
         TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileMatMul.cs",
             309);
-        return list;
+        return actions;
     }
 
     private List<int> L1Search(TiledGlb glb, SegmentND weight, SegmentND psum)
     {
-        int item = Math.Min(GNNEEnv.PuHeight, _weightsShape[3]);
-        int item2 = Math.Min(GNNEEnv.PuWidth, _weightsShape[2]);
+        int puHeight = Math.Min(GNNEEnv.PuHeight, _weightsShape[3]);
+        int puWidth = Math.Min(GNNEEnv.PuWidth, _weightsShape[2]);
         int h = 1;
         int w = 1;
         int e = 1;
         int f = 1;
-        int item3 = 1;
-        int item4 = 1;
+        int stepE = 1;
+        int stepF = 1;
         int psumPingPangSplit = 1;
         int ifBytesPerElementGlb = TileUtilities.GetBytesPerElement(_inputType);
         if (!HandleL1Allocate(h, w, e, f, psumPingPangSplit, ifBytesPerElementGlb))
@@ -343,26 +343,26 @@ public class TileMatMul : RewriteRule<Pattern>
 
         return new List<int>
         {
-            item,
-            item2,
+            puHeight,
+            puWidth,
             e,
             f,
-            item3,
-            item4
+            stepE,
+            stepF
         };
 
         bool IncreaseFBy()
         {
-            int num = f + 1;
-            int num2 = num;
-            bool num3 = HandleL1Allocate(h, num2, e, num, psumPingPangSplit, ifBytesPerElementGlb);
-            if (num3)
+            int nextF = f + 1;
+            int nextW = nextF;
+            bool allocated = HandleL1Allocate(h, nextW, e, nextF, psumPingPangSplit, ifBytesPerElementGlb);
+            if (allocated)
             {
-                f = num;
-                w = num2;
+                f = nextF;
+                w = nextW;
             }
 
-            return num3;
+            return allocated;
         }
     }
 
@@ -385,179 +385,179 @@ public class TileMatMul : RewriteRule<Pattern>
         SegmentND psum, int iPp, int ofPp, int wPp, bool weightGroupOnly, WeightGroupHandler weightGroup)
     {
         int l1Pp = 0;
-        List<int> list = L1Search(glb, weight, psum);
-        TileUtilities.GetSegmentStartEndLength(psum[2].Start, list[2], psum[2].End);
-        List<Segment1D> segmentStartEndLength =
-            TileUtilities.GetSegmentStartEndLength(psum[3].Start, list[3], psum[3].End);
-        List<Segment1D> segmentStartEndLength2 = TileUtilities.GetSegmentStartEndLength(psum[0].Start, 1, psum[0].End);
-        TileUtilities.GetSegmentStartEndLength(weight[2].Start, list[4], weight[2].End);
-        TileUtilities.GetSegmentStartEndLength(weight[3].Start, list[5], weight[3].End);
-        List<List<Segment1D>> l1McSeg = GetL1McSeg(ifmap, psum, list[1], list[0]);
-        List<Segment1D> list2 = l1McSeg[0];
-        List<Segment1D> list3 = l1McSeg[1];
-        Segment1D segment1D = new Segment1D(..1, new Padding(0, 0));
-        SegmentND item = new SegmentND(segment1D, _broadcastW ? segment1D : psum[0], weight[0], weight[1]);
-        SegmentND item2 = new SegmentND(segment1D, _broadcastIf ? segment1D : psum[0], weight[1], ifmap[3]);
-        SegmentND item3 = new SegmentND(segment1D, psum[0], psum[1], psum[3]);
-        foreach (Segment1D item4 in list2)
+        List<int> l1Params = L1Search(glb, weight, psum);
+        TileUtilities.GetSegmentStartEndLength(psum[2].Start, l1Params[2], psum[2].End);
+        List<Segment1D> psumColSegments =
+            TileUtilities.GetSegmentStartEndLength(psum[3].Start, l1Params[3], psum[3].End);
+        List<Segment1D> psumBatchSegments = TileUtilities.GetSegmentStartEndLength(psum[0].Start, 1, psum[0].End);
+        TileUtilities.GetSegmentStartEndLength(weight[2].Start, l1Params[4], weight[2].End);
+        TileUtilities.GetSegmentStartEndLength(weight[3].Start, l1Params[5], weight[3].End);
+        List<List<Segment1D>> l1McSeg = GetL1McSeg(ifmap, psum, l1Params[1], l1Params[0]);
+        List<Segment1D> ocSegments = l1McSeg[0];
+        List<Segment1D> icSegments = l1McSeg[1];
+        Segment1D unitSegment = new Segment1D(..1, new Padding(0, 0));
+        SegmentND weightRecSegment = new SegmentND(unitSegment, _broadcastW ? unitSegment : psum[0], weight[0], weight[1]);
+        SegmentND ifmapRecSegment = new SegmentND(unitSegment, _broadcastIf ? unitSegment : psum[0], weight[1], ifmap[3]);
+        SegmentND ofmapRecSegment = new SegmentND(unitSegment, psum[0], psum[1], psum[3]);
+        foreach (Segment1D ocSegment in ocSegments)
         {
-            foreach (Segment1D item5 in segmentStartEndLength2)
+            foreach (Segment1D batchSegment in psumBatchSegments)
             {
-                Segment1D segment1D2 = segment1D;
-                Segment1D segment1D3 = segment1D;
-                foreach (Segment1D item6 in segmentStartEndLength)
+                Segment1D unitSegment2 = unitSegment;
+                Segment1D unitSegment3 = unitSegment;
+                foreach (Segment1D colSegment in psumColSegments)
                 {
-                    Segment1D segment1D4 = item6;
-                    new SegmentND(item5, item4, segment1D2, item6);
-                    SegmentND segmentND = new SegmentND(item5, item4, segment1D3, segment1D4);
-                    bool flag = true;
-                    foreach (Segment1D item7 in list3)
+                    Segment1D colSegmentCopy = colSegment;
+                    new SegmentND(batchSegment, ocSegment, unitSegment2, colSegment);
+                    SegmentND convSegment = new SegmentND(batchSegment, ocSegment, unitSegment3, colSegmentCopy);
+                    bool isFirstLoop = true;
+                    foreach (Segment1D icSegment in icSegments)
                     {
                         Segment1D current4;
-                        Segment1D segment1D5 = (current4 = item7);
-                        Segment1D segment1D6 = segment1D;
-                        Segment1D segment1D7 = segment1D;
-                        Segment1D segment1D8 = segment1D5;
-                        Segment1D segment1D9 = item5;
-                        Segment1D segment1D10 = item4;
-                        SegmentND x = new SegmentND(_broadcastIf ? segment1D : segment1D9, segment1D8, segment1D3,
-                            segment1D4);
-                        SegmentND w = new SegmentND(item4, current4, segment1D6, segment1D7);
-                        bool flag2 = false;
-                        SegmentND segmentND2 = TileUtilities.ShiftInputTensor(in x, in w, 1, 1, _strideH, _strideW,
+                        Segment1D icSegmentCopy = (current4 = icSegment);
+                        Segment1D firstKernelRowSegment = unitSegment;
+                        Segment1D firstKernelColSegment = unitSegment;
+                        Segment1D ifmapIcSegment = icSegmentCopy;
+                        Segment1D ifmapBatchSegment = batchSegment;
+                        Segment1D weightOcSegment = ocSegment;
+                        SegmentND x = new SegmentND(_broadcastIf ? unitSegment : ifmapBatchSegment, ifmapIcSegment, unitSegment3,
+                            colSegmentCopy);
+                        SegmentND w = new SegmentND(ocSegment, current4, firstKernelRowSegment, firstKernelColSegment);
+                        bool hasIfmapLoad = false;
+                        SegmentND shiftedIfmap = TileUtilities.ShiftInputTensor(in x, in w, 1, 1, _strideH, _strideW,
                             _dilationH, _dilationW);
-                        if (segmentND2[0].Length > 0 && segmentND2[1].Length > 0 && segmentND2[2].Length > 0 &&
-                            segmentND2[3].Length > 0)
+                        if (shiftedIfmap[0].Length > 0 && shiftedIfmap[1].Length > 0 && shiftedIfmap[2].Length > 0 &&
+                            shiftedIfmap[3].Length > 0)
                         {
-                            flag2 = true;
+                            hasIfmapLoad = true;
                             if (!weightGroupOnly)
                             {
-                                int num = _g2LIfRec[iPp][0].Item2.Stat_cnt();
+                                int ifmapStatCount = _g2LIfRec[iPp][0].Item2.Stat_cnt();
                                 _g2LIfRec[iPp].RemoveAt(0);
-                                List<CcrClr> list4 = new List<CcrClr>();
-                                if (num > 0)
+                                List<CcrClr> ifmapCcrsToClr = new List<CcrClr>();
+                                if (ifmapStatCount > 0)
                                 {
-                                    list4.Add(new CcrClr(
+                                    ifmapCcrsToClr.Add(new CcrClr(
                                         _ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap, iPp))));
                                 }
 
-                                actionUpdater.UpdateG2LIf(segmentND2, ifmap, _lif, iPp, null, list4, 0, _inputType,
+                                actionUpdater.UpdateG2LIf(shiftedIfmap, ifmap, _lif, iPp, null, ifmapCcrsToClr, 0, _inputType,
                                     ItemName.Ifmap, restored: false, 0, 0, 0, h2c: false, 1, _strideH);
                             }
                             else
                             {
-                                _g2LIfRec[iPp].Add(new Tuple<SegmentND, TensorStat>(item2,
+                                _g2LIfRec[iPp].Add(new Tuple<SegmentND, TensorStat>(ifmapRecSegment,
                                     new TensorStat(isFirstSlice: false, isLastSlice: false)));
                             }
                         }
 
-                        Segment1D segment1D11 = segment1D6;
-                        Segment1D segment1D12 = segment1D7;
-                        SegmentND w2 = new SegmentND(segment1D10, current4, segment1D11, segment1D12);
-                        SegmentND segmentND3 = TileUtilities.ShiftInputTensor(in x, in w2, 1, 1, _strideH, _strideW,
+                        Segment1D kernelRowSegment = firstKernelRowSegment;
+                        Segment1D kernelColSegment = firstKernelColSegment;
+                        SegmentND w2 = new SegmentND(weightOcSegment, current4, kernelRowSegment, kernelColSegment);
+                        SegmentND ifmapLoadSegment = TileUtilities.ShiftInputTensor(in x, in w2, 1, 1, _strideH, _strideW,
                             _dilationH, _dilationW);
-                        int num2 = ((!(_weightType == DataTypes.Int16)) ? 1 : 2);
-                        int num3 = ((!(_inputType == DataTypes.Int16)) ? 1 : 2);
-                        for (int i = 0; i < num2; i++)
+                        int weightPasses = ((!(_weightType == DataTypes.Int16)) ? 1 : 2);
+                        int inputPasses = ((!(_inputType == DataTypes.Int16)) ? 1 : 2);
+                        for (int i = 0; i < weightPasses; i++)
                         {
-                            for (int j = 0; j < num3; j++)
+                            for (int j = 0; j < inputPasses; j++)
                             {
                                 if (!weightGroupOnly)
                                 {
-                                    int num4 = _g2RWRec[wPp][0].Item2.Stat_cnt();
+                                    int weightStatCount = _g2RWRec[wPp][0].Item2.Stat_cnt();
                                     _g2RWRec[wPp].RemoveAt(0);
-                                    List<CcrClr> list5 = new List<CcrClr>();
-                                    if (num4 > 0)
+                                    List<CcrClr> weightCcrsToClr = new List<CcrClr>();
+                                    if (weightStatCount > 0)
                                     {
-                                        list5.Add(new CcrClr(
+                                        weightCcrsToClr.Add(new CcrClr(
                                             _ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Weight, wPp))));
                                     }
 
                                     actionUpdater.UpdateG2RWMatmul(w2, weight, weightGroup, _weightsShape[2], _lw, wPp,
-                                        i, null, list5,
-                                        (!_broadcastW) ? (item5.Start - segmentStartEndLength2[0].Start) : 0);
+                                        i, null, weightCcrsToClr,
+                                        (!_broadcastW) ? (batchSegment.Start - psumBatchSegments[0].Start) : 0);
                                 }
                                 else
                                 {
-                                    if (item5.Start == 0)
+                                    if (batchSegment.Start == 0)
                                     {
                                         weightGroup.UpdateWeightGroup(w2);
                                     }
 
-                                    _g2RWRec[wPp].Add(new Tuple<SegmentND, TensorStat>(item,
+                                    _g2RWRec[wPp].Add(new Tuple<SegmentND, TensorStat>(weightRecSegment,
                                         new TensorStat(isFirstSlice: false, isLastSlice: false)));
                                 }
 
                                 if (!weightGroupOnly)
                                 {
-                                    actionUpdater.UpdateL2RIf(segmentND3, segmentND2, _strideH, _strideW,
+                                    actionUpdater.UpdateL2RIf(ifmapLoadSegment, shiftedIfmap, _strideH, _strideW,
                                         _weightsShape[3], _lif, 0, j,
                                         ((TensorConst)_mm[GNNEMatMul.DeqBBias]).Value.ToArray<byte>()[
-                                            segmentND3[0].Start], _inputType, h2c: false, 1);
+                                            ifmapLoadSegment[0].Start], _inputType, h2c: false, 1);
                                 }
 
                                 bool releaseIf = false;
-                                if (i == num2 - 1 && j == num3 - 1 && flag2)
+                                if (i == weightPasses - 1 && j == inputPasses - 1 && hasIfmapLoad)
                                 {
                                     releaseIf = true;
-                                    flag2 = false;
+                                    hasIfmapLoad = false;
                                 }
 
                                 bool loopStart = false;
-                                if (flag && i == 0 && j == 0)
+                                if (isFirstLoop && i == 0 && j == 0)
                                 {
                                     loopStart = true;
-                                    flag = false;
+                                    isFirstLoop = false;
                                 }
 
-                                bool flag3 = current4.End == _weightsShape[3] && segment1D12.End == weight[3].End &&
-                                             segment1D11.End == weight[2].End && i == num2 - 1 && j == num3 - 1;
+                                bool isLastKernelSlice = current4.End == _weightsShape[3] && kernelColSegment.End == weight[3].End &&
+                                             kernelRowSegment.End == weight[2].End && i == weightPasses - 1 && j == inputPasses - 1;
                                 DataType outputType = _outputType;
-                                ACT0_OUTPUT_DEST aCT0_OUTPUT_DEST = ACT0_OUTPUT_DEST.dm;
+                                ACT0_OUTPUT_DEST act0OutputDest = ACT0_OUTPUT_DEST.dm;
                                 if (!weightGroupOnly)
                                 {
                                     int shift = ((TensorConst)_mm[GNNEMatMul.ShiftBits]).Value.ToScalar<int>();
-                                    int num5 = 0;
-                                    int num6 = 0;
-                                    if (flag3)
+                                    int setOfmapCcr = 0;
+                                    int clearOfmapCcr = 0;
+                                    if (isLastKernelSlice)
                                     {
-                                        Tuple<SegmentND, TensorStat> tuple = _l2GOfRec[ofPp][0];
+                                        Tuple<SegmentND, TensorStat> l2GOfRecStat = _l2GOfRec[ofPp][0];
                                         _l2GOfRec[ofPp].RemoveAt(0);
-                                        if (tuple.Item2.IsFirstSlice && !_ofmapRec[ofPp][0].Item2.IsFirstSlice)
+                                        if (l2GOfRecStat.Item2.IsFirstSlice && !_ofmapRec[ofPp][0].Item2.IsFirstSlice)
                                         {
-                                            num6 = 1;
+                                            clearOfmapCcr = 1;
                                         }
 
-                                        if (tuple.Item2.IsLastSlice)
+                                        if (l2GOfRecStat.Item2.IsLastSlice)
                                         {
-                                            num5 = 1;
+                                            setOfmapCcr = 1;
                                         }
                                     }
 
-                                    List<CcrSet> list6 = new List<CcrSet>();
-                                    if (num5 > 0)
+                                    List<CcrSet> ofmapCcrsToSet = new List<CcrSet>();
+                                    if (setOfmapCcr > 0)
                                     {
-                                        list6.Add(new CcrSet(
+                                        ofmapCcrsToSet.Add(new CcrSet(
                                             _ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, ofPp)), 1));
                                     }
 
-                                    List<CcrClr> list7 = new List<CcrClr>();
-                                    if (num6 > 0)
+                                    List<CcrClr> ofmapCcrsToClr = new List<CcrClr>();
+                                    if (clearOfmapCcr > 0)
                                     {
-                                        list7.Add(new CcrClr(
+                                        ofmapCcrsToClr.Add(new CcrClr(
                                             _ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.OfmapFake, ofPp))));
                                     }
 
-                                    int offsetAct = item5.Start * glb.GlbMap[ItemName.Act].GlbNByte / _outputShape[1];
-                                    aCT0_OUTPUT_DEST = ACT0_OUTPUT_DEST.dm;
-                                    actionUpdater.UpdateR2LPsum(shift, segmentND, segmentND, psum, ofPp, l1Pp,
-                                        aCT0_OUTPUT_DEST, releaseIf, Math.Max(i, j), TcuComputeMode.MatMul, loopStart,
-                                        flag3, _strideH, _strideW, _weightsShape[2], _inputType, _weightType,
-                                        outputType, _lact.CheckedDataType, list6, list7, offsetAct);
+                                    int offsetAct = batchSegment.Start * glb.GlbMap[ItemName.Act].GlbNByte / _outputShape[1];
+                                    act0OutputDest = ACT0_OUTPUT_DEST.dm;
+                                    actionUpdater.UpdateR2LPsum(shift, convSegment, convSegment, psum, ofPp, l1Pp,
+                                        act0OutputDest, releaseIf, Math.Max(i, j), TcuComputeMode.MatMul, loopStart,
+                                        isLastKernelSlice, _strideH, _strideW, _weightsShape[2], _inputType, _weightType,
+                                        outputType, _lact.CheckedDataType, ofmapCcrsToSet, ofmapCcrsToClr, offsetAct);
                                 }
-                                else if (flag3 && aCT0_OUTPUT_DEST == ACT0_OUTPUT_DEST.dm)
+                                else if (isLastKernelSlice && act0OutputDest == ACT0_OUTPUT_DEST.dm)
                                 {
-                                    _l2GOfRec[ofPp].Add(new Tuple<SegmentND, TensorStat>(item3,
+                                    _l2GOfRec[ofPp].Add(new Tuple<SegmentND, TensorStat>(ofmapRecSegment,
                                         new TensorStat(isFirstSlice: false, isLastSlice: false)));
                                 }
                             }
@@ -570,91 +570,91 @@ public class TileMatMul : RewriteRule<Pattern>
 
     private List<List<Segment1D>> GetL1McSeg(SegmentND ifmap, SegmentND psum, int mInloop, int cInloop)
     {
-        List<Segment1D> list = new List<Segment1D>();
-        List<Segment1D> list2 = new List<Segment1D>();
-        list = TileUtilities.GetSegmentStartEndLength(psum[1].Start, mInloop, psum[1].End);
-        list2 = TileUtilities.GetSegmentStartEndLength(ifmap[1].Start, cInloop, ifmap[1].End);
-        return new List<List<Segment1D>> { list, list2 };
+        List<Segment1D> ocSegments = new List<Segment1D>();
+        List<Segment1D> icSegments = new List<Segment1D>();
+        ocSegments = TileUtilities.GetSegmentStartEndLength(psum[1].Start, mInloop, psum[1].End);
+        icSegments = TileUtilities.GetSegmentStartEndLength(ifmap[1].Start, cInloop, ifmap[1].End);
+        return new List<List<Segment1D>> { ocSegments, icSegments };
     }
 
     private void UpdateCcrRecStat()
     {
         List<Tuple<SegmentND, TensorStat>>[] g2LIfRec = _g2LIfRec;
-        foreach (List<Tuple<SegmentND, TensorStat>> list in g2LIfRec)
+        foreach (List<Tuple<SegmentND, TensorStat>> recList in g2LIfRec)
         {
-            for (int j = 0; j < list.Count; j++)
+            for (int j = 0; j < recList.Count; j++)
             {
                 if (j == 0)
                 {
-                    list[j].Item2.IsFirstSlice = true;
+                    recList[j].Item2.IsFirstSlice = true;
                 }
 
-                if (j == list.Count - 1)
+                if (j == recList.Count - 1)
                 {
-                    list[j].Item2.IsLastSlice = true;
+                    recList[j].Item2.IsLastSlice = true;
                 }
 
-                if (j < list.Count - 1 && list[j].Item1 != list[j + 1].Item1)
+                if (j < recList.Count - 1 && recList[j].Item1 != recList[j + 1].Item1)
                 {
-                    list[j].Item2.IsLastSlice = true;
-                    list[j + 1].Item2.IsFirstSlice = true;
+                    recList[j].Item2.IsLastSlice = true;
+                    recList[j + 1].Item2.IsFirstSlice = true;
                 }
             }
         }
 
         g2LIfRec = _g2RWRec;
-        foreach (List<Tuple<SegmentND, TensorStat>> list2 in g2LIfRec)
+        foreach (List<Tuple<SegmentND, TensorStat>> recList in g2LIfRec)
         {
-            for (int k = 0; k < list2.Count; k++)
+            for (int k = 0; k < recList.Count; k++)
             {
                 if (k == 0)
                 {
-                    list2[k].Item2.IsFirstSlice = true;
+                    recList[k].Item2.IsFirstSlice = true;
                 }
 
-                if (k == list2.Count - 1)
+                if (k == recList.Count - 1)
                 {
-                    list2[k].Item2.IsLastSlice = true;
+                    recList[k].Item2.IsLastSlice = true;
                 }
 
-                if (k < list2.Count - 1 && list2[k].Item1 != list2[k + 1].Item1)
+                if (k < recList.Count - 1 && recList[k].Item1 != recList[k + 1].Item1)
                 {
-                    list2[k].Item2.IsLastSlice = true;
-                    list2[k + 1].Item2.IsFirstSlice = true;
+                    recList[k].Item2.IsLastSlice = true;
+                    recList[k + 1].Item2.IsFirstSlice = true;
                 }
             }
         }
 
         g2LIfRec = _l2GOfRec;
-        foreach (List<Tuple<SegmentND, TensorStat>> list3 in g2LIfRec)
+        foreach (List<Tuple<SegmentND, TensorStat>> recList in g2LIfRec)
         {
-            for (int l = 0; l < list3.Count; l++)
+            for (int l = 0; l < recList.Count; l++)
             {
                 if (l == 0)
                 {
-                    list3[l].Item2.IsFirstSlice = true;
+                    recList[l].Item2.IsFirstSlice = true;
                 }
 
-                if (l == list3.Count - 1)
+                if (l == recList.Count - 1)
                 {
-                    list3[l].Item2.IsLastSlice = true;
+                    recList[l].Item2.IsLastSlice = true;
                 }
 
-                if (l < list3.Count - 1 && list3[l].Item1 != list3[l + 1].Item1)
+                if (l < recList.Count - 1 && recList[l].Item1 != recList[l + 1].Item1)
                 {
-                    list3[l].Item2.IsLastSlice = true;
-                    list3[l + 1].Item2.IsFirstSlice = true;
+                    recList[l].Item2.IsLastSlice = true;
+                    recList[l + 1].Item2.IsFirstSlice = true;
                 }
             }
         }
 
         g2LIfRec = _ofmapRec;
-        foreach (List<Tuple<SegmentND, TensorStat>> list4 in g2LIfRec)
+        foreach (List<Tuple<SegmentND, TensorStat>> recList in g2LIfRec)
         {
-            if (list4.Count > 0)
+            if (recList.Count > 0)
             {
-                list4[0].Item2.IsFirstSlice = true;
-                list4[list4.Count - 1].Item2.IsLastSlice = true;
+                recList[0].Item2.IsFirstSlice = true;
+                recList[recList.Count - 1].Item2.IsLastSlice = true;
             }
         }
     }
@@ -733,15 +733,15 @@ public class TileMatMul : RewriteRule<Pattern>
         int j = 1;
         int r = 1;
         int s = 1;
-        int num = 1;
-        int num2 = Math.Min(GNNEEnv.PuWidth, _outputShape[3]);
+        int ofmapRows = 1;
+        int ofmapCols = Math.Min(GNNEEnv.PuWidth, _outputShape[3]);
         int h = 1;
-        int w = num2;
+        int w = ofmapCols;
         int k = 1;
         AllocateResult allocateResult;
         for (; j < _weightsShape[3]; j++)
         {
-            allocateResult = HandleAllocate(i, j + 1, h, w, r, s, k, num, num2);
+            allocateResult = HandleAllocate(i, j + 1, h, w, r, s, k, ofmapRows, ofmapCols);
             if (!allocateResult.IsOk)
             {
                 break;
@@ -750,30 +750,30 @@ public class TileMatMul : RewriteRule<Pattern>
 
         for (; k < GNNEEnv.PuWidth && k < _weightsShape[2]; k++)
         {
-            allocateResult = HandleAllocate(i, j, h, w, r, s, k + 1, num, num2);
+            allocateResult = HandleAllocate(i, j, h, w, r, s, k + 1, ofmapRows, ofmapCols);
             if (!allocateResult.IsOk)
             {
                 break;
             }
         }
 
-        while (num2 < _outputShape[3])
+        while (ofmapCols < _outputShape[3])
         {
-            int num3 = num2 + 1;
-            int num4 = num3;
-            allocateResult = HandleAllocate(i, j, h, num4, r, s, k, num, num3);
+            int nextOfmapCols = ofmapCols + 1;
+            int nextWidth = nextOfmapCols;
+            allocateResult = HandleAllocate(i, j, h, nextWidth, r, s, k, ofmapRows, nextOfmapCols);
             if (!allocateResult.IsOk)
             {
                 break;
             }
 
-            num2 = num3;
-            w = num4;
+            ofmapCols = nextOfmapCols;
+            w = nextWidth;
         }
 
         for (; k < _weightsShape[2]; k++)
         {
-            allocateResult = HandleAllocate(i, j, h, w, r, s, k + 1, num, num2);
+            allocateResult = HandleAllocate(i, j, h, w, r, s, k + 1, ofmapRows, ofmapCols);
             if (!allocateResult.IsOk)
             {
                 break;
@@ -782,7 +782,7 @@ public class TileMatMul : RewriteRule<Pattern>
 
         for (; i < _outputShape[1]; i++)
         {
-            allocateResult = HandleAllocate(i + 1, j, h, w, r, s, k, num, num2);
+            allocateResult = HandleAllocate(i + 1, j, h, w, r, s, k, ofmapRows, ofmapCols);
             if (!allocateResult.IsOk)
             {
                 break;
@@ -794,12 +794,12 @@ public class TileMatMul : RewriteRule<Pattern>
             k = k / GNNEEnv.PuWidth * GNNEEnv.PuWidth;
         }
 
-        allocateResult = HandleAllocate(i, j, h, w, r, s, k, num, num2, isFinal: true);
+        allocateResult = HandleAllocate(i, j, h, w, r, s, k, ofmapRows, ofmapCols, isFinal: true);
         TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileMatMul.cs",
             820);
-        GNNEShape gNNEShape = new GNNEShape(i, k, num, num2);
-        return new TileMatMulGlb(allocateResult.GlbMap, allocateResult.Items, gNNEShape.Dims, GNNEEnv.NPingPongSplit,
+        GNNEShape glbShape = new GNNEShape(i, k, ofmapRows, ofmapCols);
+        return new TileMatMulGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
     }
 
@@ -812,11 +812,11 @@ public class TileMatMul : RewriteRule<Pattern>
         allocateResult.GlbMap = boxes.GlbMap;
         if (allocateResult.IsOk)
         {
-            foreach (KeyValuePair<ItemName, TensorOnGlb> item in boxes.GlbMap)
+            foreach (KeyValuePair<ItemName, TensorOnGlb> entry in boxes.GlbMap)
             {
-                if (allocateResult.Items.ContainsKey(item.Key))
+                if (allocateResult.Items.ContainsKey(entry.Key))
                 {
-                    item.Value.Mmu = allocateResult.Items[item.Key];
+                    entry.Value.Mmu = allocateResult.Items[entry.Key];
                 }
             }
         }
@@ -826,77 +826,77 @@ public class TileMatMul : RewriteRule<Pattern>
 
     private AllocateResult GetBoxes(int n, int c, int h, int w, int r, int s, int m, int e, int f, List<float> glbUsage)
     {
-        List<BoxOnGlb> list = new List<BoxOnGlb>();
-        Dictionary<ItemName, TensorOnGlb> dictionary = new Dictionary<ItemName, TensorOnGlb>();
-        List<float> list2 = new List<float> { 0f, 0f };
-        int num = GNNEEnv.NPingPongSplit;
+        List<BoxOnGlb> boxes = new List<BoxOnGlb>();
+        Dictionary<ItemName, TensorOnGlb> glbMap = new Dictionary<ItemName, TensorOnGlb>();
+        List<float> glbUsageBytes = new List<float> { 0f, 0f };
+        int pingPongSplit = GNNEEnv.NPingPongSplit;
         if (n == _inputShape[0] && c == _inputShape[1] && h == _inputShape[2] && w == _inputShape[3])
         {
-            num = 1;
+            pingPongSplit = 1;
         }
 
-        TensorOnGlb tensorOnGlb = new TensorOnGlb(new int[4] { _broadcastIf ? 1 : n, c, h, w }, _inputType, 0);
-        int num2 = tensorOnGlb.AllocatedBytes * num;
-        list2[0] += num2;
-        num2 = TileUtilities.GetAlignedNum(num2, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
-        list2[1] += num2;
-        int num3 = (_broadcastW ? m : (m * n));
-        TensorOnGlb tensorOnGlb2 = new TensorOnGlb(new int[4] { num3, c, r, s }, _weightType, 0);
-        int num4 = SpaceSearcher.GetWeightSize(r, s, c, num3, TileUtilities.GetBytesPerElement(_weightType)) *
+        TensorOnGlb ifmapTensor = new TensorOnGlb(new int[4] { _broadcastIf ? 1 : n, c, h, w }, _inputType, 0);
+        int ifmapBytes = ifmapTensor.AllocatedBytes * pingPongSplit;
+        glbUsageBytes[0] += ifmapBytes;
+        ifmapBytes = TileUtilities.GetAlignedNum(ifmapBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
+        glbUsageBytes[1] += ifmapBytes;
+        int weightOcCount = (_broadcastW ? m : (m * n));
+        TensorOnGlb weightTensor = new TensorOnGlb(new int[4] { weightOcCount, c, r, s }, _weightType, 0);
+        int weightBytes = SpaceSearcher.GetWeightSize(r, s, c, weightOcCount, TileUtilities.GetBytesPerElement(_weightType)) *
                    GNNEEnv.NPingPongSplit;
-        tensorOnGlb2.AllocatedBytes = num4 / GNNEEnv.NPingPongSplit;
-        list2[0] += num4;
-        num4 = TileUtilities.GetAlignedNum(num4, GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
-        list2[1] += num4;
-        TensorOnGlb tensorOnGlb3 = new TensorOnGlb(new int[4] { n, m, e, f }, _outputType, 0);
-        int num5 = tensorOnGlb3.AllocatedBytes * GNNEEnv.NPingPongSplit;
-        list2[0] += num5;
-        num5 = TileUtilities.GetAlignedNum(num5, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
-        list2[1] += num5;
+        weightTensor.AllocatedBytes = weightBytes / GNNEEnv.NPingPongSplit;
+        glbUsageBytes[0] += weightBytes;
+        weightBytes = TileUtilities.GetAlignedNum(weightBytes, GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
+        glbUsageBytes[1] += weightBytes;
+        TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, m, e, f }, _outputType, 0);
+        int ofmapBytes = ofmapTensor.AllocatedBytes * GNNEEnv.NPingPongSplit;
+        glbUsageBytes[0] += ofmapBytes;
+        ofmapBytes = TileUtilities.GetAlignedNum(ofmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
+        glbUsageBytes[1] += ofmapBytes;
         TensorOnGlb value = new TensorOnGlb(new int[4] { 1, _outputShape[1], _outputShape[2], GNNEEnv.ActNumPerChan },
             _lact.CheckedDataType, 0);
         int actSize = SpaceSearcher.GetActSize(_outputShape[1] * _outputShape[2], GNNEEnv.ActNumPerChan,
             TileUtilities.GetBytesPerElement(_lact.CheckedDataType));
-        list2[0] += actSize;
+        glbUsageBytes[0] += actSize;
         actSize = TileUtilities.GetAlignedNum(actSize, GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
-        list2[1] += actSize;
+        glbUsageBytes[1] += actSize;
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
-        list.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.Basement));
-        list.Add(new BoxOnGlb(
-            new int[2] { GNNEEnv.IfmapBankWidth, num2 / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.IfmapBankWidth, ifmapBytes / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.Ifmap));
-        list.Add(new BoxOnGlb(new int[2] { GNNEEnv.WBankWidth, num4 / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.WBankWidth, weightBytes / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.Weight));
-        list.Add(new BoxOnGlb(
-            new int[2] { GNNEEnv.OfmapBankWidth, num5 / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.OfmapBankWidth, ofmapBytes / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.Ofmap));
-        list.Add(new BoxOnGlb(
+        boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.ActBankWidth, actSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth }, ItemName.Act));
-        dictionary.Add(ItemName.Ifmap, tensorOnGlb);
-        dictionary.Add(ItemName.Weight, tensorOnGlb2);
-        dictionary.Add(ItemName.Ofmap, tensorOnGlb3);
-        dictionary.Add(ItemName.Act, value);
+        glbMap.Add(ItemName.Ifmap, ifmapTensor);
+        glbMap.Add(ItemName.Weight, weightTensor);
+        glbMap.Add(ItemName.Ofmap, ofmapTensor);
+        glbMap.Add(ItemName.Act, value);
         if (_weightType == DataTypes.UInt8 || _weightType == DataTypes.Int16)
         {
-            TensorOnGlb value2 =
+            TensorOnGlb wQargTensor =
                 new TensorOnGlb(new int[4] { 1, 1, _broadcastW ? 1 : _outputShape[1], _weightsShape[2] },
                     _lwQarg.CheckedDataType, 0);
-            int num6 = (_broadcastW ? 1 : _outputShape[1]) * SpaceSearcher.GetWQargSize(_weightsShape[2],
+            int wQargBytes = (_broadcastW ? 1 : _outputShape[1]) * SpaceSearcher.GetWQargSize(_weightsShape[2],
                 TileUtilities.GetBytesPerElement(_lwQarg.CheckedDataType));
-            list2[0] += num6;
-            num6 = TileUtilities.GetAlignedNum(num6, GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
-            list2[1] += num6;
-            list.Add(new BoxOnGlb(
-                new int[2] { GNNEEnv.WQargBankWidth, num6 / GNNEEnv.WQargBankWidth / GNNEEnv.GlbBankWidth },
+            glbUsageBytes[0] += wQargBytes;
+            wQargBytes = TileUtilities.GetAlignedNum(wQargBytes, GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
+            glbUsageBytes[1] += wQargBytes;
+            boxes.Add(new BoxOnGlb(
+                new int[2] { GNNEEnv.WQargBankWidth, wQargBytes / GNNEEnv.WQargBankWidth / GNNEEnv.GlbBankWidth },
                 ItemName.WQarg));
-            dictionary.Add(ItemName.WQarg, value2);
+            glbMap.Add(ItemName.WQarg, wQargTensor);
         }
 
-        glbUsage[0] = list2[0] / (float)GNNEEnv.GlbSize;
-        glbUsage[1] = list2[1] / (float)GNNEEnv.GlbSize;
-        return new AllocateResult { Boxes = list, GlbMap = dictionary };
+        glbUsage[0] = glbUsageBytes[0] / (float)GNNEEnv.GlbSize;
+        glbUsage[1] = glbUsageBytes[1] / (float)GNNEEnv.GlbSize;
+        return new AllocateResult { Boxes = boxes, GlbMap = glbMap };
     }
 
     public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)

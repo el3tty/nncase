@@ -1,4 +1,4 @@
-// Copyright (c) Canaan Inc. All rights reserved.
+﻿// Copyright (c) Canaan Inc. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -228,10 +228,10 @@ public class ToFakeLSTM : RewriteRule<Pattern>
         var fields = new Expr[count];
         for (int i = 0; i < count; i++)
         {
-            Call item = Nncase.IR.F.Tensors.GetItem(fakeLstm, i);
+            Call outputItem = Nncase.IR.F.Tensors.GetItem(fakeLstm, i);
             fields[i] = ((Marker)result[$"outputMarker_{i}"]).With(
                 null,
-                Nncase.IR.F.Tensors.Reshape(item, originalShapes[i]));
+                Nncase.IR.F.Tensors.Reshape(outputItem, originalShapes[i]));
         }
 
         return new Nncase.IR.Tuple(fields);

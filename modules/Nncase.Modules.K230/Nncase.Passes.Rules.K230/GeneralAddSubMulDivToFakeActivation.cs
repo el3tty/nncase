@@ -48,34 +48,34 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(lhs.CheckedShape.ToValueArray(), 0, array, array.Length - lhs.CheckedShape.Count,
+        int[] lhsShape4 = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(lhs.CheckedShape.ToValueArray(), 0, lhsShape4, lhsShape4.Length - lhs.CheckedShape.Count,
             lhs.CheckedShape.Count);
-        int[] array2 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(rhs.CheckedShape.ToValueArray(), 0, array2, array2.Length - rhs.CheckedShape.Count,
+        int[] rhsShape4 = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(rhs.CheckedShape.ToValueArray(), 0, rhsShape4, rhsShape4.Length - rhs.CheckedShape.Count,
             rhs.CheckedShape.Count);
-        int[] array3 = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
+        int[] longShape = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
             ? lhs.CheckedShape.ToValueArray()
             : rhs.CheckedShape.ToValueArray());
-        int[] array4 = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
+        int[] shortShape = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
             ? rhs.CheckedShape.ToValueArray()
             : lhs.CheckedShape.ToValueArray());
-        for (int i = 0; i < array3.Length; i++)
+        for (int i = 0; i < longShape.Length; i++)
         {
-            if (i >= array3.Length - array4.Length && array3[i] < array4[i - (array3.Length - array4.Length)])
+            if (i >= longShape.Length - shortShape.Length && longShape[i] < shortShape[i - (longShape.Length - shortShape.Length)])
             {
-                array3[i] = array4[i - (array3.Length - array4.Length)];
+                longShape[i] = shortShape[i - (longShape.Length - shortShape.Length)];
             }
         }
 
-        int[] array5 = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(array3, 0, array5, array5.Length - array3.Length, array3.Length);
-        int num = array5[1];
-        ActParam2 actParam = new ActParam2(num);
+        int[] broadcastShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(longShape, 0, broadcastShape, broadcastShape.Length - longShape.Length, longShape.Length);
+        int channels = broadcastShape[1];
+        ActParam2 actParam = new ActParam2(channels);
         GnneActivationType type = ((bn.BinaryOp != BinaryOp.Add && bn.BinaryOp != BinaryOp.Sub)
             ? GnneActivationType.Mul
             : GnneActivationType.Add);
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { channels, 7 });
         Marker marker = Nncase.IR.F.Math
             .RangeOfMarker(Nncase.IR.F.Math.Unary(UnaryOp.Neg, inputMarkerR),
                 new float[2] { 0f - inputRangeR[new int[1] { 1 }], 0f - inputRangeR[new int[1]] }).With(null, null,
@@ -83,7 +83,7 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
         return Nncase.IR.F.Math
             .RangeOfMarker(
                 Nncase.IR.K230.F.Tensors.FakeActivation(inputMarkerL.With(null, lhs, inputRangeL),
-                    (bn.BinaryOp == BinaryOp.Sub) ? marker : inputMarkerR.With(null, rhs, inputRangeR), tensor, num, 0,
+                    (bn.BinaryOp == BinaryOp.Sub) ? marker : inputMarkerR.With(null, rhs, inputRangeR), tensor, channels, 0,
                     0, 0, false, type, actParam, output.CheckedShape.ToValueArray()), outputRange).With(null, null,
                 null, adaQuantInfo: outputMarker.AdaQuantInfo, mixQuantInfo: outputMarker.MixQuantInfo);
     }

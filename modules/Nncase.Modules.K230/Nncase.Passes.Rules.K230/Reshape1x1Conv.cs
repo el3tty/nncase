@@ -50,26 +50,26 @@ public sealed class Reshape1x1Conv : RewriteRule<Pattern>
              input.CheckedShape[1].FixedValue != expr.CheckedShape[1].FixedValue) &&
             input.CheckedShape[2].FixedValue * input.CheckedShape[3].FixedValue < 65536)
         {
-            int[] obj = new int[4] { 24, 20, 16, 0 };
-            obj[3] = input.CheckedShape[1].FixedValue;
-            int num = obj.FirstOrDefault((int d) => input.CheckedShape[1].FixedValue % d == 0);
-            int num2 = ((!(expr.CheckedDataType == DataTypes.Int16)) ? 1 : 2);
+            int[] channelAlignments = new int[4] { 24, 20, 16, 0 };
+            channelAlignments[3] = input.CheckedShape[1].FixedValue;
+            int channelAlignment = channelAlignments.FirstOrDefault((int d) => input.CheckedShape[1].FixedValue % d == 0);
+            int elementScale = ((!(expr.CheckedDataType == DataTypes.Int16)) ? 1 : 2);
             int fixedValue = (expr.CheckedShape[0] * input.CheckedShape[1] * expr.CheckedShape[2] *
-                              expr.CheckedShape[3] * num2).FixedValue;
-            byte[] array = ((TensorConst)((Call)expr)[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
-            byte[] array2 = new byte[fixedValue];
-            for (int num3 = 0; num3 < fixedValue; num3++)
+                              expr.CheckedShape[3] * elementScale).FixedValue;
+            byte[] weightBytes = ((TensorConst)((Call)expr)[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
+            byte[] reshapedWeights = new byte[fixedValue];
+            for (int index = 0; index < fixedValue; index++)
             {
-                array2[num3] =
-                    array[
-                        num3 / (input.CheckedShape[1].FixedValue * num2) * expr.CheckedShape[1].FixedValue * num2 +
-                        num3 % (input.CheckedShape[1].FixedValue * num2)];
+                reshapedWeights[index] =
+                    weightBytes[
+                        index / (input.CheckedShape[1].FixedValue * elementScale) * expr.CheckedShape[1].FixedValue * elementScale +
+                        index % (input.CheckedShape[1].FixedValue * elementScale)];
             }
 
-            Shape shape = new Shape(expr.CheckedShape[0], num, input.CheckedShape[1] / num, 1);
+            Shape shape = new Shape(expr.CheckedShape[0], channelAlignment, input.CheckedShape[1] / channelAlignment, 1);
             Call weights = Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)expr.CheckedDataType,
-                Tensor.FromBytes(new TensorType(expr.CheckedDataType, shape), array2));
-            Shape shape2 = new Shape(input.CheckedShape[0], num, input.CheckedShape[1] / num,
+                Tensor.FromBytes(new TensorType(expr.CheckedDataType, shape), reshapedWeights));
+            Shape shape2 = new Shape(input.CheckedShape[0], channelAlignment, input.CheckedShape[1] / channelAlignment,
                 input.CheckedShape[2] * input.CheckedShape[3]);
             Call call2 = Nncase.IR.F.Tensors.Reshape(fusionCallParams[0], shape2);
             call2.CheckedType = new TensorType(input.CheckedDataType, shape2);

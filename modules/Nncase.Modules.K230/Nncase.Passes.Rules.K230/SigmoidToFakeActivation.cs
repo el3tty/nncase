@@ -22,13 +22,13 @@ public class SigmoidToFakeActivation : RewriteRule<Pattern>
 
     private Expr? GetReplace(Call call, Expr input)
     {
-        int num = 1;
-        ActParam16 actParam = new ActParam16(num);
-        float[] array = new float[15]
+        int actChannels = 1;
+        ActParam16 actParam = new ActParam16(actChannels);
+        float[] xs = new float[15]
         {
             -7f, -4.5f, -3.5f, -2.7f, -2.1f, -1.6f, -1f, 0f, 1f, 1.6f, 2.1f, 2.7f, 3.5f, 4.5f, 7f
         };
-        double[] array2 = new double[32]
+        double[] ks = new double[32]
         {
             0.0005523135475095087, 0.004717946782565874, 0.003582545941984816, 0.024643784893781717,
             0.017628076952972527, 0.08920121475552378, 0.04080084671519202, 0.17057512199171598,
@@ -40,17 +40,17 @@ public class SigmoidToFakeActivation : RewriteRule<Pattern>
         };
         for (int i = 0; i < 15; i++)
         {
-            actParam.Xs[i, 0] = array[i];
+            actParam.Xs[i, 0] = xs[i];
         }
 
         for (int j = 0; j < 16; j++)
         {
-            actParam.Ks[j, 0] = (float)array2[j * 2];
-            actParam.Bs[j, 0] = (float)array2[j * 2 + 1];
+            actParam.Ks[j, 0] = (float)ks[j * 2];
+            actParam.Bs[j, 0] = (float)ks[j * 2 + 1];
         }
 
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 49 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, true,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 49 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, true,
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 

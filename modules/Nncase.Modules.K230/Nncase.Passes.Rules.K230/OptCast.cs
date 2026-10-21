@@ -35,13 +35,13 @@ public sealed class OptCast : IRewriteRule
             return null;
         }
 
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(input.CheckedShape.ToValueArray(), 0, array, array.Length - input.CheckedShape.Count,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(input.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - input.CheckedShape.Count,
             input.CheckedShape.Count);
         PrimType @float = DataTypes.Float16;
         if (input.CheckedShape.Rank < 4)
         {
-            Call input2 = Nncase.IR.F.Tensors.Reshape(input, array);
+            Call input2 = Nncase.IR.F.Tensors.Reshape(input, inputShape);
             return Nncase.IR.F.Tensors.Reshape(
                 Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,
                     Nncase.IR.K230.F.Tensors.GNNELoad(@float, input2)), call.CheckedShape);

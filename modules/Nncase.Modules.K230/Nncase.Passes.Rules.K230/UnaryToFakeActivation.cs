@@ -29,11 +29,11 @@ public class UnaryToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        int num = GNNETypePatternUtility.GetGNNEShape(call.CheckedShape.ToValueArray())[1];
-        ActParam2 actParam = new ActParam2(num);
+        int actChannels = GNNETypePatternUtility.GetGNNEShape(call.CheckedShape.ToValueArray())[1];
+        ActParam2 actParam = new ActParam2(actChannels);
         actParam.ForEachChannel(ProcessActParam);
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, false,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 

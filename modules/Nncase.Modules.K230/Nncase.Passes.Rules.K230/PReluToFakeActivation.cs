@@ -19,30 +19,30 @@ public class PReluToFakeActivation : RewriteRule<Pattern>
 
     public Expr? GetReplace(PRelu prelu, Call preluCall, TensorConst slope, Expr input)
     {
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(preluCall.CheckedShape.ToValueArray(), 0, array, array.Length - preluCall.CheckedShape.Rank,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(preluCall.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - preluCall.CheckedShape.Rank,
             preluCall.CheckedShape.Rank);
-        int num = array[1];
-        ActParam2 actParam = new ActParam2(num, new QuantParam(0, 1f));
-        float[] array2 = slope.Value.ToArray<float>();
+        int actChannels = inputShape[1];
+        ActParam2 actParam = new ActParam2(actChannels, new QuantParam(0, 1f));
+        float[] slopes = slope.Value.ToArray<float>();
         for (int i = 0; i < actParam.Ks.GetLength(1); i++)
         {
-            if (array2.Length == 1)
+            if (slopes.Length == 1)
             {
-                actParam.Ks[0, i] = array2[0];
+                actParam.Ks[0, i] = slopes[0];
             }
-            else if (array2.Length == num)
+            else if (slopes.Length == actChannels)
             {
-                actParam.Ks[0, i] = array2[i];
+                actParam.Ks[0, i] = slopes[i];
             }
             else
             {
-                actParam.Ks[0, i] = array2[i * array2.Length / num];
+                actParam.Ks[0, i] = slopes[i * slopes.Length / actChannels];
             }
         }
 
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, false,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
             GnneActivationType.Uninitialized, actParam, preluCall.CheckedShape.ToValueArray());
     }
 

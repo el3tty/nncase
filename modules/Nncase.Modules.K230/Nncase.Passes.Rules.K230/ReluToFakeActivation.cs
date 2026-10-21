@@ -19,19 +19,19 @@ public class ReluToFakeActivation : RewriteRule<Pattern>
 
     public Expr? GetReplace(Relu relu, Call reluCall, Expr input)
     {
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(reluCall.CheckedShape.ToValueArray(), 0, array, array.Length - reluCall.CheckedShape.Rank,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(reluCall.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - reluCall.CheckedShape.Rank,
             reluCall.CheckedShape.Rank);
-        int num = array[1];
-        ActParam2 actParam = new ActParam2(num, new QuantParam(0, 1f));
+        int actChannels = inputShape[1];
+        ActParam2 actParam = new ActParam2(actChannels, new QuantParam(0, 1f));
         for (int i = 0; i < actParam.Ks.GetLength(1); i++)
         {
             actParam.Ks[0, i] = 0f;
             actParam.Bs[0, i] = 0f;
         }
 
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, false,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
             GnneActivationType.Uninitialized, actParam, reluCall.CheckedShape.ToValueArray());
     }
 

@@ -38,13 +38,13 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
     private Expr? GetReplace(Call call1, TensorConst groups1, Marker marker, Call call2, Expr weights2,
         TensorConst groups2, Marker markerW)
     {
-        bool flag = call1.Arguments[0].CheckedShape[1] == call1.CheckedShape[1] &&
+        bool isDepthwise1 = call1.Arguments[0].CheckedShape[1] == call1.CheckedShape[1] &&
                     call1.CheckedShape[1] == groups1.Value.ToScalar<int>() && groups1 != 1;
-        bool num = call1.CheckedShape[1] == call2.CheckedShape[1] &&
+        bool isDepthwise2 = call1.CheckedShape[1] == call2.CheckedShape[1] &&
                    call2.CheckedShape[1] == groups2.Value.ToScalar<int>() && groups2 != 1;
         DataType quantType = base.CompileSession.CompileOptions.QuantizeOptions.QuantType;
         DataType wQuantType = base.CompileSession.CompileOptions.QuantizeOptions.WQuantType;
-        if (num && weights2.CheckedShape[2].FixedValue <= 3 && weights2.CheckedShape[3].FixedValue <= 3 && !flag)
+        if (isDepthwise2 && weights2.CheckedShape[2].FixedValue <= 3 && weights2.CheckedShape[3].FixedValue <= 3 && !isDepthwise1)
         {
             if (marker.MixQuantInfo == null)
             {

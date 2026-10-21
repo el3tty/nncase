@@ -35,19 +35,19 @@ public sealed class ReshapePadReshapeMotion : IRewriteRule
         Call input2 = Nncase.IR.F.Tensors.Reshape(bc1,
             new Dimension[4] { 1, checkedShape[0], checkedShape[1], checkedShape[2] });
         Tensor<int> tensor = pads.Value.Cast<int>();
-        int[][] array = new int[4][];
+        int[][] paddings = new int[4][];
         for (int i = 0; i < 4; i++)
         {
             if (i != 0)
             {
                 for (int j = 0; j < tensor.Length; j++)
                 {
-                    array[i][j] = tensor[new int[2] { i - 1, j }];
+                    paddings[i][j] = tensor[new int[2] { i - 1, j }];
                 }
             }
         }
 
-        return Nncase.IR.F.NN.Pad(input2, array, p.PadMode, value);
+        return Nncase.IR.F.NN.Pad(input2, paddings, p.PadMode, value);
     }
 
     public Expr? GetReplace(IMatchResult __result, RunPassContext __context)

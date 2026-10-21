@@ -21,20 +21,20 @@ public sealed class DeqToAct1 : IRewriteRule
 
     private Expr? GetReplace(Call call, Expr input, QuantParam qp)
     {
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(call.CheckedShape.ToValueArray(), 0, array, array.Length - call.CheckedShape.ToValueArray().Length,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(call.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - call.CheckedShape.ToValueArray().Length,
             call.CheckedShape.Count);
-        int num = array[1];
-        ActParam2 actParam = new ActParam2(num);
+        int actChannels = inputShape[1];
+        ActParam2 actParam = new ActParam2(actChannels);
         return Nncase.IR.F.Tensors.Reshape(Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
                 Nncase.IR.K230.F.Tensors.GNNEActivation(
                     Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)input.CheckedDataType,
-                        Nncase.IR.F.Tensors.Reshape(input, array)), None.Default,
+                        Nncase.IR.F.Tensors.Reshape(input, inputShape)), None.Default,
                     Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, actParam.ToAct1Data()), 0, 0, 0,
                     Tensor.FromArray(
                         new DeQuantizeParam[1] { new DeQuantizeParam(qp.ZeroPoint, qp.Scale) }),
-                    Tensor.FromArray(new DeQuantizeParam[1] { new DeQuantizeParam(qp.ZeroPoint, qp.Scale) }), num,
-                    GnneActivationType.Uninitialized, false, DataTypes.Float16, actParam, array)),
+                    Tensor.FromArray(new DeQuantizeParam[1] { new DeQuantizeParam(qp.ZeroPoint, qp.Scale) }), actChannels,
+                    GnneActivationType.Uninitialized, false, DataTypes.Float16, actParam, inputShape)),
             call.CheckedShape);
     }
 

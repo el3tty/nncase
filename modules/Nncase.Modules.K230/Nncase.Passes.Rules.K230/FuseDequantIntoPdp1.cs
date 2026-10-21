@@ -33,7 +33,7 @@ public sealed class FuseDequantIntoPdp1 : IRewriteRule
 
     public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
     {
-        GNNEPdp1 pdp1_reduce = (GNNEPdp1)__result["pdp1_reduce"];
+        GNNEPdp1 pdp1Reduce = (GNNEPdp1)__result["pdp1_reduce"];
         Call ldCall = (Call)__result["ldCall"];
         Dequantize deq = (Dequantize)__result["deq"];
         Call deqCall = (Call)__result["deqCall"];
@@ -44,9 +44,9 @@ public sealed class FuseDequantIntoPdp1 : IRewriteRule
         Expr depuantparams = (Expr)__result["depuantparams"];
         Expr value = (Expr)__result["value"];
         Expr shiftbits = (Expr)__result["shiftbits"];
-        Expr count_include_pad = (Expr)__result["count_include_pad"];
+        Expr countIncludePad = (Expr)__result["count_include_pad"];
         Expr act = (Expr)__result["act"];
-        return GetReplace(pdp1_reduce, ldCall, deq, deqCall, input, filter, stride, padding, depuantparams, value,
-            shiftbits, count_include_pad, act);
+        return GetReplace(pdp1Reduce, ldCall, deq, deqCall, input, filter, stride, padding, depuantparams, value,
+            shiftbits, countIncludePad, act);
     }
 }

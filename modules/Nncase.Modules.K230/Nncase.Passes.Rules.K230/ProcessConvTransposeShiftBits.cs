@@ -27,10 +27,10 @@ public sealed class ProcessConvTransposeShiftBits : IRewriteRule
     private Expr? GetReplace(GNNEConv2DTranspose conv, IMatchResult result, RunPassContext options)
     {
         ActParam2 actParam = new ActParam2(conv.ActParam);
-        int num = actParam.FusedShiftBits();
+        int shiftBits = actParam.FusedShiftBits();
         Expr expr = GetReplaceHelper.LoadAct0(actParam);
         Call expr2 = new Call(conv, (Expr)result["input"], (Expr)result["weights"], (Expr)result["weightsBias"],
-            (Expr)result["weightsBiasQint8"], expr, (Expr)result["actQint8"], (Expr)result["deqBias"], num,
+            (Expr)result["weightsBiasQint8"], expr, (Expr)result["actQint8"], (Expr)result["deqBias"], shiftBits,
             (Expr)result["shiftBitsQint8"], (Expr)result["qint8Qp"], (Expr)result["padding"], (Expr)result["stride"],
             (Expr)result["dilation"], (Expr)result["groups"], (Expr)result["is16Quant"], (Expr)result["padValue"],
             (Expr)result["weightsQint8"], (Expr)result["outputPadding"], (Expr)result["outputShape"]);

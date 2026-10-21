@@ -19,17 +19,17 @@ public sealed class UniteConcatRange : RewriteRule<Pattern>
         Nncase.PatternMatch.F.Tensors.IsConcat("concat", null, (Concat _) => true, Nncase.PatternMatch.Utility.IsTuple(
             Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", delegate(ReadOnlySpan<Expr> exprs)
             {
-                Pattern[] array = new Pattern[exprs.Length];
+                Pattern[] patterns = new Pattern[exprs.Length];
                 for (int i = 0; i < exprs.Length; i++)
                 {
-                    array[i] = Nncase.PatternMatch.Utility.IsAlt(
+                    patterns[i] = Nncase.PatternMatch.Utility.IsAlt(
                         Nncase.PatternMatch.Utility.IsRangeOfMarker(
                             Nncase.PatternMatch.Utility.IsWildcard($"input_{i}"),
                             Nncase.PatternMatch.Utility.IsTensorConst($"input_range_{i}")),
                         Nncase.PatternMatch.Utility.IsWildcard($"input_{i}"));
                 }
 
-                return array;
+                return patterns;
             }))), Nncase.PatternMatch.Utility.IsTensorConst("range"));
 
     private Expr? GetReplace(Marker marker, Tensor<float> range, IReadOnlyList<Expr> tupleInputs, Concat concat,

@@ -28,8 +28,8 @@ public sealed class StackToConcat : IRewriteRule
     {
         Expr stack = (Expr)__result["stack"];
         Call stackCall = (Call)__result["stackCall"];
-        Expr tuple = (Expr)__result["tuple"];
+        Expr tupleExpr = (Expr)__result["tuple"];
         int axis = ((TensorConst)__result["axis"]).Value.ToScalar<int>();
-        return GetReplace(stack, stackCall, tuple, axis);
+        return GetReplace(stack, stackCall, tupleExpr, axis);
     }
 }

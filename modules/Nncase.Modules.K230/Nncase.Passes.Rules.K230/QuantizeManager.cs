@@ -44,8 +44,8 @@ public class QuantizeManager
 
     public static ValueRange<float> ToRange(Tensor<float> t)
     {
-        float[] array = t.ToArray();
-        return new ValueRange<float>(array[0], array[1]);
+        float[] bounds = t.ToArray();
+        return new ValueRange<float>(bounds[0], bounds[1]);
     }
 
     public QuantizeParam GetIfQuantParam(DataType quantType, int inIdx = 0)
@@ -75,77 +75,77 @@ public class QuantizeManager
     public byte[] GetWeightsQuantBias()
     {
         QuantizeParam[] weightsQuantParam = GetWeightsQuantParam();
-        byte[] array = new byte[weightsQuantParam.Length];
+        byte[] result = new byte[weightsQuantParam.Length];
         for (int i = 0; i < weightsQuantParam.Length; i++)
         {
-            array[i] = (byte)weightsQuantParam[i].ZeroPoint;
+            result[i] = (byte)weightsQuantParam[i].ZeroPoint;
         }
 
-        return array;
+        return result;
     }
 
     public byte[] GetWeightsQuantBiasQint8()
     {
         QuantizeParam[] weightsQuantParamQint = GetWeightsQuantParamQint8();
-        byte[] array = new byte[weightsQuantParamQint.Length];
+        byte[] result = new byte[weightsQuantParamQint.Length];
         for (int i = 0; i < weightsQuantParamQint.Length; i++)
         {
-            array[i] = (byte)weightsQuantParamQint[i].ZeroPoint;
+            result[i] = (byte)weightsQuantParamQint[i].ZeroPoint;
         }
 
-        return array;
+        return result;
     }
 
     public float[] GetWeightsDeqScale()
     {
         QuantizeParam[] weightsQuantParam = GetWeightsQuantParam();
-        float[] array = new float[weightsQuantParam.Length];
+        float[] result = new float[weightsQuantParam.Length];
         for (int i = 0; i < weightsQuantParam.Length; i++)
         {
-            array[i] = QuantHelper.GetDeqParamFromQuantParam(weightsQuantParam[i]).Scale;
+            result[i] = QuantHelper.GetDeqParamFromQuantParam(weightsQuantParam[i]).Scale;
         }
 
-        return array;
+        return result;
     }
 
     public QuantT[] GetQuantWeights(bool isMatmul = false, int groupsConvTranspose = 1)
     {
         _ = _oldWeights.Shape;
-        int num = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
+        int channelCount = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
         if (isMatmul)
         {
-            num = _oldWeights.Shape[1].FixedValue * _oldWeights.Shape[2].FixedValue;
+            channelCount = _oldWeights.Shape[1].FixedValue * _oldWeights.Shape[2].FixedValue;
         }
 
-        float[] array = _oldWeights.ToArray<float>();
-        int num2 = array.Length / num;
-        QuantT[] array2 = (from _ in Enumerable.Range(0, array.Length)
+        float[] weights = _oldWeights.ToArray<float>();
+        int weightsPerChannel = weights.Length / channelCount;
+        QuantT[] quantWeights = (from _ in Enumerable.Range(0, weights.Length)
             select new QuantT(_conf.WQuantType == DataTypes.UInt8)).ToArray();
         QuantizeParam[] weightsQuantParam = GetWeightsQuantParam();
         QuantizeParam[] weightsQuantParamQint = GetWeightsQuantParamQint8();
-        for (int num3 = 0; num3 < num; num3++)
+        for (int channel = 0; channel < channelCount; channel++)
         {
-            for (int num4 = 0; num4 < num2; num4++)
+            for (int index = 0; index < weightsPerChannel; index++)
             {
-                int num5 = num3 * num2 + num4;
+                int flatIndex = channel * weightsPerChannel + index;
                 if (_conf.WQuantType == DataTypes.Int8)
                 {
-                    array2[num5].I8 =
+                    quantWeights[flatIndex].I8 =
                         (sbyte)Math.Clamp(
-                            Convert.ToInt32(QuantHelper.Quantize<sbyte>(array[num5], weightsQuantParam[num3])), -127,
+                            Convert.ToInt32(QuantHelper.Quantize<sbyte>(weights[flatIndex], weightsQuantParam[channel])), -127,
                             127);
                     continue;
                 }
 
                 if (_conf.WQuantType == DataTypes.UInt8)
                 {
-                    array2[num5].U8 = QuantHelper.Quantize<byte>(array[num5], weightsQuantParam[num3]);
+                    quantWeights[flatIndex].U8 = QuantHelper.Quantize<byte>(weights[flatIndex], weightsQuantParam[channel]);
                     continue;
                 }
 
                 if (_conf.WQuantType == DataTypes.Int16)
                 {
-                    array2[num5].U8 = QuantHelper.Quantize<byte>(array[num5], weightsQuantParamQint[num3]);
+                    quantWeights[flatIndex].U8 = QuantHelper.Quantize<byte>(weights[flatIndex], weightsQuantParamQint[channel]);
                     continue;
                 }
 
@@ -153,31 +153,31 @@ public class QuantizeManager
             }
         }
 
-        return array2;
+        return quantWeights;
     }
 
     public short[] GetQuantWeightsI16(bool isMatmul = false, int groupsConvTranspose = 1)
     {
         _ = _oldWeights.Shape;
-        int num = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
+        int channelCount = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
         if (isMatmul)
         {
-            num = _oldWeights.Shape[1].FixedValue * _oldWeights.Shape[2].FixedValue;
+            channelCount = _oldWeights.Shape[1].FixedValue * _oldWeights.Shape[2].FixedValue;
         }
 
-        float[] array = _oldWeights.ToArray<float>();
-        int num2 = array.Length / num;
-        short[] array2 = new short[array.Length];
+        float[] weights = _oldWeights.ToArray<float>();
+        int weightsPerChannel = weights.Length / channelCount;
+        short[] quantWeights = new short[weights.Length];
         QuantizeParam[] weightsQuantParam = GetWeightsQuantParam();
-        for (int i = 0; i < num; i++)
+        for (int i = 0; i < channelCount; i++)
         {
-            for (int j = 0; j < num2; j++)
+            for (int j = 0; j < weightsPerChannel; j++)
             {
-                int num3 = i * num2 + j;
+                int flatIndex = i * weightsPerChannel + j;
                 if (_conf.WQuantType == DataTypes.Int16)
                 {
-                    array2[num3] =
-                        (short)Math.Clamp((int)QuantHelper.Quantize<short>(array[num3], weightsQuantParam[i]), -2047,
+                    quantWeights[flatIndex] =
+                        (short)Math.Clamp((int)QuantHelper.Quantize<short>(weights[flatIndex], weightsQuantParam[i]), -2047,
                             2047);
                     continue;
                 }
@@ -186,32 +186,32 @@ public class QuantizeManager
             }
         }
 
-        return array2;
+        return quantWeights;
     }
 
     public byte[] GetQuantWeightsU8(bool isMatmul = false, int groupsConvTranspose = 1)
     {
         _ = _oldWeights.Shape;
-        int num = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
+        int channelCount = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
         if (isMatmul)
         {
-            num = _oldWeights.Shape[1].FixedValue * _oldWeights.Shape[2].FixedValue;
+            channelCount = _oldWeights.Shape[1].FixedValue * _oldWeights.Shape[2].FixedValue;
         }
 
-        float[] array = _oldWeights.ToArray<float>();
-        int num2 = array.Length / num;
-        byte[] array2 = new byte[array.Length];
+        float[] weights = _oldWeights.ToArray<float>();
+        int weightsPerChannel = weights.Length / channelCount;
+        byte[] quantWeights = new byte[weights.Length];
         QuantizeParam[] weightsQuantParamQint = GetWeightsQuantParamQint8();
-        for (int i = 0; i < num; i++)
+        for (int i = 0; i < channelCount; i++)
         {
-            for (int j = 0; j < num2; j++)
+            for (int j = 0; j < weightsPerChannel; j++)
             {
-                int num3 = i * num2 + j;
-                array2[num3] = QuantHelper.Quantize<byte>(array[num3], weightsQuantParamQint[i]);
+                int flatIndex = i * weightsPerChannel + j;
+                quantWeights[flatIndex] = QuantHelper.Quantize<byte>(weights[flatIndex], weightsQuantParamQint[i]);
             }
         }
 
-        return array2;
+        return quantWeights;
     }
 
     public QuantizeParam GetOfQuantParam(DataType quantType, int outIdx = 0)
@@ -229,19 +229,19 @@ public class QuantizeManager
 
     public QuantizeParam[] WeightsByChannelQP(bool isMatmul = false, int groupConvTranspose = 1)
     {
-        int num = _oldWeights.Shape[0].FixedValue * groupConvTranspose;
+        int channelCount = _oldWeights.Shape[0].FixedValue * groupConvTranspose;
         if (isMatmul)
         {
-            num = (_oldWeights.Shape[1] * _oldWeights.Shape[2]).FixedValue;
+            channelCount = (_oldWeights.Shape[1] * _oldWeights.Shape[2]).FixedValue;
         }
 
-        float[] array = _oldWeights.ToArray<float>();
-        QuantizeParam[] array2 = new QuantizeParam[num];
-        int num2 = _oldWeights.Shape.Prod().FixedValue / num;
+        float[] weights = _oldWeights.ToArray<float>();
+        QuantizeParam[] channelParams = new QuantizeParam[channelCount];
+        int weightsPerChannel = _oldWeights.Shape.Prod().FixedValue / channelCount;
         int bits = ((_conf.WQuantType == DataTypes.Int16) ? 12 : 8);
-        for (int i = 0; i < num; i++)
+        for (int i = 0; i < channelCount; i++)
         {
-            new Span<float>(array, i * num2, num2);
+            new Span<float>(weights, i * weightsPerChannel, weightsPerChannel);
             bool symmetric = _conf.WQuantType != DataTypes.UInt8;
             QuantMode quantMode = ((!(_conf.WQuantType == DataTypes.UInt8))
                 ? QuantMode.SignedAsymmetricMode
@@ -250,106 +250,106 @@ public class QuantizeManager
             float max = ((_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { i, 1 }]);
             QuantizeParam quantParam = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(QuantUtility.FixupRange(
                 new ValueRange<float> { Min = min, Max = max }, symmetric), bits, quantMode));
-            array2[i].Scale = quantParam.Scale;
-            array2[i].ZeroPoint = quantParam.ZeroPoint;
+            channelParams[i].Scale = quantParam.Scale;
+            channelParams[i].ZeroPoint = quantParam.ZeroPoint;
         }
 
-        return array2;
+        return channelParams;
     }
 
     public QuantizeParam[] WeightsByChannelQPQint8(bool isMatmul = false, int groupsConvTranspose = 1)
     {
-        int num = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
+        int channelCount = _oldWeights.Shape[0].FixedValue * groupsConvTranspose;
         if (isMatmul)
         {
-            num = (_oldWeights.Shape[1] * _oldWeights.Shape[2]).FixedValue;
+            channelCount = (_oldWeights.Shape[1] * _oldWeights.Shape[2]).FixedValue;
         }
 
-        float[] array = _oldWeights.ToArray<float>();
-        QuantizeParam[] array2 = new QuantizeParam[num];
-        int num2 = _oldWeights.Shape.Prod().FixedValue / num;
+        float[] weights = _oldWeights.ToArray<float>();
+        QuantizeParam[] channelParams = new QuantizeParam[channelCount];
+        int weightsPerChannel = _oldWeights.Shape.Prod().FixedValue / channelCount;
         if (_conf.UseMseQuantW)
         {
             QuantParam qp = default(QuantParam);
             QuantParam qp2 = default(QuantParam);
-            for (int i = 0; i < num; i++)
+            for (int i = 0; i < channelCount; i++)
             {
-                Span<float> span = new Span<float>(array, i * num2, num2);
-                float num3 = 0f;
-                float num4 = 0f;
-                float num5 = float.MaxValue;
-                float[] array3 = Enumerable.Repeat(0f, num2).ToArray();
-                byte[] array4 = Enumerable.Repeat((byte)0, num2).ToArray();
+                Span<float> span = new Span<float>(weights, i * weightsPerChannel, weightsPerChannel);
+                float bestMinOffset = 0f;
+                float bestMaxOffset = 0f;
+                float bestError = float.MaxValue;
+                float[] dequantized = Enumerable.Repeat(0f, weightsPerChannel).ToArray();
+                byte[] quantized = Enumerable.Repeat((byte)0, weightsPerChannel).ToArray();
                 float min = ((_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { i, 0 }]);
                 float max = ((_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { i, 1 }]);
                 ValueRange<float> valueRange = QuantUtility.FixupRange(new ValueRange<float> { Min = min, Max = max });
-                float num6 = (valueRange.Max - valueRange.Min) / 256f;
-                for (uint num7 = 0u; num7 < 32; num7++)
+                float stepSize = (valueRange.Max - valueRange.Min) / 256f;
+                for (uint minStepIndex = 0u; minStepIndex < 32; minStepIndex++)
                 {
                     QuantizeParam quantParam = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(
                         QuantUtility.FixupRange(new ValueRange<float>
                         {
-                            Min = valueRange.Min - num6 * (float)num7, Max = valueRange.Max
+                            Min = valueRange.Min - stepSize * (float)minStepIndex, Max = valueRange.Max
                         }), 8, QuantMode.UnsignedMode));
                     qp.Scale = 1f / quantParam.Scale;
                     qp.ZeroPoint = quantParam.ZeroPoint;
                     for (int j = 0; j < span.Length; j++)
                     {
-                        array4[j] = QuantHelper.Quantize1<byte>(span[j], qp);
-                        array3[j] = (float)(array4[j] - qp.ZeroPoint) * qp.Scale;
+                        quantized[j] = QuantHelper.Quantize1<byte>(span[j], qp);
+                        dequantized[j] = (float)(quantized[j] - qp.ZeroPoint) * qp.Scale;
                     }
 
-                    float num8 = 0f;
-                    for (int k = 0; k < num2; k++)
+                    float minSearchError = 0f;
+                    for (int k = 0; k < weightsPerChannel; k++)
                     {
-                        num8 += (float)Math.Pow(span[k] - array3[k], 2.0);
+                        minSearchError += (float)Math.Pow(span[k] - dequantized[k], 2.0);
                     }
 
-                    if (num5 > num8)
+                    if (bestError > minSearchError)
                     {
-                        num3 = num6 * (float)num7;
-                        num5 = num8;
+                        bestMinOffset = stepSize * (float)minStepIndex;
+                        bestError = minSearchError;
                     }
                 }
 
-                for (uint num9 = 0u; num9 < 32; num9++)
+                for (uint maxStepIndex = 0u; maxStepIndex < 32; maxStepIndex++)
                 {
                     QuantizeParam quantParam2 = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(
                         QuantUtility.FixupRange(new ValueRange<float>
                         {
-                            Min = valueRange.Min, Max = valueRange.Max + num6 * (float)num9
+                            Min = valueRange.Min, Max = valueRange.Max + stepSize * (float)maxStepIndex
                         }), 8, QuantMode.UnsignedMode));
                     qp2.Scale = 1f / quantParam2.Scale;
                     qp2.ZeroPoint = quantParam2.ZeroPoint;
                     for (int l = 0; l < span.Length; l++)
                     {
-                        array4[l] = QuantHelper.Quantize1<byte>(span[l], qp2);
-                        array3[l] = (float)(array4[l] - qp2.ZeroPoint) * qp2.Scale;
+                        quantized[l] = QuantHelper.Quantize1<byte>(span[l], qp2);
+                        dequantized[l] = (float)(quantized[l] - qp2.ZeroPoint) * qp2.Scale;
                     }
 
-                    float num10 = 0f;
-                    for (int m = 0; m < num2; m++)
+                    float maxSearchError = 0f;
+                    for (int m = 0; m < weightsPerChannel; m++)
                     {
-                        num10 += (float)Math.Pow(span[m] - array3[m], 2.0);
+                        maxSearchError += (float)Math.Pow(span[m] - dequantized[m], 2.0);
                     }
 
-                    if (num5 > num10)
+                    if (bestError > maxSearchError)
                     {
-                        num4 = num6 * (float)num9;
-                        num5 = num10;
+                        bestMaxOffset = stepSize * (float)maxStepIndex;
+                        bestError = maxSearchError;
                     }
                 }
 
                 ValueRange<float> range = default(ValueRange<float>);
-                if (num4 > 0f)
+                if (bestMaxOffset > 0f)
                 {
-                    range.Max = valueRange.Max + num4;
+                    range.Max = valueRange.Max + bestMaxOffset;
                     range.Min = valueRange.Min;
                 }
-                else if (num3 > 0f)
+                else if (bestMinOffset > 0f)
                 {
                     range.Max = valueRange.Max;
-                    range.Min = valueRange.Min - num3;
+                    range.Min = valueRange.Min - bestMinOffset;
                 }
                 else
                 {
@@ -357,26 +357,26 @@ public class QuantizeManager
                     range.Min = valueRange.Min;
                 }
 
-                array2[i] = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(range, 8, QuantMode.UnsignedMode));
+                channelParams[i] = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(range, 8, QuantMode.UnsignedMode));
             }
 
-            return array2;
+            return channelParams;
         }
 
         int bits = 8;
-        for (int n = 0; n < num; n++)
+        for (int n = 0; n < channelCount; n++)
         {
-            new Span<float>(array, n * num2, num2);
+            new Span<float>(weights, n * weightsPerChannel, weightsPerChannel);
             bool symmetric = false;
             QuantMode quantMode = QuantMode.UnsignedMode;
             float min2 = ((_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { n, 0 }]);
             float max2 = ((_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { n, 1 }]);
             QuantizeParam quantParam3 = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(QuantUtility.FixupRange(
                 new ValueRange<float> { Min = min2, Max = max2 }, symmetric), bits, quantMode));
-            array2[n].Scale = quantParam3.Scale;
-            array2[n].ZeroPoint = quantParam3.ZeroPoint;
+            channelParams[n].Scale = quantParam3.Scale;
+            channelParams[n].ZeroPoint = quantParam3.ZeroPoint;
         }
 
-        return array2;
+        return channelParams;
     }
 }

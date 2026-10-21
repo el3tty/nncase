@@ -25,9 +25,9 @@ public sealed class ToFakeConv2DTranspose : RewriteRule<Pattern>
     private Expr? GetReplace(Conv2DTranspose conv2dTranspose, Call call, Expr input, Expr weights, TensorConst bias,
         Expr outShape, Expr stride, Expr padding, Expr outPadding, Expr dilation, int groups, Tensor<float> fusedClamp)
     {
-        int num = weights.CheckedShape[0].FixedValue * groups;
-        ActParam2 defaultConvActParam = ActParam2.GetDefaultConvActParam(num, bias);
-        for (int i = 0; i < num; i++)
+        int outChannels = weights.CheckedShape[0].FixedValue * groups;
+        ActParam2 defaultConvActParam = ActParam2.GetDefaultConvActParam(outChannels, bias);
+        for (int i = 0; i < outChannels; i++)
         {
             defaultConvActParam.FusedClamp[i].Min = fusedClamp[new int[1]];
             defaultConvActParam.FusedClamp[i].Max = fusedClamp[new int[1] { 1 }];

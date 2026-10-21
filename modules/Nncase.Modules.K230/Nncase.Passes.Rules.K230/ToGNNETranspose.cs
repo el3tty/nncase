@@ -25,10 +25,10 @@ public class ToGNNETranspose : RewriteRule<Pattern>
 
     private Expr? GetReplace(Expr input, int[] perm, Call call)
     {
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(input.CheckedShape.ToValueArray(), 0, array, array.Length - input.CheckedShape.Count,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(input.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - input.CheckedShape.Count,
             input.CheckedShape.Count);
-        Call call2 = Nncase.IR.F.Tensors.Reshape(input, array);
+        Call call2 = Nncase.IR.F.Tensors.Reshape(input, inputShape);
         int[] perm2 = ToGNNEPerm(perm);
         DataType dataType = ((input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType);
         Call call3 = Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,

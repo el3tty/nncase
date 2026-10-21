@@ -21,9 +21,9 @@ public sealed class GNNEDDRBandwidth : IRewriteRule
 
     public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
     {
-        GNNEFusion gnne_fusion = (GNNEFusion)__result["gnne_fusion"];
+        GNNEFusion gnneFusion = (GNNEFusion)__result["gnne_fusion"];
         Call call = (Call)__result["call"];
         Expr input = (Expr)__result["input"];
-        return GetReplace(gnne_fusion, call, input);
+        return GetReplace(gnneFusion, call, input);
     }
 }

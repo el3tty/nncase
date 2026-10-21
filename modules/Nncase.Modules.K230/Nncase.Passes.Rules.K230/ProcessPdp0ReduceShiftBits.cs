@@ -21,10 +21,10 @@ public sealed class ProcessPdp0ReduceShiftBits : IRewriteRule
     private Expr? GetReplace(GNNEPdp0Reduce pdp, IMatchResult result, RunPassContext options)
     {
         ActParam2 actParam = new ActParam2(pdp.ActParam);
-        int num = actParam.FusedShiftBits();
+        int shiftBits = actParam.FusedShiftBits();
         Expr expr = GetReplaceHelper.LoadAct0(actParam);
         Call expr2 = new Call(pdp, (Expr)result["input"], (Expr)result["filter"], (Expr)result["stride"],
-            (Expr)result["padding"], (Expr)result["dequantParam"], (Expr)result["value"], num,
+            (Expr)result["padding"], (Expr)result["dequantParam"], (Expr)result["value"], shiftBits,
             (Expr)result["countIncludePad"], expr);
         return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
     }

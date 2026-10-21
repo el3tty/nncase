@@ -35,20 +35,20 @@ public sealed class RestoreFakeConv2D : RewriteRule<Pattern>
         ActParam2 ap = fakeConv.ActParam;
         if (ap.FusedClamp.All((ValueRange<float> x) => x.Max == ap.FusedClamp[0].Max && x.Min == ap.FusedClamp[0].Min))
         {
-            float[] array = weights.ToArray<float>();
-            for (int num = 0; num < array.Length; num++)
+            float[] weightValues = weights.ToArray<float>();
+            for (int index = 0; index < weightValues.Length; index++)
             {
-                array[num] *= ap.Ks[0, num / (array.Length / fixedValue)];
+                weightValues[index] *= ap.Ks[0, index / (weightValues.Length / fixedValue)];
             }
 
-            float[] array2 = new float[fixedValue];
-            for (int num2 = 0; num2 < array2.Length; num2++)
+            float[] biasValues = new float[fixedValue];
+            for (int channelIndex = 0; channelIndex < biasValues.Length; channelIndex++)
             {
-                array2[num2] = ap.Bs[0, num2];
+                biasValues[channelIndex] = ap.Bs[0, channelIndex];
             }
 
-            Tensor<float> tensor = Tensor.From(array2, new int[1] { fixedValue });
-            Tensor<float> tensor2 = Tensor.From(array, weights.Shape);
+            Tensor<float> tensor = Tensor.From(biasValues, new int[1] { fixedValue });
+            Tensor<float> tensor2 = Tensor.From(weightValues, weights.Shape);
             return Nncase.IR.F.NN.Conv2D(input, tensor2, tensor, stride, padding, dilation, PadMode.Constant, groups,
                 new float[2] { ap.FusedClamp[0].Min, ap.FusedClamp[0].Max });
         }

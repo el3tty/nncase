@@ -47,14 +47,14 @@ public sealed class SplitLargeActivation : RewriteRule<Pattern>
                 FakeActivation target = new FakeActivation(t.Type, t.ActParam, lhsSlice.CheckedShape.ToValueArray());
                 if (splitRhs)
                 {
-                    Expr item = ((!(lhsSlice is Marker marker))
+                    Expr rhsSliceExpr = ((!(lhsSlice is Marker marker))
                         ? ((Expr)ReplaceUtility.ReplaceCallFirstParam(((Call)lhsSlice).Target,
                             ((Call)lhsSlice).Arguments.ToArray(), rhs))
                         : ((Expr)marker.With(null,
                             ReplaceUtility.ReplaceCallFirstParam(((Call)marker.Target).Target,
                                 ((Call)marker.Target).Arguments.ToArray(), rhs))));
                     return ReplaceUtility.ReplaceCallParams(target, call.Arguments.ToArray(),
-                        (FakeActivation.InputA, lhsSlice), (FakeActivation.InputB, item));
+                        (FakeActivation.InputA, lhsSlice), (FakeActivation.InputB, rhsSliceExpr));
                 }
 
                 return ReplaceUtility.ReplaceCallFirstParam(target, call.Arguments.ToArray(), lhsSlice);

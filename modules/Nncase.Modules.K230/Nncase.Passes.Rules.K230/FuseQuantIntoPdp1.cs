@@ -26,11 +26,11 @@ public sealed class FuseQuantIntoPdp1 : RewriteRule<Pattern>
             return null;
         }
 
-        QuantizeParam[] array = GNNETypePatternUtility.GNNEGetQuantParams(1, qp.Scale, qp.ZeroPoint);
+        QuantizeParam[] quantParams = GNNETypePatternUtility.GNNEGetQuantParams(1, qp.Scale, qp.ZeroPoint);
         DataType targetType = quant.TargetType;
         PrimType destType = (PrimType)quant.TargetType;
         return Tensors.GNNEStore(targetType,
-            ReplaceUtility.ReplaceCallParams(pdp.With(null, destType), pdpCallParams, (GNNEPdp1.QuantParams, array)),
+            ReplaceUtility.ReplaceCallParams(pdp.With(null, destType), pdpCallParams, (GNNEPdp1.QuantParams, quantParams)),
             stStrides);
     }
 

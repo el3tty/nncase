@@ -18,14 +18,14 @@ public class TanhToFakeActivation : RewriteRule<Pattern>
 
     public Expr? GetReplace(Unary u, Call call, Expr input)
     {
-        int num = 1;
-        ActParam16 actParam = new ActParam16(num);
-        double[] array = new double[15]
+        int actChannels = 1;
+        ActParam16 actParam = new ActParam16(actChannels);
+        double[] xs = new double[15]
         {
             -5.0, -4.28515625, -3.572265625, -2.857421875, -2.142578125, -1.4287109375, -0.71435546875, 0.0,
             0.71435546875, 1.4287109375, 2.142578125, 2.857421875, 3.572265625, 4.28515625, 5.0
         };
-        double[] array2 = new double[32]
+        double[] ks = new double[32]
         {
             0.0, -1.0, 0.0004031658172607422, -511.0 / 512.0, 0.0016813278198242188, -127.0 / 128.0,
             0.006992340087890625, -0.9736328125, 0.02880859375, -0.9111328125, 0.11407470703125, -373.0 / 512.0,
@@ -35,17 +35,17 @@ public class TanhToFakeActivation : RewriteRule<Pattern>
         };
         for (int i = 0; i < 15; i++)
         {
-            actParam.Xs[i, 0] = (float)array[i];
+            actParam.Xs[i, 0] = (float)xs[i];
         }
 
         for (int j = 0; j < 16; j++)
         {
-            actParam.Ks[j, 0] = (float)array2[j * 2];
-            actParam.Bs[j, 0] = (float)array2[j * 2 + 1];
+            actParam.Ks[j, 0] = (float)ks[j * 2];
+            actParam.Bs[j, 0] = (float)ks[j * 2 + 1];
         }
 
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 49 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, true,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 49 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, true,
             GnneActivationType.Add, actParam, call.CheckedShape.ToValueArray());
     }
 

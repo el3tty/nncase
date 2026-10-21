@@ -43,28 +43,28 @@ public sealed class SplitLargeGlobalReduceWindow2D : RewriteRule<Pattern>
     public Expr? GetReplace(Call call, ReduceWindow2D reduceWindow2D, Expr initValue, Expr input, int[] filter,
         int[] padding)
     {
-        int[] array = input.CheckedShape.ToValueArray();
-        int[] array2 = call.CheckedShape.ToValueArray();
-        int num = array2[2];
-        int num2 = array2[3];
-        if (array[^2] == filter[0] && array[^1] == filter[1] && padding.All((int p) => p == 0) && num == 1 &&
-            num2 == 1 && filter[0] >= 320 && filter[1] >= 320)
+        int[] inputShape = input.CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int outH = outputShape[2];
+        int outW = outputShape[3];
+        if (inputShape[^2] == filter[0] && inputShape[^1] == filter[1] && padding.All((int p) => p == 0) && outH == 1 &&
+            outW == 1 && filter[0] >= 320 && filter[1] >= 320)
         {
-            int num3 = ((array[^2] < 640) ? 4 : 10);
-            int num4 = array[^2] / num3;
-            Expr[] array3 = new Expr[num3];
-            Expr[] array4 = new Expr[num3];
-            for (int num5 = 0; num5 < num3; num5++)
+            int sliceCount = ((inputShape[^2] < 640) ? 4 : 10);
+            int sliceHeight = inputShape[^2] / sliceCount;
+            Expr[] slices = new Expr[sliceCount];
+            Expr[] pooledSlices = new Expr[sliceCount];
+            for (int sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++)
             {
-                array3[num5] = Tensors.Slice(input, new int[1] { num5 * num4 }, new int[1] { num5 * num4 + num4 },
+                slices[sliceIndex] = Tensors.Slice(input, new int[1] { sliceIndex * sliceHeight }, new int[1] { sliceIndex * sliceHeight + sliceHeight },
                     new int[1] { 2 }, new int[1] { 1 });
-                array4[num5] = NN.ReduceWindow2D(reduceWindow2D.ReduceOp, array3[num5], initValue,
-                    new int[2] { num4, filter[1] }, new int[2] { 1, 1 }, new int[2, 2], new int[2] { 1, 1 }, false,
+                pooledSlices[sliceIndex] = NN.ReduceWindow2D(reduceWindow2D.ReduceOp, slices[sliceIndex], initValue,
+                    new int[2] { sliceHeight, filter[1] }, new int[2] { 1, 1 }, new int[2, 2], new int[2] { 1, 1 }, false,
                     false);
             }
 
-            Call input2 = Tensors.Concat(new Tuple(array4), 2);
-            return NN.ReduceWindow2D(reduceWindow2D.ReduceOp, input2, initValue, new int[2] { num3, 1 },
+            Call input2 = Tensors.Concat(new Tuple(pooledSlices), 2);
+            return NN.ReduceWindow2D(reduceWindow2D.ReduceOp, input2, initValue, new int[2] { sliceCount, 1 },
                 new int[2] { 1, 1 }, new int[2, 2], new int[2] { 1, 1 }, false, false);
         }
 

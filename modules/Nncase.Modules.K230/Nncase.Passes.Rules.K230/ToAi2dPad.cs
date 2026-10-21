@@ -33,13 +33,13 @@ public sealed class ToAi2dPad : GNNEQuantRule
             new ValueRange<float>(inputRange.ToArray<float>()[0], inputRange.ToArray<float>()[1]), bits, quantMode);
         Call input = Nncase.IR.F.Math.Quantize(inputMarker, quantParam, dataType);
         Call input2 = Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, input);
-        float num = value / quantParam.Scale + (float)quantParam.ZeroPoint;
+        float quantizedPad = value / quantParam.Scale + (float)quantParam.ZeroPoint;
         Call input3 = Nncase.IR.K230.F.Tensors.Ai2dPad(input2, padding,
             ((PrimType)dataType == DataTypes.UInt8)
-                ? ((Expr)(byte)num)
+                ? ((Expr)(byte)quantizedPad)
                 : (((PrimType)dataType == DataTypes.Int8)
-                    ? ((Expr)(sbyte)num)
-                    : (((PrimType)dataType == DataTypes.Int16) ? ((Expr)(short)num) : ((Expr)(Half)value))),
+                    ? ((Expr)(sbyte)quantizedPad)
+                    : (((PrimType)dataType == DataTypes.Int16) ? ((Expr)(short)quantizedPad) : ((Expr)(Half)value))),
             quantParam.ZeroPoint, new QuantParam(quantParam.ZeroPoint, 1f / quantParam.Scale), (PrimType)dataType,
             fakeAi2dPad.Mode);
         Call call2 = Nncase.IR.K230.F.Tensors.GNNEStore((PrimType)dataType, input3);

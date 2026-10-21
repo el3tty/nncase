@@ -30,19 +30,19 @@ public class ClampToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        int[] array = new int[4] { 1, 1, 1, 1 };
-        Array.Copy(input.CheckedShape.ToValueArray(), 0, array, array.Length - input.CheckedShape.Count,
+        int[] inputShape = new int[4] { 1, 1, 1, 1 };
+        Array.Copy(input.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - input.CheckedShape.Count,
             input.CheckedShape.Count);
-        int num = array[1];
-        ActParam2 actParam = new ActParam2(num);
-        for (int i = 0; i < num; i++)
+        int actChannels = inputShape[1];
+        ActParam2 actParam = new ActParam2(actChannels);
+        for (int i = 0; i < actChannels; i++)
         {
             actParam.FusedClamp[i] =
                 new ValueRange<float>(min.ToArray()[i % min.Length], max.ToArray()[i % max.Length]);
         }
 
-        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { num, 7 });
-        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, num, 0, 0, 0, false,
+        Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { actChannels, 7 });
+        return Nncase.IR.K230.F.Tensors.FakeActivation(input, None.Default, tensor, actChannels, 0, 0, 0, false,
             GnneActivationType.Add, actParam, call.CheckedShape.ToValueArray());
     }
 
@@ -56,12 +56,12 @@ public class ClampToFakeActivation : RewriteRule<Pattern>
                 return true;
             }
 
-            int[] array = tensorType.Shape.ToValueArray();
-            if (!array.All((int x) => x == 1))
+            int[] shapeDims = tensorType.Shape.ToValueArray();
+            if (!shapeDims.All((int x) => x == 1))
             {
-                if (array.Length > 2)
+                if (shapeDims.Length > 2)
                 {
-                    return array.Aggregate((int x, int y) => x * y) == array[^3];
+                    return shapeDims.Aggregate((int x, int y) => x * y) == shapeDims[^3];
                 }
 
                 return false;

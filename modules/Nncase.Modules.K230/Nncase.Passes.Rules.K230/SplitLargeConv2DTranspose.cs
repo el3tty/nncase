@@ -58,32 +58,32 @@ public sealed class SplitLargeConv2DTranspose : RewriteRule<Pattern>
             delegate((int Count, int ChunkSize, int CurrentSize, int Index, int Axis) param)
             {
                 Padding padding = Padding.Zero();
-                (int Count, int ChunkSize, int CurrentSize, int Index, int Axis) tuple = param;
-                int item = tuple.Count;
-                int item2 = tuple.ChunkSize;
-                int item3 = tuple.CurrentSize;
-                int item4 = tuple.Index;
-                int item5 = tuple.Axis;
-                int num = item5 - 2;
-                padding = ((item4 == item - 1)
-                    ? new Padding(paddingsValue[num * 2], paddingsValue[num * 2 + 1])
-                    : new Padding(paddingsValue[num * 2], 0));
-                item2 /= strides[num];
-                item3 /= strides[num];
-                return (NewBegin: item2 * item4, NewEnd: Math.Min(item2 * item4 + item3, outShape[item5]),
+                (int Count, int ChunkSize, int CurrentSize, int Index, int Axis) chunkInfo = param;
+                int chunkCount = chunkInfo.Count;
+                int chunkSize = chunkInfo.ChunkSize;
+                int currentSize = chunkInfo.CurrentSize;
+                int chunkIndex = chunkInfo.Index;
+                int axisIndex = chunkInfo.Axis;
+                int dimIndex = axisIndex - 2;
+                padding = ((chunkIndex == chunkCount - 1)
+                    ? new Padding(paddingsValue[dimIndex * 2], paddingsValue[dimIndex * 2 + 1])
+                    : new Padding(paddingsValue[dimIndex * 2], 0));
+                chunkSize /= strides[dimIndex];
+                currentSize /= strides[dimIndex];
+                return (NewBegin: chunkSize * chunkIndex, NewEnd: Math.Min(chunkSize * chunkIndex + currentSize, outShape[axisIndex]),
                     Pads: padding);
             }, delegate(Expr slice, Padding newPaddings1, int axis)
             {
-                int[] array = outShape.ToArray();
+                int[] outputShape = outShape.ToArray();
                 int fixedValue = slice.CheckedShape[axis].FixedValue;
-                array[axis] = fixedValue * strides[axis - 2];
-                int[] array2 = paddings.ToArray();
-                int num = axis - 2;
-                array2[2 * num] = newPaddings1.Before;
-                array2[2 * num + 1] = newPaddings1.After;
+                outputShape[axis] = fixedValue * strides[axis - 2];
+                int[] newPaddings = paddings.ToArray();
+                int dimIndex = axis - 2;
+                newPaddings[2 * dimIndex] = newPaddings1.Before;
+                newPaddings[2 * dimIndex + 1] = newPaddings1.After;
                 return ReplaceUtility.ReplaceCallParams(call.Target, call.Arguments.ToArray(),
-                    (Conv2DTranspose.Input, slice), (Conv2DTranspose.Padding, Tensor.From(array2, paddings.Shape)),
-                    (Conv2DTranspose.OutputShape, array));
+                    (Conv2DTranspose.Input, slice), (Conv2DTranspose.Padding, Tensor.From(newPaddings, paddings.Shape)),
+                    (Conv2DTranspose.OutputShape, outputShape));
             });
     }
 
