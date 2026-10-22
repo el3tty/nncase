@@ -13,5 +13,15 @@
 # limitations under the License.
 #
 """nncase runtime."""
-from . import base
-from _nncaseruntime import MemoryRange, RuntimeTensor, Interpreter, __version__
+import os
+
+if os.name == "nt":
+    # the runtime loads nncase.simulator.<kind>.dll at model load time; Python >= 3.8 does not search this folder
+    os.add_dll_directory(os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    # host install: the extension module is next to this file (<prefix>/nncaseruntime)
+    from ._nncaseruntime import TensorDesc, RuntimeTensor, Interpreter, __version__
+except ModuleNotFoundError:
+    # runtime (board) install: the extension module is installed into lib/, on sys.path
+    from _nncaseruntime import TensorDesc, RuntimeTensor, Interpreter, __version__

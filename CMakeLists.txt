@@ -55,6 +55,5 @@ if (NOT BUILDING_RUNTIME)
 
     install(FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/python/nncaseruntime/__init__.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/python/nncaseruntime/base.py
             DESTINATION ${NNCASE_INSTALL_DIR})
 endif ()
