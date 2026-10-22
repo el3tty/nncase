@@ -46,7 +46,25 @@ inline int run_cmodel(const std::string &mem_name, const std::string &ctrl_name,
     static simulator_main_t entry = []() -> simulator_main_t {
         const std::string lib = get_cmodel_library();
 #ifdef _WIN32
-        HMODULE h = LoadLibraryA(lib.c_str());
+        // A plain file name is looked up next to the module that contains this code (nncase.simulator.k230.dll)
+        // first, so it does not depend on the current directory or PATH; its own dependencies are searched there too.
+        HMODULE h = nullptr;
+        HMODULE self = nullptr;
+        if (lib.find_first_of("\\/:") == std::string::npos &&
+            GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                               GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               reinterpret_cast<LPCSTR>(&get_cmodel_library), &self)) {
+            char path[MAX_PATH];
+            DWORD n = GetModuleFileNameA(self, path, MAX_PATH);
+            if (n > 0 && n < MAX_PATH) {
+                std::string full(path, n);
+                full = full.substr(0, full.find_last_of("\\/") + 1) + lib;
+                h = LoadLibraryExA(full.c_str(), nullptr,
+                    LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+            }
+        }
+        if (!h)
+            h = LoadLibraryA(lib.c_str());
         if (!h) {
             std::fprintf(stderr, "cannot load %s (error %lu)\n", lib.c_str(), GetLastError());
             return nullptr;
