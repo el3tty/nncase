@@ -146,7 +146,7 @@ result<value_t> k230_runtime_function::invoke_core(
     fds.events = POLLIN;
     poll(&fds, 1, -1);
 
-    return ok(new tuple_node());
+    return ok(value_t(tuple(std::in_place)));  // not ok(new tuple_node()): that adds a second reference, never freed
 }
 
 END_NS_NNCASE_RT_K230

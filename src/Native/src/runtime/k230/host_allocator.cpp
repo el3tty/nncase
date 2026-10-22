@@ -117,7 +117,9 @@ result<buffer_t> host_buffer_allocator::attach(
     buf->physical_address_ = phys_addr;
     buf->release_callback_ = std::move(callback);
 
-    return ok(buffer_t(buf));
+    // in_place: take over the reference the new node starts with (object_t(T *) adds one more, so the buffer and its
+    // memory would never be released)
+    return ok(buffer_t(std::in_place, static_cast<buffer_node *>(buf)));
 }
 
 
@@ -149,7 +151,8 @@ result<buffer_t> host_buffer_allocator::allocate(
     buf->physical_address_ = phys_addr;
     buf->release_callback_ = std::move(deleter);
 
-    return ok(buffer_t(buf));
+    // in_place: see attach(); without it every MMZ buffer leaked (~13 MB of CMA per run of yolox-nano)
+    return ok(buffer_t(std::in_place, static_cast<buffer_node *>(buf)));
 
 
 }
