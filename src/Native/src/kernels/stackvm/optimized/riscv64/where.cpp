@@ -142,8 +142,11 @@ void ternary_vec(const uint8_t *input_a, const int input_a_len,
         : [mask] "r"(input_a), [mask_len] "r"(input_a_len), [b] "r"(input_b),
           [b_len] "r"(input_b_len), [c] "r"(input_c), [c_len] "r"(input_c_len),
           [dst] "r"(out), [dst_len] "r"(out_len)
+        // LMUL 8: v8 / v16 / v24 are the whole groups v8..v31; the asm also changes vl/vtype and memory
         : "t0", "t1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "ft0", "v0",
-          "v8", "v16", "v24");
+          "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17",
+          "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27",
+          "v28", "v29", "v30", "v31", "vl", "vtype", "memory");
 }
 
 int tenary_impl(const uint8_t *input_cond, const float *input_b,

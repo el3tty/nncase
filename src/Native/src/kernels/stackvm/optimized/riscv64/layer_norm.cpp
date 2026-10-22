@@ -33,6 +33,9 @@ using namespace nncase::kernels::stackvm::optimized;
 #define STR(x) _STR(x)
 #define _CONNECT(a, b) a##b
 #define CONNECT(a, b) _CONNECT(a, b)
+// LMUL 8: v8 / v16 name the whole groups v8..v15 / v16..v23, the clobbers must list every register
+#define RVV_CLOBBER_V8 "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15"
+#define RVV_CLOBBER_V16 "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23"
 #define RVVSETVLI2(evl, avl, elen)                                             \
     "vsetvli " STR(evl) "," STR(avl) "," STR(elen) "," STR(                    \
         CONNECT(m, RVV_LMUL)) ";"
@@ -56,7 +59,8 @@ static float get_mean(const float *data, int n) {
 
                    : [ret] "=f"(ret)
                    : [avl] "r"(n), [input_ptr1] "r"(data)
-                   : "t0", "t1", "a0", "a1", "f0", "f1", "v0", "v8");
+                   : "t0", "t1", "a0", "a1", "f0", "f1", "v0", RVV_CLOBBER_V8,
+                     "vl", "vtype", "memory");
     return ret;
 }
 
@@ -85,7 +89,8 @@ static float get_var(const float *data, int n, float mean) {
 
         : [ret] "=f"(ret)
         : [avl] "r"(n), [input_ptr1] "r"(data), [mean] "f"(mean)
-        : "t0", "t1", "a0", "a1", "v0", "v8", "v16", "f0", "f1");
+        : "t0", "t1", "a0", "a1", "v0", RVV_CLOBBER_V8, RVV_CLOBBER_V16, "f0",
+          "f1", "vl", "vtype", "memory");
     return ret;
 }
 
@@ -122,7 +127,8 @@ static void layer_norm_update1(const float *data, float *out, int len,
         :
         : [avl] "r"(len), [input_ptr1] "r"(data), [mean] "f"(mean),
           [r_sqrt] "f"(r_sqrt), [b] "r"(b), [out] "r"(out), [scale] "r"(r1)
-        : "t0", "t1", "a0", "a1", "a2", "v0", "v16", "a3", "a4", "v8");
+        : "t0", "t1", "a0", "a1", "a2", "v0", RVV_CLOBBER_V16, "a3", "a4",
+          RVV_CLOBBER_V8, "vl", "vtype", "memory");
 }
 
 result<void> layernorm_impl(const float *input, float *output,

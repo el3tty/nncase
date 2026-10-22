@@ -64,7 +64,10 @@
 #define bit_shift 0
 #define emul 8
 
-static void *rvv_memcpy(void *dst, const void *src, int data_bytes) {
+// The asm changes vl/vtype and, with LMUL 8, the whole v8..v15 group, and it reads *src and writes *dst: all of it
+// must be in the clobbers. Without "vl"/"vtype" an -O2/-O3 build with RVV auto-vectorization keeps using a vector
+// configuration from before the call (e.g. e64,m1 in concat) and gets e8,m8: SIGILL on the next vector instruction.
+static void *rvv_memcpy(void *dst, const void *src, size_t data_bytes) {
     __asm volatile(
         "mv a0, %[data_bytes];"
         "mv a1, %[src];"
@@ -80,7 +83,8 @@ static void *rvv_memcpy(void *dst, const void *src, int data_bytes) {
                                               "bnez a0, loop1cpy_data%=;"
         :
         : [src] "r"(src), [data_bytes] "r"(data_bytes), [dst] "r"(dst)
-        : "t0", "t1", "a0", "a1", "a2", "v8", "v16");
+        : "t0", "t1", "a0", "a1", "a2", "v8", "v9", "v10", "v11", "v12", "v13",
+          "v14", "v15", "vl", "vtype", "memory");
     return dst;
 }
 #endif

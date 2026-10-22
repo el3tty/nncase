@@ -48,7 +48,11 @@ static float get_max_value(int n, const float *x) {
                    "vfmv.f.s %[value_index], v16;"
                    : [value_index] "=f"(max_value)
                    : [avl] "r"(n), [input_ptr] "r"(x), "f"(-FLT_MAX)
-                   : "t0", "t1", "t2", "t3", "t5", "a0", "a1", "fa0");
+                   // LMUL 8: v8 / v16 are the groups v8..v23; vl/vtype and memory change too
+                   : "t0", "t1", "t2", "t3", "t5", "a0", "a1", "fa0", "v8", "v9",
+                     "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17",
+                     "v18", "v19", "v20", "v21", "v22", "v23", "vl", "vtype",
+                     "memory");
     return max_value;
 }
 
