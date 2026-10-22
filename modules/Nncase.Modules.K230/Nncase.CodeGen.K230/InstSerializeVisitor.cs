@@ -10,19 +10,19 @@ namespace Nncase.CodeGen.K230;
 
 internal sealed class InstSerializeVisitor : ExprVisitor<bool, bool>
 {
-    private readonly BinaryWriter Writer;
+    private readonly BinaryWriter _writer;
 
     public InstSerializeVisitor(BinaryWriter binaryWriter)
         : base(false)
     {
-        Writer = binaryWriter;
+        _writer = binaryWriter;
     }
 
     protected override bool VisitLeafCall(Call expr)
     {
         if (expr.Target is ISerializeInst serializeInst)
         {
-            serializeInst.Serialize(Writer, expr);
+            serializeInst.Serialize(_writer, expr);
             return true;
         }
 

@@ -35,12 +35,12 @@ public class LeakyReluToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, leakyCall.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        LeakyRelu leaky = (LeakyRelu)__result["leaky"];
-        Call leakyCall = (Call)__result["leakyCall"];
-        TensorConst alpha = (TensorConst)__result["alpha"];
-        Expr input = (Expr)__result["input"];
+        LeakyRelu leaky = (LeakyRelu)result["leaky"];
+        Call leakyCall = (Call)result["leakyCall"];
+        TensorConst alpha = (TensorConst)result["alpha"];
+        Expr input = (Expr)result["input"];
         return GetReplace(leaky, leakyCall, alpha, input);
     }
 }

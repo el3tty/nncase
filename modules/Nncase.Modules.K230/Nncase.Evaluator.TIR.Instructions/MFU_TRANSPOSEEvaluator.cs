@@ -14,7 +14,7 @@ internal sealed class MFU_TRANSPOSEEvaluator : ITypeInferencer<MFU_TRANSPOSE>, I
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_TRANSPOSE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_TRANSPOSE target, bool iLmode)
     {
         return $"I.MFU_TRANSPOSE(raddr_d: {target.raddr_d}, raddr_s: {target.raddr_s}, rshape: {target.rshape})";
     }

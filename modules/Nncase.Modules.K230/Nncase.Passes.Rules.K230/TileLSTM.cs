@@ -115,8 +115,8 @@ public class TileLSTM : RewriteRule<Pattern>
         Call call = (Call)midCallParams[0];
         Call call2 = (Call)((Nncase.IR.Tuple)output)[0];
         int outputCount = ((TensorConst)midCall[GNNELSTM.OutputSize]).Value.ToScalar<int>();
-        Call call3 = ((outputCount >= 2) ? ((Call)((Nncase.IR.Tuple)output)[1]) : null);
-        Call call4 = ((outputCount >= 3) ? ((Call)((Nncase.IR.Tuple)output)[2]) : null);
+        Call call3 = (outputCount >= 2) ? ((Call)((Nncase.IR.Tuple)output)[1]) : null;
+        Call call4 = (outputCount >= 3) ? ((Call)((Nncase.IR.Tuple)output)[2]) : null;
         Nncase.TIR.Buffer buffer = null;
         Nncase.TIR.Buffer buffer2 = null;
         List<Nncase.TIR.Buffer> buffers = new List<Nncase.TIR.Buffer>();
@@ -205,7 +205,8 @@ public class TileLSTM : RewriteRule<Pattern>
             int sliceOffset = 0;
             foreach (SegmentND weightSlice in weightSlices)
             {
-                TileUtilities.Assert(sliceOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement,
+                TileUtilities.Assert(
+                    sliceOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement,
                     "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
                     "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLSTM.cs",
                     165);
@@ -266,17 +267,20 @@ public class TileLSTM : RewriteRule<Pattern>
         int nPingPongSplit = glb.NPingPongSplit;
         int[] ifmapCcrValue = new int[1];
         int[] initHCcrValue = new int[1];
-        SegmentND inputFeatureSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+        SegmentND inputFeatureSegment = new SegmentND(
+            new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(.._inputShape[3], new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(..1, new Padding(0, 0)));
-        SegmentND gateOutputSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+        SegmentND gateOutputSegment = new SegmentND(
+            new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(..(_outputShape[3] * 4), new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(..1, new Padding(0, 0)));
         SegmentND weight = new SegmentND(gateOutputSegment[1], inputFeatureSegment[1], new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(..1, new Padding(0, 0)));
         BuildL1Schedule(isInitH: false, gnneActionUpdater, glb, inputFeatureSegment, weight, gateOutputSegment, 0, 8, 0,
             weightGroupOnly: true, _weightGroups[0], ifmapCcrValue, ddrIf, ddrLWXC);
-        SegmentND ori = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+        SegmentND ori = new SegmentND(
+            new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(.._outputShape[3], new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
             new Segment1D(..1, new Padding(0, 0)));
         TileUtilities.GlbTensorIndexShift(in ori, in ori);
@@ -334,20 +338,21 @@ public class TileLSTM : RewriteRule<Pattern>
                 for (int n = 0; n != timeSteps.Count; n++)
                 {
                     int timeStep = timeSteps[n];
-                    int l2 = ((n != timeSteps.Count - 1) ? timeSteps[n + 1] : 0);
+                    int l2 = (n != timeSteps.Count - 1) ? timeSteps[n + 1] : 0;
                     if (timeStep == timeSteps[0])
                     {
-                        SegmentND ifmapLoadSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                        SegmentND ifmapLoadSegment = new SegmentND(
+                            new Segment1D(..1, new Padding(0, 0)),
                             new Segment1D(timeStep..(timeStep + 1), new Padding(0, 0)),
                             new Segment1D(m..(m + 1), new Padding(0, 0)),
                             new Segment1D(.._inputShape[3], new Padding(0, 0)));
                         List<CcrSet> ccrsToSet = new List<CcrSet>
                         {
-                            new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), ifmapCcrValue[0])
+                            new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), ifmapCcrValue[0]),
                         };
                         List<int> stridesD = new List<int>
                         {
-                            ifmapLoadSegment[1].Length, ifmapLoadSegment[2].Length, ifmapLoadSegment[3].Length
+                            ifmapLoadSegment[1].Length, ifmapLoadSegment[2].Length, ifmapLoadSegment[3].Length,
                         };
                         List<CcrClr> ccrsToClr = new List<CcrClr>();
                         if (timeStep != timeSteps[0])
@@ -359,19 +364,21 @@ public class TileLSTM : RewriteRule<Pattern>
                             ccrsToSet, ccrsToClr);
                     }
 
-                    SegmentND initHSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND initHSegment = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(l..(l + 1), new Padding(0, 0)), new Segment1D(m..(m + 1), new Padding(0, 0)),
                         new Segment1D(.._outputShape[3], new Padding(0, 0)));
-                    SegmentND initCSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND initCSegment = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(l..(l + 1), new Padding(0, 0)), new Segment1D(m..(m + 1), new Padding(0, 0)),
                         new Segment1D(.._outputShape[3], new Padding(0, 0)));
                     List<CcrSet> initHCcrsToSet = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.LstmOfH)), 0)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.LstmOfH)), 0),
                     };
                     List<CcrSet> initCCcrsToSet = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.LstmOfC)), 0)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.LstmOfC)), 0),
                     };
                     if (timeStep == timeSteps[0])
                     {
@@ -379,7 +386,7 @@ public class TileLSTM : RewriteRule<Pattern>
                         initCCcrsToSet[0].Value = 1;
                         List<int> stridesD2 = new List<int>
                         {
-                            initHSegment[1].Length, initHSegment[2].Length, initHSegment[3].Length
+                            initHSegment[1].Length, initHSegment[2].Length, initHSegment[3].Length,
                         };
                         gnneActionUpdater.UpdateLoadIf(initHSegment, _lInitH, 0, ddrLInitH, 0, stridesD2,
                             ItemName.LstmOfH, initHCcrsToSet);
@@ -388,10 +395,12 @@ public class TileLSTM : RewriteRule<Pattern>
                             ItemName.LstmOfC, initCCcrsToSet);
                     }
 
-                    SegmentND loopInputSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND loopInputSegment = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(.._inputShape[3], new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)));
-                    SegmentND loopGateSegment = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND loopGateSegment = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..(_outputShape[3] * 4), new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)));
                     SegmentND weight2 = new SegmentND(loopGateSegment[1], loopInputSegment[1],
@@ -399,10 +408,12 @@ public class TileLSTM : RewriteRule<Pattern>
                     BuildL1Schedule(isInitH: false, gnneActionUpdater, glb, loopInputSegment, weight2, loopGateSegment, ifmapIndex, 8, 0,
                         weightGroupOnly: false, _weightGroups[0], ifmapCcrValue, ddrIf, ddrLWXC, timeStep == timeSteps[0], l,
                         timeStep == timeSteps[timeSteps.Count - 1], l2, m);
-                    SegmentND ori2 = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND ori2 = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(.._outputShape[3], new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)));
-                    SegmentND ori3 = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND ori3 = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(.._outputShape[3], new Padding(0, 0)),
                         new Segment1D(l..(l + 1), new Padding(0, 0)), new Segment1D(m..(m + 1), new Padding(0, 0)));
                     SegmentND oriShift2 = TileUtilities.GlbTensorIndexShift(in ori2, in ori2);
@@ -413,31 +424,32 @@ public class TileLSTM : RewriteRule<Pattern>
                         weightGroupOnly: false, _weightGroups[1], initHCcrValue, ddrIf, ddrLWRC, timeStep == timeSteps[0], l);
                     List<CcrSet> ccrsToSet2 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10)), 4)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10)), 4),
                     };
                     List<CcrClr> ofmapCcrsToClrA = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 8)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 8))),
                     };
                     ofmapCcrsToClrA.Add(new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 9))));
                     int offsetS = 0;
                     int allocatedBytes = glb.GlbMap[ItemName.Ofmap].AllocatedBytes;
                     int offsetD = 0;
                     int offsetAct = 0;
-                    SegmentND mfuSegmentA = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND mfuSegmentA = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(loopGateSegment[1].Start..loopGateSegment[1].End, new Padding(0, 0)));
                     List<int> src1Stride = new List<int>
                     {
-                        mfuSegmentA[1].Length, mfuSegmentA[2].Length, mfuSegmentA[3].Length
+                        mfuSegmentA[1].Length, mfuSegmentA[2].Length, mfuSegmentA[3].Length,
                     };
                     List<int> src2Stride = new List<int>
                     {
-                        mfuSegmentA[1].Length, mfuSegmentA[2].Length, mfuSegmentA[3].Length
+                        mfuSegmentA[1].Length, mfuSegmentA[2].Length, mfuSegmentA[3].Length,
                     };
                     List<int> dstStride = new List<int>
                     {
-                        mfuSegmentA[1].Length, mfuSegmentA[2].Length, mfuSegmentA[3].Length
+                        mfuSegmentA[1].Length, mfuSegmentA[2].Length, mfuSegmentA[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(mfuSegmentA, mfuSegmentA, mfuSegmentA, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -447,21 +459,23 @@ public class TileLSTM : RewriteRule<Pattern>
                         isByChannel: false);
                     List<CcrSet> ccrsToSet3 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 6)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 6)), 1),
                     };
                     List<CcrClr> ccrsToClr2 = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10))),
                     };
                     SegmentND gateSliceA = new SegmentND(loopGateSegment);
                     gateSliceA[1] = new Segment1D((_outputShape[3] * 2)..(_outputShape[3] * 3), new Padding(0, 0));
                     Segment1D emptySegmentA = new Segment1D(..0, new Padding(0, 0));
                     SegmentND emptyNdA = new SegmentND(emptySegmentA, emptySegmentA, emptySegmentA, emptySegmentA);
                     SegmentND srcCopyA = new SegmentND(ori2);
-                    SegmentND gateVecA = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND gateVecA = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(gateSliceA[1].Start..gateSliceA[1].End, new Padding(0, 0)));
-                    SegmentND srcVecA = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND srcVecA = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(srcCopyA[1].Start..srcCopyA[1].End, new Padding(0, 0)));
                     int addr =
@@ -469,7 +483,7 @@ public class TileLSTM : RewriteRule<Pattern>
                             new int[4]
                             {
                                 loopGateSegment[0].Length, loopGateSegment[1].Length, loopGateSegment[2].Length,
-                                loopGateSegment[3].Length
+                                loopGateSegment[3].Length,
                             }, DataTypes.Float16, 0).GetAddr(gateSliceA[0].Start, gateSliceA[1].Start,
                             gateSliceA[2].Start,
                             gateSliceA[3].Start, 0, 1);
@@ -479,15 +493,15 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetAct2 = 0;
                     List<int> src1Stride2 = new List<int>
                     {
-                        gateVecA[1].Length, gateVecA[2].Length, gateVecA[3].Length
+                        gateVecA[1].Length, gateVecA[2].Length, gateVecA[3].Length,
                     };
                     List<int> src2Stride2 = new List<int>
                     {
-                        emptyNdA[1].Length, emptyNdA[2].Length, emptyNdA[3].Length
+                        emptyNdA[1].Length, emptyNdA[2].Length, emptyNdA[3].Length,
                     };
                     List<int> dstStride2 = new List<int>
                     {
-                        srcVecA[1].Length, srcVecA[2].Length, srcVecA[3].Length
+                        srcVecA[1].Length, srcVecA[2].Length, srcVecA[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(gateVecA, emptyNdA, srcVecA, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -499,27 +513,28 @@ public class TileLSTM : RewriteRule<Pattern>
                     ofmapCcrsToClrB.Add(new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 6))));
                     List<CcrSet> ccrsToSet4 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 2)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 2)), 1),
                     };
                     int offsetS3 = 0;
                     int offsetS4 = glb.GlbMap[ItemName.Ofmap].AllocatedBytes +
                                    glb.GlbMap[ItemName.Ofmap].GlbNByte / 4 * 2;
                     int offsetD3 = glb.GlbMap[ItemName.Ofmap].GlbNByte / 4 * 2;
                     int offsetAct3 = 0;
-                    SegmentND mfuSegmentB = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND mfuSegmentB = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(oriShift3[1].Start..oriShift3[1].End, new Padding(0, 0)));
                     List<int> src1Stride3 = new List<int>
                     {
-                        mfuSegmentB[1].Length, mfuSegmentB[2].Length, mfuSegmentB[3].Length
+                        mfuSegmentB[1].Length, mfuSegmentB[2].Length, mfuSegmentB[3].Length,
                     };
                     List<int> src2Stride3 = new List<int>
                     {
-                        mfuSegmentB[1].Length, mfuSegmentB[2].Length, mfuSegmentB[3].Length
+                        mfuSegmentB[1].Length, mfuSegmentB[2].Length, mfuSegmentB[3].Length,
                     };
                     List<int> dstStride3 = new List<int>
                     {
-                        mfuSegmentB[1].Length, mfuSegmentB[2].Length, mfuSegmentB[3].Length
+                        mfuSegmentB[1].Length, mfuSegmentB[2].Length, mfuSegmentB[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(mfuSegmentB, mfuSegmentB, mfuSegmentB, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, _initCType, DataTypes.Float16, DataTypes.Float16,
@@ -529,11 +544,11 @@ public class TileLSTM : RewriteRule<Pattern>
                         dstStride3, isByChannel: false);
                     List<CcrSet> ccrsToSet5 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 4)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 4)), 1),
                     };
                     List<CcrClr> ccrsToClr3 = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10))),
                     };
                     SegmentND gateSliceB = new SegmentND(loopGateSegment);
                     _ = _outputShape[3];
@@ -541,10 +556,12 @@ public class TileLSTM : RewriteRule<Pattern>
                     Segment1D emptySegmentB = new Segment1D(..0, new Padding(0, 0));
                     SegmentND emptyNdB = new SegmentND(emptySegmentB, emptySegmentB, emptySegmentB, emptySegmentB);
                     SegmentND srcCopyB = new SegmentND(ori2);
-                    SegmentND gateVecB = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND gateVecB = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(gateSliceB[1].Start..gateSliceB[1].End, new Padding(0, 0)));
-                    SegmentND srcVecB = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND srcVecB = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(srcCopyB[1].Start..srcCopyB[1].End, new Padding(0, 0)));
                     int addr2 =
@@ -552,7 +569,7 @@ public class TileLSTM : RewriteRule<Pattern>
                             new int[4]
                             {
                                 loopGateSegment[0].Length, loopGateSegment[1].Length, loopGateSegment[2].Length,
-                                loopGateSegment[3].Length
+                                loopGateSegment[3].Length,
                             }, DataTypes.Float16, 0).GetAddr(gateSliceB[0].Start, gateSliceB[1].Start,
                             gateSliceB[2].Start,
                             gateSliceB[3].Start, 0, 1);
@@ -563,15 +580,15 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetAct4 = 0;
                     List<int> src1Stride4 = new List<int>
                     {
-                        gateVecB[1].Length, gateVecB[2].Length, gateVecB[3].Length
+                        gateVecB[1].Length, gateVecB[2].Length, gateVecB[3].Length,
                     };
                     List<int> src2Stride4 = new List<int>
                     {
-                        emptyNdB[1].Length, emptyNdB[2].Length, emptyNdB[3].Length
+                        emptyNdB[1].Length, emptyNdB[2].Length, emptyNdB[3].Length,
                     };
                     List<int> dstStride4 = new List<int>
                     {
-                        srcVecB[1].Length, srcVecB[2].Length, srcVecB[3].Length
+                        srcVecB[1].Length, srcVecB[2].Length, srcVecB[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(gateVecB, emptyNdB, srcVecB, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -581,21 +598,23 @@ public class TileLSTM : RewriteRule<Pattern>
                         dstStride4);
                     List<CcrSet> ccrsToSet6 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 7)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 7)), 1),
                     };
                     List<CcrClr> ccrsToClr4 = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10))),
                     };
                     SegmentND gateSliceC = new SegmentND(loopGateSegment);
                     gateSliceC[1] = new Segment1D((_outputShape[3] * 3)..(_outputShape[3] * 4), new Padding(0, 0));
                     Segment1D emptySegmentC = new Segment1D(..0, new Padding(0, 0));
                     SegmentND emptyNdC = new SegmentND(emptySegmentC, emptySegmentC, emptySegmentC, emptySegmentC);
                     SegmentND srcCopyC = new SegmentND(ori2);
-                    SegmentND gateVecC = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND gateVecC = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(gateSliceC[1].Start..gateSliceC[1].End, new Padding(0, 0)));
-                    SegmentND srcVecC = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND srcVecC = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(srcCopyC[1].Start..srcCopyC[1].End, new Padding(0, 0)));
                     int addr3 =
@@ -603,7 +622,7 @@ public class TileLSTM : RewriteRule<Pattern>
                             new int[4]
                             {
                                 loopGateSegment[0].Length, loopGateSegment[1].Length, loopGateSegment[2].Length,
-                                loopGateSegment[3].Length
+                                loopGateSegment[3].Length,
                             }, DataTypes.Float16, 0).GetAddr(gateSliceC[0].Start, gateSliceC[1].Start,
                             gateSliceC[2].Start,
                             gateSliceC[3].Start, 0, 1);
@@ -613,15 +632,15 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetAct5 = 0;
                     List<int> src1Stride5 = new List<int>
                     {
-                        gateVecC[1].Length, gateVecC[2].Length, gateVecC[3].Length
+                        gateVecC[1].Length, gateVecC[2].Length, gateVecC[3].Length,
                     };
                     List<int> src2Stride5 = new List<int>
                     {
-                        emptyNdC[1].Length, emptyNdC[2].Length, emptyNdC[3].Length
+                        emptyNdC[1].Length, emptyNdC[2].Length, emptyNdC[3].Length,
                     };
                     List<int> dstStride5 = new List<int>
                     {
-                        srcVecC[1].Length, srcVecC[2].Length, srcVecC[3].Length
+                        srcVecC[1].Length, srcVecC[2].Length, srcVecC[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(gateVecC, emptyNdC, srcVecC, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -631,12 +650,12 @@ public class TileLSTM : RewriteRule<Pattern>
                         dstStride5);
                     List<CcrClr> ofmapCcrsToClrC = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 4)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 4))),
                     };
                     ofmapCcrsToClrC.Add(new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 7))));
                     List<CcrSet> ccrsToSet7 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 0)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 0)), 1),
                     };
                     int allocatedBytes3 = glb.GlbMap[ItemName.Ofmap].AllocatedBytes;
                     _ = glb.GlbMap[ItemName.Ofmap].GlbNByte / 4;
@@ -646,20 +665,21 @@ public class TileLSTM : RewriteRule<Pattern>
                     _ = glb.GlbMap[ItemName.Ofmap].AllocatedBytes;
                     int offsetD6 = 0;
                     int offsetAct6 = 0;
-                    SegmentND mfuSegmentC = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND mfuSegmentC = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(oriShift3[1].Start..oriShift3[1].End, new Padding(0, 0)));
                     List<int> src1Stride6 = new List<int>
                     {
-                        mfuSegmentC[1].Length, mfuSegmentC[2].Length, mfuSegmentC[3].Length
+                        mfuSegmentC[1].Length, mfuSegmentC[2].Length, mfuSegmentC[3].Length,
                     };
                     List<int> src2Stride6 = new List<int>
                     {
-                        mfuSegmentC[1].Length, mfuSegmentC[2].Length, mfuSegmentC[3].Length
+                        mfuSegmentC[1].Length, mfuSegmentC[2].Length, mfuSegmentC[3].Length,
                     };
                     List<int> dstStride6 = new List<int>
                     {
-                        mfuSegmentC[1].Length, mfuSegmentC[2].Length, mfuSegmentC[3].Length
+                        mfuSegmentC[1].Length, mfuSegmentC[2].Length, mfuSegmentC[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(mfuSegmentC, mfuSegmentC, mfuSegmentC, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -669,7 +689,7 @@ public class TileLSTM : RewriteRule<Pattern>
                         dstStride6, isByChannel: false);
                     List<CcrClr> ofmapCcrsToClrD = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 2)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 2))),
                     };
                     ofmapCcrsToClrD.Add(new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 0))));
                     List<CcrSet> ofmapCcrsToSetD = new List<CcrSet>();
@@ -681,20 +701,21 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetS10 = 0;
                     int offsetD7 = 0;
                     int offsetAct7 = 0;
-                    SegmentND mfuSegmentD = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND mfuSegmentD = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(oriShift3[1].Start..oriShift3[1].End, new Padding(0, 0)));
                     List<int> src1Stride7 = new List<int>
                     {
-                        mfuSegmentD[1].Length, mfuSegmentD[2].Length, mfuSegmentD[3].Length
+                        mfuSegmentD[1].Length, mfuSegmentD[2].Length, mfuSegmentD[3].Length,
                     };
                     List<int> src2Stride7 = new List<int>
                     {
-                        mfuSegmentD[1].Length, mfuSegmentD[2].Length, mfuSegmentD[3].Length
+                        mfuSegmentD[1].Length, mfuSegmentD[2].Length, mfuSegmentD[3].Length,
                     };
                     List<int> dstStride7 = new List<int>
                     {
-                        mfuSegmentD[1].Length, mfuSegmentD[2].Length, mfuSegmentD[3].Length
+                        mfuSegmentD[1].Length, mfuSegmentD[2].Length, mfuSegmentD[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(mfuSegmentD, mfuSegmentD, mfuSegmentD, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -704,21 +725,23 @@ public class TileLSTM : RewriteRule<Pattern>
                         dstStride7, isByChannel: false);
                     List<CcrSet> ccrsToSet9 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 5)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 5)), 1),
                     };
                     List<CcrClr> ccrsToClr5 = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 10))),
                     };
                     SegmentND gateSliceD = new SegmentND(loopGateSegment);
-                    gateSliceD[1] = new Segment1D(_outputShape[3]..(_outputShape[3] * 2), new Padding(0, 0));
+                    gateSliceD[1] = new Segment1D(_outputShape[3] ..(_outputShape[3] * 2), new Padding(0, 0));
                     Segment1D emptySegmentD = new Segment1D(..0, new Padding(0, 0));
                     SegmentND emptyNdD = new SegmentND(emptySegmentD, emptySegmentD, emptySegmentD, emptySegmentD);
                     SegmentND srcCopyD = new SegmentND(ori2);
-                    SegmentND gateVecD = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND gateVecD = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(gateSliceD[1].Start..gateSliceD[1].End, new Padding(0, 0)));
-                    SegmentND srcVecD = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND srcVecD = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(srcCopyD[1].Start..srcCopyD[1].End, new Padding(0, 0)));
                     int addr4 =
@@ -726,7 +749,7 @@ public class TileLSTM : RewriteRule<Pattern>
                             new int[4]
                             {
                                 loopGateSegment[0].Length, loopGateSegment[1].Length, loopGateSegment[2].Length,
-                                loopGateSegment[3].Length
+                                loopGateSegment[3].Length,
                             }, DataTypes.Float16, 0).GetAddr(gateSliceD[0].Start, gateSliceD[1].Start,
                             gateSliceD[2].Start,
                             gateSliceD[3].Start, 0, 1);
@@ -735,15 +758,15 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetAct8 = 0;
                     List<int> src1Stride8 = new List<int>
                     {
-                        gateVecD[1].Length, gateVecD[2].Length, gateVecD[3].Length
+                        gateVecD[1].Length, gateVecD[2].Length, gateVecD[3].Length,
                     };
                     List<int> src2Stride8 = new List<int>
                     {
-                        emptyNdD[1].Length, emptyNdD[2].Length, emptyNdD[3].Length
+                        emptyNdD[1].Length, emptyNdD[2].Length, emptyNdD[3].Length,
                     };
                     List<int> dstStride8 = new List<int>
                     {
-                        srcVecD[1].Length, srcVecD[2].Length, srcVecD[3].Length
+                        srcVecD[1].Length, srcVecD[2].Length, srcVecD[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(gateVecD, emptyNdD, srcVecD, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -753,17 +776,19 @@ public class TileLSTM : RewriteRule<Pattern>
                         dstStride8);
                     List<CcrSet> ccrsToSet10 = new List<CcrSet>
                     {
-                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 3)), 1)
+                        new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 3)), 1),
                     };
                     List<CcrClr> ccrsToClr6 = new List<CcrClr> { new CcrClr(initCCcrsToSet[0].Ccr) };
                     SegmentND gateSliceE = new SegmentND(oriShift2);
                     SegmentND srcCopyE = new SegmentND(oriShift2);
                     Segment1D emptySegmentE = new Segment1D(..0, new Padding(0, 0));
                     SegmentND emptyNdE = new SegmentND(emptySegmentE, emptySegmentE, emptySegmentE, emptySegmentE);
-                    SegmentND gateVecE = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND gateVecE = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(gateSliceE[1].Start..gateSliceE[1].End, new Padding(0, 0)));
-                    SegmentND srcVecE = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND srcVecE = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(srcCopyE[1].Start..srcCopyE[1].End, new Padding(0, 0)));
                     int offsetS12 = 0;
@@ -772,15 +797,15 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetAct9 = 0;
                     List<int> src1Stride9 = new List<int>
                     {
-                        gateVecE[1].Length, gateVecE[2].Length, gateVecE[3].Length
+                        gateVecE[1].Length, gateVecE[2].Length, gateVecE[3].Length,
                     };
                     List<int> src2Stride9 = new List<int>
                     {
-                        emptyNdE[1].Length, emptyNdE[2].Length, emptyNdE[3].Length
+                        emptyNdE[1].Length, emptyNdE[2].Length, emptyNdE[3].Length,
                     };
                     List<int> dstStride9 = new List<int>
                     {
-                        srcVecE[1].Length, srcVecE[2].Length, srcVecE[3].Length
+                        srcVecE[1].Length, srcVecE[2].Length, srcVecE[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(gateVecE, emptyNdE, srcVecE, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, DataTypes.Float16,
@@ -791,12 +816,12 @@ public class TileLSTM : RewriteRule<Pattern>
                     int value = initHCcrValue[0] + 1;
                     if (timeStep == timeSteps[timeSteps.Count - 1])
                     {
-                        value = (((object)_ofH == null) ? 1 : 2);
+                        value = ((object)_ofH == null) ? 1 : 2;
                     }
 
                     List<CcrClr> ofmapCcrsToClrE = new List<CcrClr>
                     {
-                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 5)))
+                        new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 5))),
                     };
                     ofmapCcrsToClrE.Add(new CcrClr(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, 3))));
                     List<CcrSet> ccrsToSet11 = new List<CcrSet> { new CcrSet(initHCcrsToSet[0].Ccr, value) };
@@ -804,20 +829,21 @@ public class TileLSTM : RewriteRule<Pattern>
                     int offsetS15 = glb.GlbMap[ItemName.Ofmap].GlbNByte / 4 * 3;
                     int offsetD10 = 0;
                     int offsetAct10 = 0;
-                    SegmentND mfuSegmentE = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                    SegmentND mfuSegmentE = new SegmentND(
+                        new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(..1, new Padding(0, 0)), new Segment1D(..1, new Padding(0, 0)),
                         new Segment1D(oriShift2[1].Start..oriShift2[1].End, new Padding(0, 0)));
                     List<int> src1Stride10 = new List<int>
                     {
-                        mfuSegmentE[1].Length, mfuSegmentE[2].Length, mfuSegmentE[3].Length
+                        mfuSegmentE[1].Length, mfuSegmentE[2].Length, mfuSegmentE[3].Length,
                     };
                     List<int> src2Stride10 = new List<int>
                     {
-                        mfuSegmentE[1].Length, mfuSegmentE[2].Length, mfuSegmentE[3].Length
+                        mfuSegmentE[1].Length, mfuSegmentE[2].Length, mfuSegmentE[3].Length,
                     };
                     List<int> dstStride10 = new List<int>
                     {
-                        mfuSegmentE[1].Length, mfuSegmentE[2].Length, mfuSegmentE[3].Length
+                        mfuSegmentE[1].Length, mfuSegmentE[2].Length, mfuSegmentE[3].Length,
                     };
                     gnneActionUpdater.UpdateMfuAct1(mfuSegmentE, mfuSegmentE, mfuSegmentE, ACT1_SOURCE_TYPE.l2,
                         ACT1_SOURCE_TYPE.l2, DataTypes.Float16, DataTypes.Float16, _outputType,
@@ -825,7 +851,8 @@ public class TileLSTM : RewriteRule<Pattern>
                         ccrsToSet11, ofmapCcrsToClrE, offsetS14, offsetS15, offsetD10, offsetAct10, ItemName.Ofmap,
                         ItemName.Ofmap, ItemName.LstmBinQAct, MFU_ACT1_FUNCTION.mul, ItemName.LstmOfH, src1Stride10,
                         src2Stride10, dstStride10, isByChannel: false);
-                    SegmentND ofmap = new SegmentND(new Segment1D(timeStep..(timeStep + 1), new Padding(0, 0)),
+                    SegmentND ofmap = new SegmentND(
+                        new Segment1D(timeStep..(timeStep + 1), new Padding(0, 0)),
                         new Segment1D(l..(l + 1), new Padding(0, 0)), new Segment1D(m..(m + 1), new Padding(0, 0)),
                         new Segment1D(.._outputShape[3], new Padding(0, 0)));
                     List<CcrClr> ccrsToClr7 = new List<CcrClr> { new CcrClr(initHCcrsToSet[0].Ccr) };
@@ -833,7 +860,8 @@ public class TileLSTM : RewriteRule<Pattern>
                         new List<int> { 1, 1, _outputShape[3] });
                     if (timeStep == timeSteps[timeSteps.Count - 1])
                     {
-                        SegmentND ofmap2 = new SegmentND(new Segment1D(..1, new Padding(0, 0)),
+                        SegmentND ofmap2 = new SegmentND(
+                            new Segment1D(..1, new Padding(0, 0)),
                             new Segment1D(l..(l + 1), new Padding(0, 0)), new Segment1D(m..(m + 1), new Padding(0, 0)),
                             new Segment1D(.._outputShape[3], new Padding(0, 0)));
                         if ((object)_ofH != null)
@@ -898,9 +926,10 @@ public class TileLSTM : RewriteRule<Pattern>
                     {
                         Padding p2 = new Padding(0, 0);
                         Segment1D currentColSegment = colSegment;
-                        Segment1D inputRowSegment2 = TileUtilities.GetInputRowSegment(currentColSegment.Start,
+                        Segment1D inputRowSegment2 = TileUtilities.GetInputRowSegment(
+                            currentColSegment.Start,
                             currentColSegment.Length, ifmap[3].Length, weight[3].Length, 1, 1, in p2);
-                        new SegmentND(batchSegment, ocSegment, rowSegment, colSegment);
+                        _ = new SegmentND(batchSegment, ocSegment, rowSegment, colSegment);
                         SegmentND convSegment = new SegmentND(batchSegment, ocSegment, currentRowSegment, currentColSegment);
                         bool isFirstLoop = true;
                         foreach (Segment1D icSegment in icSegments)
@@ -919,7 +948,7 @@ public class TileLSTM : RewriteRule<Pattern>
                                     Segment1D weightOcSegment = ocSegment;
                                     SegmentND segments = new SegmentND(ifmapBatchSegment, ifmapIcSegment, inputRowSegment,
                                         inputRowSegment2);
-                                    new SegmentND(ocSegment, weightIcSegment, kernelRowSegment, kernelColSegment);
+                                    _ = new SegmentND(ocSegment, weightIcSegment, kernelRowSegment, kernelColSegment);
                                     bool hasIfmapLoad = false;
                                     SegmentND shiftedIfmap = new SegmentND(segments);
                                     if (shiftedIfmap[0].Length > 0 && shiftedIfmap[1].Length > 0 &&
@@ -978,16 +1007,16 @@ public class TileLSTM : RewriteRule<Pattern>
                                                 {
                                                     new CcrSet(
                                                         _ccrHandler.GetCcrItem(
-                                                            _ccrHandler.GetName(ItemName.Ifmap, iPp)), ifLives[0])
+                                                            _ccrHandler.GetName(ItemName.Ifmap, iPp)), ifLives[0]),
                                                 };
                                                 List<int> stridesD = new List<int>
                                                 {
-                                                    ifmapLoadSegment[1].Length, ifmapLoadSegment[2].Length, ifmapLoadSegment[3].Length
+                                                    ifmapLoadSegment[1].Length, ifmapLoadSegment[2].Length, ifmapLoadSegment[3].Length,
                                                 };
                                                 List<CcrClr> ccrsToClr = new List<CcrClr>
                                                 {
                                                     new CcrClr(_ccrHandler.GetCcrItem(
-                                                        _ccrHandler.GetName(ItemName.IfmapFake, iPp)))
+                                                        _ccrHandler.GetName(ItemName.IfmapFake, iPp))),
                                                 };
                                                 actionUpdater.UpdateLoadIf(ifmapLoadSegment, _lIf, iPp, ddrIf, 0, stridesD,
                                                     ItemName.Ifmap, ccrsToSet, ccrsToClr);
@@ -1005,14 +1034,14 @@ public class TileLSTM : RewriteRule<Pattern>
                                         {
                                             SegmentND weightSegment = new SegmentND(weightOcSegment, weightIcSegment, kernelRowSlice, kernelColSlice);
                                             SegmentND slice = new SegmentND(segments);
-                                            int weightPasses = ((!isInitH)
+                                            int weightPasses = (!isInitH)
                                                 ? ((!(_wXcType == DataTypes.Int16)) ? 1 : 2)
-                                                : ((!(_wRcType == DataTypes.Int16)) ? 1 : 2));
-                                            int inputPasses = ((!isInitH)
+                                                : ((!(_wRcType == DataTypes.Int16)) ? 1 : 2);
+                                            int inputPasses = (!isInitH)
                                                 ? ((!(_inputType == DataTypes.Int16)) ? 1 : 2)
                                                 : ((!isFirstL)
                                                     ? ((!(_outputType == DataTypes.Int16)) ? 1 : 2)
-                                                    : ((!(_initHType == DataTypes.Int16)) ? 1 : 2)));
+                                                    : ((!(_initHType == DataTypes.Int16)) ? 1 : 2));
                                             for (int i = 0; i < weightPasses; i++)
                                             {
                                                 for (int inputPass = 0; inputPass < inputPasses; inputPass++)
@@ -1035,8 +1064,7 @@ public class TileLSTM : RewriteRule<Pattern>
                                                                     weightGroup, 0, ddrW, weightCcrsToSet, null,
                                                                     glb.GlbMap[ItemName.LstmWXc].AllocatedBytes * d,
                                                                     h2c: false,
-                                                                    weightGroup.CurrentOffset() * d *
-                                                                    TileUtilities.GetBytesPerElement(_wXcType),
+                                                                    weightGroup.CurrentOffset() * d * TileUtilities.GetBytesPerElement(_wXcType),
                                                                     ItemName.LstmWXc, i);
                                                             }
                                                             else
@@ -1051,15 +1079,14 @@ public class TileLSTM : RewriteRule<Pattern>
                                                                     weightGroup, 0, ddrW, weightCcrsToSet, null,
                                                                     glb.GlbMap[ItemName.LstmWRc].AllocatedBytes * d,
                                                                     h2c: false,
-                                                                    weightGroup.CurrentOffset() * d *
-                                                                    TileUtilities.GetBytesPerElement(_wRcType),
+                                                                    weightGroup.CurrentOffset() * d * TileUtilities.GetBytesPerElement(_wRcType),
                                                                     ItemName.LstmWRc, i);
                                                             }
                                                         }
 
-                                                        int offsetWS = (isInitH
+                                                        int offsetWS = isInitH
                                                             ? (glb.GlbMap[ItemName.LstmWRc].AllocatedBytes * d)
-                                                            : (glb.GlbMap[ItemName.LstmWXc].AllocatedBytes * d));
+                                                            : (glb.GlbMap[ItemName.LstmWXc].AllocatedBytes * d);
                                                         actionUpdater.UpdateG2RW(weightSegment, weightGroup,
                                                             weight[0].Length, isInitH ? _lWRc : _lWXc, wPp, i, null,
                                                             weightCcrsToClr, offsetWS, _outputShape[3] * 4 * d,
@@ -1077,11 +1104,11 @@ public class TileLSTM : RewriteRule<Pattern>
                                                             .ToScalar<int>();
                                                         if (isInitH)
                                                         {
-                                                            bias = (isFirstL
+                                                            bias = isFirstL
                                                                 ? ((TensorConst)_oldLstm[GNNELSTM.HDeqBias0]).Value
                                                                 .ToScalar<int>()
                                                                 : ((TensorConst)_oldLstm[GNNELSTM.HDeqBias1]).Value
-                                                                .ToScalar<int>());
+                                                                .ToScalar<int>();
                                                         }
 
                                                         actionUpdater.UpdateL2RIf(slice, shiftedIfmap, 1, 1,
@@ -1097,7 +1124,7 @@ public class TileLSTM : RewriteRule<Pattern>
                                                         if (kernelRowSlice == kernelRowSlices[
                                                                 kernelRowSlices.Count - 1] && i == weightPasses - 1)
                                                         {
-                                                            isLastPass = ((inputPass == inputPasses - 1) ? 1 : 0);
+                                                            isLastPass = (inputPass == inputPasses - 1) ? 1 : 0;
                                                         }
                                                     }
 
@@ -1126,11 +1153,11 @@ public class TileLSTM : RewriteRule<Pattern>
                                                             .ToScalar<int>();
                                                         if (isInitH)
                                                         {
-                                                            shift = ((!isFirstL)
+                                                            shift = (!isFirstL)
                                                                 ? ((TensorConst)_oldLstm[GNNELSTM.RcShiftBits1]).Value
                                                                 .ToScalar<int>()
                                                                 : ((TensorConst)_oldLstm[GNNELSTM.RcShiftBits0]).Value
-                                                                .ToScalar<int>());
+                                                                .ToScalar<int>();
                                                         }
 
                                                         int setOfmapCcr = 0;
@@ -1169,11 +1196,8 @@ public class TileLSTM : RewriteRule<Pattern>
                                                             TcuComputeMode.NormalConv2d, loopStart, isLastKernelSlice, 1, 1,
                                                             weight[0].Length, _inputType, isInitH ? _wRcType : _wXcType,
                                                             @float,
-                                                            isInitH
-                                                                ? _lActRc0.CheckedDataType
-                                                                : _lActXc.CheckedDataType, ofmapCcrsToSet, ccrsToClr2, actOffset,
-                                                            glb.GlbMap[ItemName.Ofmap].AllocatedBytes *
-                                                            (isInitH ? 1 : 0), null,
+                                                            isInitH ? _lActRc0.CheckedDataType : _lActXc.CheckedDataType, ofmapCcrsToSet, ccrsToClr2, actOffset,
+                                                            glb.GlbMap[ItemName.Ofmap].AllocatedBytes * (isInitH ? 1 : 0), null,
                                                             isInitH ? ItemName.LstmActRc : ItemName.LstmActXc);
                                                     }
                                                 }
@@ -1227,7 +1251,7 @@ public class TileLSTM : RewriteRule<Pattern>
             ofmapRows,
             ofmapCols,
             length3,
-            length4
+            length4,
         };
     }
 
@@ -1251,7 +1275,7 @@ public class TileLSTM : RewriteRule<Pattern>
         if (ifmap[2].Length == 1 && ifmap[3].Length == 1 && weights[2].Length == 1 && weights[3].Length == 1 &&
             (weights[1].Length % 24 == 0 || weights[1].Length % 20 == 0 || weights[1].Length % 16 == 0))
         {
-            int dim1Size = ((weights[1].Length % 24 == 0) ? 24 : ((weights[1].Length % 20 == 0) ? 20 : 16));
+            int dim1Size = (weights[1].Length % 24 == 0) ? 24 : ((weights[1].Length % 20 == 0) ? 20 : 16);
             int groupCount = weights[1].Length / dim1Size;
             uint dim3Size = 4u;
             if (groupCount <= dim3Size)
@@ -1317,7 +1341,7 @@ public class TileLSTM : RewriteRule<Pattern>
         if (inShape[2] == 1 && inShape[3] == 1 && wShape[2] == 1 && wShape[3] == 1 &&
             (wShape[1] % 24 == 0 || wShape[1] % 20 == 0 || wShape[1] % 16 == 0))
         {
-            int dim1Size = ((wShape[1] % 24 == 0) ? 24 : ((wShape[1] % 20 == 0) ? 20 : 16));
+            int dim1Size = (wShape[1] % 24 == 0) ? 24 : ((wShape[1] % 20 == 0) ? 20 : 16);
             int groupCount = wShape[1] / dim1Size;
             int dim3Size = 4;
             if (groupCount <= dim3Size)
@@ -1384,8 +1408,8 @@ public class TileLSTM : RewriteRule<Pattern>
         wRcBytes = TileUtilities.GetAlignedNum(wRcBytes, GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
         TensorOnGlb actRcTensor = new TensorOnGlb(new int[4] { 1, 1, _actRcShape[2], _actRcShape[3] }, _actRcType, 0);
         int actRcBytes = actRcTensor.GlbNByte * _actRcShape[1];
-        actRcBytes = (actRcTensor.AllocatedBytes =
-            TileUtilities.GetAlignedNum(actRcBytes, GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth));
+        actRcBytes = actRcTensor.AllocatedBytes =
+            TileUtilities.GetAlignedNum(actRcBytes, GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         actRcBytes *= 2;
         int[] initHDims = new int[4] { 1, 0, 1, 1 };
         initHDims[1] = _initHShape[3];
@@ -1401,8 +1425,8 @@ public class TileLSTM : RewriteRule<Pattern>
         gateDims[1] = _outputShape[3] * 4;
         TensorOnGlb gateTensor = new TensorOnGlb(gateDims, DataTypes.Float16, 0);
         int glbNByte3 = gateTensor.GlbNByte;
-        glbNByte3 = (gateTensor.AllocatedBytes =
-            TileUtilities.GetAlignedNum(glbNByte3, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth));
+        glbNByte3 = gateTensor.AllocatedBytes =
+            TileUtilities.GetAlignedNum(glbNByte3, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
         glbNByte3 *= 2;
         TensorOnGlb segFittingFtTensor = new TensorOnGlb(new int[4] { 1, 1, 1, 49 }, DataTypes.Float16, 0);
         int glbNByte4 = segFittingFtTensor.GlbNByte;
@@ -1420,18 +1444,23 @@ public class TileLSTM : RewriteRule<Pattern>
         glbNByte6 = TileUtilities.GetAlignedNum(glbNByte6, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.Basement));
         boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.IfmapBankWidth, value / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.Ifmap));
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.WBankWidth, wXcBytes / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.WBankWidth, wXcBytes / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmWXc));
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.ActBankWidth, actXcBytes / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.ActBankWidth, actXcBytes / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmActXc));
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.WBankWidth, wRcBytes / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.WBankWidth, wRcBytes / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmWRc));
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.ActBankWidth, actRcBytes / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.ActBankWidth, actRcBytes / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmActRc));
         boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.OfmapBankWidth, glbNByte / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth },
@@ -1448,9 +1477,11 @@ public class TileLSTM : RewriteRule<Pattern>
         boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.OfmapBankWidth, glbNByte4 / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmSegFittingParamGt));
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, glbNByte5 / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.GlbWidth, glbNByte5 / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmBinAct));
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, glbNByte6 / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.GlbWidth, glbNByte6 / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.LstmBinQAct));
         glbMap.Add(ItemName.Ifmap, ifmapTensor);
         glbMap.Add(ItemName.LstmWXc, wXcTensor);
@@ -1467,7 +1498,8 @@ public class TileLSTM : RewriteRule<Pattern>
         if (_wXcType == DataTypes.UInt8 || _wXcType == DataTypes.Int16)
         {
             TensorOnGlb wXcQargTensor = new TensorOnGlb(new int[4] { 0, 0, 0, 0 }, _wXcType, 0);
-            int wQargSize = SpaceSearcher.GetWQargSize(_wXcShape[1] * _wXcShape[2],
+            int wQargSize = SpaceSearcher.GetWQargSize(
+                _wXcShape[1] * _wXcShape[2],
                 TileUtilities.GetBytesPerElement(_lwXcQarg[GNNELoadW.Input].CheckedDataType));
             wQargSize = TileUtilities.GetAlignedNum(wQargSize, GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
             boxes.Add(new BoxOnGlb(
@@ -1479,7 +1511,8 @@ public class TileLSTM : RewriteRule<Pattern>
         if (_wRcType == DataTypes.UInt8 || _wRcType == DataTypes.Int16)
         {
             TensorOnGlb wRcQargTensor = new TensorOnGlb(new int[4] { 0, 0, 0, 0 }, _wRcType, 0);
-            int wQargSize2 = SpaceSearcher.GetWQargSize(_wRcShape[1] * _wRcShape[2],
+            int wQargSize2 = SpaceSearcher.GetWQargSize(
+                _wRcShape[1] * _wRcShape[2],
                 TileUtilities.GetBytesPerElement(_lwRcQarg[GNNELoadW.Input].CheckedDataType));
             wQargSize2 = TileUtilities.GetAlignedNum(wQargSize2, GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
             boxes.Add(new BoxOnGlb(
@@ -1509,45 +1542,54 @@ public class TileLSTM : RewriteRule<Pattern>
         _of = st;
         _ofH = stH;
         _ofC = stC;
-        _inputShape = new GNNEShape(_oldLstm[GNNELSTM.Input].CheckedShape[0].FixedValue,
+        _inputShape = new GNNEShape(
+            _oldLstm[GNNELSTM.Input].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.Input].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.Input].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.Input].CheckedShape[3].FixedValue);
-        _wXcShape = new GNNEShape(_oldLstm[GNNELSTM.WXc].CheckedShape[0].FixedValue,
+        _wXcShape = new GNNEShape(
+            _oldLstm[GNNELSTM.WXc].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.WXc].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.WXc].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.WXc].CheckedShape[3].FixedValue);
-        _wXcShapeReshape = new GNNEShape(_oldLstm[GNNELSTM.WXc].CheckedShape[0].FixedValue,
+        _wXcShapeReshape = new GNNEShape(
+            _oldLstm[GNNELSTM.WXc].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.WXc].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.WXc].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.WXc].CheckedShape[3].FixedValue);
-        _actXcShape = new GNNEShape(_oldLstm[GNNELSTM.ActXc].CheckedShape[0].FixedValue,
+        _actXcShape = new GNNEShape(
+            _oldLstm[GNNELSTM.ActXc].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.ActXc].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.ActXc].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.ActXc].CheckedShape[3].FixedValue);
-        _wRcShape = new GNNEShape(_oldLstm[GNNELSTM.WRc].CheckedShape[0].FixedValue,
+        _wRcShape = new GNNEShape(
+            _oldLstm[GNNELSTM.WRc].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.WRc].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.WRc].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.WRc].CheckedShape[3].FixedValue);
-        _wRcShapeReshape = new GNNEShape(_oldLstm[GNNELSTM.WRc].CheckedShape[0].FixedValue,
+        _wRcShapeReshape = new GNNEShape(
+            _oldLstm[GNNELSTM.WRc].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.WRc].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.WRc].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.WRc].CheckedShape[3].FixedValue);
-        _actRcShape = new GNNEShape(_oldLstm[GNNELSTM.ActRc0].CheckedShape[0].FixedValue,
+        _actRcShape = new GNNEShape(
+            _oldLstm[GNNELSTM.ActRc0].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.ActRc0].CheckedShape[1].FixedValue, _oldLstm[GNNELSTM.ActRc0].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.ActRc0].CheckedShape[3].FixedValue);
-        _initHShape = new GNNEShape(_oldLstm[GNNELSTM.InitialH].CheckedShape[0].FixedValue,
+        _initHShape = new GNNEShape(
+            _oldLstm[GNNELSTM.InitialH].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.InitialH].CheckedShape[1].FixedValue,
             _oldLstm[GNNELSTM.InitialH].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.InitialH].CheckedShape[3].FixedValue);
-        _initCShape = new GNNEShape(_oldLstm[GNNELSTM.InitialC].CheckedShape[0].FixedValue,
+        _initCShape = new GNNEShape(
+            _oldLstm[GNNELSTM.InitialC].CheckedShape[0].FixedValue,
             _oldLstm[GNNELSTM.InitialC].CheckedShape[1].FixedValue,
             _oldLstm[GNNELSTM.InitialC].CheckedShape[2].FixedValue,
             _oldLstm[GNNELSTM.InitialC].CheckedShape[3].FixedValue);
         _outputShape = new GNNEShape(st.CheckedShape[0].FixedValue, st.CheckedShape[1].FixedValue,
             st.CheckedShape[2].FixedValue, st.CheckedShape[3].FixedValue);
-        _outputHShape = (((object)_ofH != null)
+        _outputHShape = ((object)_ofH != null)
             ? new GNNEShape(stH.CheckedShape[0].FixedValue, stH.CheckedShape[1].FixedValue,
                 stH.CheckedShape[2].FixedValue, stH.CheckedShape[3].FixedValue)
-            : new GNNEShape(_initHShape.N, _initHShape.C, _initHShape.H, _initHShape.W));
-        _outputCShape = (((object)_ofC != null)
+            : new GNNEShape(_initHShape.N, _initHShape.C, _initHShape.H, _initHShape.W);
+        _outputCShape = ((object)_ofC != null)
             ? new GNNEShape(stC.CheckedShape[0].FixedValue, stC.CheckedShape[1].FixedValue,
                 stC.CheckedShape[2].FixedValue, stC.CheckedShape[3].FixedValue)
-            : new GNNEShape(_initCShape.N, _initCShape.C, _initCShape.H, _initCShape.W));
+            : new GNNEShape(_initCShape.N, _initCShape.C, _initCShape.H, _initCShape.W);
         _lIf = ld;
         _lWXc = (Call)_oldLstm[GNNELSTM.WXc];
         _lActXc = (Call)_oldLstm[GNNELSTM.ActXc];
@@ -1573,17 +1615,17 @@ public class TileLSTM : RewriteRule<Pattern>
         _initHType = _oldLstm[GNNELSTM.InitialH].CheckedDataType;
         _initCType = _oldLstm[GNNELSTM.InitialC].CheckedDataType;
         _outputType = ((TensorType)((TupleType)_oldLstm.CheckedType)[0]).DType;
-        _outputHType = (((object)_ofH != null) ? _ofH[GNNEStore.Input].CheckedDataType : _outputType);
-        _outputCType = (((object)_ofC != null) ? _ofC[GNNEStore.Input].CheckedDataType : DataTypes.Float16);
+        _outputHType = ((object)_ofH != null) ? _ofH[GNNEStore.Input].CheckedDataType : _outputType;
+        _outputCType = ((object)_ofC != null) ? _ofC[GNNEStore.Input].CheckedDataType : DataTypes.Float16;
         _weightGroups.Add(new WeightGroupHandler(_wXcType, _wXcType));
         _weightGroups.Add(new WeightGroupHandler(_wRcType, _wRcType));
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr output = (Expr)__result["output"];
-        Call midCall = (Call)__result["midCall"];
-        IReadOnlyList<Expr> midCallParams = (IReadOnlyList<Expr>)__result["midCallParams"];
+        Expr output = (Expr)result["output"];
+        Call midCall = (Call)result["midCall"];
+        IReadOnlyList<Expr> midCallParams = (IReadOnlyList<Expr>)result["midCallParams"];
         return GetReplace(output, midCall, midCallParams);
     }
 }

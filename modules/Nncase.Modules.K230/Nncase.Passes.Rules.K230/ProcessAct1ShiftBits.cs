@@ -21,9 +21,9 @@ public sealed class ProcessAct1ShiftBits : IRewriteRule
 
     private Expr? GetReplace(GNNEActivation gnneAct, IMatchResult result, RunPassContext options)
     {
-        ActParamBase actParamCopy = ((gnneAct.ActParam is ActParam2 other)
+        ActParamBase actParamCopy = (gnneAct.ActParam is ActParam2 other)
             ? ((ActParamBase)new ActParam2(other))
-            : ((ActParamBase)new ActParam16((ActParam16)gnneAct.ActParam)));
+            : ((ActParamBase)new ActParam16((ActParam16)gnneAct.ActParam));
         sbyte act1ShiftBits = ShiftBitsHelper.GetAct1ShiftBits(actParamCopy);
         actParamCopy.FusedShiftBits(act1ShiftBits);
         Expr expr = GetReplaceHelper.LoadAct1(actParamCopy);
@@ -33,9 +33,9 @@ public sealed class ProcessAct1ShiftBits : IRewriteRule
         return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEActivation gnneAct = (GNNEActivation)__result["gnneAct"];
-        return GetReplace(gnneAct, __result, __context);
+        GNNEActivation gnneAct = (GNNEActivation)result["gnneAct"];
+        return GetReplace(gnneAct, result, context);
     }
 }

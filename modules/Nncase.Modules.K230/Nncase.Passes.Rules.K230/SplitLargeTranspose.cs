@@ -14,7 +14,7 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class SplitLargeTranspose : RewriteRule<Pattern>
 {
     public override Pattern Pattern => Tensors.IsTranspose("tr", "call",
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsTensorConst("perm"));
 
     public Expr? GetReplace(Call call, Expr input, Tensor<int> perm)
@@ -36,11 +36,11 @@ public sealed class SplitLargeTranspose : RewriteRule<Pattern>
             });
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        Tensor<int> perm = ((TensorConst)__result["perm"]).Value.Cast<int>();
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        Tensor<int> perm = ((TensorConst)result["perm"]).Value.Cast<int>();
         return GetReplace(call, input, perm);
     }
 }

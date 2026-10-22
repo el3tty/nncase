@@ -52,5 +52,5 @@ public enum OPCODE : uint
     mfu_transpose = 104u,
     mfu_pdp1_compute = 106u,
     mfu_act1_compute = 114u,
-    ai2d_compute = 81u
+    ai2d_compute = 81u,
 }

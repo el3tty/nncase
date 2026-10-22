@@ -13,7 +13,10 @@ internal sealed class L1FusionChecker : IFusionChecker
 {
     private Fusion _fusion;
 
+    // NOTE: never assigned (as decompiled): Check() does not store passOptions, so Convert() passes null.
+#pragma warning disable CS0649
     private RunPassContext _passOptions;
+#pragma warning restore CS0649
 
     public bool Check(Fusion fusion, RunPassContext passOptions)
     {

@@ -11,7 +11,8 @@ namespace Nncase.Passes.Rules.K230;
 
 internal static class FuseQuantHelper
 {
-    internal static Pattern MakePattern<T>(string callName, string opName) where T : Op
+    internal static Pattern MakePattern<T>(string callName, string opName)
+        where T : Op
     {
         return Math.IsQuantize("quant", "call", (Quantize _) => true,
             Nncase.PatternMatch.Utility.IsCallWildcard("st", Nncase.PatternMatch.Utility.IsOp<GNNEStore>("stOp"),
@@ -45,24 +46,24 @@ internal static class FuseQuantHelper
         {
             for (int i = 0; i < act_param.FusedClamp.Length; i++)
             {
-                full.Max = ((act_param.FusedClamp[i].Max > 255f) ? 255f : act_param.FusedClamp[i].Max);
-                full.Min = ((act_param.FusedClamp[i].Min < 0f) ? 0f : act_param.FusedClamp[i].Min);
+                full.Max = (act_param.FusedClamp[i].Max > 255f) ? 255f : act_param.FusedClamp[i].Max;
+                full.Min = (act_param.FusedClamp[i].Min < 0f) ? 0f : act_param.FusedClamp[i].Min;
             }
         }
         else if (quantType == DataTypes.Int8)
         {
             for (int j = 0; j < act_param.FusedClamp.Length; j++)
             {
-                full.Max = ((act_param.FusedClamp[j].Max > 127f) ? 127f : act_param.FusedClamp[j].Max);
-                full.Min = ((act_param.FusedClamp[j].Min < -127f) ? (-127f) : act_param.FusedClamp[j].Min);
+                full.Max = (act_param.FusedClamp[j].Max > 127f) ? 127f : act_param.FusedClamp[j].Max;
+                full.Min = (act_param.FusedClamp[j].Min < -127f) ? (-127f) : act_param.FusedClamp[j].Min;
             }
         }
         else if (quantType == DataTypes.Int16)
         {
             for (int k = 0; k < act_param.FusedClamp.Length; k++)
             {
-                full.Max = ((act_param.FusedClamp[k].Max > 2047f) ? 2047f : act_param.FusedClamp[k].Max);
-                full.Min = ((act_param.FusedClamp[k].Min < -2047f) ? (-2047f) : act_param.FusedClamp[k].Min);
+                full.Max = (act_param.FusedClamp[k].Max > 2047f) ? 2047f : act_param.FusedClamp[k].Max;
+                full.Min = (act_param.FusedClamp[k].Min < -2047f) ? (-2047f) : act_param.FusedClamp[k].Min;
             }
         }
 

@@ -10,12 +10,10 @@ namespace Nncase.IR.K230;
 public sealed class GNNEMatMul : Op, IEquatable<GNNEMatMul?>
 {
     public static readonly ParameterInfo InputA = new ParameterInfo(typeof(GNNEMatMul), 0, "input_a",
-        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.UInt8) |
-        TypePatternUtility.HasDataType(DataTypes.Int16));
+        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.UInt8) | TypePatternUtility.HasDataType(DataTypes.Int16));
 
     public static readonly ParameterInfo InputB = new ParameterInfo(typeof(GNNEMatMul), 1, "input_b",
-        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.UInt8) |
-        TypePatternUtility.HasDataType(DataTypes.Int16));
+        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.UInt8) | TypePatternUtility.HasDataType(DataTypes.Int16));
 
     public static readonly ParameterInfo Act =
         new ParameterInfo(typeof(GNNEMatMul), 2, "act", GNNETypePatternUtility.ValidAct());

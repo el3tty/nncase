@@ -39,16 +39,13 @@ public class GNNEActivationEvaluator : IEvaluator<GNNEActivation>, IEvaluator, I
         int[] outChannels = context.GetArgumentValueAsTensor(a, GNNEActivation.OutChannels).ToArray<int>();
         IValue deqAParams = context.GetArgumentValue(a, GNNEActivation.DeqAParams);
         IValue deqBParams = context.GetArgumentValue(a, GNNEActivation.DeqBParams);
-        return Value.FromConst(K230Kernels.GnneActivation(outputShape: context.CurrentCall.CheckedShape,
+        return Value.FromConst(K230Kernels.GnneActivation(
+            outputShape: context.CurrentCall.CheckedShape,
             is16Segments: is16Segments[0], inputA: inputA,
             inputB: hasUninitializedInput ? new Tensor<Half>(0) : inputB.AsTensor(),
             hasUninitializedInput: hasUninitializedInput, actData: act.ToArray<float>(), outChannels: outChannels[0],
-            deQuantizeParamA: (deqAParams is NoneValue)
-                ? new DeQuantizeParam(0, 1f)
-                : ((DeQuantizeParam)deqAParams.AsTensor()[new int[1]]),
-            deQuantizeParamB: (deqBParams is NoneValue)
-                ? new DeQuantizeParam(0, 1f)
-                : ((DeQuantizeParam)deqBParams.AsTensor()[new int[1]]), actType: a.Type,
+            deQuantizeParamA: (deqAParams is NoneValue) ? new DeQuantizeParam(0, 1f) : ((DeQuantizeParam)deqAParams.AsTensor()[new int[1]]),
+            deQuantizeParamB: (deqBParams is NoneValue) ? new DeQuantizeParam(0, 1f) : ((DeQuantizeParam)deqBParams.AsTensor()[new int[1]]), actType: a.Type,
             outputType: new TensorType(a.OutputDType, outputDims)));
     }
 

@@ -10,9 +10,7 @@ namespace Nncase.IR.K230;
 public sealed class GNNELoad : Op, IEquatable<GNNELoad?>
 {
     public static readonly ParameterInfo Input = new ParameterInfo(typeof(GNNELoad), 0, "input",
-        TypePatternUtility.HasDataType(DataTypes.Int16) | TypePatternUtility.HasDataType(DataTypes.Float16) |
-        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Float32) |
-        TypePatternUtility.HasDataType(DataTypes.UInt8));
+        TypePatternUtility.HasDataType(DataTypes.Int16) | TypePatternUtility.HasDataType(DataTypes.Float16) | TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Float32) | TypePatternUtility.HasDataType(DataTypes.UInt8));
 
     public PrimType DestType { get; }
 

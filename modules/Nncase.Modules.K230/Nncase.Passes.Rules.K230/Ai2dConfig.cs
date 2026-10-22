@@ -409,6 +409,7 @@ public struct Ai2dConfig
                     fP6.U = M0;
                     return "M0: " + fP6.F;
                 }
+
             case 13u:
                 {
                     FP32 fP5 = default(FP32);
@@ -416,6 +417,7 @@ public struct Ai2dConfig
                     fP5.U = M1;
                     return "M1: " + fP5.F;
                 }
+
             case 14u:
                 {
                     FP32 fP4 = default(FP32);
@@ -423,6 +425,7 @@ public struct Ai2dConfig
                     fP4.U = M3;
                     return "M3: " + fP4.F;
                 }
+
             case 15u:
                 {
                     FP32 fP3 = default(FP32);
@@ -430,6 +433,7 @@ public struct Ai2dConfig
                     fP3.U = M4;
                     return "M4: " + fP3.F;
                 }
+
             case 16u:
                 return string.Empty;
             case 17u:
@@ -475,6 +479,7 @@ public struct Ai2dConfig
                     fP2.U = M2;
                     return "M2: " + fP2.F;
                 }
+
             case 33u:
                 {
                     FP32 fP = default(FP32);
@@ -482,6 +487,7 @@ public struct Ai2dConfig
                     fP.U = M5;
                     return "M5: " + fP.F;
                 }
+
             case 34u:
                 return "SrcY: " + SrcY + "\nSrcX: " + SrcX;
             case 35u:

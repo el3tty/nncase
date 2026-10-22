@@ -17,7 +17,6 @@ internal sealed class FoldBufferSlot : ExprRewriter
 
     protected override Expr VisitPrimFunction(PrimFunction expr, Unit context)
     {
-        //IL_0081: Unknown result type (might be due to invalid IL or missing references)
         if (expr.SchedResult.IsScheduled)
         {
             int num = 0;

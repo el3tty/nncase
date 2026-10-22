@@ -17,10 +17,10 @@ namespace Nncase.Passes.Rules.K230;
 public class ToGNNETranspose : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsTranspose("transpose", "call",
-        (Transpose _) => true, Nncase.PatternMatch.Utility.IsWildcard("input")with
+        (Transpose _) => true, Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (GNNETypePatternUtility.ValidDType() &
-                           TypePatternUtility.HasShape((Shape sp) => sp.IsFixed && sp.Rank <= 4, "rank must <= 4"))
+            TypePattern = GNNETypePatternUtility.ValidDType() &
+                           TypePatternUtility.HasShape((Shape sp) => sp.IsFixed && sp.Rank <= 4, "rank must <= 4"),
         }, Nncase.PatternMatch.Utility.IsTensorConst("perm"));
 
     private Expr? GetReplace(Expr input, int[] perm, Call call)
@@ -30,8 +30,9 @@ public class ToGNNETranspose : RewriteRule<Pattern>
             input.CheckedShape.Count);
         Call call2 = Nncase.IR.F.Tensors.Reshape(input, inputShape);
         int[] perm2 = ToGNNEPerm(perm);
-        DataType dataType = ((input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType);
-        Call call3 = Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,
+        DataType dataType = (input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType;
+        Call call3 = Nncase.IR.K230.F.Tensors.GNNEStore(
+            call.CheckedDataType,
             Nncase.IR.K230.F.Tensors.GNNETranspose(
                 Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, (perm.Length == 4) ? input : call2),
                 GNNETypePatternUtility.ToMFUPerm(perm2)));
@@ -49,11 +50,11 @@ public class ToGNNETranspose : RewriteRule<Pattern>
             .ToArray();
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr input = (Expr)__result["input"];
-        int[] perm = ((TensorConst)__result["perm"]).Value.ToArray<int>();
-        Call call = (Call)__result["call"];
+        Expr input = (Expr)result["input"];
+        int[] perm = ((TensorConst)result["perm"]).Value.ToArray<int>();
+        Call call = (Call)result["call"];
         return GetReplace(input, perm, call);
     }
 }

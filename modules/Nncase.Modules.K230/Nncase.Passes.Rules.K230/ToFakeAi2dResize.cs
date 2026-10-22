@@ -47,26 +47,27 @@ public class ToFakeAi2dResize : RewriteRule<Pattern>
 
         MFU_CROP_RESIZE resizeMethod = (MFU_CROP_RESIZE)((resize.ResizeMode == ImageResizeMode.Bilinear) ? 0 : 1);
         int[] outputSize = new int[2] { newSize.Value.ToArray<int>()[2], newSize.Value.ToArray<int>()[3] };
-        return Nncase.IR.K230.F.Tensors.FakeAi2dResize(resizeMethod,
+        return Nncase.IR.K230.F.Tensors.FakeAi2dResize(
+            resizeMethod,
             resize.TransformationMode == ImageResizeTransformationMode.PytorchHalfPixel,
             resize.TransformationMode == ImageResizeTransformationMode.AlignCorners, input, outputSize);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        ResizeImage resize = (ResizeImage)__result["resize"];
-        Expr input = (Expr)__result["input"];
-        TensorConst newSize = (TensorConst)__result["newSize"];
+        Call call = (Call)result["call"];
+        ResizeImage resize = (ResizeImage)result["resize"];
+        Expr input = (Expr)result["input"];
+        TensorConst newSize = (TensorConst)result["newSize"];
         return GetReplace(call, resize, input, newSize);
     }
 
     public ToFakeAi2dResize()
     {
         Func<ResizeImage, bool> condition = (ResizeImage r) => true;
-        ExprPattern input = Nncase.PatternMatch.Utility.IsWildcard("input")with
+        ExprPattern input = Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = TypePatternUtility.HasFixedShape()
+            TypePattern = TypePatternUtility.HasFixedShape(),
         };
         Pattern = Nncase.PatternMatch.F.Imaging.IsResizeImage("resize", "call", condition, input,
                 Nncase.PatternMatch.Utility.IsWildcard("roi"), Nncase.PatternMatch.Utility.IsTensorConst("newSize"),
@@ -74,7 +75,7 @@ public class ToFakeAi2dResize : RewriteRule<Pattern>
                 Nncase.PatternMatch.Utility.IsWildcard("excludeOutside"),
                 Nncase.PatternMatch.Utility.IsWildcard("extrapolationValue")) with
             {
-                TypePattern = TypePatternUtility.HasRank(4)
+                TypePattern = TypePatternUtility.HasRank(4),
             };
     }
 }

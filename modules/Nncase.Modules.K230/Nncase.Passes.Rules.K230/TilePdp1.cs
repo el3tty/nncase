@@ -29,9 +29,9 @@ public class TilePdp1 : RewriteRule<Pattern>
             out Nncase.TIR.Buffer buffer, "var ddrIf");
         T.CreateBuffer(new TensorType(st.CheckedDataType, st.CheckedShape), MemoryLocation.Output,
             out Nncase.TIR.Buffer buffer2, "var ddrOf");
-        List<GnneAction> actions = ((!IsGlobalPdp(ld, call))
+        List<GnneAction> actions = (!IsGlobalPdp(ld, call))
             ? BuildSchedule(glb, call, ld, st, buffer, buffer2)
-            : BuildScheduleGlobalPdp(glb, callOp, call, ld, st, buffer, buffer2));
+            : BuildScheduleGlobalPdp(glb, callOp, call, ld, st, buffer, buffer2);
         ActionToInstruct actionToInstruct = new ActionToInstruct();
         return T.PrimFunc($"TilePDP1_{_count}", K230RtModule.Kind, buffer, buffer2)
             .Body(actionToInstruct.Instructions(actions), I.END(GP_REGISTER.x0, 0)).Build();
@@ -71,28 +71,28 @@ public class TilePdp1 : RewriteRule<Pattern>
             SegmentND ifmapSegment = new SegmentND(ofmapSegment[0], ofmapSegment[1], inputRowSegment, inputColumnSegment);
             List<CcrSet> ccrsToSet = new List<CcrSet>
             {
-                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1)
+                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1),
             };
             SegmentND ifmap = ifmapSegment;
             List<int> stridesD = new int[3]
             {
                 glb.GlbMap[ItemName.Ifmap].Dimensions[1], glb.GlbMap[ItemName.Ifmap].Dimensions[2],
-                glb.GlbMap[ItemName.Ifmap].Dimensions[3]
+                glb.GlbMap[ItemName.Ifmap].Dimensions[3],
             }.ToList();
             gnneActionUpdater.UpdateLoadIf(ifmap, ld, ifmapIndex, ddrIf, 0, stridesD, ItemName.Ifmap, ccrsToSet);
             List<CcrSet> ccrsToSet2 = new List<CcrSet>
             {
-                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)), 1)
+                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)), 1),
             };
             List<CcrClr> ccrsToClr = new List<CcrClr>
             {
-                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)))
+                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex))),
             };
             SegmentND ofmap = ofmapSegment;
             gnneActionUpdater.UpdateMfuPdp1(pdp, ifmap, ofmap, ifmapIndex, ccrsToSet2, ccrsToClr);
             List<CcrClr> ccrsToClr2 = new List<CcrClr>
             {
-                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)))
+                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex))),
             };
             gnneActionUpdater.UpdateStoreT(ofmap, st, ifmapIndex, ddrOf, 0, null, null, ccrsToClr2);
             ifmapIndex = (ifmapIndex + 1) % 2;
@@ -178,17 +178,19 @@ public class TilePdp1 : RewriteRule<Pattern>
             List<Segment1D> rowSegments = TileUtilities.GetSegmentStartEndLength(0, r, inputShape[2]);
             List<Segment1D> colSegments = TileUtilities.GetSegmentStartEndLength(0, s, inputShape[3]);
             List<CcrSet> ifmapCcrsToSet = new List<CcrSet>();
-            ifmapCcrsToSet.Add(new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)),
+            ifmapCcrsToSet.Add(new CcrSet(
+                ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)),
                 (rowSegments.Count * colSegments.Count == 1) ? 1 : 2));
             SegmentND ifmapLoadSegment = new SegmentND(ifmapSlice);
-            int alignedNum = TileUtilities.GetAlignedNum(ifmapSlice[3].Length,
+            int alignedNum = TileUtilities.GetAlignedNum(
+                ifmapSlice[3].Length,
                 (TileUtilities.GetBytesPerElement(ld.CheckedDataType) == 1) ? 32 : 16);
             SegmentND tensor = new SegmentND(ifmapSlice[0], ifmapSlice[1], ifmapSlice[2],
                 new Segment1D(..alignedNum, new Padding(0, 0)));
             List<int> stridesD = new int[3]
             {
                 glb.GlbMap[ItemName.Ifmap].Dimensions[1], glb.GlbMap[ItemName.Ifmap].Dimensions[2],
-                glb.GlbMap[ItemName.Ifmap].Dimensions[3]
+                glb.GlbMap[ItemName.Ifmap].Dimensions[3],
             }.ToList();
             gnneActionUpdater.UpdateLoadIf(ifmapLoadSegment, ld, ifmapIndex, ddrIf, 0, stridesD, ItemName.Ifmap, ifmapCcrsToSet);
             alignedNum = TileUtilities.GetAlignedNum(colSegments.Count, 16);
@@ -205,7 +207,7 @@ public class TilePdp1 : RewriteRule<Pattern>
             {
                 for (int colIndex = 0; colIndex < colSegments.Count; colIndex++)
                 {
-                    int isFirstWindow = ((rowIndex == 0 && colIndex == 0) ? 1 : 0);
+                    int isFirstWindow = (rowIndex == 0 && colIndex == 0) ? 1 : 0;
                     List<CcrClr> ifmapCcrsToClr = new List<CcrClr>();
                     if (isFirstWindow > 0)
                     {
@@ -244,9 +246,9 @@ public class TilePdp1 : RewriteRule<Pattern>
                 ifmapIndex, sumScale2, pdpCcrsToSet, pdpCcrsToClr, offsetS2, offsetD2, ItemName.Ofmap);
             List<CcrClr> ccrsToClr = new List<CcrClr>
             {
-                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)))
+                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex))),
             };
-            bool notStored = ((ifmapIndex == 0) ? (!storedPp0) : (!storedPp1));
+            bool notStored = (ifmapIndex == 0) ? (!storedPp0) : (!storedPp1);
             List<CcrSet> storeCcrsToSet = new List<CcrSet>();
             if ((notStored ? 1 : 0) > (false ? 1 : 0))
             {
@@ -257,7 +259,7 @@ public class TilePdp1 : RewriteRule<Pattern>
             {
                 glb.GlbMap[ItemName.Ofmap].Dimensions[1], glb.GlbMap[ItemName.Ofmap].Dimensions[2],
                 glb.GlbMap[ItemName.Ofmap].Dimensions[3] *
-                ((pdp.CheckedDataType == DataTypes.Float16 || pdp.CheckedDataType == DataTypes.Int16) ? 1 : 2)
+                ((pdp.CheckedDataType == DataTypes.Float16 || pdp.CheckedDataType == DataTypes.Int16) ? 1 : 2),
             }.ToList();
             gnneActionUpdater.UpdateStoreT(ofmap, st, ifmapIndex, ddrOf, 0, null, storeCcrsToSet, ccrsToClr, ItemName.Ofmap, stridesS);
             isFirstLoad[ifmapIndex] = false;
@@ -310,7 +312,7 @@ public class TilePdp1 : RewriteRule<Pattern>
         int inputHeight = SpaceSearcher.GetInputHeight(ofmapCols, inputShape[3], filterW, outputShape[3], uh2, 1,
             new Padding(subArray2[0], subArray2[1]));
         DataType inType = ld.CheckedDataType;
-        DataType outType = (isGlobalPdp ? DataTypes.Float16 : pdp.CheckedDataType);
+        DataType outType = isGlobalPdp ? DataTypes.Float16 : pdp.CheckedDataType;
         if (isGlobalPdp)
         {
             int s = 0;
@@ -318,7 +320,8 @@ public class TilePdp1 : RewriteRule<Pattern>
             SplitGlobalPdp1(filterW, filterH, ref r, ref s);
             ofmapRows = (int)Math.Ceiling(1.0 * (double)filterH / (double)r);
             ofmapCols = (int)Math.Ceiling(1.0 * (double)filterW / (double)s);
-            TileUtilities.Assert(ofmapCols <= 64 && ofmapRows <= 16 && ofmapRows * ofmapCols <= 256,
+            TileUtilities.Assert(
+                ofmapCols <= 64 && ofmapRows <= 16 && ofmapRows * ofmapCols <= 256,
                 "ow <= 64 && oh <= 16 && oh * ow <= 256",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePdp1.cs",
                 308);
@@ -378,12 +381,12 @@ public class TilePdp1 : RewriteRule<Pattern>
     {
         BoxPacker boxPacker = new BoxPacker(16);
         Dictionary<ItemName, TensorOnGlb> glbMap = new Dictionary<ItemName, TensorOnGlb>();
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(inType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(inType) == 1) ? 32 : 16;
         int alignedNum = TileUtilities.GetAlignedNum(w, alignmentFactor);
         TensorOnGlb ifmapTensor = new TensorOnGlb(new int[4] { n, c, h, alignedNum }, inType, 0);
         int ifmapBytes = ifmapTensor.GlbNByte * GNNEEnv.NPingPongSplit;
         ifmapBytes = TileUtilities.GetAlignedNum(ifmapBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
-        alignmentFactor = ((TileUtilities.GetBytesPerElement(outType) == 1) ? 32 : 16);
+        alignmentFactor = (TileUtilities.GetBytesPerElement(outType) == 1) ? 32 : 16;
         int alignedNum2 = TileUtilities.GetAlignedNum(f, alignmentFactor);
         TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, c, e, alignedNum2 }, outType, 0);
         int ofmapBytes = ofmapTensor.GlbNByte * GNNEEnv.NPingPongSplit;
@@ -414,7 +417,7 @@ public class TilePdp1 : RewriteRule<Pattern>
 
     private void SplitGlobalPdp1(int kernelW, int kernelH, ref int r, ref int s)
     {
-        r = ((kernelH > 16) ? 16 : kernelH);
+        r = (kernelH > 16) ? 16 : kernelH;
         s = Math.Min(Math.Min(256 / r, kernelW), 64);
     }
 
@@ -436,12 +439,12 @@ public class TilePdp1 : RewriteRule<Pattern>
         return false;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        GNNEPdp1 callOp = (GNNEPdp1)__result["callOp"];
-        Call ld = (Call)__result["ld"];
-        Call st = (Call)__result["st"];
+        Call call = (Call)result["call"];
+        GNNEPdp1 callOp = (GNNEPdp1)result["callOp"];
+        Call ld = (Call)result["ld"];
+        Call st = (Call)result["st"];
         return GetReplace(call, callOp, ld, st);
     }
 }

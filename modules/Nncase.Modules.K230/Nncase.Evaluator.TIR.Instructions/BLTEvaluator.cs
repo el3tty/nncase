@@ -13,7 +13,7 @@ internal sealed class BLTEvaluator : ITypeInferencer<BLT>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, BLT target, bool ILmode)
+    public string Visit(IIRPrinterContext context, BLT target, bool iLmode)
     {
         return
             $"I.BLT(rs1: {target.rs1}, rs2: {target.rs2}, offset: {context.GetArgument(target, BLT.offset)}, funct3: {target.funct3})";

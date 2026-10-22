@@ -154,7 +154,8 @@ public sealed class FakeMatMulEvaluator : IEvaluator<FakeMatMul>, IEvaluator, IT
         }
 
         // [max batch, max channels, rows of A, cols of B].
-        Shape shape = new Shape(System.Math.Max(inputA.Shape[0].FixedValue, inputB.Shape[0].FixedValue),
+        Shape shape = new Shape(
+            System.Math.Max(inputA.Shape[0].FixedValue, inputB.Shape[0].FixedValue),
             System.Math.Max(inputA.Shape[1].FixedValue, inputB.Shape[1].FixedValue), inputA.Shape[2], inputB.Shape[3]);
         return new TensorType(inputA.DType, shape);
     }

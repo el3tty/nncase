@@ -11,10 +11,6 @@ internal sealed class FoldConstCall : ExprRewriter
 {
     protected override Expr RewriteLeafTuple(Nncase.IR.Tuple expr)
     {
-        //IL_0014: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0019: Unknown result type (might be due to invalid IL or missing references)
-        //IL_003b: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0040: Unknown result type (might be due to invalid IL or missing references)
         if (IsAllConst(expr.Fields))
         {
             return new TupleConst(new TupleValue(ArrayExtensions.AsValueEnumerable<Expr>(expr.Fields)
@@ -60,8 +56,6 @@ internal sealed class FoldConstCall : ExprRewriter
 
     private bool IsAllConst(ReadOnlySpan<Expr> parameters)
     {
-        //IL_0001: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0006: Unknown result type (might be due to invalid IL or missing references)
         return ArrayExtensions.AsValueEnumerable<Expr>(parameters).All((Func<Expr, bool>)((Expr e) => e is Const));
     }
 }

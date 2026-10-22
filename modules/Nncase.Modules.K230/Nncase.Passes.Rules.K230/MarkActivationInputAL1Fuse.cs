@@ -17,12 +17,14 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class MarkActivationInputAL1Fuse : RewriteRule<Pattern>, IRewriteRule
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsCallWildcard("actCall",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsCallWildcard(
+        "actCall",
         Nncase.PatternMatch.Utility.IsOp<GNNEActivation>("act"),
         Nncase.PatternMatch.F.K230.IsGNNELoad("ld", "ldCall", (GNNELoad _) => true,
             Nncase.PatternMatch.Utility.IsCallWildcard("quantCall", Nncase.PatternMatch.Utility.IsOp<Quantize>(),
                 Nncase.PatternMatch.Utility.IsCallWildcard("stCall", Nncase.PatternMatch.Utility.IsOp<GNNEStore>(),
-                    Nncase.PatternMatch.Utility.IsCallWildcard("convCall",
+                    Nncase.PatternMatch.Utility.IsCallWildcard(
+                        "convCall",
                         Nncase.PatternMatch.Utility.IsOp<GNNEConv2D>(),
                         Nncase.PatternMatch.Utility.IsWildcard("input"))))),
         Nncase.PatternMatch.Utility.IsWildcard("inputB"));
@@ -64,15 +66,15 @@ public sealed class MarkActivationInputAL1Fuse : RewriteRule<Pattern>, IRewriteR
             (ldCall, actLoad));
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEActivation act = (GNNEActivation)__result["act"];
-        Call stCall = (Call)__result["stCall"];
-        Call ldCall = (Call)__result["ldCall"];
-        Call actCall = (Call)__result["actCall"];
-        Call convCall = (Call)__result["convCall"];
-        IReadOnlyList<Expr> actCallParams = (IReadOnlyList<Expr>)__result["actCallParams"];
-        Call quantCall = (Call)__result["quantCall"];
-        return GetReplace(act, stCall, ldCall, actCall, convCall, actCallParams, __context, quantCall);
+        GNNEActivation act = (GNNEActivation)result["act"];
+        Call stCall = (Call)result["stCall"];
+        Call ldCall = (Call)result["ldCall"];
+        Call actCall = (Call)result["actCall"];
+        Call convCall = (Call)result["convCall"];
+        IReadOnlyList<Expr> actCallParams = (IReadOnlyList<Expr>)result["actCallParams"];
+        Call quantCall = (Call)result["quantCall"];
+        return GetReplace(act, stCall, ldCall, actCall, convCall, actCallParams, context, quantCall);
     }
 }

@@ -57,7 +57,7 @@ public class GnneActionMfuTransposeConf : GnneAction
 
     public override bool Equals(object? obj)
     {
-        if (this == obj)
+        if (ReferenceEquals(this, obj))
         {
             return true;
         }

@@ -47,9 +47,9 @@ public sealed class ProcessLstmShiftBits : IRewriteRule
         return GetReplaceHelper.SuppressPattern(options, expr4, Pattern);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNELSTM lstm = (GNNELSTM)__result["lstm"];
-        return GetReplace(lstm, __result, __context);
+        GNNELSTM lstm = (GNNELSTM)result["lstm"];
+        return GetReplace(lstm, result, context);
     }
 }

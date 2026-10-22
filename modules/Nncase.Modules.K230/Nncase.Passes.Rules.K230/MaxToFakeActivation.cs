@@ -13,6 +13,6 @@ public class MaxToFakeActivation : BinaryToFakeActivation
     public override void ProcessActParam(ActParam2 actParam, bool isCRHS, int i, float v)
     {
         actParam.Ks[0, i] = 0f;
-        actParam.Bs[0, i] = (actParam.Xs[0, i] = v);
+        actParam.Bs[0, i] = actParam.Xs[0, i] = v;
     }
 }

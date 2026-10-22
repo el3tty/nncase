@@ -30,7 +30,8 @@ public static class QuantHelper
     public static T Quantize<T>(float data, QuantizeParam qp)
     {
         return (T)Convert.ChangeType(
-            Math.Clamp((int)Math.Round(data * qp.Scale + (float)qp.ZeroPoint),
+            Math.Clamp(
+                (int)Math.Round(data * qp.Scale + (float)qp.ZeroPoint),
                 Convert.ToInt32(typeof(T).GetField("MinValue").GetValue(null)),
                 Convert.ToInt32(typeof(T).GetField("MaxValue").GetValue(null))), typeof(T));
     }

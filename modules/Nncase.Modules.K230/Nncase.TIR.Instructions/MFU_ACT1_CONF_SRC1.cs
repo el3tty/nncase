@@ -83,7 +83,8 @@ public sealed class MFU_ACT1_CONF_SRC1 : InstructionOp, ISerializeInst, IEquatab
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(funct5, rslice, rright_repeats, rslice_repeats, slice_loc));
     }
 }

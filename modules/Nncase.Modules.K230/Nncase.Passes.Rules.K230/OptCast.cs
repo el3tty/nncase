@@ -17,10 +17,10 @@ public sealed class OptCast : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsCast("cast", "call",
         (Cast cast) => cast.NewType == DataTypes.Float16 || cast.NewType == DataTypes.Float32,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with
+        Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (TypePatternUtility.HasFixedShape() &
-                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"))
+            TypePattern = TypePatternUtility.HasFixedShape() &
+                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"),
         });
 
     private Expr? GetReplace(Cast cast, Call call, Expr input)
@@ -43,19 +43,21 @@ public sealed class OptCast : IRewriteRule
         {
             Call input2 = Nncase.IR.F.Tensors.Reshape(input, inputShape);
             return Nncase.IR.F.Tensors.Reshape(
-                Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,
+                Nncase.IR.K230.F.Tensors.GNNEStore(
+                    call.CheckedDataType,
                     Nncase.IR.K230.F.Tensors.GNNELoad(@float, input2)), call.CheckedShape);
         }
 
-        return Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,
+        return Nncase.IR.K230.F.Tensors.GNNEStore(
+            call.CheckedDataType,
             Nncase.IR.K230.F.Tensors.GNNELoad(@float, input));
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Cast cast = (Cast)__result["cast"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Cast cast = (Cast)result["cast"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(cast, call, input);
     }
 }

@@ -18,7 +18,8 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeActivation("fakeAct2", "call2",
         (FakeActivation _) => true,
-        Nncase.PatternMatch.Utility.IsRangeOfMarker("range",
+        Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "range",
             Nncase.PatternMatch.F.K230.IsFakeActivation("fakeAct1", "call1", (FakeActivation _) => true,
                 Nncase.PatternMatch.Utility.IsWildcard("inputa"), Nncase.PatternMatch.Utility.IsWildcard("inputb"),
                 Nncase.PatternMatch.Utility.IsTensorConst("act1"),
@@ -67,22 +68,22 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             {
                 if (act2.Value.Cast<float>()[new int[2] { i, 1 }] > 0f)
                 {
-                    float clampMax = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                    float clampMax = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                         ? fakeAct1.ActParam.FusedClamp[i].Max
                         : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 3 }]));
-                    float clampMin = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                           act2.Value.Cast<float>()[new int[2] { i, 3 }]);
+                    float clampMin = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                         ? fakeAct1.ActParam.FusedClamp[i].Min
                         : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 3 }]));
+                           act2.Value.Cast<float>()[new int[2] { i, 3 }]);
                     actFoldParam.FusedClamp[i] = new ValueRange<Half>
                     {
-                        Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                        Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                             ? ((Half)clampMin)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                        Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                        Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                             ? ((Half)clampMax)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                     };
                     if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                     {
@@ -91,22 +92,22 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
                 }
                 else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] < 0f)
                 {
-                    float clampMin = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                    float clampMin = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                         ? (0f - fakeAct1.ActParam.FusedClamp[i].Max)
                         : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 3 }]));
-                    float clampMax = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                           act2.Value.Cast<float>()[new int[2] { i, 3 }]);
+                    float clampMax = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                         ? (0f - fakeAct1.ActParam.FusedClamp[i].Min)
                         : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 3 }]));
+                           act2.Value.Cast<float>()[new int[2] { i, 3 }]);
                     actFoldParam.FusedClamp[i] = new ValueRange<Half>
                     {
-                        Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                        Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                             ? ((Half)clampMin)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                        Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                        Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                             ? ((Half)clampMax)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                     };
                     if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                     {
@@ -118,7 +119,7 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
                     actFoldParam.FusedClamp[i] = new ValueRange<Half>
                     {
                         Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min,
-                        Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max
+                        Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max,
                     };
                 }
             }
@@ -126,22 +127,22 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             {
                 if (act2.Value.Cast<float>()[new int[2] { i, 1 }] > 0f)
                 {
-                    float clampMax = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                    float clampMax = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                         ? fakeAct1.ActParam.FusedClamp[i].Max
                         : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 4 }]));
-                    float clampMin = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                           act2.Value.Cast<float>()[new int[2] { i, 4 }]);
+                    float clampMin = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                         ? fakeAct1.ActParam.FusedClamp[i].Min
                         : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 4 }]));
+                           act2.Value.Cast<float>()[new int[2] { i, 4 }]);
                     actFoldParam.FusedClamp[i] = new ValueRange<Half>
                     {
-                        Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                        Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                             ? ((Half)clampMin)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                        Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                        Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                             ? ((Half)clampMax)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                     };
                     if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                     {
@@ -150,22 +151,22 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
                 }
                 else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] < 0f)
                 {
-                    float clampMin = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                    float clampMin = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                         ? (0f - fakeAct1.ActParam.FusedClamp[i].Max)
                         : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 4 }]));
-                    float clampMax = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                           act2.Value.Cast<float>()[new int[2] { i, 4 }]);
+                    float clampMax = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                         ? (0f - fakeAct1.ActParam.FusedClamp[i].Min)
                         : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                           act2.Value.Cast<float>()[new int[2] { i, 4 }]));
+                           act2.Value.Cast<float>()[new int[2] { i, 4 }]);
                     actFoldParam.FusedClamp[i] = new ValueRange<Half>
                     {
-                        Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                        Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                             ? ((Half)clampMin)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                        Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                        Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                             ? ((Half)clampMax)
-                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                            : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                     };
                     if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                     {
@@ -177,29 +178,29 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
                     actFoldParam.FusedClamp[i] = new ValueRange<Half>
                     {
                         Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min,
-                        Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max
+                        Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max,
                     };
                 }
             }
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] > 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] > 0f)
             {
-                float clampMax = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                float clampMax = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                     ? fakeAct1.ActParam.FusedClamp[i].Max
                     : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 4 }]));
-                float clampMin = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                       act2.Value.Cast<float>()[new int[2] { i, 4 }]);
+                float clampMin = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                     ? fakeAct1.ActParam.FusedClamp[i].Min
                     : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 3 }]));
+                       act2.Value.Cast<float>()[new int[2] { i, 3 }]);
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
-                    Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                    Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                         ? ((Half)clampMin)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                    Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                    Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                         ? ((Half)clampMax)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -209,22 +210,22 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] < 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] < 0f)
             {
-                float clampMin = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                float clampMin = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                     ? (0f - fakeAct1.ActParam.FusedClamp[i].Max)
                     : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 4 }]));
-                float clampMax = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                       act2.Value.Cast<float>()[new int[2] { i, 4 }]);
+                float clampMax = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                     ? (0f - fakeAct1.ActParam.FusedClamp[i].Min)
                     : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 3 }]));
+                       act2.Value.Cast<float>()[new int[2] { i, 3 }]);
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
-                    Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                    Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                         ? ((Half)clampMin)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                    Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                    Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                         ? ((Half)clampMax)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -234,21 +235,21 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] > 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] < 0f)
             {
-                float posBound = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                float posBound = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                     ? (0f - fakeAct1.ActParam.FusedClamp[i].Max)
                     : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 4 }]));
-                float negBound = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                       act2.Value.Cast<float>()[new int[2] { i, 4 }]);
+                float negBound = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                     ? fakeAct1.ActParam.FusedClamp[i].Min
                     : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 3 }]));
-                float clampMin = ((posBound > negBound) ? posBound : negBound);
+                       act2.Value.Cast<float>()[new int[2] { i, 3 }]);
+                float clampMin = (posBound > negBound) ? posBound : negBound;
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
-                    Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                    Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                         ? ((Half)clampMin)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                    Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                    Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max,
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -258,21 +259,21 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] < 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] > 0f)
             {
-                float posBound = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                float posBound = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                     ? fakeAct1.ActParam.FusedClamp[i].Max
                     : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 4 }]));
-                float negBound = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                       act2.Value.Cast<float>()[new int[2] { i, 4 }]);
+                float negBound = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                     ? (0f - fakeAct1.ActParam.FusedClamp[i].Min)
                     : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 3 }]));
-                float clampMax = ((posBound > negBound) ? negBound : posBound);
+                       act2.Value.Cast<float>()[new int[2] { i, 3 }]);
+                float clampMax = (posBound > negBound) ? negBound : posBound;
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
                     Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min,
-                    Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                    Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                         ? ((Half)clampMax)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -282,16 +283,16 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] > 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] == 0f)
             {
-                float clampMin = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                float clampMin = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                     ? fakeAct1.ActParam.FusedClamp[i].Min
                     : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 3 }]));
+                       act2.Value.Cast<float>()[new int[2] { i, 3 }]);
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
-                    Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                    Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                         ? ((Half)clampMin)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                    Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                    Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max,
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -301,16 +302,16 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] == 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] > 0f)
             {
-                float clampMax = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                float clampMax = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                     ? fakeAct1.ActParam.FusedClamp[i].Max
                     : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 4 }]));
+                       act2.Value.Cast<float>()[new int[2] { i, 4 }]);
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
                     Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min,
-                    Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                    Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                         ? ((Half)clampMax)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -320,16 +321,16 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] < 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] == 0f)
             {
-                float clampMax = (double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
+                float clampMax = double.IsNegativeInfinity(fakeAct1.ActParam.FusedClamp[i].Min)
                     ? (0f - fakeAct1.ActParam.FusedClamp[i].Min)
                     : (fakeAct1.ActParam.FusedClamp[i].Min * act2.Value.Cast<float>()[new int[2] { i, 1 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 3 }]));
+                       act2.Value.Cast<float>()[new int[2] { i, 3 }]);
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
                     Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min,
-                    Max = ((clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
+                    Max = (clampMax < fakeAct2.ActParam.FusedClamp[i].Max)
                         ? ((Half)clampMax)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max))
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Max),
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -339,16 +340,16 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             else if (act2.Value.Cast<float>()[new int[2] { i, 1 }] == 0f &&
                      act2.Value.Cast<float>()[new int[2] { i, 2 }] < 0f)
             {
-                float clampMin = (double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
+                float clampMin = double.IsPositiveInfinity(fakeAct1.ActParam.FusedClamp[i].Max)
                     ? (0f - fakeAct1.ActParam.FusedClamp[i].Max)
                     : (fakeAct1.ActParam.FusedClamp[i].Max * act2.Value.Cast<float>()[new int[2] { i, 2 }] +
-                       act2.Value.Cast<float>()[new int[2] { i, 4 }]));
+                       act2.Value.Cast<float>()[new int[2] { i, 4 }]);
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
-                    Min = ((clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
+                    Min = (clampMin > fakeAct2.ActParam.FusedClamp[i].Min)
                         ? ((Half)clampMin)
-                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min)),
-                    Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max
+                        : ((Half)fakeAct2.ActParam.FusedClamp[i].Min),
+                    Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max,
                 };
                 if (actFoldParam.FusedClamp[i].Max < actFoldParam.FusedClamp[i].Min)
                 {
@@ -360,7 +361,7 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             {
                 actFoldParam.FusedClamp[i] = new ValueRange<Half>
                 {
-                    Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min, Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max
+                    Min = (Half)fakeAct2.ActParam.FusedClamp[i].Min, Max = (Half)fakeAct2.ActParam.FusedClamp[i].Max,
                 };
             }
         }
@@ -747,22 +748,22 @@ public sealed class FoldTwoFakeActivation : RewriteRule<Pattern>, IRewriteRule
             actParam, call2.CheckedShape.ToValueArray()).InheritMetaData(call2);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeActivation fakeAct = (FakeActivation)__result["fakeAct1"];
-        Expr inputa = (Expr)__result["inputa"];
-        Expr inputb = (Expr)__result["inputb"];
-        TensorConst act = (TensorConst)__result["act1"];
-        TensorConst outchannels = (TensorConst)__result["outchannels1"];
-        FakeActivation fakeAct2 = (FakeActivation)__result["fakeAct2"];
-        Call call = (Call)__result["call1"];
-        Call call2 = (Call)__result["call2"];
-        TensorConst act2 = (TensorConst)__result["act2"];
-        TensorConst outchannels2 = (TensorConst)__result["outchannels2"];
-        Expr is16Segments = (Expr)__result["is16Segments1"];
-        Expr is16Segments2 = (Expr)__result["is16Segments2"];
-        Expr range = (Expr)__result["range"];
+        FakeActivation fakeAct = (FakeActivation)result["fakeAct1"];
+        Expr inputa = (Expr)result["inputa"];
+        Expr inputb = (Expr)result["inputb"];
+        TensorConst act = (TensorConst)result["act1"];
+        TensorConst outchannels = (TensorConst)result["outchannels1"];
+        FakeActivation fakeAct2 = (FakeActivation)result["fakeAct2"];
+        Call call = (Call)result["call1"];
+        Call call2 = (Call)result["call2"];
+        TensorConst act2 = (TensorConst)result["act2"];
+        TensorConst outchannels2 = (TensorConst)result["outchannels2"];
+        Expr is16Segments = (Expr)result["is16Segments1"];
+        Expr is16Segments2 = (Expr)result["is16Segments2"];
+        Expr range = (Expr)result["range"];
         return GetReplace(fakeAct, inputa, inputb, act, outchannels, fakeAct2, call, call2, act2, outchannels2,
-            is16Segments, is16Segments2, range, __context);
+            is16Segments, is16Segments2, range, context);
     }
 }

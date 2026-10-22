@@ -44,7 +44,8 @@ public class GNNEConv2DEvaluator : IEvaluator<GNNEConv2D>, IEvaluator, ITypeInfe
         byte[] packedWeightsBytes = new byte[weights.Shape[0].FixedValue * bytesPerOutputChannel];
         for (int outChannel = 0; outChannel < weights.Shape[0].FixedValue; outChannel++)
         {
-            Array.Copy(weights.BytesBuffer.ToArray(),
+            Array.Copy(
+                weights.BytesBuffer.ToArray(),
                 (long)outChannel * (long)weights.BytesBuffer.Length / weights.Shape[0].FixedValue,
                 packedWeightsBytes, outChannel * bytesPerOutputChannel, bytesPerOutputChannel);
         }
@@ -206,7 +207,7 @@ public class GNNEConv2DEvaluator : IEvaluator<GNNEConv2D>, IEvaluator, ITypeInfe
             effectiveWeights = weights with
             {
                 Shape = new Shape(weights.Shape[0].FixedValue, input.Shape[1].FixedValue / groups,
-                    weights.Shape[2].FixedValue, weights.Shape[3].FixedValue)
+                    weights.Shape[2].FixedValue, weights.Shape[3].FixedValue),
             };
         }
 

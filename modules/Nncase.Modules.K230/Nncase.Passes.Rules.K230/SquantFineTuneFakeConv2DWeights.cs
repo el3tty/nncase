@@ -15,14 +15,16 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class SquantFineTuneFakeConv2DWeights : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeConv2D("fakeConv", "call",
-        (FakeConv2D _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker",
+        (FakeConv2D _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "inputMarker",
             Nncase.PatternMatch.Utility.IsWildcard("input"),
-            Nncase.PatternMatch.Utility.IsConst("inputRange")with { TypePattern = TypePatternUtility.HasFixedShape() }),
-        Nncase.PatternMatch.Utility.IsRangeOfMarker("weightsMarker",
+            Nncase.PatternMatch.Utility.IsConst("inputRange") with { TypePattern = TypePatternUtility.HasFixedShape() }),
+        Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "weightsMarker",
             Nncase.PatternMatch.Utility.IsTensorConst("weights"),
-            Nncase.PatternMatch.Utility.IsConst("weightsRange")with
+            Nncase.PatternMatch.Utility.IsConst("weightsRange") with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
+                TypePattern = TypePatternUtility.HasFixedShape(),
             }), Nncase.PatternMatch.Utility.IsTensorConst("act"),
         Nncase.PatternMatch.Utility.IsTensorConst("padding"),
         Nncase.PatternMatch.Utility.IsTensorConst("stride"), Nncase.PatternMatch.Utility.IsTensorConst("dilation"),
@@ -32,7 +34,7 @@ public sealed class SquantFineTuneFakeConv2DWeights : RewriteRule<Pattern>
         TensorConst weightsRange, Tensor<float> act, Expr padding, Expr stride, Expr dilation, int groups,
         Expr padValue, RunPassContext options)
     {
-        if (!base.CompileSession.CompileOptions.QuantizeOptions.UseSquant)
+        if (!CompileSession.CompileOptions.QuantizeOptions.UseSquant)
         {
             return null;
         }
@@ -43,16 +45,16 @@ public sealed class SquantFineTuneFakeConv2DWeights : RewriteRule<Pattern>
         }
 
         Tensor<float> inputWeights = Tensor.From(weights.Value.ToArray<float>(), weights.CheckedShape);
-        TensorConst tensorConst = ((weightsMarker.MixQuantInfo.U8FineTunedWeightsRangesByChannel == null)
+        TensorConst tensorConst = (weightsMarker.MixQuantInfo.U8FineTunedWeightsRangesByChannel == null)
             ? weightsRange
-            : weightsMarker.MixQuantInfo.U8FineTunedWeightsRangesByChannel);
-        TensorConst tensorConst2 = ((weightsMarker.MixQuantInfo.I8FineTunedWeightsRangesByChannel == null)
+            : weightsMarker.MixQuantInfo.U8FineTunedWeightsRangesByChannel;
+        TensorConst tensorConst2 = (weightsMarker.MixQuantInfo.I8FineTunedWeightsRangesByChannel == null)
             ? weightsRange
-            : weightsMarker.MixQuantInfo.I8FineTunedWeightsRangesByChannel);
+            : weightsMarker.MixQuantInfo.I8FineTunedWeightsRangesByChannel;
         TensorConst weightsRangeConst =
-            ((((K230Target.K230MixQuantInfo)weightsMarker.MixQuantInfo).I16FineTunedWeightsRangesByChannel == null)
+            (((K230Target.K230MixQuantInfo)weightsMarker.MixQuantInfo).I16FineTunedWeightsRangesByChannel == null)
                 ? weightsRange
-                : ((K230Target.K230MixQuantInfo)weightsMarker.MixQuantInfo).I16FineTunedWeightsRangesByChannel);
+                : ((K230Target.K230MixQuantInfo)weightsMarker.MixQuantInfo).I16FineTunedWeightsRangesByChannel;
         Tensor<float> inputWeightsRanges = Tensor.From(tensorConst.Value.ToArray<float>(), weightsRange.CheckedShape);
         Tensor<float> inputWeightsRanges2 = Tensor.From(tensorConst2.Value.ToArray<float>(), weightsRange.CheckedShape);
         Tensor<float> inputWeightsRanges3 = Tensor.From(weightsRangeConst.Value.ToArray<float>(), weightsRange.CheckedShape);
@@ -72,20 +74,20 @@ public sealed class SquantFineTuneFakeConv2DWeights : RewriteRule<Pattern>
         return call;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeConv2D fakeConv = (FakeConv2D)__result["fakeConv"];
-        Marker inputMarker = (Marker)__result["inputMarker"];
-        Marker weightsMarker = (Marker)__result["weightsMarker"];
-        TensorConst weights = (TensorConst)__result["weights"];
-        TensorConst weightsRange = (TensorConst)__result["weightsRange"];
-        Tensor<float> act = ((TensorConst)__result["act"]).Value.Cast<float>();
-        Expr padding = (Expr)__result["padding"];
-        Expr stride = (Expr)__result["stride"];
-        Expr dilation = (Expr)__result["dilation"];
-        int groups = ((TensorConst)__result["groups"]).Value.ToScalar<int>();
-        Expr padValue = (Expr)__result["padValue"];
+        FakeConv2D fakeConv = (FakeConv2D)result["fakeConv"];
+        Marker inputMarker = (Marker)result["inputMarker"];
+        Marker weightsMarker = (Marker)result["weightsMarker"];
+        TensorConst weights = (TensorConst)result["weights"];
+        TensorConst weightsRange = (TensorConst)result["weightsRange"];
+        Tensor<float> act = ((TensorConst)result["act"]).Value.Cast<float>();
+        Expr padding = (Expr)result["padding"];
+        Expr stride = (Expr)result["stride"];
+        Expr dilation = (Expr)result["dilation"];
+        int groups = ((TensorConst)result["groups"]).Value.ToScalar<int>();
+        Expr padValue = (Expr)result["padValue"];
         return GetReplace(fakeConv, inputMarker, weightsMarker, weights, weightsRange, act, padding, stride, dilation,
-            groups, padValue, __context);
+            groups, padValue, context);
     }
 }

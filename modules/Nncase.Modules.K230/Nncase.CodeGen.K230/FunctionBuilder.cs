@@ -48,18 +48,6 @@ internal class FunctionBuilder : IDisposable
 
     public unsafe LinkableFunction Build(PrimFunction function)
     {
-        //IL_006e: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0073: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0096: Unknown result type (might be due to invalid IL or missing references)
-        //IL_009b: Unknown result type (might be due to invalid IL or missing references)
-        //IL_009f: Unknown result type (might be due to invalid IL or missing references)
-        //IL_00a4: Unknown result type (might be due to invalid IL or missing references)
-        //IL_011f: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0124: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0147: Unknown result type (might be due to invalid IL or missing references)
-        //IL_014c: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0150: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0155: Unknown result type (might be due to invalid IL or missing references)
         new InstSerializeVisitor(_textWriter).Visit(function.Body);
         SectionManager sectionManager = new SectionManager();
         using (BinaryWriter writer = sectionManager.GetWriter(".desc"))
@@ -77,7 +65,7 @@ internal class FunctionBuilder : IDisposable
                 value.Inputs++;
                 MemoryRange value2 = checked(new MemoryRange
                 {
-                    Start = (uint)current.Start(), Size = (uint)current.Size()
+                    Start = (uint)current.Start(), Size = (uint)current.Size(),
                 });
                 writer.Write(ref value2);
                 value.InputPoolSize = Math.Max(value.InputPoolSize, value2.Start + value2.Size);
@@ -92,7 +80,7 @@ internal class FunctionBuilder : IDisposable
                 value.Outputs++;
                 MemoryRange value3 = checked(new MemoryRange
                 {
-                    Start = (uint)current2.Start(), Size = (uint)current2.Size()
+                    Start = (uint)current2.Start(), Size = (uint)current2.Size(),
                 });
                 writer.Write(ref value3);
                 value.OutputPoolSize = Math.Max(value.OutputPoolSize, value3.Start + value3.Size);

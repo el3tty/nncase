@@ -17,11 +17,14 @@ public sealed class FoldFakeMatMulAndFakeActivation : RewriteRule<Pattern>, IRew
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeActivation("fakeAct", "call2",
         (FakeActivation _) => true,
-        Nncase.PatternMatch.Utility.IsRangeOfMarker("range",
+        Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "range",
             Nncase.PatternMatch.F.K230.IsFakeMatMul("fakeMatMul", "call1", (FakeMatMul _) => true,
-                Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker",
+                Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                    "inputMarker",
                     Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsConst("inputRange")),
-                Nncase.PatternMatch.Utility.IsRangeOfMarker("weightsMarker",
+                Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                    "weightsMarker",
                     Nncase.PatternMatch.Utility.IsTensorConst("weights"),
                     Nncase.PatternMatch.Utility.IsConst("weightsRange")),
                 Nncase.PatternMatch.Utility.IsTensorConst("act1")),
@@ -71,22 +74,22 @@ public sealed class FoldFakeMatMulAndFakeActivation : RewriteRule<Pattern>, IRew
             .InheritMetaData(call2);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr fakeMatMul = (Expr)__result["fakeMatMul"];
-        Expr input = (Expr)__result["input"];
-        Expr inputMarker = (Expr)__result["inputMarker"];
-        Expr weights = (Expr)__result["weights"];
-        Expr weightsMarker = (Expr)__result["weightsMarker"];
-        TensorConst act = (TensorConst)__result["act1"];
-        FakeActivation fakeAct = (FakeActivation)__result["fakeAct"];
-        TensorConst act2 = (TensorConst)__result["act2"];
-        TensorConst outChannels = (TensorConst)__result["outChannels"];
-        TensorConst is16Segments = (TensorConst)__result["is16Segments"];
-        Expr range = (Expr)__result["range"];
-        Call call = (Call)__result["call1"];
-        Call call2 = (Call)__result["call2"];
+        Expr fakeMatMul = (Expr)result["fakeMatMul"];
+        Expr input = (Expr)result["input"];
+        Expr inputMarker = (Expr)result["inputMarker"];
+        Expr weights = (Expr)result["weights"];
+        Expr weightsMarker = (Expr)result["weightsMarker"];
+        TensorConst act = (TensorConst)result["act1"];
+        FakeActivation fakeAct = (FakeActivation)result["fakeAct"];
+        TensorConst act2 = (TensorConst)result["act2"];
+        TensorConst outChannels = (TensorConst)result["outChannels"];
+        TensorConst is16Segments = (TensorConst)result["is16Segments"];
+        Expr range = (Expr)result["range"];
+        Call call = (Call)result["call1"];
+        Call call2 = (Call)result["call2"];
         return GetReplace(fakeMatMul, input, inputMarker, weights, weightsMarker, act, fakeAct, act2, outChannels,
-            is16Segments, range, call, call2, __context);
+            is16Segments, range, call, call2, context);
     }
 }

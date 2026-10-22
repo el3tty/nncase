@@ -14,7 +14,7 @@ internal sealed class PU_PDP0_FETCHIF_CONF2Evaluator : ITypeInferencer<PU_PDP0_F
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, PU_PDP0_FETCHIF_CONF2 target, bool ILmode)
+    public string Visit(IIRPrinterContext context, PU_PDP0_FETCHIF_CONF2 target, bool iLmode)
     {
         return
             $"I.PU_PDP0_FETCHIF_CONF2(tcu_id: {context.GetArgument(target, PU_PDP0_FETCHIF_CONF2.tcu_id)}, pu_id: {context.GetArgument(target, PU_PDP0_FETCHIF_CONF2.pu_id)}, rgic: {target.rgic}, rgic_last: {target.rgic_last}, funct4: {target.funct4})";

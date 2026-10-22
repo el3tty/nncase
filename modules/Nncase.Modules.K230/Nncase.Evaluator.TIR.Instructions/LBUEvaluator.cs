@@ -13,7 +13,7 @@ internal sealed class LBUEvaluator : ITypeInferencer<LBU>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, LBU target, bool ILmode)
+    public string Visit(IIRPrinterContext context, LBU target, bool iLmode)
     {
         return
             $"I.LBU(rd: {target.rd}, rs: {target.rs}, offset: {context.GetArgument(target, LBU.offset)}, funct3: {target.funct3})";

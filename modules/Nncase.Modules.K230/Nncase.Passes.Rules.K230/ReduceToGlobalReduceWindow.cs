@@ -13,7 +13,7 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class ReduceToGlobalReduceWindow : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Math.IsReduce("reduce", "call", (Reduce _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsTensorConst("axis"), Nncase.PatternMatch.Utility.IsTensorConst("initValue"),
         Nncase.PatternMatch.Utility.IsTensorConst());
 
@@ -45,13 +45,13 @@ public sealed class ReduceToGlobalReduceWindow : IRewriteRule
         return false;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Reduce reduce = (Reduce)__result["reduce"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        TensorConst axis = (TensorConst)__result["axis"];
-        TensorConst initValue = (TensorConst)__result["initValue"];
+        Reduce reduce = (Reduce)result["reduce"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        TensorConst axis = (TensorConst)result["axis"];
+        TensorConst initValue = (TensorConst)result["initValue"];
         return GetReplace(reduce, call, input, axis, initValue);
     }
 }

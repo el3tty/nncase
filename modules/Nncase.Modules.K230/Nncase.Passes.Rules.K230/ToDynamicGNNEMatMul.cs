@@ -36,7 +36,8 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
             prevInput = Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, missingRank).ToArray());
         }
 
-        return Nncase.IR.F.Math.Quantize(prevInput,
+        return Nncase.IR.F.Math.Quantize(
+            prevInput,
             Tensor.FromScalar(new QuantParam(inADeqQuantParam.ZeroPoint, inADeqQuantParam.Scale)), quanType);
     }
 
@@ -49,7 +50,8 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
             prevInput = Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, missingRank).ToArray());
         }
 
-        return Nncase.IR.F.Math.Quantize(prevInput,
+        return Nncase.IR.F.Math.Quantize(
+            prevInput,
             Tensor.FromScalar(new QuantParam(inBDeqQuantParam.ZeroPoint, inBDeqQuantParam.Scale)), quanType);
     }
 
@@ -57,17 +59,17 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
         Tensor<float> inputARange, Expr inputBMarker, Expr inputB, Tensor<float> inputBRange, Tensor<float> act0,
         RunPassContext options)
     {
-        QuantizeOptions quantizeOptions = base.CompileSession.CompileOptions.QuantizeOptions;
+        QuantizeOptions quantizeOptions = CompileSession.CompileOptions.QuantizeOptions;
         ActivationParameter<float> actParam = new ActivationParameter<float>(act0);
         _ = quantizeOptions.BindQuantMethod;
         MixQuantInfo mixQuantInfo = ((Marker)inputAMarker).MixQuantInfo;
         MixQuantInfo mixQuantInfo2 = ((Marker)inputBMarker).MixQuantInfo;
-        DataType dataType = ((mixQuantInfo?.MarkerQuantType == null)
+        DataType dataType = (mixQuantInfo?.MarkerQuantType == null)
             ? quantizeOptions.QuantType
-            : mixQuantInfo.MarkerQuantType);
-        DataType inputBDataType = ((mixQuantInfo2?.MarkerQuantType == null)
+            : mixQuantInfo.MarkerQuantType;
+        DataType inputBDataType = (mixQuantInfo2?.MarkerQuantType == null)
             ? quantizeOptions.QuantType
-            : mixQuantInfo2.MarkerQuantType);
+            : mixQuantInfo2.MarkerQuantType;
         Call call2 = LoadQuantInA(inputA, inputARange.AsValueRange(), dataType);
         Call call3 = LoadQuantInB(inputB, inputBRange.AsValueRange(), inputBDataType);
         Expr expr = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, inputBDataType);
@@ -148,18 +150,18 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
         return actParam.ToAct0Data<Half>();
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeDynamicGNNEMatMul fakeMatmul = (FakeDynamicGNNEMatMul)__result["fakeMatmul"];
-        Call call = (Call)__result["call"];
-        Expr inputAMarker = (Expr)__result["inputAMarker"];
-        Expr inputA = (Expr)__result["inputA"];
-        Tensor<float> inputARange = ((TensorConst)__result["inputARange"]).Value.Cast<float>();
-        Expr inputBMarker = (Expr)__result["inputBMarker"];
-        Expr inputB = (Expr)__result["inputB"];
-        Tensor<float> inputBRange = ((TensorConst)__result["inputBRange"]).Value.Cast<float>();
-        Tensor<float> act = ((TensorConst)__result["act0"]).Value.Cast<float>();
+        FakeDynamicGNNEMatMul fakeMatmul = (FakeDynamicGNNEMatMul)result["fakeMatmul"];
+        Call call = (Call)result["call"];
+        Expr inputAMarker = (Expr)result["inputAMarker"];
+        Expr inputA = (Expr)result["inputA"];
+        Tensor<float> inputARange = ((TensorConst)result["inputARange"]).Value.Cast<float>();
+        Expr inputBMarker = (Expr)result["inputBMarker"];
+        Expr inputB = (Expr)result["inputB"];
+        Tensor<float> inputBRange = ((TensorConst)result["inputBRange"]).Value.Cast<float>();
+        Tensor<float> act = ((TensorConst)result["act0"]).Value.Cast<float>();
         return GetReplace(fakeMatmul, call, inputAMarker, inputA, inputARange, inputBMarker, inputB, inputBRange, act,
-            __context);
+            context);
     }
 }

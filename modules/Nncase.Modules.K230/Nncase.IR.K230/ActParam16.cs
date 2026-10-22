@@ -31,7 +31,7 @@ public class ActParam16 : ActParamBase
 
     public void ForEachChannel(Action<ActParam16, int> f)
     {
-        for (int i = 0; i < base.Channels; i++)
+        for (int i = 0; i < Channels; i++)
         {
             f(this, i);
         }

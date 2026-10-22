@@ -24,12 +24,12 @@ public sealed class StackToConcat : IRewriteRule
         return Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Tensors.Concat(tuple, axis), stackCall.CheckedShape);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr stack = (Expr)__result["stack"];
-        Call stackCall = (Call)__result["stackCall"];
-        Expr tupleExpr = (Expr)__result["tuple"];
-        int axis = ((TensorConst)__result["axis"]).Value.ToScalar<int>();
+        Expr stack = (Expr)result["stack"];
+        Call stackCall = (Call)result["stackCall"];
+        Expr tupleExpr = (Expr)result["tuple"];
+        int axis = ((TensorConst)result["axis"]).Value.ToScalar<int>();
         return GetReplace(stack, stackCall, tupleExpr, axis);
     }
 }

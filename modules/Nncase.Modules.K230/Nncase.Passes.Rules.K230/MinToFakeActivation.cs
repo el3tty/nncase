@@ -13,6 +13,6 @@ public class MinToFakeActivation : BinaryToFakeActivation
     public override void ProcessActParam(ActParam2 actParam, bool isCRHS, int i, float v)
     {
         actParam.Ks[1, i] = 0f;
-        actParam.Bs[1, i] = (actParam.Xs[0, i] = v);
+        actParam.Bs[1, i] = actParam.Xs[0, i] = v;
     }
 }

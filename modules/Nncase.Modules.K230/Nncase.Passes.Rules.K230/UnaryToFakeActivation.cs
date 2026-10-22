@@ -37,25 +37,25 @@ public class UnaryToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Unary u = (Unary)__result["u"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Unary u = (Unary)result["u"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(u, call, input);
     }
 
     public UnaryToFakeActivation()
     {
         Func<Unary, bool> condition = (Unary _) => true;
-        ExprPattern input = Nncase.PatternMatch.Utility.IsWildcard("input")with
+        ExprPattern input = Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (TypePatternUtility.HasFixedShape() &
-                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"))
+            TypePattern = TypePatternUtility.HasFixedShape() &
+                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"),
         };
         Pattern = Nncase.PatternMatch.F.Math.IsUnary("u", "call", condition, input) with
         {
-            TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32)
+            TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32),
         };
     }
 }

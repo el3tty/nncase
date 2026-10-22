@@ -13,7 +13,7 @@ internal sealed class MMU_CONFEvaluator : ITypeInferencer<MMU_CONF>, ITypeInfere
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MMU_CONF target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MMU_CONF target, bool iLmode)
     {
         return
             $"I.MMU_CONF(rstart: {target.rstart}, rdepth: {target.rdepth}, mmu_id: {context.GetArgument(target, MMU_CONF.mmu_id)})";

@@ -14,7 +14,7 @@ internal sealed class MFU_ACT1_COMPUTEEvaluator : ITypeInferencer<MFU_ACT1_COMPU
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_ACT1_COMPUTE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_ACT1_COMPUTE target, bool iLmode)
     {
         return
             $"I.MFU_ACT1_COMPUTE(raddr_d1: {target.raddr_d1}, raddr_s1: {target.raddr_s1}, raddr_s2: {target.raddr_s2}, raddr_arg: {target.raddr_arg})";

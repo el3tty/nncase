@@ -55,12 +55,12 @@ public static class TileUtilities
         }
 
         [CompilerGenerated]
-        public void Deconstruct(out int LeftRepeats, out int ScalarRepeat, out int SliceLen, out int SliceRepeat)
+        public void Deconstruct(out int leftRepeats, out int scalarRepeat, out int sliceLen, out int sliceRepeat)
         {
-            LeftRepeats = this.LeftRepeats;
-            ScalarRepeat = this.ScalarRepeat;
-            SliceLen = this.SliceLen;
-            SliceRepeat = this.SliceRepeat;
+            leftRepeats = this.LeftRepeats;
+            scalarRepeat = this.ScalarRepeat;
+            sliceLen = this.SliceLen;
+            sliceRepeat = this.SliceRepeat;
         }
     }
 
@@ -84,7 +84,8 @@ public static class TileUtilities
         List<Segment1D> segments = new List<Segment1D>();
         for (int i = start; i < upperBound; i += chunkSize)
         {
-            Segment1D segment = new Segment1D(i..((i + chunkSize > upperBound) ? upperBound : (i + chunkSize)),
+            Segment1D segment = new Segment1D(
+                i..((i + chunkSize > upperBound) ? upperBound : (i + chunkSize)),
                 new Padding(0, 0));
             segments.Add(segment);
         }
@@ -195,7 +196,9 @@ public static class TileUtilities
         Segment1D shifted = new Segment1D(..0, Padding.Zero());
         if (ori.Length > 0)
         {
-            shifted = shifted with { Range = (ori.Start - referStart)..(ori.End - referStart) };
+            int start = ori.Start - referStart;
+            int end = ori.End - referStart;
+            shifted = shifted with { Range = start..end };
         }
 
         return shifted;
@@ -225,8 +228,8 @@ public static class TileUtilities
             dilationH);
         Padding padding = new Padding(heightShift[3], heightShift[4]);
         Padding padding2 = new Padding(widthShift[3], widthShift[4]);
-        return new SegmentND(x[0], x[1], new Segment1D(heightShift[0]..heightShift[1], padding),
-            new Segment1D(widthShift[0]..widthShift[1], padding2));
+        return new SegmentND(x[0], x[1], new Segment1D(heightShift[0] ..heightShift[1], padding),
+            new Segment1D(widthShift[0] ..widthShift[1], padding2));
     }
 
     public static SegmentND ShiftInputTensor(in SegmentND x, in SegmentND w, int r, int s, int strideH, int strideW,
@@ -238,8 +241,8 @@ public static class TileUtilities
             strideH, dilationH);
         Padding padding = new Padding(heightShift[3], heightShift[4]);
         Padding padding2 = new Padding(widthShift[3], widthShift[4]);
-        return new SegmentND(x[0], x[1], new Segment1D(heightShift[0]..heightShift[1], padding),
-            new Segment1D(widthShift[0]..widthShift[1], padding2));
+        return new SegmentND(x[0], x[1], new Segment1D(heightShift[0] ..heightShift[1], padding),
+            new Segment1D(widthShift[0] ..widthShift[1], padding2));
     }
 
     public static List<SegmentND> ShiftDeconvInoutTensor(SegmentND g2LIf, SegmentND l2GOf, SegmentND l2RW, int strideH,
@@ -361,14 +364,16 @@ public static class TileUtilities
     {
         if (pH.Sum() > 0)
         {
-            Assert(System.Math.Ceiling(1f * (float)e / (float)strideH).Equals(h),
+            Assert(
+                System.Math.Ceiling(1f * (float)e / (float)strideH).Equals(h),
                 "System.Math.Ceiling(1.0f * e / strideH).Equals(h)",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
                 322);
         }
         else
         {
-            Assert(System.Math.Ceiling(1f * (float)(e - (r - 1)) / (float)strideH).Equals(h),
+            Assert(
+                System.Math.Ceiling(1f * (float)(e - (r - 1)) / (float)strideH).Equals(h),
                 "System.Math.Ceiling(1.0f * (e - (r - 1)) / strideH).Equals(h)",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
                 326);
@@ -488,7 +493,7 @@ public static class TileUtilities
     public static Segment1D GetVnocOutputRowSegmentGivenRi(int inputRowStart, int inputRowLength, int ri, int strideH,
         int padTop, int padBottom = 0, int h = 0)
     {
-        int paddedStart = ((inputRowLength == 0) ? (h + padTop) : (inputRowStart + padTop));
+        int paddedStart = (inputRowLength == 0) ? (h + padTop) : (inputRowStart + padTop);
         int outStart = paddedStart * strideH + ri;
         int outEnd = (paddedStart + (inputRowLength - 1) + padBottom) * strideH + ri + 1;
         System.Math.Max(outEnd - outStart, 0);
@@ -771,12 +776,12 @@ public static class TileUtilities
         DataType dataType = ld.CheckedDataType;
         config.CscEn = 0u;
         config.CmdId = 1u;
-        config.SrcFormat = ((dataType == DataTypes.Int16) ? 5u : 3u);
+        config.SrcFormat = (dataType == DataTypes.Int16) ? 5u : 3u;
         config.DstFormat = config.SrcFormat;
         config.CrcInd = 0u;
         config.DstInd = config.CrcInd;
         config.Shift = 0u;
-        config.Sign = ((!(ld.CheckedDataType == DataTypes.UInt8)) ? 1u : 0u);
+        config.Sign = (!(ld.CheckedDataType == DataTypes.UInt8)) ? 1u : 0u;
         config.SrcCh0WidthLayout = (uint)((dataType == DataTypes.Int16) ? (srcShape[3] * 2) : srcShape[3]);
         config.SrcCh1WidthLayout = config.SrcCh0WidthLayout;
         config.SrcCh2WidthLayout = config.SrcCh0WidthLayout;
@@ -789,7 +794,7 @@ public static class TileUtilities
 
     public static void Ai2dUtilKpuUpdateResizeParam(Call ld, Call st, Ai2dResize resize, ref Ai2dConfig config)
     {
-        config.Interpolation = ((resize.ResizeMethod != MFU_CROP_RESIZE.NEAREST) ? 1u : 0u);
+        config.Interpolation = (resize.ResizeMethod != MFU_CROP_RESIZE.NEAREST) ? 1u : 0u;
         if (config.Interpolation == 0 && !resize.AlignCorners)
         {
             config.CordRound = 2u;
@@ -996,7 +1001,7 @@ public static class TileUtilities
             config.OriginM(config.M0),
             config.OriginM(config.M1),
             config.OriginM(config.M3),
-            config.OriginM(config.M4)
+            config.OriginM(config.M4),
         };
         List<float> mOriBias = new List<float> { config.OriginM(config.M2), config.OriginM(config.M5) };
         List<float> invScale = new List<float> { 0f, 0f, 0f, 0f };
@@ -1041,7 +1046,7 @@ public static class TileUtilities
         }
 
         bool alternate = false;
-        int step = ((config.SrcFormat > 2) ? 1 : 2);
+        int step = (config.SrcFormat > 2) ? 1 : 2;
         while (dstHeight > 0 && dstWidth > 0)
         {
             Ai2dFormat srcFormat = (Ai2dFormat)config.SrcFormat;
@@ -1189,7 +1194,7 @@ public static class TileUtilities
             end,
             length,
             cropBefore,
-            cropAfter
+            cropAfter,
         };
     }
 
@@ -1261,7 +1266,7 @@ public static class TileUtilities
             end,
             end - start,
             cropBefore,
-            cropAfter
+            cropAfter,
         };
     }
 

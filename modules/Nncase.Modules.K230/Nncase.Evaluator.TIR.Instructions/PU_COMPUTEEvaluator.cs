@@ -14,7 +14,7 @@ internal sealed class PU_COMPUTEEvaluator : ITypeInferencer<PU_COMPUTE>, ITypeIn
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, PU_COMPUTE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, PU_COMPUTE target, bool iLmode)
     {
         return
             $"I.PU_COMPUTE(tcu_id: {context.GetArgument(target, PU_COMPUTE.tcu_id)}, of_shift_mode: {target.of_shift_mode})";

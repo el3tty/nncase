@@ -9,5 +9,5 @@ public enum TcuComputeMode
     DwConv2d,
     TransposeConv2d,
     MatMul,
-    Activation
+    Activation,
 }

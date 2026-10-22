@@ -17,11 +17,14 @@ public sealed class FoldFakeConv2DAndFakeActivation : RewriteRule<Pattern>, IRew
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeActivation("fakeAct", "call2",
         (FakeActivation _) => true,
-        Nncase.PatternMatch.Utility.IsRangeOfMarker("range",
+        Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "range",
             Nncase.PatternMatch.F.K230.IsFakeConv2D("fakeConv", "call1", (FakeConv2D _) => true,
-                Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker",
+                Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                    "inputMarker",
                     Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsConst("inputRange")),
-                Nncase.PatternMatch.Utility.IsRangeOfMarker("weightsMarker",
+                Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                    "weightsMarker",
                     Nncase.PatternMatch.Utility.IsTensorConst("weights"),
                     Nncase.PatternMatch.Utility.IsConst("weightsRange")),
                 Nncase.PatternMatch.Utility.IsTensorConst("act1"), Nncase.PatternMatch.Utility.IsTensorConst("padding"),
@@ -70,27 +73,27 @@ public sealed class FoldFakeConv2DAndFakeActivation : RewriteRule<Pattern>, IRew
             .InheritMetaData(call2);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr fakeConv = (Expr)__result["fakeConv"];
-        Expr input = (Expr)__result["input"];
-        Expr inputMarker = (Expr)__result["inputMarker"];
-        Expr weights = (Expr)__result["weights"];
-        Expr weightsMarker = (Expr)__result["weightsMarker"];
-        TensorConst act = (TensorConst)__result["act1"];
-        TensorConst padding = (TensorConst)__result["padding"];
-        TensorConst stride = (TensorConst)__result["stride"];
-        TensorConst dilation = (TensorConst)__result["dilation"];
-        TensorConst groups = (TensorConst)__result["groups"];
-        TensorConst padValue = (TensorConst)__result["padValue"];
-        FakeActivation fakeAct = (FakeActivation)__result["fakeAct"];
-        TensorConst act2 = (TensorConst)__result["act2"];
-        TensorConst outChannels = (TensorConst)__result["outChannels"];
-        TensorConst is16Segments = (TensorConst)__result["is16Segments"];
-        Expr range = (Expr)__result["range"];
-        Call call = (Call)__result["call1"];
-        Call call2 = (Call)__result["call2"];
+        Expr fakeConv = (Expr)result["fakeConv"];
+        Expr input = (Expr)result["input"];
+        Expr inputMarker = (Expr)result["inputMarker"];
+        Expr weights = (Expr)result["weights"];
+        Expr weightsMarker = (Expr)result["weightsMarker"];
+        TensorConst act = (TensorConst)result["act1"];
+        TensorConst padding = (TensorConst)result["padding"];
+        TensorConst stride = (TensorConst)result["stride"];
+        TensorConst dilation = (TensorConst)result["dilation"];
+        TensorConst groups = (TensorConst)result["groups"];
+        TensorConst padValue = (TensorConst)result["padValue"];
+        FakeActivation fakeAct = (FakeActivation)result["fakeAct"];
+        TensorConst act2 = (TensorConst)result["act2"];
+        TensorConst outChannels = (TensorConst)result["outChannels"];
+        TensorConst is16Segments = (TensorConst)result["is16Segments"];
+        Expr range = (Expr)result["range"];
+        Call call = (Call)result["call1"];
+        Call call2 = (Call)result["call2"];
         return GetReplace(fakeConv, input, inputMarker, weights, weightsMarker, act, padding, stride, dilation, groups,
-            padValue, fakeAct, act2, outChannels, is16Segments, range, call, call2, __context);
+            padValue, fakeAct, act2, outChannels, is16Segments, range, call, call2, context);
     }
 }

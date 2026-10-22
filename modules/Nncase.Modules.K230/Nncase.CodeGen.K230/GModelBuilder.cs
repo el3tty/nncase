@@ -22,7 +22,7 @@ public sealed class GModelBuilder : IRTModule
 
     private PrimFunction _entry;
 
-    private Dictionary<Nncase.TIR.Buffer, (uint start, uint seg_offset, uint size)> _allocation =
+    private Dictionary<Nncase.TIR.Buffer, (uint Start, uint SegOffset, uint Size)> _allocation =
         new Dictionary<Nncase.TIR.Buffer, (uint, uint, uint)>(ReferenceEqualityComparer.Instance);
 
     public ModuleType ModuleType => ModuleType.Create("k230");
@@ -52,13 +52,13 @@ public sealed class GModelBuilder : IRTModule
 
     public string BinFilePath { get; set; }
 
-    private string _ddrCtrlPath { get; set; }
+    private string DdrCtrlPath { get; set; }
 
-    private string _argFilePath { get; set; }
+    private string ArgFilePath { get; set; }
 
-    private string _descFilePath { get; set; }
+    private string DescFilePath { get; set; }
 
-    private DdrRegionStartInfo _startInfo { get; init; }
+    private DdrRegionStartInfo StartInfo { get; init; }
 
     public ValueTask InitializeAsync()
     {
@@ -78,12 +78,12 @@ public sealed class GModelBuilder : IRTModule
         OnlyInstructions = assemblyParser != null && assemblyParser.Params == null;
         AssemblyParser = assemblyParser;
         EmbeddedParams = embedded_params;
-        _entry = (((object)entry == null) ? AssemblyParser.ParserFunction() : entry);
+        _entry = ((object)entry == null) ? AssemblyParser.ParserFunction() : entry;
         BinFilePath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".bin");
-        _ddrCtrlPath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".pc_addr_ctrl");
-        _argFilePath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".invoke_command");
-        _descFilePath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".desc");
-        _startInfo = new DdrRegionStartInfo();
+        DdrCtrlPath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".pc_addr_ctrl");
+        ArgFilePath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".invoke_command");
+        DescFilePath = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".desc");
+        StartInfo = new DdrRegionStartInfo();
         _functions = new List<IRTFunction>();
         Backend = "cmodel";
     }
@@ -98,15 +98,15 @@ public sealed class GModelBuilder : IRTModule
         if (!IsSerialized)
         {
             BinFilePath = Path.Join(dumpDirPath, name + Path.GetExtension(BinFilePath));
-            _ddrCtrlPath = Path.Join(dumpDirPath, name + Path.GetExtension(_ddrCtrlPath));
-            _argFilePath = Path.Join(dumpDirPath, name + Path.GetExtension(_argFilePath));
-            _descFilePath = Path.Join(dumpDirPath, name + Path.GetExtension(_descFilePath));
+            DdrCtrlPath = Path.Join(dumpDirPath, name + Path.GetExtension(DdrCtrlPath));
+            ArgFilePath = Path.Join(dumpDirPath, name + Path.GetExtension(ArgFilePath));
+            DescFilePath = Path.Join(dumpDirPath, name + Path.GetExtension(DescFilePath));
             Serialize();
         }
 
         if (Path.GetDirectoryName(BinFilePath) != dumpDirPath)
         {
-            Func<string, bool, string> func = delegate(string old_path, bool copy)
+            Func<string, bool, string> func = (old_path, copy) =>
             {
                 string text = Path.Join(dumpDirPath, name + Path.GetExtension(old_path));
                 if (File.Exists(text))
@@ -124,13 +124,13 @@ public sealed class GModelBuilder : IRTModule
             BinFilePath = func(BinFilePath, arg2: true);
             if (!OnlyInstructions)
             {
-                _ddrCtrlPath = func(_ddrCtrlPath, arg2: false);
-                _argFilePath = func(_argFilePath, arg2: true);
-                writeInvokeArgs();
-                writeVdutInvokeArgs();
+                DdrCtrlPath = func(DdrCtrlPath, arg2: false);
+                ArgFilePath = func(ArgFilePath, arg2: true);
+                WriteInvokeArgs();
+                WriteVdutInvokeArgs();
                 if (!EmbeddedParams)
                 {
-                    _descFilePath = func(_descFilePath, arg2: true);
+                    DescFilePath = func(DescFilePath, arg2: true);
                 }
             }
         }
@@ -138,23 +138,22 @@ public sealed class GModelBuilder : IRTModule
         return BinFilePath;
     }
 
-    private void writeBin()
+    private void WriteBin()
     {
-        //IL_0037: Unknown result type (might be due to invalid IL or missing references)
-        //IL_003c: Unknown result type (might be due to invalid IL or missing references)
         using BinaryWriter binaryWriter = new BinaryWriter(File.OpenWrite(BinFilePath));
         uint num = 0u;
-        _startInfo.input = 0u;
-        binaryWriter.Position(_startInfo.input + _entry.Parameters.InputBufferOf().ToArray().Aggregate(0L,
+        StartInfo.Input = 0u;
+        binaryWriter.Position(StartInfo.Input + _entry.Parameters.InputBufferOf().ToArray().Aggregate(
+            0L,
             (long acc, Nncase.TIR.Buffer bf) => acc + ((TensorConst)bf.MemSpan.Size).Value.ToScalar<int>()));
         binaryWriter.AlignPosition(8L);
-        _startInfo.rdata = (uint)binaryWriter.Position();
+        StartInfo.Rdata = (uint)binaryWriter.Position();
         binaryWriter.Write(Array.Empty<byte>());
         binaryWriter.AlignPosition(8L);
-        _startInfo.text = (uint)binaryWriter.Position();
+        StartInfo.Text = (uint)binaryWriter.Position();
         WriteInstText(binaryWriter);
-        _startInfo.data = (uint)binaryWriter.Position();
-        _startInfo.output = _startInfo.data + num;
+        StartInfo.Data = (uint)binaryWriter.Position();
+        StartInfo.Output = StartInfo.Data + num;
     }
 
     private void WriteInstText(BinaryWriter gw)
@@ -164,14 +163,6 @@ public sealed class GModelBuilder : IRTModule
 
     private void AllocateBuffer()
     {
-        //IL_0015: Unknown result type (might be due to invalid IL or missing references)
-        //IL_001a: Unknown result type (might be due to invalid IL or missing references)
-        //IL_001e: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0023: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0085: Unknown result type (might be due to invalid IL or missing references)
-        //IL_008a: Unknown result type (might be due to invalid IL or missing references)
-        //IL_008e: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0093: Unknown result type (might be due to invalid IL or missing references)
         List<(uint, uint, uint)> list = new List<(uint, uint, uint)>();
         uint num = 0u;
         uint num2 = 0u;
@@ -180,7 +171,7 @@ public sealed class GModelBuilder : IRTModule
         while (enumerator.MoveNext())
         {
             Nncase.TIR.Buffer current = enumerator.Current;
-            list.Add((num2 - num + _startInfo.input, num2, (uint)current.Size()));
+            list.Add((num2 - num + StartInfo.Input, num2, (uint)current.Size()));
             _allocation.Add(current, list.Last());
             num2 += (uint)current.Size();
         }
@@ -190,18 +181,18 @@ public sealed class GModelBuilder : IRTModule
         while (enumerator.MoveNext())
         {
             Nncase.TIR.Buffer current2 = enumerator.Current;
-            list.Add((num3 - num + _startInfo.output, num3, (uint)current2.Size()));
+            list.Add((num3 - num + StartInfo.Output, num3, (uint)current2.Size()));
             _allocation.Add(current2, list.Last());
             num3 += (uint)current2.Size();
         }
 
-        list.Add((_startInfo.rdata, 0u, 0u));
-        list.Add((_startInfo.data, 0u, 0u));
+        list.Add((StartInfo.Rdata, 0u, 0u));
+        list.Add((StartInfo.Data, 0u, 0u));
     }
 
-    private void writeGLBCtrl(Tensor[] inputs)
+    private void WriteGLBCtrl(Tensor[] inputs)
     {
-        using FileStream stream = File.OpenWrite(_ddrCtrlPath);
+        using FileStream stream = File.OpenWrite(DdrCtrlPath);
         using StreamWriter streamWriter = new StreamWriter(stream);
         Dictionary<Nncase.TIR.Buffer, int> dictionary =
             new Dictionary<Nncase.TIR.Buffer, int>(ReferenceEqualityComparer.Instance);
@@ -224,7 +215,7 @@ public sealed class GModelBuilder : IRTModule
                      b.MemSpan.Location == MemoryLocation.Output))
         {
             (uint, uint, uint) tuple = dictionary2[item2];
-            dictionary2[item2] = (tuple.Item1 - _startInfo.output, tuple.Item2, tuple.Item3);
+            dictionary2[item2] = (tuple.Item1 - StartInfo.Output, tuple.Item2, tuple.Item3);
         }
 
         List<int> source = CodeGenUtil.ToStackArgs(_entry.Parameters.ToArray(), dictionary2, dictionary);
@@ -234,7 +225,7 @@ public sealed class GModelBuilder : IRTModule
             string text = string.Empty;
             for (int num2 = 0; num2 < 4; num2++)
             {
-                string text2 = ((num2 < item3.Length) ? item3[num2] : $"{0:X8}");
+                string text2 = (num2 < item3.Length) ? item3[num2] : $"{0:X8}";
                 text += text2;
             }
 
@@ -243,34 +234,14 @@ public sealed class GModelBuilder : IRTModule
             num -= 16;
         }
 
-        streamWriter.WriteLine($"00000000 {0:X8}{_startInfo.output:X8}{0:X8}{0:X8}");
-        streamWriter.WriteLine($"00400100 {_startInfo.text:X32}");
+        streamWriter.WriteLine($"00000000 {0:X8}{StartInfo.Output:X8}{0:X8}{0:X8}");
+        streamWriter.WriteLine($"00400100 {StartInfo.Text:X32}");
         streamWriter.WriteLine("00400120 00000001000000010000000000000000");
     }
 
-    private void writeDesc()
+    private void WriteDesc()
     {
-        //IL_0027: Unknown result type (might be due to invalid IL or missing references)
-        //IL_002c: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0052: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0057: Unknown result type (might be due to invalid IL or missing references)
-        //IL_007b: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0080: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0083: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0088: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0148: Unknown result type (might be due to invalid IL or missing references)
-        //IL_014d: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0150: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0155: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0215: Unknown result type (might be due to invalid IL or missing references)
-        //IL_021a: Unknown result type (might be due to invalid IL or missing references)
-        //IL_021d: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0222: Unknown result type (might be due to invalid IL or missing references)
-        //IL_02c0: Unknown result type (might be due to invalid IL or missing references)
-        //IL_02c5: Unknown result type (might be due to invalid IL or missing references)
-        //IL_02c8: Unknown result type (might be due to invalid IL or missing references)
-        //IL_02cd: Unknown result type (might be due to invalid IL or missing references)
-        using StreamWriter streamWriter = new StreamWriter(File.OpenWrite(_descFilePath));
+        using StreamWriter streamWriter = new StreamWriter(File.OpenWrite(DescFilePath));
         streamWriter.WriteLine($"{_entry.Parameters.InputBufferOf().Count()} {_entry.Parameters.OutputOf().Count()}");
         WhereEnumerator<Nncase.TIR.Buffer, FunctionWrapper<Nncase.TIR.Buffer, bool>> enumerator =
             _entry.Parameters.InputBufferOf().GetEnumerator();
@@ -296,7 +267,7 @@ public sealed class GModelBuilder : IRTModule
         {
             Nncase.TIR.Buffer current3 = enumerator.Current;
             streamWriter.WriteLine(
-                $"{_allocation[current3].start} {_allocation[current3].seg_offset} {_allocation[current3].size}");
+                $"{_allocation[current3].Start} {_allocation[current3].SegOffset} {_allocation[current3].Size}");
         }
 
         enumerator = _entry.Parameters.OutputOf().GetEnumerator();
@@ -304,25 +275,25 @@ public sealed class GModelBuilder : IRTModule
         {
             Nncase.TIR.Buffer current4 = enumerator.Current;
             streamWriter.WriteLine(
-                $"{_allocation[current4].start} {_allocation[current4].seg_offset} {_allocation[current4].size}");
+                $"{_allocation[current4].Start} {_allocation[current4].SegOffset} {_allocation[current4].Size}");
         }
 
-        streamWriter.WriteLine($"{_startInfo.rdata} {0} {_startInfo.data - _startInfo.rdata}");
-        streamWriter.WriteLine($"{_startInfo.data} {0} {0}");
-        streamWriter.WriteLine($"{_startInfo.text} {0} {_startInfo.data - _startInfo.text}");
+        streamWriter.WriteLine($"{StartInfo.Rdata} {0} {StartInfo.Data - StartInfo.Rdata}");
+        streamWriter.WriteLine($"{StartInfo.Data} {0} {0}");
+        streamWriter.WriteLine($"{StartInfo.Text} {0} {StartInfo.Data - StartInfo.Text}");
     }
 
-    private void writeInvokeArgs()
+    private void WriteInvokeArgs()
     {
         using var streamWriter = new StreamWriter(
-            File.Open(_argFilePath, FileMode.Create, FileAccess.Write, FileShare.Read));
+            File.Open(ArgFilePath, FileMode.Create, FileAccess.Write, FileShare.Read));
 
         var outputs = _entry.Parameters.OutputOf().ToArray();
 
         streamWriter.WriteLine(BinFilePath);
-        streamWriter.WriteLine(_startInfo.text);
+        streamWriter.WriteLine(StartInfo.Text);
 
-        streamWriter.WriteLine(JoinOrZero(outputs.Select(b => _allocation[b].start)));
+        streamWriter.WriteLine(JoinOrZero(outputs.Select(b => _allocation[b].Start)));
         streamWriter.WriteLine(JoinOrZero(outputs.Select(b => b.Size() / b.ElemType.SizeInBytes)));
         streamWriter.WriteLine(Path.GetDirectoryName(BinFilePath) + "/");
         streamWriter.WriteLine(JoinOrZero(outputs.Select(b => b.ElemType.ToCModelTypeCode())));
@@ -336,21 +307,23 @@ public sealed class GModelBuilder : IRTModule
         return string.IsNullOrEmpty(text) ? "0" : text;
     }
 
-    private void writeVdutGLBCtrl()
+    private void WriteVdutGLBCtrl()
     {
-        using StreamWriter streamWriter = new StreamWriter(File.OpenWrite(_ddrCtrlPath));
+        using StreamWriter streamWriter = new StreamWriter(File.OpenWrite(DdrCtrlPath));
         streamWriter.WriteLine("00000000 00000000000000000000000000000000");
         streamWriter.WriteLine("00000010 00000000000000000000000000000000");
-        streamWriter.WriteLine($"00400100 {_startInfo.text:X32}");
+        streamWriter.WriteLine($"00400100 {StartInfo.Text:X32}");
         streamWriter.WriteLine("00400120 00000001000000010000000000000000");
     }
 
-    private void writeVdutInvokeArgs()
+    private void WriteVdutInvokeArgs()
     {
         var outputs = _entry.Parameters.OutputOf().ToArray();
 
         if (outputs.Length != 1)
+        {
             return;
+        }
 
         var output = outputs[0];
 
@@ -360,7 +333,7 @@ public sealed class GModelBuilder : IRTModule
             "../../../../../maix3-arch-sim/"));
 
         using var streamWriter = new StreamWriter(
-            File.Open(_argFilePath + ".sc", FileMode.Create, FileAccess.Write, FileShare.Read));
+            File.Open(ArgFilePath + ".sc", FileMode.Create, FileAccess.Write, FileShare.Read));
 
         streamWriter.WriteLine(simRoot + "ic_env/ld-linux-x86-64.so.2");
 
@@ -368,8 +341,8 @@ public sealed class GModelBuilder : IRTModule
             $"--library-path {simRoot}ic_env/ " +
             $"{simRoot}ic_env/Vkpu_top " +
             $"{BinFilePath} " +
-            $"{_startInfo.text} " +
-            $"{_startInfo.output} " +
+            $"{StartInfo.Text} " +
+            $"{StartInfo.Output} " +
             $"{output.Size() / output.ElemType.SizeInBytes} " +
             $"{Path.GetDirectoryName(BinFilePath)}/ " +
             $"{output.ElemType.ToCModelTypeCode()} " +
@@ -390,11 +363,11 @@ public sealed class GModelBuilder : IRTModule
         }
         else
         {
-            writeBin();
+            WriteBin();
             AllocateBuffer();
             if (!EmbeddedParams)
             {
-                writeDesc();
+                WriteDesc();
             }
             else
             {
@@ -402,15 +375,15 @@ public sealed class GModelBuilder : IRTModule
                 _entry = AssemblyParser.ParserFunction();
                 using (BinaryWriter binaryWriter = new BinaryWriter(File.OpenWrite(BinFilePath)))
                 {
-                    binaryWriter.Position(_startInfo.text);
+                    binaryWriter.Position(StartInfo.Text);
                     new InstSerializeVisitor(binaryWriter).Visit(_entry);
                 }
 
-                writeVdutGLBCtrl();
+                WriteVdutGLBCtrl();
             }
 
-            writeVdutInvokeArgs();
-            writeInvokeArgs();
+            WriteVdutInvokeArgs();
+            WriteInvokeArgs();
         }
 
         IsSerialized = true;
@@ -418,8 +391,6 @@ public sealed class GModelBuilder : IRTModule
 
     public void FillInputs(params Tensor[] inputs)
     {
-        //IL_000e: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0013: Unknown result type (might be due to invalid IL or missing references)
         if (inputs.Length != _entry.Parameters.InputOf().Count())
         {
             throw new InvalidOperationException("Input Argument Number Error!");
@@ -433,7 +404,7 @@ public sealed class GModelBuilder : IRTModule
             Tensor item = item3.First;
             Nncase.TIR.Buffer item2 = item3.Second;
             Tensor tensor = item;
-            binaryWriter.Position(_allocation[item2].start);
+            binaryWriter.Position(_allocation[item2].Start);
             if (tensor.BytesBuffer.Length != item2.Size())
             {
                 throw new InvalidOperationException("The Input Tensor Is Not Equal The Input Buffer!");
@@ -450,17 +421,13 @@ public sealed class GModelBuilder : IRTModule
 
     public Tensor[] Invoke(params Tensor[] inputs)
     {
-        //IL_016a: Unknown result type (might be due to invalid IL or missing references)
-        //IL_016f: Unknown result type (might be due to invalid IL or missing references)
-        //IL_017f: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0184: Unknown result type (might be due to invalid IL or missing references)
         if (OnlyInstructions)
         {
             throw new InvalidOperationException("The Only Instructions Mode Can't Be Invoke!");
         }
 
         FillInputs(inputs);
-        writeGLBCtrl(inputs);
+        WriteGLBCtrl(inputs);
         string backend = Backend;
         string text;
         if (!(backend == "cmodel"))
@@ -489,15 +456,15 @@ public sealed class GModelBuilder : IRTModule
                 throw new ArgumentOutOfRangeException();
             }
 
-            backend = File.ReadLines(_argFilePath + ".sc").Skip(1).First();
+            backend = File.ReadLines(ArgFilePath + ".sc").Skip(1).First();
         }
         else
         {
-            backend = _argFilePath;
+            backend = ArgFilePath;
         }
 
         string arguments = backend;
-        new GModelEngine(exe, Path.GetDirectoryName(_argFilePath) ?? "").Run(arguments);
+        new GModelEngine(exe, Path.GetDirectoryName(ArgFilePath) ?? string.Empty).Run(arguments);
         text = Path.GetDirectoryName(BinFilePath);
         string backend2 = Backend;
         if (!(backend2 == "cmodel"))

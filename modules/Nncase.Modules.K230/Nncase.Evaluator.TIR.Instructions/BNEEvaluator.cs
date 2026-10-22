@@ -13,7 +13,7 @@ internal sealed class BNEEvaluator : ITypeInferencer<BNE>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, BNE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, BNE target, bool iLmode)
     {
         return
             $"I.BNE(rs1: {target.rs1}, rs2: {target.rs2}, offset: {context.GetArgument(target, BNE.offset)}, funct3: {target.funct3})";

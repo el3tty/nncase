@@ -22,7 +22,7 @@ public sealed class K230FusionToTirPass : ModulePass
 
     private readonly Dictionary<string, RoofLineInfo> _fusionMacsMap;
 
-    private IAnalyzerManager AnalyzerManager => base.CompileSession.GetRequiredService<IAnalyzerManager>();
+    private IAnalyzerManager AnalyzerManager => CompileSession.GetRequiredService<IAnalyzerManager>();
 
     public K230FusionToTirPass(int[]? tileSizes = null)
     {
@@ -57,51 +57,54 @@ public sealed class K230FusionToTirPass : ModulePass
                 Dictionary<Type, IAnalysisResult> analysisResults = new Dictionary<Type, IAnalysisResult>
                 {
                     [typeof(IExprUserAnalysisResult)] =
-                        AnalyzerManager.GetAnaylsis<IExprUserAnalysisResult>(function)
+                        AnalyzerManager.GetAnaylsis<IExprUserAnalysisResult>(function),
                 };
                 DataFlowMergeRewriter dataFlowMergeRewriter = new DataFlowMergeRewriter();
                 Dictionary<Fusion, IFusionChecker> fusionCheckCache =
                     new Dictionary<Fusion, IFusionChecker>(ReferenceEqualityComparer.Instance);
-                Function expr = (Function)dataFlowMergeRewriter.Rewrite(function,
+                Function expr = (Function)dataFlowMergeRewriter.Rewrite(
+                    function,
                     new IMergeRewriteRule[3]
                     {
                         new GNNESameInputFusionMergeRule(), new GNNEShortCutFusionMergeRuleLeft(),
-                        new GNNEShortCutFusionMergeRuleRight()
+                        new GNNEShortCutFusionMergeRuleRight(),
                     },
                     (IMergeRewriteRule rule, RunPassContext option) =>
                         new GNNEPreFusionGroupMutator(fusionCheckCache, rule, option),
                     new RunPassContext
                     {
                         AnalysisResults = analysisResults,
-                        MatchOptions = new FusionGroupMutator.GroupedMatchOptions()
+                        MatchOptions = new FusionGroupMutator.GroupedMatchOptions(),
                     });
                 if (DumpScope.Current.IsEnabled(DumpFlags.PassIR))
                 {
                     DumpScope.Current.DumpIR(expr, $"l1_fuse{j}");
                 }
 
-                Function expr2 = (Function)dataFlowMergeRewriter.Rewrite(expr,
+                Function expr2 = (Function)dataFlowMergeRewriter.Rewrite(
+                    expr,
                     new IMergeRewriteRule[7]
                     {
                         new GNNESameInputFusionMergeRule(), new GNNEMultiInputFusionMergeRule(),
                         new GNNEShortCutFusionMergeRuleLeft(), new GNNEShortCutFusionMergeRuleRight(),
                         new GNNEReshapeFusionMergeRule(), new GNNEFusionReshapeMergeRule(),
-                        new GNNEFusionConcatMergeRule()
+                        new GNNEFusionConcatMergeRule(),
                     },
                     (IMergeRewriteRule rule, RunPassContext option) =>
                         new GNNEFusionGroupMutator(fusionCheckCache, rule, option),
                     new RunPassContext
                     {
                         AnalysisResults = analysisResults,
-                        MatchOptions = new FusionGroupMutator.GroupedMatchOptions()
+                        MatchOptions = new FusionGroupMutator.GroupedMatchOptions(),
                     });
                 CheckedConvertMutator checkedConvertMutator =
                     new CheckedConvertMutator(dictionary, _fusionMacsMap, fusionCheckCache, options);
-                expr2 = (Function)CompilerServices.Rewrite(expr2,
+                expr2 = (Function)CompilerServices.Rewrite(
+                    expr2,
                     new IRewriteRule[6]
                     {
                         new Reshape1x1Conv(), new OptConcat(), new ConcatFusion(), new SplitFusion(),
-                        new FoldTwoReshapes(), new FoldNopReshape()
+                        new FoldTwoReshapes(), new FoldNopReshape(),
                     }, new RunPassContext());
                 Function function2 = (Function)checkedConvertMutator.Rewrite(expr2);
                 function2.InferenceType();

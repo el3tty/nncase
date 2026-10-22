@@ -34,7 +34,8 @@ public sealed class OptConcat : IRewriteRule
         }
 
         fields = (from i in tupleInputs.AsEnumerable()
-                select Nncase.IR.F.Tensors.Unsqueeze(i,
+                select Nncase.IR.F.Tensors.Unsqueeze(
+                    i,
                     Enumerable.Range(0, 4 - concatCall.CheckedShape.Rank).ToArray()))
             .ToArray();
         return Nncase.IR.F.Tensors.Squeeze(
@@ -42,11 +43,11 @@ public sealed class OptConcat : IRewriteRule
             Enumerable.Range(0, 4 - concatCall.CheckedShape.Rank).ToArray());
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)__result["tupleInputs"];
-        Concat concat = (Concat)__result["concat"];
-        Call concatCall = (Call)__result["concatCall"];
+        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)result["tupleInputs"];
+        Concat concat = (Concat)result["concat"];
+        Call concatCall = (Call)result["concatCall"];
         return GetReplace(tupleInputs, concat, concatCall);
     }
 
@@ -55,12 +56,14 @@ public sealed class OptConcat : IRewriteRule
         Func<Concat, bool> condition = (Concat _) => true;
         Func<Pattern> creator = () => Nncase.PatternMatch.Utility.IsWildcard();
         Pattern = Nncase.PatternMatch.F.Tensors.IsConcat("concat", "concatCall", condition,
-                Nncase.PatternMatch.Utility.IsTuple("tuple",
+                Nncase.PatternMatch.Utility.IsTuple(
+                    "tuple",
                     Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", creator))) with
             {
-                TypePattern = (TypePatternUtility.IsFloat() &
-                               TypePatternUtility.HasRank((int r) => r < 4 || r == 5,
-                                   "Only support rank < 4 or rank == 5") & TypePatternUtility.HasFixedShape())
+                TypePattern = TypePatternUtility.IsFloat() &
+                               TypePatternUtility.HasRank(
+                                   (int r) => r < 4 || r == 5,
+                                   "Only support rank < 4 or rank == 5") & TypePatternUtility.HasFixedShape(),
             };
     }
 }

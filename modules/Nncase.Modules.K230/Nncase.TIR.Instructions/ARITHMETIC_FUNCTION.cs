@@ -11,5 +11,5 @@ public enum ARITHMETIC_FUNCTION : uint
     div,
     divu,
     rem,
-    remu
+    remu,
 }

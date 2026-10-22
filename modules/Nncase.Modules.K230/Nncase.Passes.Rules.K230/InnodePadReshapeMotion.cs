@@ -15,9 +15,9 @@ public sealed class InnodePadReshapeMotion : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.NN.IsPad("p", "call", (Pad _) => true,
         Nncase.PatternMatch.F.Tensors.IsReshape("bc", (Reshape _) => true,
-            Nncase.PatternMatch.Utility.IsTensorConst("input")with
+            Nncase.PatternMatch.Utility.IsTensorConst("input") with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
+                TypePattern = TypePatternUtility.HasFixedShape(),
             }), Nncase.PatternMatch.Utility.IsTensorConst("pads"),
         Nncase.PatternMatch.Utility.IsTensorConst("value"));
 
@@ -31,7 +31,8 @@ public sealed class InnodePadReshapeMotion : IRewriteRule
         }
 
         Shape checkedShape = call.CheckedShape;
-        Call input2 = Nncase.IR.F.Tensors.Reshape(input,
+        Call input2 = Nncase.IR.F.Tensors.Reshape(
+            input,
             new Dimension[4] { 1, checkedShape[0], checkedShape[1], checkedShape[2] });
         Tensor<int> tensor = pads.Value.Cast<int>();
         int[][] paddings = new int[4][];
@@ -49,14 +50,14 @@ public sealed class InnodePadReshapeMotion : IRewriteRule
         return Nncase.IR.F.NN.Pad(input2, paddings, p.PadMode, value);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Pad p = (Pad)__result["p"];
-        Call call = (Call)__result["call"];
-        Reshape bc = (Reshape)__result["bc"];
-        TensorConst input = (TensorConst)__result["input"];
-        TensorConst pads = (TensorConst)__result["pads"];
-        TensorConst value = (TensorConst)__result["value"];
+        Pad p = (Pad)result["p"];
+        Call call = (Call)result["call"];
+        Reshape bc = (Reshape)result["bc"];
+        TensorConst input = (TensorConst)result["input"];
+        TensorConst pads = (TensorConst)result["pads"];
+        TensorConst value = (TensorConst)result["value"];
         return GetReplace(p, call, bc, input, pads, value);
     }
 }

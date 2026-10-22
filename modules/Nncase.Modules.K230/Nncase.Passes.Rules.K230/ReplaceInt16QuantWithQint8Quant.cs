@@ -50,7 +50,8 @@ public sealed class ReplaceInt16QuantWithQint8Quant : IRewriteRule
     {
         if (conv.CheckedDataType == DataTypes.Int16)
         {
-            Call input2 = Nncase.IR.F.Math.Quantize(ld,
+            Call input2 = Nncase.IR.F.Math.Quantize(
+                ld,
                 new QuantParam(conv_dw_qint8Qp.ZeroPoint, conv_dw_qint8Qp.Scale), DataTypes.UInt8);
             Call input3 = Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.UInt8, input2);
             Call act = Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, conv_dw.ActParamQInt8.GetAct0Data);
@@ -83,33 +84,33 @@ public sealed class ReplaceInt16QuantWithQint8Quant : IRewriteRule
         return null;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEConv2D convDw = (GNNEConv2D)__result["conv_dw"];
-        GNNEConv2D conv = (GNNEConv2D)__result["conv"];
-        GNNEStore st = (GNNEStore)__result["st"];
-        Quantize q = (Quantize)__result["q"];
-        GNNELoad ld = (GNNELoad)__result["ld"];
-        TensorConst input = (TensorConst)__result["input"];
-        GNNELoadW lw = (GNNELoadW)__result["lw"];
-        TensorConst oldW = (TensorConst)__result["old_w"];
-        GNNELoadW lwb = (GNNELoadW)__result["lwb"];
-        TensorConst oldWb = (TensorConst)__result["old_wb"];
-        GNNELoadW lact = (GNNELoadW)__result["lact"];
-        TensorConst oldAct = (TensorConst)__result["old_act"];
-        TensorConst convDwWeightsBiasQint = (TensorConst)__result["conv_dw_weightsBiasQint8"];
-        TensorConst convDwActQint = (TensorConst)__result["conv_dw_actQint8"];
-        TensorConst convDwDeqBias = (TensorConst)__result["conv_dw_deqBias"];
-        TensorConst convDwShiftBits = (TensorConst)__result["conv_dw_shiftBits"];
-        TensorConst convDwShiftBitsQint = (TensorConst)__result["conv_dw_shiftBitsQint8"];
-        QuantizeParam convDwQint8Qp = ((TensorConst)__result["conv_dw_qint8Qp"]).Value.ToScalar<QuantizeParam>();
-        TensorConst convDwPadding = (TensorConst)__result["conv_dw_padding"];
-        TensorConst convDwStride = (TensorConst)__result["conv_dw_stride"];
-        TensorConst convDwDilation = (TensorConst)__result["conv_dw_dilation"];
-        TensorConst convDwGroups = (TensorConst)__result["conv_dw_groups"];
-        TensorConst convDwIs16Quant = (TensorConst)__result["conv_dw_is16Quant"];
-        TensorConst convDwPadValue = (TensorConst)__result["conv_dw_padValue"];
-        TensorConst convDwWeightsQInt = (TensorConst)__result["conv_dw_weightsQInt8"];
+        GNNEConv2D convDw = (GNNEConv2D)result["conv_dw"];
+        GNNEConv2D conv = (GNNEConv2D)result["conv"];
+        GNNEStore st = (GNNEStore)result["st"];
+        Quantize q = (Quantize)result["q"];
+        GNNELoad ld = (GNNELoad)result["ld"];
+        TensorConst input = (TensorConst)result["input"];
+        GNNELoadW lw = (GNNELoadW)result["lw"];
+        TensorConst oldW = (TensorConst)result["old_w"];
+        GNNELoadW lwb = (GNNELoadW)result["lwb"];
+        TensorConst oldWb = (TensorConst)result["old_wb"];
+        GNNELoadW lact = (GNNELoadW)result["lact"];
+        TensorConst oldAct = (TensorConst)result["old_act"];
+        TensorConst convDwWeightsBiasQint = (TensorConst)result["conv_dw_weightsBiasQint8"];
+        TensorConst convDwActQint = (TensorConst)result["conv_dw_actQint8"];
+        TensorConst convDwDeqBias = (TensorConst)result["conv_dw_deqBias"];
+        TensorConst convDwShiftBits = (TensorConst)result["conv_dw_shiftBits"];
+        TensorConst convDwShiftBitsQint = (TensorConst)result["conv_dw_shiftBitsQint8"];
+        QuantizeParam convDwQint8Qp = ((TensorConst)result["conv_dw_qint8Qp"]).Value.ToScalar<QuantizeParam>();
+        TensorConst convDwPadding = (TensorConst)result["conv_dw_padding"];
+        TensorConst convDwStride = (TensorConst)result["conv_dw_stride"];
+        TensorConst convDwDilation = (TensorConst)result["conv_dw_dilation"];
+        TensorConst convDwGroups = (TensorConst)result["conv_dw_groups"];
+        TensorConst convDwIs16Quant = (TensorConst)result["conv_dw_is16Quant"];
+        TensorConst convDwPadValue = (TensorConst)result["conv_dw_padValue"];
+        TensorConst convDwWeightsQInt = (TensorConst)result["conv_dw_weightsQInt8"];
         return GetReplace(convDw, conv, st, q, ld, input, lw, oldW, lwb, oldWb, lact, oldAct,
             convDwWeightsBiasQint, convDwActQint, convDwDeqBias, convDwShiftBits, convDwShiftBitsQint,
             convDwQint8Qp, convDwPadding, convDwStride, convDwDilation, convDwGroups, convDwIs16Quant,

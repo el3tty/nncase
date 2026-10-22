@@ -27,9 +27,9 @@ public sealed class ProcessMatmulShiftBits : IRewriteRule
         return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEMatMul mm = (GNNEMatMul)__result["mm"];
-        return GetReplace(mm, __result, __context);
+        GNNEMatMul mm = (GNNEMatMul)result["mm"];
+        return GetReplace(mm, result, context);
     }
 }

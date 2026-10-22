@@ -30,7 +30,7 @@ internal sealed class GNNEFusionGroupMutator : FusionGroupMutator
         if (!_checked)
         {
             MultiFusionChecker multiFusionChecker = new MultiFusionChecker();
-            flag = multiFusionChecker.Check(mergedFusion, base.PassOptions);
+            flag = multiFusionChecker.Check(mergedFusion, PassOptions);
             if (flag)
             {
                 _checked = true;

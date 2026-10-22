@@ -11,13 +11,15 @@ namespace Nncase.Passes.Rules.K230;
 public static class FusionPattern
 {
     public static Pattern IsGNNEFusion<T>(string midName = "call", string beginName = "ld", string endName = "st",
-        string fusionName = "fusion") where T : Op
+        string fusionName = "fusion")
+        where T : Op
     {
         return Nncase.PatternMatch.Utility.IsFusion<T, GNNELoad, GNNEStore>(fusionName, "k230", endName, midName,
             beginName, "input");
     }
 
-    public static Pattern IsL1Fusion<T>() where T : Op
+    public static Pattern IsL1Fusion<T>()
+        where T : Op
     {
         return Nncase.PatternMatch.Utility.IsPairLayerFusion<GNNEConv2D, T, GNNELoad, GNNEStore>("k230", "call");
     }

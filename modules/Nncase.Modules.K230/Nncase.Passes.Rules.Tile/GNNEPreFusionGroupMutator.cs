@@ -24,7 +24,7 @@ internal sealed class GNNEPreFusionGroupMutator : FusionGroupMutator
     public override bool MergedFusionCheckCallBack(Fusion mergedFusion, HashSet<Fusion> candidateFusions)
     {
         L1FusionChecker l1FusionChecker = new L1FusionChecker();
-        bool flag = l1FusionChecker.Check(mergedFusion, base.PassOptions);
+        bool flag = l1FusionChecker.Check(mergedFusion, PassOptions);
         if (flag)
         {
             _fusioncheckerCache.Add(mergedFusion, l1FusionChecker);

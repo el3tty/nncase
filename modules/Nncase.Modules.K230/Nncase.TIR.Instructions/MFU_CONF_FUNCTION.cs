@@ -19,5 +19,5 @@ public enum MFU_CONF_FUNCTION : uint
     act1_conf_dest,
     act1_conf_deq,
     act1_conf_quant,
-    act1_conf
+    act1_conf,
 }

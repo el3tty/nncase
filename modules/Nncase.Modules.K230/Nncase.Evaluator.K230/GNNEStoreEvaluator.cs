@@ -47,7 +47,8 @@ public class GNNEStoreEvaluator : IEvaluator<GNNEStore>, IEvaluator, ITypeInfere
 
         // Strided copy of the whole tensor: slice [0, dim) on every axis with step = strides[axis].
         // The named arguments below are evaluated in this order (starts, ends, axes, data, steps).
-        return OrtKI.Slice(starts: Tensor.From(converted.Shape.Select((Dimension _) => 0L).ToArray()).ToOrtTensor(),
+        return OrtKI.Slice(
+            starts: Tensor.From(converted.Shape.Select((Dimension _) => 0L).ToArray()).ToOrtTensor(),
             ends: Tensor.From(((IEnumerable<Dimension>)converted.Shape)
                 .Select((Func<Dimension, long>)((Dimension dim) => dim.FixedValue)).ToArray()).ToOrtTensor(),
             axes: Tensor.From(((IEnumerable<Dimension>)converted.Shape)

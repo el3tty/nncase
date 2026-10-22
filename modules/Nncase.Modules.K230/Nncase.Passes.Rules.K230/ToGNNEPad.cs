@@ -17,10 +17,10 @@ namespace Nncase.Passes.Rules.K230;
 public class ToGNNEPad : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.NN.IsPad("pad", "call",
-        (Pad p) => p.PadMode == PadMode.Constant, Nncase.PatternMatch.Utility.IsWildcard("input")with
+        (Pad p) => p.PadMode == PadMode.Constant, Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (GNNETypePatternUtility.ValidDType() &
-                           TypePatternUtility.HasShape((Shape sp) => sp.Rank <= 4 && sp.IsFixed, "fixed gnne shape"))
+            TypePattern = GNNETypePatternUtility.ValidDType() &
+                           TypePatternUtility.HasShape((Shape sp) => sp.Rank <= 4 && sp.IsFixed, "fixed gnne shape"),
         }, Nncase.PatternMatch.Utility.IsTensorConst("pads"), Nncase.PatternMatch.Utility.IsTensorConst("value"));
 
     private Expr? GetReplace(Expr input, TensorConst pads, TensorConst value, Call call)
@@ -32,21 +32,23 @@ public class ToGNNEPad : RewriteRule<Pattern>
         int[] padValues = pads.Value.ToArray<int>();
         int[] paddings = Enumerable.Repeat(0, 8).ToArray();
         Array.Copy(padValues, 0, paddings, paddings.Length - padValues.Length, padValues.Length);
-        DataType dataType = ((input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType);
-        Expr input3 = ((value.Value.Rank == 0) ? value : value[0]);
+        DataType dataType = (input.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : input.CheckedDataType;
+        Expr input3 = (value.Value.Rank == 0) ? value : value[0];
         return Nncase.IR.F.Tensors.Reshape(
-            Nncase.IR.K230.F.Tensors.GNNEStore(call.CheckedDataType,
-                Nncase.IR.K230.F.Tensors.GNNEPad(Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, input2),
+            Nncase.IR.K230.F.Tensors.GNNEStore(
+                call.CheckedDataType,
+                Nncase.IR.K230.F.Tensors.GNNEPad(
+                    Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)dataType, input2),
                     Tensor.From(paddings, new int[2] { 4, 2 }),
                     Const.FromValue(Nncase.IR.F.Tensors.Cast(input3, dataType).Evaluate()))), call.CheckedShape);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr input = (Expr)__result["input"];
-        TensorConst pads = (TensorConst)__result["pads"];
-        TensorConst value = (TensorConst)__result["value"];
-        Call call = (Call)__result["call"];
+        Expr input = (Expr)result["input"];
+        TensorConst pads = (TensorConst)result["pads"];
+        TensorConst value = (TensorConst)result["value"];
+        Call call = (Call)result["call"];
         return GetReplace(input, pads, value, call);
     }
 }

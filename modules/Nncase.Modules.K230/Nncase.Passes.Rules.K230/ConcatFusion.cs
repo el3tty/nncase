@@ -27,9 +27,9 @@ internal sealed class ConcatFusion : FusionMaker
     {
         if (concat.Axis > 0)
         {
-            DataType midType = ((concatCall.CheckedDataType == DataTypes.Float32)
+            DataType midType = (concatCall.CheckedDataType == DataTypes.Float32)
                 ? DataTypes.Float16
-                : concatCall.CheckedDataType);
+                : concatCall.CheckedDataType;
             Var[] vars = (from i in tupleInputs.AsEnumerable()
                 select new Var(i.CheckedType)).ToArray();
             Expr[] fields = vars.Select((Var i) => Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)midType, i)).ToArray();
@@ -41,11 +41,11 @@ internal sealed class ConcatFusion : FusionMaker
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)__result["tupleInputs"];
-        Call concatCall = (Call)__result["concatCall"];
-        Concat concat = (Concat)__result["concat"];
+        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)result["tupleInputs"];
+        Call concatCall = (Call)result["concatCall"];
+        Concat concat = (Concat)result["concat"];
         return GetReplace(tupleInputs, concatCall, concat);
     }
 
@@ -54,11 +54,12 @@ internal sealed class ConcatFusion : FusionMaker
         Func<Concat, bool> condition = (Concat _) => true;
         Func<Pattern> creator = () => Nncase.PatternMatch.Utility.IsWildcard();
         Pattern = Nncase.PatternMatch.F.Tensors.IsConcat("concat", "concatCall", condition,
-                Nncase.PatternMatch.Utility.IsTuple("tuple",
+                Nncase.PatternMatch.Utility.IsTuple(
+                    "tuple",
                     Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", creator))) with
             {
-                TypePattern = (TypePatternUtility.IsFloat() & TypePatternUtility.HasRank(4) &
-                               TypePatternUtility.HasFixedShape())
+                TypePattern = TypePatternUtility.IsFloat() & TypePatternUtility.HasRank(4) &
+                               TypePatternUtility.HasFixedShape(),
             };
     }
 }

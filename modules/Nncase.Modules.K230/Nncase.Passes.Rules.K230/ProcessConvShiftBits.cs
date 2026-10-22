@@ -36,9 +36,9 @@ public sealed class ProcessConvShiftBits : IRewriteRule
         return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEConv2D conv = (GNNEConv2D)__result["conv"];
-        return GetReplace(conv, __result, __context);
+        GNNEConv2D conv = (GNNEConv2D)result["conv"];
+        return GetReplace(conv, result, context);
     }
 }

@@ -49,7 +49,8 @@ public class TileResize : RewriteRule<Pattern>
         SsrHandler ssr = new SsrHandler(GNNEEnv.SsrNum);
         CcrHandler ccrHandler = new CcrHandler();
         GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(actions, glb, ccrHandler, gpr, ssr);
-        TileUtilities.Assert(!resize.AlignCorners || !resize.HalfPixelCenters,
+        TileUtilities.Assert(
+            !resize.AlignCorners || !resize.HalfPixelCenters,
             "!(resize.AlignCorners && resize.HalfPixelCenters)",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAi2DResize.cs",
             51);
@@ -124,7 +125,7 @@ public class TileResize : RewriteRule<Pattern>
                         TileUtilities.Ai2dUtilKpuUpdateResizeParam(ld, st, resize, ref config);
                         List<int> sramChunkSizes = new List<int> { 0, 0 };
                         TileUtilities.Ai2dUtilResizeSramSearch(config, outputSegment, inputSegment, sramChunkSizes);
-                        int chunkSize = ((inputDataType == DataTypes.Int16) ? 2 : 4);
+                        int chunkSize = (inputDataType == DataTypes.Int16) ? 2 : 4;
                         List<Segment1D> chunksC =
                             TileUtilities.GetSegmentStartEndLength(segmentC.Start, chunkSize, segmentC.End);
                         List<Segment1D> chunksH =
@@ -135,16 +136,14 @@ public class TileResize : RewriteRule<Pattern>
                         {
                             List<CcrSet> ccrsToSet = new List<CcrSet>
                             {
-                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, pingPongIndex)),
-                                    (chunksC.Count * chunksH.Count *
-                                        chunksW.Count <= 1)
-                                        ? 1
-                                        : 2)
+                                new CcrSet(
+                                    ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, pingPongIndex)),
+                                    (chunksC.Count * chunksH.Count * chunksW.Count <= 1) ? 1 : 2),
                             };
                             int offsetD = 0;
                             List<int> stridesD = new List<int>
                             {
-                                inputSegment[1].Length, inputSegment[2].Length, inputSegment[3].Length
+                                inputSegment[1].Length, inputSegment[2].Length, inputSegment[3].Length,
                             };
                             gnneActionUpdater.UpdateLoadIf(inputSegment, ld, pingPongIndex, ddrIf, offsetD, stridesD,
                                 ItemName.Ifmap, ccrsToSet);
@@ -171,11 +170,11 @@ public class TileResize : RewriteRule<Pattern>
                                             config.OriginM(config.M0),
                                             config.OriginM(config.M1),
                                             config.OriginM(config.M3),
-                                            config.OriginM(config.M4)
+                                            config.OriginM(config.M4),
                                         };
                                         List<float> mBias = new List<float>
                                         {
-                                            config.OriginM(config.M2), config.OriginM(config.M5)
+                                            config.OriginM(config.M2), config.OriginM(config.M5),
                                         };
                                         List<float> startMapped = TileUtilities.Ai2dUtilMMulAdd(mScale, mBias, startPoint);
                                         List<float> endMapped = TileUtilities.Ai2dUtilMMulAdd(mScale, mBias, endPoint);
@@ -262,9 +261,9 @@ public class TileResize : RewriteRule<Pattern>
                                         int isLastChunkHW;
                                         if (chunkH == chunksH[chunksH.Count - 1])
                                         {
-                                            isLastChunkHW = ((chunkW == chunksW[chunksW.Count - 1])
+                                            isLastChunkHW = (chunkW == chunksW[chunksW.Count - 1])
                                                 ? 1
-                                                : 0);
+                                                : 0;
                                         }
                                         else
                                         {
@@ -302,7 +301,8 @@ public class TileResize : RewriteRule<Pattern>
                                     }
                                     else
                                     {
-                                        _r2GOfRec[pingPongIndex].Add(new Tuple<SegmentND, TensorStat>(outputSegment,
+                                        _r2GOfRec[pingPongIndex].Add(new Tuple<SegmentND, TensorStat>(
+                                            outputSegment,
                                             new TensorStat(isFirstSlice: false, isLastSlice: false)));
                                     }
                                 }
@@ -316,19 +316,21 @@ public class TileResize : RewriteRule<Pattern>
                             List<CcrSet> ofmapFakeCcrsToSet = new List<CcrSet>();
                             if ((needsOfmapFake ? 1 : 0) > (false ? 1 : 0))
                             {
-                                ofmapFakeCcrsToSet.Add(new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.OfmapFake, pingPongIndex)),
+                                ofmapFakeCcrsToSet.Add(new CcrSet(
+                                    ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.OfmapFake, pingPongIndex)),
                                     1));
                             }
 
                             List<CcrClr> ccrsToClr = new List<CcrClr>
                             {
-                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, pingPongIndex)))
+                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, pingPongIndex))),
                             };
                             gnneActionUpdater.UpdateStoreT(outputSegment, st, pingPongIndex, ddrOf, 0, null, ofmapFakeCcrsToSet, ccrsToClr);
                         }
                         else
                         {
-                            _ofmapRec[pingPongIndex].Add(new Tuple<SegmentND, TensorStat>(outputSegment,
+                            _ofmapRec[pingPongIndex].Add(new Tuple<SegmentND, TensorStat>(
+                                outputSegment,
                                 new TensorStat(isFirstSlice: false, isLastSlice: false)));
                         }
 
@@ -401,13 +403,13 @@ public class TileResize : RewriteRule<Pattern>
         TileUtilities.GetBytesPerElement(ld.CheckedDataType);
         TensorOnGlb ifmapTensor = new TensorOnGlb(new int[4] { n, c, h, w }, ld.CheckedDataType, 0);
         int ifmapBytes = ifmapTensor.GlbNByte;
-        ifmapBytes = (ifmapTensor.AllocatedBytes =
-            TileUtilities.GetAlignedNum(ifmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth));
+        ifmapBytes = ifmapTensor.AllocatedBytes =
+            TileUtilities.GetAlignedNum(ifmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
         ifmapBytes *= GNNEEnv.NPingPongSplit;
         TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, c, e, f }, st.CheckedDataType, 0);
         int ofmapBytes = ofmapTensor.GlbNByte;
-        ofmapBytes = (ofmapTensor.AllocatedBytes =
-            TileUtilities.GetAlignedNum(ofmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth));
+        ofmapBytes = ofmapTensor.AllocatedBytes =
+            TileUtilities.GetAlignedNum(ofmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
         ofmapBytes *= GNNEEnv.NPingPongSplit;
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
@@ -460,11 +462,11 @@ public class TileResize : RewriteRule<Pattern>
         }
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Call ld = (Call)__result["ld"];
-        Call st = (Call)__result["st"];
+        Call call = (Call)result["call"];
+        Call ld = (Call)result["ld"];
+        Call st = (Call)result["st"];
         return GetReplace(call, ld, st);
     }
 }

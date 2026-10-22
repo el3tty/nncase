@@ -16,7 +16,8 @@ public sealed class ProcessShiftBitsGNNEMatmul : IRewriteRule
 {
     private static readonly OrPattern _actPattern = Nncase.PatternMatch.Utility.IsAlt(
         Nncase.PatternMatch.Utility.IsTensorConst("act"),
-        Nncase.PatternMatch.F.Tensors.IsExpand(Nncase.PatternMatch.Utility.IsTensorConst("act"),
+        Nncase.PatternMatch.F.Tensors.IsExpand(
+            Nncase.PatternMatch.Utility.IsTensorConst("act"),
             Nncase.PatternMatch.Utility.IsWildcard("expand_shape")));
 
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsDynamicGNNEMatMul("dynamicGnneMatMul", null,
@@ -48,17 +49,17 @@ public sealed class ProcessShiftBitsGNNEMatmul : IRewriteRule
         return call;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        DynamicGNNEMatMul dynamicGnneMatMul = (DynamicGNNEMatMul)__result["dynamicGnneMatMul"];
-        Expr textExpr = (Expr)__result["text"];
-        Expr inputa = (Expr)__result["inputa"];
-        Expr inputb = (Expr)__result["inputb"];
-        Expr inputabias = (Expr)__result["inputabias"];
-        Expr inputbbias = (Expr)__result["inputbbias"];
-        Tensor<Half> act = ((TensorConst)__result["act"]).Value.Cast<Half>();
-        Expr dynamicchannel = (Expr)__result["dynamicchannel"];
+        DynamicGNNEMatMul dynamicGnneMatMul = (DynamicGNNEMatMul)result["dynamicGnneMatMul"];
+        Expr textExpr = (Expr)result["text"];
+        Expr inputa = (Expr)result["inputa"];
+        Expr inputb = (Expr)result["inputb"];
+        Expr inputabias = (Expr)result["inputabias"];
+        Expr inputbbias = (Expr)result["inputbbias"];
+        Tensor<Half> act = ((TensorConst)result["act"]).Value.Cast<Half>();
+        Expr dynamicchannel = (Expr)result["dynamicchannel"];
         return GetReplace(dynamicGnneMatMul, textExpr, inputa, inputb, inputabias, inputbbias, act, dynamicchannel,
-            __result, __context);
+            result, context);
     }
 }

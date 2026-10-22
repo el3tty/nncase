@@ -10,16 +10,13 @@ namespace Nncase.IR.K230;
 public sealed class FakeDynamicGNNEMatMul : Op, IEquatable<FakeDynamicGNNEMatMul?>
 {
     public static readonly ParameterInfo InputA = new ParameterInfo(typeof(FakeDynamicGNNEMatMul), 0, "input_a",
-        TypePatternUtility.HasRank((int r) => r >= 2 && r <= 4, "r >= 2 && r <= 4") &
-        TypePatternUtility.HasDataType(DataTypes.Float32));
+        TypePatternUtility.HasRank((int r) => r >= 2 && r <= 4, "r >= 2 && r <= 4") & TypePatternUtility.HasDataType(DataTypes.Float32));
 
     public static readonly ParameterInfo InputB = new ParameterInfo(typeof(FakeDynamicGNNEMatMul), 1, "input_b",
-        TypePatternUtility.HasRank((int r) => r >= 2 && r <= 4, "r >= 2 && r <= 4") &
-        TypePatternUtility.HasDataType(DataTypes.Float32));
+        TypePatternUtility.HasRank((int r) => r >= 2 && r <= 4, "r >= 2 && r <= 4") & TypePatternUtility.HasDataType(DataTypes.Float32));
 
     public static readonly ParameterInfo Act = new ParameterInfo(typeof(FakeDynamicGNNEMatMul), 2, "act",
-        TypePatternUtility.HasRank((int r) => r >= 1 && r <= 4, "r >= 1 && r <= 4") &
-        TypePatternUtility.HasDataType(DataTypes.Float32));
+        TypePatternUtility.HasRank((int r) => r >= 1 && r <= 4, "r >= 1 && r <= 4") & TypePatternUtility.HasDataType(DataTypes.Float32));
 
     public bool DynamicChannel { get; }
 

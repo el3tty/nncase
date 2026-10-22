@@ -129,7 +129,8 @@ public class TileLoadStore : RewriteRule<Pattern>
         TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, channelsPerPass, h, w }, _inputType, 0);
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.Basement));
         boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.IfmapBankWidth, value / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
@@ -155,7 +156,7 @@ public class TileLoadStore : RewriteRule<Pattern>
         GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(actions, glb, ccrHandler, gpr, ssr);
         gnneActionUpdater.UpdateMmuConf();
         int[] strides = ((TensorConst)_sof[GNNEStore.Strides]).Value.ToArray<int>();
-        Func<int, int, int, Segment1D> func = delegate(int start, int end, int dim)
+        Func<int, int, int, Segment1D> func = (start, end, dim) =>
         {
             int scaledStart = (int)Math.Ceiling(1.0 * (double)start / (double)strides[dim]);
             return new Segment1D(
@@ -187,7 +188,7 @@ public class TileLoadStore : RewriteRule<Pattern>
                             Segment1D scaledChannelSegment = func(channelSegment.Start, channelSegment.End, 1);
                             List<CcrSet> ccrsToSet = new List<CcrSet>
                             {
-                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, channelIndex)), 1)
+                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, channelIndex)), 1),
                             };
                             SegmentND tensor = new SegmentND(loadSegment[0], channelSegment, loadSegment[2], loadSegment[3]);
                             List<int> stridesD =
@@ -196,7 +197,7 @@ public class TileLoadStore : RewriteRule<Pattern>
                                 ccrsToSet);
                             List<CcrClr> ccrsToClr = new List<CcrClr>
                             {
-                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, channelIndex)))
+                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, channelIndex))),
                             };
                             SegmentND ofmap = new SegmentND(scaledSegment[0], scaledChannelSegment, scaledSegment[2], scaledSegment[3]);
                             SegmentND slice = new SegmentND(scaledSegment[0], scaledChannelSegment, scaledSegment[2], scaledSegment[3]);
@@ -219,10 +220,10 @@ public class TileLoadStore : RewriteRule<Pattern>
         return actions;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call ldCall = (Call)__result["ldCall"];
-        Call stCall = (Call)__result["stCall"];
+        Call ldCall = (Call)result["ldCall"];
+        Call stCall = (Call)result["stCall"];
         return GetReplace(ldCall, stCall);
     }
 }

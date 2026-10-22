@@ -54,8 +54,8 @@ public class ActFoldParam
 
     public ActFoldParam(int channels)
     {
-        Enumerable.Repeat(0, channels).Select((Func<int, float>)((int x) => x));
-        Enumerable.Repeat(1, channels).Select((Func<int, float>)((int x) => x));
+        _ = Enumerable.Repeat(0, channels).Select((Func<int, float>)((int x) => x));
+        _ = Enumerable.Repeat(1, channels).Select((Func<int, float>)((int x) => x));
         Xs = new float[1, channels];
         Ks = new float[2, channels];
         Bs = new float[2, channels];
@@ -77,7 +77,7 @@ public class ActFoldParam
 
     public void SetFusedClamp1(ValueRange<float> clamp)
     {
-        FusedClamp = (from _ in Enumerable.Range(0, Channels)
+        FusedClamp = (from i in Enumerable.Range(0, Channels)
             select new ValueRange<Half> { Min = (Half)clamp.Min, Max = (Half)clamp.Max }).ToArray();
     }
 }

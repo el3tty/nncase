@@ -27,19 +27,21 @@ public sealed class FuseQuantIntoConv : RewriteRule<Pattern>
         }
 
         ActParamBase actParamBase = FuseQuantHelper.FuseActAndQuant(quant, qp, conv.ActParam);
-        return Tensors.GNNEStore(quant.TargetType,
-            ReplaceUtility.ReplaceCallParams(conv.With((ActParam2)actParamBase, null, (PrimType)quant.TargetType),
+        return Tensors.GNNEStore(
+            quant.TargetType,
+            ReplaceUtility.ReplaceCallParams(
+                conv.With((ActParam2)actParamBase, null, (PrimType)quant.TargetType),
                 convCallParams, (GNNEConv2D.Act, GetReplaceHelper.LoadAct0((ActParam2)actParamBase))), stStrides);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Quantize quant = (Quantize)__result["quant"];
-        QuantParam qp = ((TensorConst)__result["qp"]).Value.ToScalar<QuantParam>();
-        Call st = (Call)__result["st"];
-        Expr stStrides = (Expr)__result["stStrides"];
-        GNNEConv2D conv = (GNNEConv2D)__result["conv"];
-        IReadOnlyList<Expr> convCallParams = (IReadOnlyList<Expr>)__result["convCallParams"];
-        return GetReplace(quant, qp, st, stStrides, conv, convCallParams, __context);
+        Quantize quant = (Quantize)result["quant"];
+        QuantParam qp = ((TensorConst)result["qp"]).Value.ToScalar<QuantParam>();
+        Call st = (Call)result["st"];
+        Expr stStrides = (Expr)result["stStrides"];
+        GNNEConv2D conv = (GNNEConv2D)result["conv"];
+        IReadOnlyList<Expr> convCallParams = (IReadOnlyList<Expr>)result["convCallParams"];
+        return GetReplace(quant, qp, st, stStrides, conv, convCallParams, context);
     }
 }

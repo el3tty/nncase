@@ -23,5 +23,5 @@ public enum FusionType
     L2IfSplitWPp,
     Matmul,
     Ai2dPad,
-    Ai2dResize
+    Ai2dResize,
 }

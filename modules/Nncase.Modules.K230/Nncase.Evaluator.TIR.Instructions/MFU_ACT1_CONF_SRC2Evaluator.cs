@@ -14,7 +14,7 @@ internal sealed class MFU_ACT1_CONF_SRC2Evaluator : ITypeInferencer<MFU_ACT1_CON
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_ACT1_CONF_SRC2 target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_ACT1_CONF_SRC2 target, bool iLmode)
     {
         return
             $"I.MFU_ACT1_CONF_SRC2(rleft_repeats: {target.rleft_repeats}, rshape: {target.rshape}, sid: {context.GetArgument(target, MFU_ACT1_CONF_SRC2.sid)}, source_type: {target.source_type}, funct5: {target.funct5})";

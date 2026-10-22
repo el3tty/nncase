@@ -12,6 +12,6 @@ public class NegToFakeActivation : UnaryToFakeActivation
 
     public override void ProcessActParam(ActParam2 actParam, int i)
     {
-        actParam.Ks[0, i] = (actParam.Ks[1, i] = -1f);
+        actParam.Ks[0, i] = actParam.Ks[1, i] = -1f;
     }
 }

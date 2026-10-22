@@ -11,11 +11,11 @@ namespace Nncase.Passes.Rules.K230;
 
 public abstract class GNNEDIFQuantRule : QuantRule
 {
-    public Expr InputA => (Expr)base.MatchResult["inputA"];
+    public Expr InputA => (Expr)MatchResult["inputA"];
 
-    public Expr InputB => (Expr)base.MatchResult["inputB"];
+    public Expr InputB => (Expr)MatchResult["inputB"];
 
-    public Expr Output => (Expr)base.MatchResult["output"];
+    public Expr Output => (Expr)MatchResult["output"];
 
     public ValueRange<float> InputARange { get; private set; }
 
@@ -25,7 +25,7 @@ public abstract class GNNEDIFQuantRule : QuantRule
     {
         get
         {
-            if (!(base.QuantType == DataTypes.Int16))
+            if (!(QuantType == DataTypes.Int16))
             {
                 return 8;
             }
@@ -36,7 +36,7 @@ public abstract class GNNEDIFQuantRule : QuantRule
 
     public ValueRange<float> GetValueRange(string name)
     {
-        if (base.MatchResult.GetValueOrDefault(name) is TensorConst tensorConst)
+        if (MatchResult.GetValueOrDefault(name) is TensorConst tensorConst)
         {
             float[] rangeValues = tensorConst.Value.ToArray<float>();
             return new ValueRange<float>(rangeValues[0], rangeValues[1]);
@@ -63,17 +63,17 @@ public abstract class GNNEDIFQuantRule : QuantRule
             input.InferenceType();
         }
 
-        if (base.ModelQuantMode == ModelQuantMode.UsePTQ)
+        if (ModelQuantMode == ModelQuantMode.UsePTQ)
         {
-            QuantMode quantMode = ((!(base.QuantType == DataTypes.UInt8))
+            QuantMode quantMode = (!(QuantType == DataTypes.UInt8))
                 ? QuantMode.SignedSymmetricMode
-                : QuantMode.UnsignedMode);
+                : QuantMode.UnsignedMode;
             QuantParam quantParam =
                 QuantUtility.GetQuantParam((name == "inputA") ? InputARange : InputBRange, QuantBits, quantMode);
-            Call input2 = Math.Quantize(input, quantParam, base.QuantType);
-            return Nncase.IR.K230.F.Tensors.GNNELoadIFDeq(base.QuantType, input2);
+            Call input2 = Math.Quantize(input, quantParam, QuantType);
+            return Nncase.IR.K230.F.Tensors.GNNELoadIFDeq(QuantType, input2);
         }
 
-        return Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)base.QuantType, input);
+        return Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)QuantType, input);
     }
 }

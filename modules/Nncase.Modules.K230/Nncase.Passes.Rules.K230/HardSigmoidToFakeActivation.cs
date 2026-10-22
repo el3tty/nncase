@@ -15,7 +15,7 @@ namespace Nncase.Passes.Rules.K230;
 public class HardSigmoidToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsHardSigmoid("hardSigmoid", "call", (HardSigmoid _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsWildcard("alpha"), Nncase.PatternMatch.Utility.IsWildcard("beta"));
 
     private Expr? GetReplace(Call call, Expr input, float alpha, float beta)
@@ -39,12 +39,12 @@ public class HardSigmoidToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        float alpha = ((TensorConst)__result["alpha"]).Value.ToScalar<float>();
-        float beta = ((TensorConst)__result["beta"]).Value.ToScalar<float>();
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        float alpha = ((TensorConst)result["alpha"]).Value.ToScalar<float>();
+        float beta = ((TensorConst)result["beta"]).Value.ToScalar<float>();
         return GetReplace(call, input, alpha, beta);
     }
 }

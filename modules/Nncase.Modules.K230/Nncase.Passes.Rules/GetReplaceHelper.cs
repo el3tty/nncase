@@ -25,7 +25,8 @@ public static class GetReplaceHelper
 
     public static Expr ToGNNEShape(Expr input)
     {
-        return Nncase.IR.F.Tensors.Reshape(input,
+        return Nncase.IR.F.Tensors.Reshape(
+            input,
             GNNETypePatternUtility.GetGNNEShape(input.CheckedShape.ToValueArray()));
     }
 
@@ -50,12 +51,14 @@ public static class GetReplaceHelper
         throw new InvalidOperationException("Expr is not a TensorCosnt");
     }
 
-    public static T[] ToArray<T>(Expr expr) where T : unmanaged, IEquatable<T>
+    public static T[] ToArray<T>(Expr expr)
+        where T : unmanaged, IEquatable<T>
     {
         return ToTensor(expr).ToArray<T>();
     }
 
-    public static T ToScalar<T>(Expr expr) where T : unmanaged, IEquatable<T>
+    public static T ToScalar<T>(Expr expr)
+        where T : unmanaged, IEquatable<T>
     {
         return ToTensor(expr).ToScalar<T>();
     }
@@ -71,7 +74,8 @@ public static class GetReplaceHelper
 
         static Func<Expr, Expr> WithLoadStoreImpl(Func<Expr, Expr> inCtor)
         {
-            return (Expr input) => Nncase.IR.K230.F.Tensors.GNNEStore(input.CheckedDataType,
+            return (Expr input) => Nncase.IR.K230.F.Tensors.GNNEStore(
+                input.CheckedDataType,
                 inCtor(Nncase.IR.K230.F.Tensors.GNNELoad(
                     (input.CheckedDataType == DataTypes.Float32)
                         ? DataTypes.Float16
@@ -133,25 +137,25 @@ public static class GetReplaceHelper
         ActFoldParam actFoldParam = new ActFoldParam(channels);
         for (int j = 0; j < channels; j++)
         {
-            float num4 = ((num == 1) ? act1Param.Ks[0, 0] : act1Param.Ks[0, j]);
-            float num5 = ((num == 1) ? act1Param.Ks[1, 0] : act1Param.Ks[1, j]);
-            float num6 = ((num == 1) ? act1Param.Bs[0, 0] : act1Param.Bs[0, j]);
-            float num7 = ((num == 1) ? act1Param.Bs[1, 0] : act1Param.Bs[1, j]);
-            float num8 = ((num == 1) ? act1Param.Xs[0, 0] : act1Param.Xs[0, j]);
-            float num9 = ((num == 1) ? act1Param.FusedClamp[0].Min : act1Param.FusedClamp[j].Min);
-            float num10 = ((num == 1) ? act1Param.FusedClamp[0].Max : act1Param.FusedClamp[j].Max);
+            float num4 = (num == 1) ? act1Param.Ks[0, 0] : act1Param.Ks[0, j];
+            float num5 = (num == 1) ? act1Param.Ks[1, 0] : act1Param.Ks[1, j];
+            float num6 = (num == 1) ? act1Param.Bs[0, 0] : act1Param.Bs[0, j];
+            float num7 = (num == 1) ? act1Param.Bs[1, 0] : act1Param.Bs[1, j];
+            float num8 = (num == 1) ? act1Param.Xs[0, 0] : act1Param.Xs[0, j];
+            float num9 = (num == 1) ? act1Param.FusedClamp[0].Min : act1Param.FusedClamp[j].Min;
+            float num10 = (num == 1) ? act1Param.FusedClamp[0].Max : act1Param.FusedClamp[j].Max;
             if (num8 >= act0Param.FusedClamp[j].Max)
             {
                 if (num4 > 0f)
                 {
-                    float num11 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                    float num11 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                         ? act0Param.FusedClamp[j].Max
-                        : (act0Param.FusedClamp[j].Max * num4 + num6));
-                    float num12 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                        : (act0Param.FusedClamp[j].Max * num4 + num6);
+                    float num12 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                         ? act0Param.FusedClamp[j].Min
-                        : (act0Param.FusedClamp[j].Min * num4 + num6));
-                    actFoldParam.FusedClamp[j].Max = ((num11 < num10) ? ((Half)num11) : ((Half)num10));
-                    actFoldParam.FusedClamp[j].Min = ((num12 > num9) ? ((Half)num12) : ((Half)num9));
+                        : (act0Param.FusedClamp[j].Min * num4 + num6);
+                    actFoldParam.FusedClamp[j].Max = (num11 < num10) ? ((Half)num11) : ((Half)num10);
+                    actFoldParam.FusedClamp[j].Min = (num12 > num9) ? ((Half)num12) : ((Half)num9);
                     if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                     {
                         return null;
@@ -159,14 +163,14 @@ public static class GetReplaceHelper
                 }
                 else if (num4 < 0f)
                 {
-                    float num13 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                    float num13 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                         ? (0f - act0Param.FusedClamp[j].Max)
-                        : (act0Param.FusedClamp[j].Max * num4 + num6));
-                    float num14 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                        : (act0Param.FusedClamp[j].Max * num4 + num6);
+                    float num14 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                         ? (0f - act0Param.FusedClamp[j].Min)
-                        : (act0Param.FusedClamp[j].Min * num4 + num6));
-                    actFoldParam.FusedClamp[j].Max = ((num14 < num10) ? ((Half)num14) : ((Half)num10));
-                    actFoldParam.FusedClamp[j].Min = ((num13 > num9) ? ((Half)num13) : ((Half)num9));
+                        : (act0Param.FusedClamp[j].Min * num4 + num6);
+                    actFoldParam.FusedClamp[j].Max = (num14 < num10) ? ((Half)num14) : ((Half)num10);
+                    actFoldParam.FusedClamp[j].Min = (num13 > num9) ? ((Half)num13) : ((Half)num9);
                     if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                     {
                         return null;
@@ -187,14 +191,14 @@ public static class GetReplaceHelper
                 {
                     if (num5 < 0f)
                     {
-                        float num15 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                        float num15 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                             ? (0f - act0Param.FusedClamp[j].Max)
-                            : (act0Param.FusedClamp[j].Max * num5 + num7));
-                        float num16 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                            : (act0Param.FusedClamp[j].Max * num5 + num7);
+                        float num16 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                             ? (0f - act0Param.FusedClamp[j].Min)
-                            : (act0Param.FusedClamp[j].Min * num5 + num7));
-                        actFoldParam.FusedClamp[j].Max = ((num16 < num10) ? ((Half)num16) : ((Half)num10));
-                        actFoldParam.FusedClamp[j].Min = ((num15 > num9) ? ((Half)num15) : ((Half)num9));
+                            : (act0Param.FusedClamp[j].Min * num5 + num7);
+                        actFoldParam.FusedClamp[j].Max = (num16 < num10) ? ((Half)num16) : ((Half)num10);
+                        actFoldParam.FusedClamp[j].Min = (num15 > num9) ? ((Half)num15) : ((Half)num9);
                         if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                         {
                             return null;
@@ -208,14 +212,14 @@ public static class GetReplaceHelper
                 }
                 else
                 {
-                    float num17 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                    float num17 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                         ? act0Param.FusedClamp[j].Max
-                        : (act0Param.FusedClamp[j].Max * num5 + num7));
-                    float num18 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                        : (act0Param.FusedClamp[j].Max * num5 + num7);
+                    float num18 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                         ? act0Param.FusedClamp[j].Min
-                        : (act0Param.FusedClamp[j].Min * num5 + num7));
-                    actFoldParam.FusedClamp[j].Max = ((num17 < num10) ? ((Half)num17) : ((Half)num10));
-                    actFoldParam.FusedClamp[j].Min = ((num18 > num9) ? ((Half)num18) : ((Half)num9));
+                        : (act0Param.FusedClamp[j].Min * num5 + num7);
+                    actFoldParam.FusedClamp[j].Max = (num17 < num10) ? ((Half)num17) : ((Half)num10);
+                    actFoldParam.FusedClamp[j].Min = (num18 > num9) ? ((Half)num18) : ((Half)num9);
                     if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                     {
                         return null;
@@ -237,10 +241,10 @@ public static class GetReplaceHelper
 
                     if (num5 > 0f)
                     {
-                        float num20 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                        float num20 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                             ? act0Param.FusedClamp[j].Max
-                            : (act0Param.FusedClamp[j].Max * num5 + num7));
-                        actFoldParam.FusedClamp[j].Max = ((num20 < num10) ? ((Half)num20) : ((Half)num10));
+                            : (act0Param.FusedClamp[j].Max * num5 + num7);
+                        actFoldParam.FusedClamp[j].Max = (num20 < num10) ? ((Half)num20) : ((Half)num10);
                         actFoldParam.FusedClamp[j].Min = (Half)num9;
                         if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                         {
@@ -249,11 +253,11 @@ public static class GetReplaceHelper
                     }
                     else if (num5 < 0f)
                     {
-                        float num21 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                        float num21 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                             ? (0f - act0Param.FusedClamp[j].Max)
-                            : (act0Param.FusedClamp[j].Max * num5 + num7));
+                            : (act0Param.FusedClamp[j].Max * num5 + num7);
                         actFoldParam.FusedClamp[j].Max = (Half)num10;
-                        actFoldParam.FusedClamp[j].Min = ((num21 > num9) ? ((Half)num21) : ((Half)num9));
+                        actFoldParam.FusedClamp[j].Min = (num21 > num9) ? ((Half)num21) : ((Half)num9);
                         if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                         {
                             return null;
@@ -267,14 +271,14 @@ public static class GetReplaceHelper
                 }
                 else if (num5 < 0f)
                 {
-                    float num22 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                    float num22 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                         ? (0f - act0Param.FusedClamp[j].Max)
-                        : (act0Param.FusedClamp[j].Max * num5 + num7));
-                    float num23 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                        : (act0Param.FusedClamp[j].Max * num5 + num7);
+                    float num23 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                         ? (0f - act0Param.FusedClamp[j].Min)
-                        : (act0Param.FusedClamp[j].Min * num4 + num6));
-                    actFoldParam.FusedClamp[j].Max = ((num23 < num10) ? ((Half)num23) : ((Half)num10));
-                    actFoldParam.FusedClamp[j].Min = ((num22 > num9) ? ((Half)num22) : ((Half)num9));
+                        : (act0Param.FusedClamp[j].Min * num4 + num6);
+                    actFoldParam.FusedClamp[j].Max = (num23 < num10) ? ((Half)num23) : ((Half)num10);
+                    actFoldParam.FusedClamp[j].Min = (num22 > num9) ? ((Half)num22) : ((Half)num9);
                     if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                     {
                         return null;
@@ -282,14 +286,14 @@ public static class GetReplaceHelper
                 }
                 else if (num5 > 0f)
                 {
-                    float num24 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                    float num24 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                         ? act0Param.FusedClamp[j].Max
-                        : (act0Param.FusedClamp[j].Max * num5 + num7));
-                    float num25 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                        : (act0Param.FusedClamp[j].Max * num5 + num7);
+                    float num25 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                         ? (0f - act0Param.FusedClamp[j].Min)
-                        : (act0Param.FusedClamp[j].Min * num4 + num6));
-                    float num26 = ((num24 > num25) ? num25 : num24);
-                    actFoldParam.FusedClamp[j].Max = ((num26 < num10) ? ((Half)num26) : ((Half)num10));
+                        : (act0Param.FusedClamp[j].Min * num4 + num6);
+                    float num26 = (num24 > num25) ? num25 : num24;
+                    actFoldParam.FusedClamp[j].Max = (num26 < num10) ? ((Half)num26) : ((Half)num10);
                     actFoldParam.FusedClamp[j].Min = (Half)num9;
                     if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                     {
@@ -298,10 +302,10 @@ public static class GetReplaceHelper
                 }
                 else if (num5 == 0f)
                 {
-                    float num27 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                    float num27 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                         ? (0f - act0Param.FusedClamp[j].Min)
-                        : (act0Param.FusedClamp[j].Min * num4 + num6));
-                    actFoldParam.FusedClamp[j].Max = ((num27 < num10) ? ((Half)num27) : ((Half)num10));
+                        : (act0Param.FusedClamp[j].Min * num4 + num6);
+                    actFoldParam.FusedClamp[j].Max = (num27 < num10) ? ((Half)num27) : ((Half)num10);
                     actFoldParam.FusedClamp[j].Min = (Half)num9;
                     if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                     {
@@ -311,14 +315,14 @@ public static class GetReplaceHelper
             }
             else if (num5 > 0f)
             {
-                float num28 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                float num28 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                     ? act0Param.FusedClamp[j].Max
-                    : (act0Param.FusedClamp[j].Max * num5 + num7));
-                float num29 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                    : (act0Param.FusedClamp[j].Max * num5 + num7);
+                float num29 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                     ? act0Param.FusedClamp[j].Min
-                    : (act0Param.FusedClamp[j].Min * num4 + num6));
-                actFoldParam.FusedClamp[j].Max = ((num28 < num10) ? ((Half)num28) : ((Half)num10));
-                actFoldParam.FusedClamp[j].Min = ((num29 > num9) ? ((Half)num29) : ((Half)num9));
+                    : (act0Param.FusedClamp[j].Min * num4 + num6);
+                actFoldParam.FusedClamp[j].Max = (num28 < num10) ? ((Half)num28) : ((Half)num10);
+                actFoldParam.FusedClamp[j].Min = (num29 > num9) ? ((Half)num29) : ((Half)num9);
                 if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                 {
                     return null;
@@ -326,15 +330,15 @@ public static class GetReplaceHelper
             }
             else if (num5 < 0f)
             {
-                float num30 = (double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
+                float num30 = double.IsPositiveInfinity(act0Param.FusedClamp[j].Max)
                     ? (0f - act0Param.FusedClamp[j].Max)
-                    : (act0Param.FusedClamp[j].Max * num5 + num7));
-                float num31 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                    : (act0Param.FusedClamp[j].Max * num5 + num7);
+                float num31 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                     ? act0Param.FusedClamp[j].Min
-                    : (act0Param.FusedClamp[j].Min * num4 + num6));
-                float num32 = ((num30 > num31) ? num30 : num31);
+                    : (act0Param.FusedClamp[j].Min * num4 + num6);
+                float num32 = (num30 > num31) ? num30 : num31;
                 actFoldParam.FusedClamp[j].Max = (Half)num10;
-                actFoldParam.FusedClamp[j].Min = ((num32 > num9) ? ((Half)num32) : ((Half)num9));
+                actFoldParam.FusedClamp[j].Min = (num32 > num9) ? ((Half)num32) : ((Half)num9);
                 if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                 {
                     return null;
@@ -342,11 +346,11 @@ public static class GetReplaceHelper
             }
             else if (num5 == 0f)
             {
-                float num33 = (double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
+                float num33 = double.IsNegativeInfinity(act0Param.FusedClamp[j].Min)
                     ? act0Param.FusedClamp[j].Min
-                    : (act0Param.FusedClamp[j].Min * num4 + num6));
+                    : (act0Param.FusedClamp[j].Min * num4 + num6);
                 actFoldParam.FusedClamp[j].Max = (Half)num10;
-                actFoldParam.FusedClamp[j].Min = ((num33 > num9) ? ((Half)num33) : ((Half)num9));
+                actFoldParam.FusedClamp[j].Min = (num33 > num9) ? ((Half)num33) : ((Half)num9);
                 if (actFoldParam.FusedClamp[j].Max < actFoldParam.FusedClamp[j].Min)
                 {
                     return null;
@@ -356,11 +360,11 @@ public static class GetReplaceHelper
 
         for (int k = 0; k < channels; k++)
         {
-            float num34 = ((num == 1) ? act1Param.Ks[0, 0] : act1Param.Ks[0, k]);
-            float num35 = ((num == 1) ? act1Param.Ks[1, 0] : act1Param.Ks[1, k]);
-            float num36 = ((num == 1) ? act1Param.Bs[0, 0] : act1Param.Bs[0, k]);
-            float num37 = ((num == 1) ? act1Param.Bs[1, 0] : act1Param.Bs[1, k]);
-            float num38 = ((num == 1) ? act1Param.Xs[0, 0] : act1Param.Xs[0, k]);
+            float num34 = (num == 1) ? act1Param.Ks[0, 0] : act1Param.Ks[0, k];
+            float num35 = (num == 1) ? act1Param.Ks[1, 0] : act1Param.Ks[1, k];
+            float num36 = (num == 1) ? act1Param.Bs[0, 0] : act1Param.Bs[0, k];
+            float num37 = (num == 1) ? act1Param.Bs[1, 0] : act1Param.Bs[1, k];
+            float num38 = (num == 1) ? act1Param.Xs[0, 0] : act1Param.Xs[0, k];
             if (num != 1)
             {
                 _ = act1Param.FusedClamp[k].Min;

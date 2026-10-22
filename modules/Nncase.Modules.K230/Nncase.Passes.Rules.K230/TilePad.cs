@@ -280,11 +280,11 @@ public class TilePad : RewriteRule<Pattern>
         throw new ArgumentOutOfRangeException(checkedDataType.GetDisplayName());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Call ld = (Call)__result["ld"];
-        Call st = (Call)__result["st"];
+        Call call = (Call)result["call"];
+        Call ld = (Call)result["ld"];
+        Call st = (Call)result["st"];
         return GetReplace(call, ld, st);
     }
 }

@@ -40,7 +40,8 @@ public class TileSplit : RewriteRule<Pattern>
     private int _axis;
 
     public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsFusion("fusion", "k230",
-        Nncase.PatternMatch.Utility.IsTuple("tuple",
+        Nncase.PatternMatch.Utility.IsTuple(
+            "tuple",
             Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", () => Nncase.PatternMatch.Utility.IsWildcard())),
         Nncase.PatternMatch.Utility.IsVArgsRepeat(() => Nncase.PatternMatch.Utility.IsVar()));
 
@@ -82,7 +83,8 @@ public class TileSplit : RewriteRule<Pattern>
         _outputTypes = _sofs.Select((Call i) => i.CheckedDataType).ToArray();
         _inputShape = new GNNEShape(_lif.CheckedShape[0].FixedValue, _lif.CheckedShape[1].FixedValue,
             _lif.CheckedShape[2].FixedValue, _lif.CheckedShape[3].FixedValue);
-        _outputShapes = _sofs.Select((Call i) => new GNNEShape(i.CheckedShape[0].FixedValue,
+        _outputShapes = _sofs.Select((Call i) => new GNNEShape(
+            i.CheckedShape[0].FixedValue,
             i.CheckedShape[1].FixedValue, i.CheckedShape[2].FixedValue, i.CheckedShape[3].FixedValue)).ToArray();
         _ = _inputShape.Dims[0];
         _axis = ((TensorConst)call[Split.Axis]).Value.ToScalar<int>();
@@ -152,7 +154,8 @@ public class TileSplit : RewriteRule<Pattern>
         TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, channelsPerPass, h, w }, _inputType, 0);
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.Basement));
         boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.IfmapBankWidth, value / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
@@ -173,7 +176,7 @@ public class TileSplit : RewriteRule<Pattern>
     {
         List<GnneAction> actions = new List<GnneAction>();
         int[] strides = ((TensorConst)_sofs[0][GNNEStore.Strides]).Value.ToArray<int>();
-        Func<int, int, int, Segment1D> func = delegate(int start, int end, int dim)
+        Func<int, int, int, Segment1D> func = (start, end, dim) =>
         {
             int scaledStart = (int)Math.Ceiling(1.0 * (double)start / (double)strides[dim]);
             return new Segment1D(
@@ -230,7 +233,7 @@ public class TileSplit : RewriteRule<Pattern>
                             SegmentND slice = new SegmentND(segmentN, shiftedC, shiftedH, shiftedW);
                             List<CcrSet> ccrsToSet = new List<CcrSet>
                             {
-                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1)
+                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1),
                             };
                             SegmentND tensor = slice;
                             List<int> stridesS = new int[3] { _inputShape[1], _inputShape[2], _inputShape[3] }.ToList();
@@ -241,12 +244,12 @@ public class TileSplit : RewriteRule<Pattern>
                                 ItemName.Ifmap, ccrsToSet, null, h2c: false, 0, stridesS, shape);
                             List<CcrClr> ccrsToClr = new List<CcrClr>
                             {
-                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)))
+                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex))),
                             };
                             SegmentND storeSegment = ofmapSegment;
                             List<int> stridesD = new int[3]
                             {
-                                storeSegment[1].Length, storeSegment[2].Length, storeSegment[3].Length
+                                storeSegment[1].Length, storeSegment[2].Length, storeSegment[3].Length,
                             }.ToList();
                             gnneActionUpdater.UpdateStoreT(storeSegment, _sofs[outputIndex], ifmapIndex, ddrOfs[outputIndex], 0, null, null,
                                 ccrsToClr, ItemName.Ofmap, null, stridesD);
@@ -264,9 +267,9 @@ public class TileSplit : RewriteRule<Pattern>
         return actions;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)__result["tupleInputs"];
+        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)result["tupleInputs"];
         return GetReplace(tupleInputs);
     }
 }

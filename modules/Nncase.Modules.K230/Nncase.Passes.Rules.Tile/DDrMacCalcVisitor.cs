@@ -16,7 +16,7 @@ namespace Nncase.Passes.Rules.Tile;
 
 internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
 {
-    public Fusion EntryFusion => (Fusion)base.VisitRoot;
+    public Fusion EntryFusion => (Fusion)VisitRoot;
 
     public string FusionName { get; }
 
@@ -31,22 +31,16 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
 
     protected override Unit DefaultVisitLeaf(Expr expr)
     {
-        //IL_0002: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0008: Unknown result type (might be due to invalid IL or missing references)
         return default(Unit);
     }
 
     protected override Unit VisitLeafFusion(Fusion fusion)
     {
-        //IL_0002: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0008: Unknown result type (might be due to invalid IL or missing references)
         return default(Unit);
     }
 
     protected override Unit VisitLeafCall(Call call)
     {
-        //IL_1ade: Unknown result type (might be due to invalid IL or missing references)
-        //IL_1ae4: Unknown result type (might be due to invalid IL or missing references)
         if (!FusionMacsMap.TryGetValue(FusionName, out RoofLineInfo value))
         {
             value = new RoofLineInfo();
@@ -107,7 +101,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                                     num3 = (long)CostUtility.GetMemoryAccess(
                                                                         call[GNNEPdp0Reduce.Input].CheckedType,
                                                                         call.CheckedType);
-                                                                    value.AddOperator("GNNEPdp0Reduce",
+                                                                    value.AddOperator(
+                                                                        "GNNEPdp0Reduce",
                                                                         call[GNNEPdp0Reduce.Input].CheckedShape
                                                                             .Select((Dimension x) =>
                                                                                 (" ", (ulong)x.FixedValue)).ToArray());
@@ -117,7 +112,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                             {
                                                                 num3 = (long)CostUtility.GetMemoryAccess(
                                                                     call[GNNEPad.Input].CheckedType, call.CheckedType);
-                                                                value.AddOperator("GNNEPad",
+                                                                value.AddOperator(
+                                                                    "GNNEPad",
                                                                     call[GNNEPad.Input].CheckedShape
                                                                         .Select((Dimension x) =>
                                                                             (" ", (ulong)x.FixedValue)).ToArray());
@@ -150,14 +146,14 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                                     .CheckedType) * array[1] * array[2];
                                                             Shape shape = new int[4]
                                                             {
-                                                                array2[1], array2[2], array[1], array[2]
+                                                                array2[1], array2[2], array[1], array[2],
                                                             };
                                                             long num15 =
                                                                 (long)CostUtility.GetMemoryAccess(
                                                                     new TensorType(DataTypes.Float16, shape));
                                                             Shape shape2 = new int[4]
                                                             {
-                                                                array3[1], array3[2], array[1], array[2]
+                                                                array3[1], array3[2], array[1], array[2],
                                                             };
                                                             long num16 =
                                                                 (long)CostUtility.GetMemoryAccess(
@@ -191,7 +187,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                             num2 = (ulong)(uInt2 * uInt7 * uInt8 *
                                                                            ((byte)4 * uInt6 * uInt5 +
                                                                             (byte)4 * uInt6 * uInt6));
-                                                            value.AddOperator("GNNELSTM",
+                                                            value.AddOperator(
+                                                                "GNNELSTM",
                                                                 call[GNNELSTM.Input].CheckedShape
                                                                     .Select((Dimension x) => (" ", (ulong)x.FixedValue))
                                                                     .ToArray());
@@ -201,7 +198,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                     {
                                                         num3 = (long)CostUtility.GetMemoryAccess(
                                                             call[Ai2dResize.Input].CheckedType, call.CheckedType);
-                                                        value.AddOperator("Ai2dResize",
+                                                        value.AddOperator(
+                                                            "Ai2dResize",
                                                             call[Ai2dResize.Input].CheckedShape.Select((Dimension x) =>
                                                                 (" ", (ulong)x.FixedValue)).ToArray());
                                                     }
@@ -211,7 +209,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                             {
                                                 num3 = (long)CostUtility.GetMemoryAccess(
                                                     call[GNNETranspose.Input].CheckedType, call.CheckedType);
-                                                value.AddOperator("GNNETranspose",
+                                                value.AddOperator(
+                                                    "GNNETranspose",
                                                     call[GNNETranspose.Input].CheckedShape
                                                         .Select((Dimension x) => (" ", (ulong)x.FixedValue)).ToArray());
                                             }
@@ -231,23 +230,27 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                 call[GNNEActivation.InputA].CheckedType,
                                                 call[GNNEActivation.InputB].CheckedType, call.CheckedType);
                                             num3 += (flag2 ? num10 : 0) + (flag ? (num8 * 2) : (num8 * 3));
-                                            value.AddOperator("GNNEActivation",
+                                            value.AddOperator(
+                                                "GNNEActivation",
                                                 call[GNNEActivation.InputA].CheckedShape
                                                     .Select((Dimension x) => (" ", (ulong)x.FixedValue)).ToArray());
                                         }
                                     }
                                     else
                                     {
-                                        num3 = (long)CostUtility.GetMemoryAccess(call[GNNEPdp1.Input].CheckedType,
+                                        num3 = (long)CostUtility.GetMemoryAccess(
+                                            call[GNNEPdp1.Input].CheckedType,
                                             call.CheckedType);
-                                        value.AddOperator("GNNEPdp1",
+                                        value.AddOperator(
+                                            "GNNEPdp1",
                                             call[GNNEPdp1.Input].CheckedShape
                                                 .Select((Dimension x) => (" ", (ulong)x.FixedValue)).ToArray());
                                     }
                                 }
                                 else
                                 {
-                                    ulong num17 = call.CheckedShape.Aggregate(0uL,
+                                    ulong num17 = call.CheckedShape.Aggregate(
+                                        0uL,
                                         (ulong sum, Dimension x) => sum * (ulong)x.FixedValue);
                                     num = (ulong)call[GNNEMatMul.InputA].CheckedShape[3].FixedValue * num17;
                                     ulong[] array4 = call[GNNEMatMul.InputA].CheckedShape
@@ -260,7 +263,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                           array6[^1]) *
                                                    (long)call[GNNEMatMul.InputA].CheckedDataType.SizeInBytes *
                                                    call[GNNEMatMul.InputB].CheckedDataType.SizeInBytes);
-                                    num3 = (long)CostUtility.GetMemoryAccess(call[GNNEMatMul.InputA].CheckedType,
+                                    num3 = (long)CostUtility.GetMemoryAccess(
+                                        call[GNNEMatMul.InputA].CheckedType,
                                         call[GNNEMatMul.InputB].CheckedType, call.CheckedType);
                                     num3 += (long)Math.Max(array4[0] * array4[1], array5[0] * array5[1]) *
                                             (long)Math.Ceiling((double)array4[3] / (double)GNNEEnv.PuHeight) *
@@ -270,11 +274,11 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                     value.AddOperator("GNNEMatMul", (from x in array4.SkipLast(2)
                                         select (" ", x)).Concat(new (string, ulong)[2]
                                     {
-                                        ("N", array4[^2]), ("K", array4[^1])
+                                        ("N", array4[^2]), ("K", array4[^1]),
                                     }).Concat((from x in array5.SkipLast(2)
                                         select (" ", x)).Concat(new (string, ulong)[2]
                                     {
-                                        ("K", array5[^2]), ("M", array5[^1])
+                                        ("K", array5[^2]), ("M", array5[^1]),
                                     })).ToArray());
                                 }
                             }
@@ -294,7 +298,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                       array9[2] * array9[3]) *
                                                (long)call[GNNEPdp0DW.Input].CheckedDataType.SizeInBytes *
                                                call[GNNEPdp0DW.Weights].CheckedDataType.SizeInBytes);
-                                num3 = (long)CostUtility.GetMemoryAccess(call[GNNEPdp0DW.Input].CheckedType,
+                                num3 = (long)CostUtility.GetMemoryAccess(
+                                    call[GNNEPdp0DW.Input].CheckedType,
                                     call[GNNEPdp0DW.Weights].CheckedType, call[GNNEPdp0DW.Act].CheckedType,
                                     call.CheckedType);
                                 num3 += (long)Math.Ceiling((double)array8[1] / (double)GNNEEnv.PuHeight) *
@@ -303,7 +308,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                 num3 += (long)Math.Ceiling((double)array7[1] / (double)GNNEEnv.PuHeight) *
                                         (long)Math.Ceiling((double)array7[2] * (double)array7[3] /
                                                            (double)(GNNEEnv.PsumL1ElePerChan / 2)) * num8;
-                                num7 = -(long)CostUtility.GetMemoryAccess(call[GNNEPdp0DW.WeightsQInt8].CheckedType,
+                                num7 = -(long)CostUtility.GetMemoryAccess(
+                                    call[GNNEPdp0DW.WeightsQInt8].CheckedType,
                                     call[GNNEPdp0DW.WeightsBiasQint8].CheckedType,
                                     call[GNNEPdp0DW.ActQint8].CheckedType);
                                 value.AddOperator("GNNEPdp0DW", ("B", array8[0]), ("OC", 1uL), ("IC", array9[0]),
@@ -327,7 +333,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                   array12[2] * array12[3]) *
                                            (long)call[GNNEConv2DTranspose.Input].CheckedDataType.SizeInBytes *
                                            call[GNNEConv2DTranspose.Weights].CheckedDataType.SizeInBytes);
-                            num3 = (long)CostUtility.GetMemoryAccess(call[GNNEConv2DTranspose.Input].CheckedType,
+                            num3 = (long)CostUtility.GetMemoryAccess(
+                                call[GNNEConv2DTranspose.Input].CheckedType,
                                 call[GNNEConv2DTranspose.Weights].CheckedType,
                                 call[GNNEConv2DTranspose.Act].CheckedType, call.CheckedType);
                             num3 += (long)array11[0] *
@@ -367,10 +374,10 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                      call6.Target is GNNEPdp0DW;
                         bool flag5 = call[GNNEConv2D.Input] is Call call7 && call7.Target is GNNELoad &&
                                      call.Users.ElementAt(0) is Call call8 && call8.Target is GNNEStore;
-                        ulong num21 = (flag3
+                        ulong num21 = flag3
                             ? (array13[1] * array14[2] * array14[3] * array15[2] * array15[3] +
                                array13[1] * array15[1] * array15[2] * array15[3])
-                            : (array13[1] * array14[2] * array14[3] * array15[1] * array15[2] * array15[3]));
+                            : (array13[1] * array14[2] * array14[3] * array15[1] * array15[2] * array15[3]);
                         int num22 = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
                         int num23 = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
                         int num24 = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
@@ -393,13 +400,14 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                        (long)call[GNNEConv2D.Input].CheckedDataType.SizeInBytes *
                                        call[GNNEConv2D.Weights].CheckedDataType.SizeInBytes);
                         num = num21;
-                        num3 = (long)CostUtility.GetMemoryAccess(call[GNNEConv2D.Weights].CheckedType,
+                        num3 = (long)CostUtility.GetMemoryAccess(
+                            call[GNNEConv2D.Weights].CheckedType,
                             call[GNNEConv2D.Act].CheckedType, call.CheckedType);
                         num3 += (long)CostUtility.GetMemoryAccess(call[GNNEConv2D.Input].CheckedType) *
                                 (long)Math.Ceiling((double)array14[0] / (double)GNNEEnv.PuWidth);
                         if (flag6)
                         {
-                            num3 = ((array13[0] > 1 && array13[2] == 1 && array13[3] == 1)
+                            num3 = (array13[0] > 1 && array13[2] == 1 && array13[3] == 1)
                                 ? (num3 + (long)Math.Ceiling((double)array14[0] / (double)GNNEEnv.PuWidth) *
                                     (long)Math.Ceiling((double)array14[1] / (double)GNNEEnv.PuHeight) * num8)
                                 : ((!flag4)
@@ -410,13 +418,13 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                     : (num3 + (long)array13[0] *
                                         (long)Math.Ceiling((double)array14[0] / (double)GNNEEnv.PuWidth) *
                                         (long)Math.Ceiling((double)array13[2] * (double)array13[3] /
-                                            (double)GNNEEnv.PsumL1ElePerChan * 2.0) * num8)));
+                                            (double)GNNEEnv.PsumL1ElePerChan * 2.0) * num8));
                         }
                         else
                         {
                             if (flag3)
                             {
-                                num3 = ((!flag4)
+                                num3 = (!flag4)
                                     ? (num3 + (long)array13[0] *
                                         (long)Math.Ceiling((double)array13[1] / (double)GNNEEnv.PuHeight) *
                                         (long)Math.Ceiling((double)array13[2] * (double)array13[3] /
@@ -424,7 +432,7 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                     : (num3 + (long)array13[0] *
                                         (long)Math.Ceiling((double)array13[1] / (double)GNNEEnv.PuHeight) *
                                         (long)Math.Ceiling((double)array13[2] * (double)array13[3] /
-                                            (double)GNNEEnv.PsumL1ElePerChan * 2.0) * num8));
+                                            (double)GNNEEnv.PsumL1ElePerChan * 2.0) * num8);
                             }
                             else if (flag4)
                             {
@@ -436,10 +444,10 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                             }
                             else
                             {
-                                long num26 = ((array14[3] > 31)
+                                long num26 = (array14[3] > 31)
                                     ? ((long)Math.Ceiling((double)TileUtilities.GetAlignedNum((int)array14[3], 31) /
                                         (double)GNNEEnv.PuKernelSpad * 2.0))
-                                    : 1);
+                                    : 1;
                                 num3 += (long)array13[0] *
                                         (long)Math.Ceiling((double)array13[1] / (double)GNNEEnv.PuHeight) *
                                         (long)Math.Ceiling((double)array14[0] / (double)GNNEEnv.PuWidth) * num26 *
@@ -447,11 +455,12 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                                            (double)GNNEEnv.PsumL1ElePerChan) * num8;
                             }
 
-                            num3 *= ((!flag5) ? 1 : 12);
+                            num3 *= (!flag5) ? 1 : 12;
                         }
 
                         num3 += (long)Math.Ceiling((double)array15[1] / (double)GNNEEnv.PuWidth) * num8;
-                        num7 = -(long)CostUtility.GetMemoryAccess(call[GNNEConv2D.WeightsQInt8].CheckedType,
+                        num7 = -(long)CostUtility.GetMemoryAccess(
+                            call[GNNEConv2D.WeightsQInt8].CheckedType,
                             call[GNNEConv2D.WeightsBiasQint8].CheckedType, call[GNNEConv2D.ActQint8].CheckedType);
                         value.AddOperator("GNNEConv2D", ("B", array13[0]), ("OC", array14[0]), ("IC", array14[1]),
                             ("OH", array15[2]), ("OW", array15[3]), ("KH", array14[2]), ("KW", array14[3]));

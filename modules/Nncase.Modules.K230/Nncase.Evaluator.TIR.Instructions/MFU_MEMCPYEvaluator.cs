@@ -14,7 +14,7 @@ internal sealed class MFU_MEMCPYEvaluator : ITypeInferencer<MFU_MEMCPY>, ITypeIn
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_MEMCPY target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_MEMCPY target, bool iLmode)
     {
         return
             $"I.MFU_MEMCPY(raddr_d: {target.raddr_d}, raddr_s: {target.raddr_s}, rstride_d: {target.rstride_d}, rstride_s: {target.rstride_s}, rshape: {target.rshape})";

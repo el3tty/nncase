@@ -13,7 +13,7 @@ internal sealed class JALEvaluator : ITypeInferencer<JAL>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, JAL target, bool ILmode)
+    public string Visit(IIRPrinterContext context, JAL target, bool iLmode)
     {
         return $"I.JAL(rd: {target.rd}, offset: {context.GetArgument(target, JAL.offset)})";
     }

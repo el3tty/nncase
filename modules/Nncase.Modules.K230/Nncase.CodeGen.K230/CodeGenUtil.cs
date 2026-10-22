@@ -12,7 +12,8 @@ namespace Nncase.CodeGen.K230;
 
 public static class CodeGenUtil
 {
-    public static List<int> ToStackArgs(IEnumerable<Nncase.TIR.Buffer> parameters,
+    public static List<int> ToStackArgs(
+        IEnumerable<Nncase.TIR.Buffer> parameters,
         IReadOnlyDictionary<Nncase.TIR.Buffer, (uint Start, uint Seg_offset, uint Size)>? allocation = null,
         IReadOnlyDictionary<Nncase.TIR.Buffer, int>? constBufferMap = null)
     {
@@ -59,7 +60,8 @@ public static class CodeGenUtil
     {
         Func<Tensor, TensorType> selector = (Tensor t) =>
             (t.Rank == 0) ? TensorType.Scalar(t.ElementType) : new TensorType(t.ElementType, t.Shape);
-        return new CallableType(new TupleType(outputs.Select(selector)),
+        return new CallableType(
+            new TupleType(outputs.Select(selector)),
             new IRArray<IRType>((IEnumerable<IRType>)inputs.Select(selector)));
     }
 

@@ -5,13 +5,13 @@ namespace Nncase.CodeGen.K230;
 
 internal class DdrRegionStartInfo
 {
-    public uint input;
+    public uint Input { get; set; }
 
-    public uint output;
+    public uint Output { get; set; }
 
-    public uint rdata;
+    public uint Rdata { get; set; }
 
-    public uint data;
+    public uint Data { get; set; }
 
-    public uint text;
+    public uint Text { get; set; }
 }

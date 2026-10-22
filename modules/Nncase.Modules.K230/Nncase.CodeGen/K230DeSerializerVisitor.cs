@@ -38,7 +38,6 @@ public class K230DeSerializerVisitor
         _other_bw = new ulong[2];
     }
 
-
     private static ulong DDrTypeSizeInByte(DDR_DATATYPE dtype)
     {
         return dtype switch
@@ -49,7 +48,7 @@ public class K230DeSerializerVisitor
             DDR_DATATYPE.i4 => 1UL, // packed
             DDR_DATATYPE.i6 => 1UL, // packed
             DDR_DATATYPE.i16 => 2UL,
-            _ => throw new ArgumentOutOfRangeException(nameof(dtype), dtype, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(dtype), dtype, null),
         };
     }
 
@@ -58,7 +57,7 @@ public class K230DeSerializerVisitor
         return (ulong)TensorUtilities.GetProduct(new int[4]
         {
             (int)_shape_regs[(uint)reg, 0], (int)_shape_regs[(uint)reg, 1], (int)_shape_regs[(uint)reg, 2],
-            (int)_shape_regs[(uint)reg, 3]
+            (int)_shape_regs[(uint)reg, 3],
         }) * DDrTypeSizeInByte(dtype);
     }
 
@@ -94,7 +93,7 @@ public class K230DeSerializerVisitor
     {
         ulong[] array = new ulong[2]
         {
-            _if_bw[0] + _w_bw[0] + _of_bw[0] + _other_bw[0], _if_bw[1] + _w_bw[1] + _of_bw[1] + _other_bw[1]
+            _if_bw[0] + _w_bw[0] + _of_bw[0] + _other_bw[0], _if_bw[1] + _w_bw[1] + _of_bw[1] + _other_bw[1],
         };
         bwWriter.WriteLine(
             $"ddr bandwidth(total if w of other): {array[0]}\t{_if_bw[0]}\t{_w_bw[0]}\t{_of_bw[0]}\t{_other_bw[0]}");
@@ -181,7 +180,7 @@ public class K230DeSerializerVisitor
         stringBuilder5.AppendLine(ref handler);
         pc_offset += 32uL;
         uint num2 = _gp_regs[(uint)gP_REGISTER2];
-        int num3 = ((((num >> 11) & 1) == 1) ? (num - 4096) : num);
+        int num3 = (((num >> 11) & 1) == 1) ? (num - 4096) : num;
         _gp_regs[(uint)gP_REGISTER] = (uint)num3 + num2;
         return stringBuilder.ToString();
     }
@@ -224,6 +223,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = num13 + num14;
                     return stringBuilder26.ToString();
                 }
+
             case ARITHMETIC_FUNCTION.sub:
                 {
                     GP_REGISTER gP_REGISTER8 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -256,6 +256,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = num11 - num12;
                     return stringBuilder22.ToString();
                 }
+
             case ARITHMETIC_FUNCTION.mul:
                 {
                     GP_REGISTER gP_REGISTER7 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -288,6 +289,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = num9 * num10;
                     return stringBuilder18.ToString();
                 }
+
             case ARITHMETIC_FUNCTION.div:
                 {
                     GP_REGISTER gP_REGISTER6 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -320,6 +322,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = (uint)((int)num7 / (int)num8);
                     return stringBuilder14.ToString();
                 }
+
             case ARITHMETIC_FUNCTION.divu:
                 {
                     GP_REGISTER gP_REGISTER5 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -352,6 +355,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = num5 / num6;
                     return stringBuilder10.ToString();
                 }
+
             case ARITHMETIC_FUNCTION.rem:
                 {
                     GP_REGISTER gP_REGISTER4 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -384,6 +388,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = (uint)((int)num3 % (int)num4);
                     return stringBuilder6.ToString();
                 }
+
             case ARITHMETIC_FUNCTION.remu:
                 {
                     GP_REGISTER gP_REGISTER3 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -416,6 +421,7 @@ public class K230DeSerializerVisitor
                     _gp_regs[(uint)gP_REGISTER] = num % num2;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -455,6 +461,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder18.ToString();
                 }
+
             case LOAD_FUNCTION.lh:
                 {
                     int value6 = reader.Read<int>(12uL);
@@ -483,6 +490,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder14.ToString();
                 }
+
             case LOAD_FUNCTION.lhu:
                 {
                     int value5 = reader.Read<int>(12uL);
@@ -511,6 +519,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder10.ToString();
                 }
+
             case LOAD_FUNCTION.lb:
                 {
                     int value4 = reader.Read<int>(12uL);
@@ -539,6 +548,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder6.ToString();
                 }
+
             case LOAD_FUNCTION.lbu:
                 {
                     int value3 = reader.Read<int>(12uL);
@@ -567,6 +577,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -606,6 +617,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder10.ToString();
                 }
+
             case STORE_FUNCTION.sh:
                 {
                     int value4 = reader.Read<int>(12uL);
@@ -634,6 +646,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder6.ToString();
                 }
+
             case STORE_FUNCTION.sb:
                 {
                     int value3 = reader.Read<int>(12uL);
@@ -662,6 +675,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -701,6 +715,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder22.ToString();
                 }
+
             case BRANCH_FUNCTION.bne:
                 {
                     int value7 = reader.Read<int>(12uL);
@@ -729,6 +744,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder18.ToString();
                 }
+
             case BRANCH_FUNCTION.blt:
                 {
                     int value6 = reader.Read<int>(12uL);
@@ -757,6 +773,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder14.ToString();
                 }
+
             case BRANCH_FUNCTION.bltu:
                 {
                     int value5 = reader.Read<int>(12uL);
@@ -785,6 +802,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder10.ToString();
                 }
+
             case BRANCH_FUNCTION.bge:
                 {
                     int value4 = reader.Read<int>(12uL);
@@ -813,6 +831,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder6.ToString();
                 }
+
             case BRANCH_FUNCTION.bgeu:
                 {
                     int value3 = reader.Read<int>(12uL);
@@ -841,6 +860,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -1539,6 +1559,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder22.ToString();
                 }
+
             case DM_CONF_FUNCTION.load_w_conf:
                 {
                     int value8 = reader.Read<int>(5uL);
@@ -1581,6 +1602,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder16.ToString();
                 }
+
             case DM_CONF_FUNCTION.load_w_conf2:
                 {
                     GP_REGISTER value6 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -1617,6 +1639,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder11.ToString();
                 }
+
             case DM_CONF_FUNCTION.load_w_conf_deq:
                 {
                     QUANT_TYPE value5 = (QUANT_TYPE)reader.Read<uint>(2uL);
@@ -1646,6 +1669,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder7.ToString();
                 }
+
             case DM_CONF_FUNCTION.store_of_conf:
                 {
                     SHAPE_REGISTER value3 = (SHAPE_REGISTER)reader.Read<uint>(3uL);
@@ -1682,6 +1706,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -1941,6 +1966,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder48.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf2:
                 {
                     GP_REGISTER value23 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -1977,6 +2003,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder43.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf3:
                 {
                     GP_REGISTER value20 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2020,6 +2047,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder37.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf4:
                 {
                     GP_REGISTER value18 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2057,6 +2085,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder32.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf_deq:
                 {
                     GP_REGISTER value15 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2100,6 +2129,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder26.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_w_conf:
                 {
                     int value13 = reader.Read<int>(5uL);
@@ -2136,6 +2166,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder21.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_of_conf1:
                 {
                     GP_REGISTER value10 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2179,6 +2210,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder15.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_of_conf2:
                 {
                     GP_REGISTER value8 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2216,6 +2248,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder10.ToString();
                 }
+
             case PU_CONF_FUNCTION.pu_compute_conf:
                 {
                     int value3 = reader.Read<int>(1uL);
@@ -2273,6 +2306,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -2377,6 +2411,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder36.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_fetchif_conf1:
                 {
                     int value14 = reader.Read<int>(5uL);
@@ -2413,6 +2448,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder31.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_fetchif_conf2:
                 {
                     GP_REGISTER value12 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2449,6 +2485,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder26.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_fetchif_conf3:
                 {
                     reader.Read<int>(10uL);
@@ -2479,6 +2516,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder22.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_fetchif_conf4:
                 {
                     GP_REGISTER value9 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2515,6 +2553,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder17.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_fetchif_conf_deq:
                 {
                     GP_REGISTER value7 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2551,6 +2590,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder12.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_w_conf:
                 {
                     int value5 = reader.Read<int>(5uL);
@@ -2587,6 +2627,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder7.ToString();
                 }
+
             case PU_PDP0_CONF_FUNCTION.pdp0_of_conf:
                 {
                     SHAPE_REGISTER value3 = (SHAPE_REGISTER)reader.Read<uint>(3uL);
@@ -2623,6 +2664,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -2882,6 +2924,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder61.ToString();
                 }
+
             case MFU_CONF_FUNCTION.pdp1_conf1:
                 {
                     int value42 = reader.Read<int>(5uL);
@@ -2927,6 +2970,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder55.ToString();
                 }
+
             case MFU_CONF_FUNCTION.pdp1_conf2:
                 {
                     GP_REGISTER value38 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -2964,6 +3008,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder50.ToString();
                 }
+
             case MFU_CONF_FUNCTION.pdp1_conf3:
                 {
                     GP_REGISTER value34 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3002,6 +3047,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder45.ToString();
                 }
+
             case MFU_CONF_FUNCTION.pdp1_conf4:
                 {
                     GP_REGISTER value29 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3047,6 +3093,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder39.ToString();
                 }
+
             case MFU_CONF_FUNCTION.pdp1_conf_deq:
                 {
                     GP_REGISTER value26 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3079,6 +3126,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder35.ToString();
                 }
+
             case MFU_CONF_FUNCTION.pdp1_conf_quant:
                 {
                     GP_REGISTER value23 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3111,6 +3159,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder31.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf_stride:
                 {
                     SHAPE_REGISTER value20 = (SHAPE_REGISTER)reader.Read<uint>(3uL);
@@ -3142,6 +3191,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder27.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf_src1:
                 {
                     GP_REGISTER value15 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3187,6 +3237,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder21.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf_src2:
                 {
                     GP_REGISTER value11 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3225,6 +3276,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder16.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf_dest:
                 {
                     GP_REGISTER value9 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3249,6 +3301,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder13.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf_deq:
                 {
                     GP_REGISTER value5 = (GP_REGISTER)reader.Read<uint>(5uL);
@@ -3288,6 +3341,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder8.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf_quant:
                 {
                     QUANT_TYPE value4 = (QUANT_TYPE)reader.Read<uint>(2uL);
@@ -3306,6 +3360,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder6.ToString();
                 }
+
             case MFU_CONF_FUNCTION.act1_conf:
                 {
                     MFU_ACT1_FUNCTION value = (MFU_ACT1_FUNCTION)reader.Read<uint>(4uL);
@@ -3337,6 +3392,7 @@ public class K230DeSerializerVisitor
                     pc_offset += 32uL;
                     return stringBuilder.ToString();
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }
@@ -3626,10 +3682,10 @@ public class K230DeSerializerVisitor
 
         var hdr = new DescHeader
         {
-            InputPoolSize  = reader.ReadUInt32(),
+            InputPoolSize = reader.ReadUInt32(),
             OutputPoolSize = reader.ReadUInt32(),
-            Inputs         = reader.ReadUInt32(),
-            Outputs        = reader.ReadUInt32()
+            Inputs = reader.ReadUInt32(),
+            Outputs = reader.ReadUInt32(),
         };
         descWriter.WriteLine($"InputPoolSize: {hdr.InputPoolSize}");
         descWriter.WriteLine($"OutputPoolSize: {hdr.OutputPoolSize}");
@@ -3640,19 +3696,19 @@ public class K230DeSerializerVisitor
             var inputDesc = new MemoryRange
             {
                 Start = reader.ReadUInt32(),
-                Size = reader.ReadUInt32()
+                Size = reader.ReadUInt32(),
             };
             descWriter.WriteLine($"Input {input}: Start={inputDesc.Start}, Size={inputDesc.Size}");
         }
+
         for (uint output = 0; output < hdr.Outputs; output++)
         {
             var outputDesc = new MemoryRange
             {
                 Start = reader.ReadUInt32(),
-                Size = reader.ReadUInt32()
+                Size = reader.ReadUInt32(),
             };
             descWriter.WriteLine($"Output {output}: Start={outputDesc.Start}, Size={outputDesc.Size}");
         }
     }
-
 }

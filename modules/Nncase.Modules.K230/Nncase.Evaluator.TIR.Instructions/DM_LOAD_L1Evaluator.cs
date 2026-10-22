@@ -14,7 +14,7 @@ internal sealed class DM_LOAD_L1Evaluator : ITypeInferencer<DM_LOAD_L1>, ITypeIn
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, DM_LOAD_L1 target, bool ILmode)
+    public string Visit(IIRPrinterContext context, DM_LOAD_L1 target, bool iLmode)
     {
         return
             $"I.DM_LOAD_L1(tcu_id: {context.GetArgument(target, DM_LOAD_L1.tcu_id)}, pu_id: {context.GetArgument(target, DM_LOAD_L1.pu_id)}, raddr_s: {target.raddr_s}, rhtoc_window: {target.rhtoc_window}, rshape: {target.rshape}, l1_type: {target.l1_type})";

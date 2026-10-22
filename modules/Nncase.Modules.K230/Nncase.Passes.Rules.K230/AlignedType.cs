@@ -8,5 +8,5 @@ public enum AlignedType
     NoAligned,
     EAligned,
     FAligned,
-    EXFAligned
+    EXFAligned,
 }

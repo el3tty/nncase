@@ -46,8 +46,10 @@ public class TileConcat : RewriteRule<Pattern>
     public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsFusion("fusion", "k230",
         Nncase.PatternMatch.F.K230.IsGNNEStore("st", "stCall", (GNNEStore _) => true,
             Tensors.IsConcat("concat", "concatCall", (Concat _) => true,
-                Nncase.PatternMatch.Utility.IsTuple("tuple",
-                    Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs",
+                Nncase.PatternMatch.Utility.IsTuple(
+                    "tuple",
+                    Nncase.PatternMatch.Utility.IsVArgsRepeat(
+                        "tupleInputs",
                         () => Nncase.PatternMatch.Utility.IsWildcard())))),
         Nncase.PatternMatch.Utility.IsVArgsRepeat(() => Nncase.PatternMatch.Utility.IsVar()));
 
@@ -58,7 +60,8 @@ public class TileConcat : RewriteRule<Pattern>
         List<Nncase.TIR.Buffer> buffers = new List<Nncase.TIR.Buffer>();
         for (int i = 0; i < _lifs.Length; i++)
         {
-            T.CreateBuffer(new TensorType(_lifs[i][GNNELoad.Input].CheckedDataType, _lifs[i].CheckedShape),
+            T.CreateBuffer(
+                new TensorType(_lifs[i][GNNELoad.Input].CheckedDataType, _lifs[i].CheckedShape),
                 MemoryLocation.Input, out Nncase.TIR.Buffer buffer, "ddrIf_" + i);
             buffers.Add(buffer);
         }
@@ -78,12 +81,14 @@ public class TileConcat : RewriteRule<Pattern>
         _sof = stCall;
         _inputTypes = _lifs.Select((Call i) => i.CheckedDataType).ToArray();
         _outputType = _sof.CheckedDataType;
-        _inputShapes = _lifs.Select((Call i) => new GNNEShape(i.CheckedShape[0].FixedValue,
+        _inputShapes = _lifs.Select((Call i) => new GNNEShape(
+            i.CheckedShape[0].FixedValue,
             i.CheckedShape[1].FixedValue, i.CheckedShape[2].FixedValue, i.CheckedShape[3].FixedValue)).ToArray();
         _outputShape = new GNNEShape(_sof.CheckedShape[0].FixedValue, _sof.CheckedShape[1].FixedValue,
             _sof.CheckedShape[2].FixedValue, _sof.CheckedShape[3].FixedValue);
         int minDim = _inputShapes.Min((GNNEShape s) => s.Dims[concat.Axis]);
-        _minInputIndex = ArrayTools.IndexOf<GNNEShape>(_inputShapes,
+        _minInputIndex = ArrayTools.IndexOf<GNNEShape>(
+            _inputShapes,
             (Func<GNNEShape, bool>)((GNNEShape s) => s.Dims[concat.Axis] == minDim));
         _axis = concat.Axis;
     }
@@ -152,7 +157,8 @@ public class TileConcat : RewriteRule<Pattern>
         TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, channelsPerPass, h, w }, _inputTypes[0], 0);
         int basementSize = SpaceSearcher.GetBasementSize();
         basementSize = TileUtilities.GetAlignedNum(basementSize, GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
-        boxes.Add(new BoxOnGlb(new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
+        boxes.Add(new BoxOnGlb(
+            new int[2] { GNNEEnv.GlbWidth, basementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
             ItemName.Basement));
         boxes.Add(new BoxOnGlb(
             new int[2] { GNNEEnv.IfmapBankWidth, value / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth },
@@ -173,7 +179,7 @@ public class TileConcat : RewriteRule<Pattern>
     {
         List<GnneAction> actions = new List<GnneAction>();
         int[] strides = ((TensorConst)_sof[GNNEStore.Strides]).Value.ToArray<int>();
-        Func<int, int, int, Segment1D> func = delegate(int start, int end, int dim)
+        Func<int, int, int, Segment1D> func = (start, end, dim) =>
         {
             int scaledStart = (int)System.Math.Ceiling(1.0 * (double)start / (double)strides[dim]);
             return new Segment1D(
@@ -230,7 +236,7 @@ public class TileConcat : RewriteRule<Pattern>
                             SegmentND slice = new SegmentND(shiftedN, segmentC, segmentH, segmentW);
                             List<CcrSet> ccrsToSet = new List<CcrSet>
                             {
-                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1)
+                                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)), 1),
                             };
                             SegmentND tensor = slice;
                             List<int> storeStrides =
@@ -239,19 +245,23 @@ public class TileConcat : RewriteRule<Pattern>
                                 ItemName.Ifmap, ccrsToSet);
                             List<CcrClr> ccrsToClr = new List<CcrClr>
                             {
-                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)))
+                                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex))),
                             };
                             SegmentND ofmapSegment = shiftedSegment;
                             SegmentND storeSegment = shiftedSegment;
                             List<int> stridesD =
                                 new int[3] { _outputShape[1], _outputShape[2], _outputShape[3] }.ToList();
-                            storeSegment[0] = new Segment1D((storeSegment[0].Start * strides[0])..storeSegment[0].End,
+                            storeSegment[0] = new Segment1D(
+                                (storeSegment[0].Start * strides[0])..storeSegment[0].End,
                                 new Padding(0, 0));
-                            storeSegment[1] = new Segment1D((storeSegment[1].Start * strides[1])..storeSegment[1].End,
+                            storeSegment[1] = new Segment1D(
+                                (storeSegment[1].Start * strides[1])..storeSegment[1].End,
                                 new Padding(0, 0));
-                            storeSegment[2] = new Segment1D((storeSegment[2].Start * strides[2])..storeSegment[2].End,
+                            storeSegment[2] = new Segment1D(
+                                (storeSegment[2].Start * strides[2])..storeSegment[2].End,
                                 new Padding(0, 0));
-                            storeSegment[3] = new Segment1D((storeSegment[3].Start * strides[3])..storeSegment[3].End,
+                            storeSegment[3] = new Segment1D(
+                                (storeSegment[3].Start * strides[3])..storeSegment[3].End,
                                 new Padding(0, 0));
                             int sliceOffsetInTensor = TileUtilities.GetSliceOffsetInTensor(in tensor, in slice);
                             GNNEShape shape = new GNNEShape(ofmapSegment[0].Length, ofmapSegment[1].Length,
@@ -272,11 +282,11 @@ public class TileConcat : RewriteRule<Pattern>
         return actions;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)__result["tupleInputs"];
-        Call stCall = (Call)__result["stCall"];
-        Concat concat = (Concat)__result["concat"];
+        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)result["tupleInputs"];
+        Call stCall = (Call)result["stCall"];
+        Concat concat = (Concat)result["concat"];
         return GetReplace(tupleInputs, stCall, concat);
     }
 }

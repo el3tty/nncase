@@ -23,18 +23,18 @@ public sealed class SplitLargeConv2D : RewriteRule<Pattern>
             (ParameterInfo, Pattern)[] inputPatterns = new (ParameterInfo, Pattern)[5]
             {
                 (Conv2D.Input,
-                    Nncase.PatternMatch.Utility.IsWildcard("input")with
+                    Nncase.PatternMatch.Utility.IsWildcard("input") with
                     {
-                        TypePattern = TypePatternUtility.HasFixedShape()
+                        TypePattern = TypePatternUtility.HasFixedShape(),
                     }),
                 (Conv2D.Weights, Nncase.PatternMatch.Utility.IsWildcard("weights")),
                 (Conv2D.Stride, Nncase.PatternMatch.Utility.IsTensorConst("strides")),
                 (Conv2D.Padding, Nncase.PatternMatch.Utility.IsTensorConst("paddings")),
-                (Conv2D.Dilation, Nncase.PatternMatch.Utility.IsTensorConst("dilation"))
+                (Conv2D.Dilation, Nncase.PatternMatch.Utility.IsTensorConst("dilation")),
             };
-            return Nncase.PatternMatch.Utility.IsCallSpecific("call", targetPattern, inputPatterns)with
+            return Nncase.PatternMatch.Utility.IsCallSpecific("call", targetPattern, inputPatterns) with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
+                TypePattern = TypePatternUtility.HasFixedShape(),
             };
         }
     }
@@ -55,8 +55,9 @@ public sealed class SplitLargeConv2D : RewriteRule<Pattern>
                 Padding p = new Padding(paddings[new int[2] { dimIndex, 0 }], paddings[new int[2] { dimIndex, 1 }]);
                 List<Segment1D> outputSegments =
                     TileUtilities.GetSegmentStartEndLength(0, currentSize, input.CheckedShape[axisIndex].FixedValue);
-                int h = ((axisIndex == 3) ? ow : oh);
-                Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(outputSegments[chunkIndex].Start,
+                int h = (axisIndex == 3) ? ow : oh;
+                Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(
+                    outputSegments[chunkIndex].Start,
                     Math.Min(currentSize, outputSegments[chunkIndex].Length), h, weights.CheckedShape[axisIndex].FixedValue,
                     strides[dimIndex], dilation[dimIndex], in p);
                 return (NewBegin: inputRowSegment.Start, NewEnd: inputRowSegment.End, Pads: inputRowSegment.Padding);
@@ -72,14 +73,14 @@ public sealed class SplitLargeConv2D : RewriteRule<Pattern>
             });
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        Expr weights = (Expr)__result["weights"];
-        Tensor<int> paddings = ((TensorConst)__result["paddings"]).Value.Cast<int>();
-        int[] strides = ((TensorConst)__result["strides"]).Value.ToArray<int>();
-        int[] dilation = ((TensorConst)__result["dilation"]).Value.ToArray<int>();
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        Expr weights = (Expr)result["weights"];
+        Tensor<int> paddings = ((TensorConst)result["paddings"]).Value.Cast<int>();
+        int[] strides = ((TensorConst)result["strides"]).Value.ToArray<int>();
+        int[] dilation = ((TensorConst)result["dilation"]).Value.ToArray<int>();
         return GetReplace(call, input, weights, paddings, strides, dilation);
     }
 }

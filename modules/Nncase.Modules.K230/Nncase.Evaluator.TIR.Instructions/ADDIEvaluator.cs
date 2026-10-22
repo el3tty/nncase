@@ -13,7 +13,7 @@ internal sealed class ADDIEvaluator : ITypeInferencer<ADDI>, ITypeInferencer, IO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, ADDI target, bool ILmode)
+    public string Visit(IIRPrinterContext context, ADDI target, bool iLmode)
     {
         return
             $"I.ADDI(rd: {target.rd}, rs: {target.rs}, imm: {context.GetArgument(target, ADDI.imm)}, funct5: {target.funct5})";

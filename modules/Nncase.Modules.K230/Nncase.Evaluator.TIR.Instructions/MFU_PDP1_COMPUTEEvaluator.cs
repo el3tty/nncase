@@ -14,7 +14,7 @@ internal sealed class MFU_PDP1_COMPUTEEvaluator : ITypeInferencer<MFU_PDP1_COMPU
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_PDP1_COMPUTE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_PDP1_COMPUTE target, bool iLmode)
     {
         return $"I.MFU_PDP1_COMPUTE(raddr_d: {target.raddr_d}, raddr_s: {target.raddr_s}, rshape: {target.rshape})";
     }

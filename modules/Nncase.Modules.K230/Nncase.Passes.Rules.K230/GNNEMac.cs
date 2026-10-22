@@ -19,11 +19,11 @@ public sealed class GNNEMac : IRewriteRule
         return input;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEFusion gnneFusion = (GNNEFusion)__result["gnne_fusion"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        GNNEFusion gnneFusion = (GNNEFusion)result["gnne_fusion"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(gnneFusion, call, input);
     }
 }

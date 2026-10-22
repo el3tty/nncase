@@ -32,7 +32,7 @@ public class FakeConv2DTransposeEvaluator : IEvaluator<FakeConv2DTranspose>, IEv
                 CostUtility.GetMemoryAccess(inputType) + CostUtility.GetMemoryAccess(weightsType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
             [CostFactorNames.CPUCycles] =
-                CostUtility.GetCPUCycles(returnType, (float)(macsPerOutput.FixedValue * 2) / 768f)
+                CostUtility.GetCPUCycles(returnType, (float)(macsPerOutput.FixedValue * 2) / 768f),
         };
     }
 
@@ -136,10 +136,12 @@ public class FakeConv2DTransposeEvaluator : IEvaluator<FakeConv2DTranspose>, IEv
                             int originY = (int)(inY * stride[0] - padding[0]);
                             int originX = (int)(inX * stride[1] - padding[2]);
                             int kernelYBegin = System.Math.Max(0, (int)((-originY + dilation[0] - 1) / dilation[0]));
-                            int kernelYEnd = (int)System.Math.Min(weightsShape[2],
+                            int kernelYEnd = (int)System.Math.Min(
+                                weightsShape[2],
                                 ((int)outputShape[2] - originY + dilation[0] - 1) / dilation[0]);
                             int kernelXBegin = (int)System.Math.Max(0L, (-originX + dilation[1] - 1) / dilation[1]);
-                            int kernelXEnd = (int)System.Math.Min(weightsShape[3],
+                            int kernelXEnd = (int)System.Math.Min(
+                                weightsShape[3],
                                 ((int)outputShape[3] - originX + dilation[1] - 1) / dilation[1]);
 
                             // NOTE: the bounds check is always true here.

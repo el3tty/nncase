@@ -59,7 +59,9 @@ public sealed class DynamicGNNEMatMulEvaluator : IEvaluator<DynamicGNNEMatMul>, 
     private static Tensor GnneMatmulV2<TIA, TIB>(ReadOnlySpan<TIA> inputA, ReadOnlySpan<TIB> inputB,
         TensorType outputType, ReadOnlySpan<Half> act, ReadOnlySpan<byte> inABias, int aBatch0, int aBatch1, int aRows,
         int aCols, int bBatch0, int bBatch1, int bCols, byte deqBBias, int inAShiftBits, int inBShiftBits,
-        sbyte shiftBits, bool dynamicChannel) where TIA : unmanaged where TIB : unmanaged
+        sbyte shiftBits, bool dynamicChannel)
+        where TIA : unmanaged
+        where TIB : unmanaged
     {
         DataType outputDType = outputType.DType;
         if (outputDType == DataTypes.UInt8)
@@ -99,7 +101,10 @@ public sealed class DynamicGNNEMatMulEvaluator : IEvaluator<DynamicGNNEMatMul>, 
     private static Tensor RunKernel<TIA, TIB, TO>(ReadOnlySpan<TIA> inputA, ReadOnlySpan<TIB> inputB,
         TensorType outputType, ReadOnlySpan<Half> act, ReadOnlySpan<byte> inABias, int aBatch0, int aBatch1, int aRows,
         int aCols, int bBatch0, int bBatch1, int bCols, byte deqBBias, int inAShiftBits, int inBShiftBits,
-        sbyte shiftBits, bool dynamicChannel) where TIA : unmanaged where TIB : unmanaged where TO : unmanaged, IEquatable<TO>
+        sbyte shiftBits, bool dynamicChannel)
+        where TIA : unmanaged
+        where TIB : unmanaged
+        where TO : unmanaged, IEquatable<TO>
     {
         Tensor<TO> output = new Tensor<TO>(outputType.Shape.ToValueArray());
         K230Kernels.DynamicGnneMatmul(inputA, inputB, output.Buffer.Span, act, inABias, aBatch0, aBatch1, aRows,
@@ -127,7 +132,8 @@ public sealed class DynamicGNNEMatMulEvaluator : IEvaluator<DynamicGNNEMatMul>, 
 
     /// <summary>Calls GnneMatmulV2 for already typed inputs and wraps the result.</summary>
     private static IValue RunMatMul<TIA, TIB>(ReadOnlySpan<TIA> inputA, ReadOnlySpan<TIB> inputB, MatMulArgs args)
-        where TIA : unmanaged where TIB : unmanaged
+        where TIA : unmanaged
+        where TIB : unmanaged
     {
         // The input A / input B shift bits are always 0 here; the shift bits cast is overflow-checked.
         return Value.FromTensor(GnneMatmulV2(inputA, inputB, args.OutputType, args.Act.Buffer.Span,
@@ -194,13 +200,15 @@ public sealed class DynamicGNNEMatMulEvaluator : IEvaluator<DynamicGNNEMatMul>, 
 
         if (inputAType == DataTypes.Int8 && inputBType == DataTypes.Int8)
         {
-            return RunMatMul<sbyte, sbyte>(MemoryMarshal.Cast<byte, sbyte>(inputA.BytesBuffer),
+            return RunMatMul<sbyte, sbyte>(
+                MemoryMarshal.Cast<byte, sbyte>(inputA.BytesBuffer),
                 MemoryMarshal.Cast<byte, sbyte>(inputB.BytesBuffer), args);
         }
 
         if (inputAType == DataTypes.Int8 && inputBType == DataTypes.Int16)
         {
-            return RunMatMul<sbyte, short>(MemoryMarshal.Cast<byte, sbyte>(inputA.BytesBuffer),
+            return RunMatMul<sbyte, short>(
+                MemoryMarshal.Cast<byte, sbyte>(inputA.BytesBuffer),
                 MemoryMarshal.Cast<byte, short>(inputB.BytesBuffer), args);
         }
 
@@ -212,7 +220,8 @@ public sealed class DynamicGNNEMatMulEvaluator : IEvaluator<DynamicGNNEMatMul>, 
 
         if (inputAType == DataTypes.Int16 && inputBType == DataTypes.Int8)
         {
-            return RunMatMul<short, sbyte>(MemoryMarshal.Cast<byte, short>(inputA.BytesBuffer),
+            return RunMatMul<short, sbyte>(
+                MemoryMarshal.Cast<byte, short>(inputA.BytesBuffer),
                 MemoryMarshal.Cast<byte, sbyte>(inputB.BytesBuffer), args);
         }
 
@@ -251,7 +260,8 @@ public sealed class DynamicGNNEMatMulEvaluator : IEvaluator<DynamicGNNEMatMul>, 
         Shape inputBShape = inputB.Shape;
         matrixDims[1] = inputBShape[inputBShape.Count - 1];
         Shape batchSource = (inputA.Shape.Rank > inputB.Shape.Rank) ? inputA.Shape : inputB.Shape;
-        return new TensorType(target.OutputDType,
+        return new TensorType(
+            target.OutputDType,
             batchSource.ToArray()[..(batchSource.Count - 2)].Concat(matrixDims).ToArray());
     }
 

@@ -14,7 +14,7 @@ internal sealed class MFU_PDP1_CONF_QUANTEvaluator : ITypeInferencer<MFU_PDP1_CO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_PDP1_CONF_QUANT target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_PDP1_CONF_QUANT target, bool iLmode)
     {
         return
             $"I.MFU_PDP1_CONF_QUANT(rscale: {target.rscale}, rbias: {target.rbias}, quant_type: {target.quant_type}, funct5: {target.funct5}, rshift_bits: {context.GetArgument(target, MFU_PDP1_CONF_QUANT.rshift_bits)})";

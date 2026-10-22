@@ -15,7 +15,11 @@ internal class Ccr
 
     public int Value
     {
-        get { return _value; }
+        get
+        {
+            return _value;
+        }
+
         set
         {
             TileUtilities.Assert(_value == 0, "_value == 0",

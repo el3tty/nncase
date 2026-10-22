@@ -9,7 +9,7 @@ public class ActParam2 : ActParamBase
 {
     public override int N => 2;
 
-    public override Shape Shape => new Shape(1, 1, base.Channels, base.DataSizePerChannel);
+    public override Shape Shape => new Shape(1, 1, Channels, DataSizePerChannel);
 
     public ActParam2(ActParam2 other)
         : base(other)
@@ -102,7 +102,7 @@ public class ActParam2 : ActParamBase
 
     public void ForEachChannel(Action<ActParam2, int> f)
     {
-        for (int i = 0; i < base.Channels; i++)
+        for (int i = 0; i < Channels; i++)
         {
             f(this, i);
         }

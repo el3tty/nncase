@@ -27,6 +27,7 @@ public sealed record ActivationPartialParameter<T>(int Start, int SizePreParam, 
 
             return Parent[indices];
         }
+
         set
         {
             if (indices[indices.Length - 1] - Start >= SizePreParam)

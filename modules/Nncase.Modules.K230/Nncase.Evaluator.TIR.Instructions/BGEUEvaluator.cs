@@ -13,7 +13,7 @@ internal sealed class BGEUEvaluator : ITypeInferencer<BGEU>, ITypeInferencer, IO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, BGEU target, bool ILmode)
+    public string Visit(IIRPrinterContext context, BGEU target, bool iLmode)
     {
         return
             $"I.BGEU(rs1: {target.rs1}, rs2: {target.rs2}, offset: {context.GetArgument(target, BGEU.offset)}, funct3: {target.funct3})";

@@ -494,7 +494,8 @@ public class ActionToInstruct
     {
         Call loadLenCompressed = I.LoadImm((GP_REGISTER)action.LenCompressed.Index, action.LenCompressed.Value);
         Call loadLenDecompressed = I.LoadImm((GP_REGISTER)action.LenDecompressed.Index, action.LenDecompressed.Value);
-        Call l2LoadWConf = I.L2_LOAD_W_CONF((GP_REGISTER)action.LenCompressed.Index,
+        Call l2LoadWConf = I.L2_LOAD_W_CONF(
+            (GP_REGISTER)action.LenCompressed.Index,
             (GP_REGISTER)action.LenDecompressed.Index, ToL2Type(action.L2Datatype), ToDdrType(action.DdrDatatype),
             action.EnableDecompress);
         if (action.LenCompressed.NeedRenewal)

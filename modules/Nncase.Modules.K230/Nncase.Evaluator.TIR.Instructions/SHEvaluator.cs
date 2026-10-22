@@ -13,7 +13,7 @@ internal sealed class SHEvaluator : ITypeInferencer<SH>, ITypeInferencer, IOpPri
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, SH target, bool ILmode)
+    public string Visit(IIRPrinterContext context, SH target, bool iLmode)
     {
         return
             $"I.SH(rd: {target.rd}, rs: {target.rs}, offset: {context.GetArgument(target, SH.offset)}, funct3: {target.funct3})";

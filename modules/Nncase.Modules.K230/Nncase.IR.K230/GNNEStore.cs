@@ -10,13 +10,10 @@ namespace Nncase.IR.K230;
 public sealed class GNNEStore : Op, IEquatable<GNNEStore?>
 {
     public static readonly ParameterInfo Input = new ParameterInfo(typeof(GNNEStore), 0, "input",
-        TypePatternUtility.HasDataType(DataTypes.Int16) | TypePatternUtility.HasDataType(DataTypes.Float16) |
-        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Float32) |
-        TypePatternUtility.HasDataType(DataTypes.UInt8));
+        TypePatternUtility.HasDataType(DataTypes.Int16) | TypePatternUtility.HasDataType(DataTypes.Float16) | TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Float32) | TypePatternUtility.HasDataType(DataTypes.UInt8));
 
     public static readonly ParameterInfo Strides = new ParameterInfo(typeof(GNNEStore), 1, "strides",
-        TypePatternUtility.HasRank(1) & TypePatternUtility.IsIntegral() &
-        TypePatternUtility.HasDataType(DataTypes.Int64));
+        TypePatternUtility.HasRank(1) & TypePatternUtility.IsIntegral() & TypePatternUtility.HasDataType(DataTypes.Int64));
 
     public PrimType DestType { get; }
 

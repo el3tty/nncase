@@ -14,7 +14,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class EliminateFloat32 : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsGNNELoad(DataTypes.Float16,
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsGNNELoad(
+        DataTypes.Float16,
         Nncase.PatternMatch.F.K230.IsGNNEStore("st", "stCall", (GNNEStore op) => op.DestType == DataTypes.Float32,
             Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsTensorConst()));
 
@@ -25,14 +26,15 @@ public sealed class EliminateFloat32 : RewriteRule<Pattern>
             return null;
         }
 
-        return Nncase.IR.K230.F.Tensors.GNNELoad(DataTypes.Float16,
+        return Nncase.IR.K230.F.Tensors.GNNELoad(
+            DataTypes.Float16,
             Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float16, input));
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr input = (Expr)__result["input"];
-        Call stCall = (Call)__result["stCall"];
-        return GetReplace(input, stCall, __context);
+        Expr input = (Expr)result["input"];
+        Call stCall = (Call)result["stCall"];
+        return GetReplace(input, stCall, context);
     }
 }

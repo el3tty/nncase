@@ -9,5 +9,5 @@ public enum LOAD_FUNCTION : uint
     lh,
     lhu,
     lb,
-    lbu
+    lbu,
 }

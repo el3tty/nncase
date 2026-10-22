@@ -67,6 +67,7 @@ public class DdrBandwidth
                     TotalBw[0] += loadSize * bytesPerElement3;
                     break;
                 }
+
             case GnneActionName.L2LoadWConf:
                 {
                     GnneActionL2LoadWConf l2LoadWConf = (GnneActionL2LoadWConf)action;
@@ -74,6 +75,7 @@ public class DdrBandwidth
                     bytes = ((TensorConst)l2LoadWConf.LenCompressed.Value).Value.ToScalar<int>() * bytesPerElement2;
                     break;
                 }
+
             case GnneActionName.L2LoadW:
                 WBw[0] += bytes;
                 TotalBw[0] += bytes;
@@ -87,6 +89,7 @@ public class DdrBandwidth
                     TotalBw[0] += storeSize * bytesPerElement;
                     break;
                 }
+
             case GnneActionName.L2StoreConf:
                 break;
         }

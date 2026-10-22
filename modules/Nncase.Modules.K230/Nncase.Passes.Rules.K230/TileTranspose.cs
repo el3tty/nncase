@@ -63,22 +63,22 @@ public class TileTranspose : RewriteRule<Pattern>
             List<int> stridesD = new int[3]
             {
                 glb.GlbMap[ItemName.Ifmap].Dimensions[1], glb.GlbMap[ItemName.Ifmap].Dimensions[2],
-                glb.GlbMap[ItemName.Ifmap].Dimensions[3]
+                glb.GlbMap[ItemName.Ifmap].Dimensions[3],
             }.ToList();
             gnneActionUpdater.UpdateLoadIf(ifmap, ld, ifmapIndex, ddrIf, 0, stridesD, ItemName.Ifmap, ifmapCcrsToSet);
             List<CcrSet> ccrsToSet = new List<CcrSet>
             {
-                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)), 1)
+                new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)), 1),
             };
             List<CcrClr> ccrsToClr = new List<CcrClr>
             {
-                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex)))
+                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, ifmapIndex))),
             };
             SegmentND ofmap = ofmapSegment;
             gnneActionUpdater.UpdateMfuTranspose(ifmap, ofmap, ld.CheckedDataType, perm, ifmapIndex, ccrsToSet, ccrsToClr);
             List<CcrClr> ccrsToClr2 = new List<CcrClr>
             {
-                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex)))
+                new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, ifmapIndex))),
             };
             gnneActionUpdater.UpdateStoreT(ofmap, st, ifmapIndex, ddrOf, 0, null, null, ccrsToClr2);
             ifmapIndex = (ifmapIndex + 1) % 2;
@@ -115,14 +115,15 @@ public class TileTranspose : RewriteRule<Pattern>
         BoxPacker boxPacker = new BoxPacker(16);
         Dictionary<ItemName, TensorOnGlb> glbMap = new Dictionary<ItemName, TensorOnGlb>();
         GNNEShape permutedShape = new GNNEShape(GNNETypePatternUtility.ApplyPerm1(perm, shape.Dims));
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(ld.CheckedDataType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(ld.CheckedDataType) == 1) ? 32 : 16;
         int alignedNum = TileUtilities.GetAlignedNum(shape[3], alignmentFactor);
         TensorOnGlb ifmapTensor =
             new TensorOnGlb(new int[4] { shape[0], shape[1], shape[2], alignedNum }, ld.CheckedDataType, 0);
         int ifmapBytes = ifmapTensor.GlbNByte * GNNEEnv.NPingPongSplit;
         ifmapBytes = TileUtilities.GetAlignedNum(ifmapBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         int alignedNum2 = TileUtilities.GetAlignedNum(permutedShape[3], alignmentFactor);
-        TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { permutedShape[0], permutedShape[1], permutedShape[2], alignedNum2 },
+        TensorOnGlb ofmapTensor = new TensorOnGlb(
+            new int[4] { permutedShape[0], permutedShape[1], permutedShape[2], alignedNum2 },
             st.CheckedDataType, 0);
         int ofmapBytes = ofmapTensor.GlbNByte * GNNEEnv.NPingPongSplit;
         ofmapBytes = TileUtilities.GetAlignedNum(ofmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
@@ -150,12 +151,12 @@ public class TileTranspose : RewriteRule<Pattern>
         return allocateResult;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        GNNETranspose callOp = (GNNETranspose)__result["callOp"];
-        Call ld = (Call)__result["ld"];
-        Call st = (Call)__result["st"];
+        Call call = (Call)result["call"];
+        GNNETranspose callOp = (GNNETranspose)result["callOp"];
+        Call ld = (Call)result["ld"];
+        Call st = (Call)result["st"];
         return GetReplace(call, callOp, ld, st);
     }
 }

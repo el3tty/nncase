@@ -15,7 +15,7 @@ namespace Nncase.Passes.Rules.K230;
 public class ReluToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsRelu("relu", "reluCall", (Relu _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() });
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() });
 
     public Expr? GetReplace(Relu relu, Call reluCall, Expr input)
     {
@@ -35,11 +35,11 @@ public class ReluToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, reluCall.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Relu relu = (Relu)__result["relu"];
-        Call reluCall = (Call)__result["reluCall"];
-        Expr input = (Expr)__result["input"];
+        Relu relu = (Relu)result["relu"];
+        Call reluCall = (Call)result["reluCall"];
+        Expr input = (Expr)result["input"];
         return GetReplace(relu, reluCall, input);
     }
 }

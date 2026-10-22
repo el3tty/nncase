@@ -70,21 +70,21 @@ public class FoldMaxAndFakeActivation : RewriteRule<Pattern>, IRewriteRule
                 call.CheckedShape.ToValueArray()).InheritMetaData(binaryCall);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeActivation fakeActivation = (FakeActivation)__result["fakeActivation"];
-        Call call = (Call)__result["call"];
-        Call binaryCall = (Call)__result["binaryCall"];
-        Expr inputA = (Expr)__result["inputA"];
-        Expr inputB = (Expr)__result["inputB"];
-        TensorConst act = (TensorConst)__result["act"];
-        TensorConst outChannels = (TensorConst)__result["outChannels"];
-        Expr inAShiftbits = (Expr)__result["inAShiftbits"];
-        Expr inBShiftbits = (Expr)__result["inBShiftbits"];
-        Expr outShiftbits = (Expr)__result["outShiftbits"];
-        Expr is16Segment = (Expr)__result["is16Segment"];
-        Expr binary = (Expr)__result["binary"];
+        FakeActivation fakeActivation = (FakeActivation)result["fakeActivation"];
+        Call call = (Call)result["call"];
+        Call binaryCall = (Call)result["binaryCall"];
+        Expr inputA = (Expr)result["inputA"];
+        Expr inputB = (Expr)result["inputB"];
+        TensorConst act = (TensorConst)result["act"];
+        TensorConst outChannels = (TensorConst)result["outChannels"];
+        Expr inAShiftbits = (Expr)result["inAShiftbits"];
+        Expr inBShiftbits = (Expr)result["inBShiftbits"];
+        Expr outShiftbits = (Expr)result["outShiftbits"];
+        Expr is16Segment = (Expr)result["is16Segment"];
+        Expr binary = (Expr)result["binary"];
         return GetReplace(fakeActivation, call, binaryCall, inputA, inputB, act, outChannels, inAShiftbits,
-            inBShiftbits, outShiftbits, is16Segment, binary, __context);
+            inBShiftbits, outShiftbits, is16Segment, binary, context);
     }
 }

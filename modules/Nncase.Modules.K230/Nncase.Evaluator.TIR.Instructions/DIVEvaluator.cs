@@ -13,7 +13,7 @@ internal sealed class DIVEvaluator : ITypeInferencer<DIV>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, DIV target, bool ILmode)
+    public string Visit(IIRPrinterContext context, DIV target, bool iLmode)
     {
         return $"I.DIV(rd: {target.rd}, rs1: {target.rs1}, rs2: {target.rs2}, funct5: {target.funct5})";
     }

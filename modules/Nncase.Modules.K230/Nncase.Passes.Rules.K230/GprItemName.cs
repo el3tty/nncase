@@ -93,5 +93,5 @@ public enum GprItemName
     MfuMemcpyRaddrS,
     MfuMemsetRaddrD,
     MfuMemsetRv,
-    IntrNum
+    IntrNum,
 }

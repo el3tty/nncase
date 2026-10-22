@@ -13,7 +13,7 @@ internal sealed class BEQEvaluator : ITypeInferencer<BEQ>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, BEQ target, bool ILmode)
+    public string Visit(IIRPrinterContext context, BEQ target, bool iLmode)
     {
         return
             $"I.BEQ(rs1: {target.rs1}, rs2: {target.rs2}, offset: {context.GetArgument(target, BEQ.offset)}, funct3: {target.funct3})";

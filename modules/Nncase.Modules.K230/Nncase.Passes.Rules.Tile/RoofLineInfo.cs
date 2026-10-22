@@ -30,7 +30,7 @@ internal sealed class RoofLineInfo
         { "DWCONV", 2uL },
         { "GEMM", 3uL },
         { "Logit", 4uL },
-        { "Attend", 5uL }
+        { "Attend", 5uL },
     };
 
     private readonly Dictionary<string, ulong> _dict;
@@ -54,7 +54,7 @@ internal sealed class RoofLineInfo
             { "OnChipMemTraffic", 0uL },
             { "OffChipMemTraffic", 0uL },
             { "OffChipMemLWTraffic", 0uL },
-            { "OffChipLoadStoreCnt", 0uL }
+            { "OffChipLoadStoreCnt", 0uL },
         };
         _operators = new List<string>();
     }

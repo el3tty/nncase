@@ -15,7 +15,7 @@ namespace Nncase.Passes.Rules.K230;
 public class GeluToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsGelu("gelu", "call", (Gelu _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsTensorConst("alpha"));
 
     public Expr? GetReplace(Gelu gelu, Call call, Expr input, Tensor<float> alpha)
@@ -25,7 +25,7 @@ public class GeluToFakeActivation : RewriteRule<Pattern>
             int actChannels = 1;
             float[] xs = new float[15]
             {
-                -5.7f, -4f, -3.2f, -1.75f, -1.5f, -1f, -0.75f, -0.41f, 0f, 0.45f, 0.65f, 1.15f, 2f, 3.8f, 5f
+                -5.7f, -4f, -3.2f, -1.75f, -1.5f, -1f, -0.75f, -0.41f, 0f, 0.45f, 0.65f, 1.15f, 2f, 3.8f, 5f,
             };
             double[] kbPairs = new double[32]
             {
@@ -36,7 +36,7 @@ public class GeluToFakeActivation : RewriteRule<Pattern>
                 0.2293206404535466, -0.004927545580047488, 0.34145955677305617, -0.0030660283609182937,
                 0.42404171597102036, -0.03458965365914235, 0.5019084167113341, -0.08683216895716561,
                 0.6057840597436063, -0.20679235778811544, 0.6424345064997299, -0.2705260541574357,
-                0.5986371536428863, -0.10914053277360192, 0.5819093157146709, -0.027774986180709504
+                0.5986371536428863, -0.10914053277360192, 0.5819093157146709, -0.027774986180709504,
             };
             ActParam16 actParam = new ActParam16(actChannels, new QuantParam(0, 1f));
             for (int i = 0; i < 15; i++)
@@ -61,18 +61,18 @@ public class GeluToFakeActivation : RewriteRule<Pattern>
             float[] xs2 = new float[15]
             {
                 -3.273f, -2.24f, -1.381f, -0.789f, -0.508f, -0.306f, -0.172f, 0f, 0.172f, 0.306f, 0.508f, 0.789f,
-                1.381f, 2.24f, 3.273f
+                1.381f, 2.24f, 3.273f,
             };
             float[] ks2 = new float[16]
             {
                 0f, -0.024013134f, -0.10315602f, -0.09541199f, 0.05015764f, 0.1931251f, 0.31305435f, 0.43165174f,
-                0.5683482f, 0.6869456f, 0.80687493f, 0.94984233f, 1.095412f, 1.103156f, 1.0240132f, 1f
+                0.5683482f, 0.6869456f, 0.80687493f, 0.94984233f, 1.095412f, 1.103156f, 1.0240132f, 1f,
             };
             float[] bs2 = new float[16]
             {
                 0f, -0.07650964f, -0.25319445f, -0.25159308f, -0.13332045f, -0.05944821f, -0.021542944f,
                 -0.0019543152f, -0.0019543152f, -0.021542944f, -0.05944821f, -0.13332045f, -0.25159308f,
-                -0.25319445f, -0.07650964f, 0f
+                -0.25319445f, -0.07650964f, 0f,
             };
             ActParam16 actParam2 = new ActParam16(actChannels2, new QuantParam(0, 1f));
             for (int k = 0; k < 15; k++)
@@ -94,12 +94,12 @@ public class GeluToFakeActivation : RewriteRule<Pattern>
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Gelu gelu = (Gelu)__result["gelu"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        Tensor<float> alpha = ((TensorConst)__result["alpha"]).Value.Cast<float>();
+        Gelu gelu = (Gelu)result["gelu"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        Tensor<float> alpha = ((TensorConst)result["alpha"]).Value.Cast<float>();
         return GetReplace(gelu, call, input, alpha);
     }
 }

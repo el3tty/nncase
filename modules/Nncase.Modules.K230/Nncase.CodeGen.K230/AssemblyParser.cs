@@ -16,16 +16,16 @@ namespace Nncase.CodeGen.K230;
 
 public sealed class AssemblyParser
 {
-    public string AsmOutPath;
+    public string AsmOutPath { get; set; }
 
-    public Nncase.TIR.Buffer[]? Params;
+    public Nncase.TIR.Buffer[]? Params { get; set; }
 
-    public readonly Regex InstFinder = new Regex("^(\\d{8})\\s\\s(I\\.(\\w+)\\((.*?)\\))", RegexOptions.Multiline);
+    public Regex InstFinder { get; } = new Regex("^(\\d{8})\\s\\s(I\\.(\\w+)\\((.*?)\\))", RegexOptions.Multiline);
 
     public AssemblyParser(string asm_out_path, CallableType? signature)
     {
         AsmOutPath = asm_out_path;
-        Params = (((object)signature == null) ? null : CodeGenUtil.ToPrimFuncParameters(signature).ToArray());
+        Params = ((object)signature == null) ? null : CodeGenUtil.ToPrimFuncParameters(signature).ToArray();
     }
 
     public void OverrideGlbParams(IReadOnlyList<int> args)
@@ -60,7 +60,7 @@ public sealed class AssemblyParser
     public IEnumerable<Expr> ParserInst()
     {
         MatchCollection source = InstFinder.Matches(File.ReadAllText(AsmOutPath));
-        new Dictionary<string, MethodCallExpression>();
+        _ = new Dictionary<string, MethodCallExpression>();
         return source.OfType<Match>().Select(delegate(Match m)
         {
             string value = m.Groups[3].Value;
@@ -77,14 +77,16 @@ public sealed class AssemblyParser
                         {
                             Type? typeFromHandle = typeof(R);
                             string text2 = text;
-                            return Expression.Field(null,
+                            return Expression.Field(
+                                null,
                                 typeFromHandle.GetField(text2.Substring(2, text2.Length - 2)));
                         }
 
                         string value2 = text;
                         if (t.Item2.ParameterType == typeof(Expr))
                         {
-                            return Expression.Convert(Expression.Constant(Convert.ToInt32(value2), typeof(int)),
+                            return Expression.Convert(
+                                Expression.Constant(Convert.ToInt32(value2), typeof(int)),
                                 typeof(Expr));
                         }
 
@@ -107,7 +109,7 @@ public sealed class AssemblyParser
     public PrimFunction ParserFunction()
     {
         ISequentialBuilder<PrimFunction> sequentialBuilder =
-            T.PrimFunc("main", "k230", Params ?? new Nncase.TIR.Buffer[0]);
+            T.PrimFunc("main", "k230", Params ?? Array.Empty<Nncase.TIR.Buffer>());
         object[] exprOrBuilders = ParserInst().ToArray();
         return sequentialBuilder.Body(exprOrBuilders).Build();
     }

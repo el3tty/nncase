@@ -76,5 +76,5 @@ public enum GnneActionName
     BasementG2R,
     Ai2dCompute,
     Extrw,
-    Extraw
+    Extraw,
 }

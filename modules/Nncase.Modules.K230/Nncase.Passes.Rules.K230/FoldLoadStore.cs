@@ -11,7 +11,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class FoldLoadStore : IRewriteRule
 {
-    public IPattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsGNNEStore((GNNEStore _) => true,
+    public IPattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsGNNEStore(
+        (GNNEStore _) => true,
         Nncase.PatternMatch.F.K230.IsGNNELoad((GNNELoad _) => true, Nncase.PatternMatch.Utility.IsWildcard("input")),
         Nncase.PatternMatch.Utility.IsTensorConst());
 
@@ -20,9 +21,9 @@ public sealed class FoldLoadStore : IRewriteRule
         return input;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr input = (Expr)__result["input"];
+        Expr input = (Expr)result["input"];
         return GetReplace(input);
     }
 }

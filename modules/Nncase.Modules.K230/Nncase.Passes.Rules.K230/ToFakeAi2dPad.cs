@@ -21,12 +21,12 @@ public sealed class ToFakeAi2dPad : RewriteRule<Pattern>
         return Nncase.IR.K230.F.Tensors.FakeAi2dPad(input, padding, value, pad.PadMode);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Pad pad = (Pad)__result["pad"];
-        Expr input = (Expr)__result["input"];
-        Expr padding = (Expr)__result["padding"];
-        float value = ((TensorConst)__result["value"]).Value.ToScalar<float>();
+        Pad pad = (Pad)result["pad"];
+        Expr input = (Expr)result["input"];
+        Expr padding = (Expr)result["padding"];
+        float value = ((TensorConst)result["value"]).Value.ToScalar<float>();
         return GetReplace(pad, input, padding, value);
     }
 }

@@ -17,10 +17,11 @@ namespace Nncase.Passes.Rules.K230;
 public class ClampToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.Math.IsClamp("clamp", "call", (Clamp _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with
+        Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (TypePatternUtility.HasFixedShape() & TypePatternUtility.HasRank((int r) => r > 1 && r <= 4,
-                "not support scalar, and only support rank <= 4"))
+            TypePattern = TypePatternUtility.HasFixedShape() & TypePatternUtility.HasRank(
+                (int r) => r > 1 && r <= 4,
+                "not support scalar, and only support rank <= 4"),
         }, Nncase.PatternMatch.Utility.IsTensorConst("min"), Nncase.PatternMatch.Utility.IsTensorConst("max"));
 
     public Expr? GetReplace(Clamp clamp, Call call, Expr input, Tensor<float> min, Tensor<float> max)
@@ -48,8 +49,9 @@ public class ClampToFakeActivation : RewriteRule<Pattern>
 
     private bool TryMatch(Tensor<float> min, Tensor<float> max)
     {
-        if (TypeInference.BroadcastType(new TensorType(DataTypes.Float32, min.Shape),
-                new TensorType(DataTypes.Float32, max.Shape)) is TensorType tensorType)
+        if (TypeInference.BroadcastType(
+            new TensorType(DataTypes.Float32, min.Shape),
+            new TensorType(DataTypes.Float32, max.Shape)) is TensorType tensorType)
         {
             if (tensorType.Shape.IsScalar)
             {
@@ -73,13 +75,13 @@ public class ClampToFakeActivation : RewriteRule<Pattern>
         return false;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Clamp clamp = (Clamp)__result["clamp"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        Tensor<float> min = ((TensorConst)__result["min"]).Value.Cast<float>();
-        Tensor<float> max = ((TensorConst)__result["max"]).Value.Cast<float>();
+        Clamp clamp = (Clamp)result["clamp"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        Tensor<float> min = ((TensorConst)result["min"]).Value.Cast<float>();
+        Tensor<float> max = ((TensorConst)result["max"]).Value.Cast<float>();
         return GetReplace(clamp, call, input, min, max);
     }
 }

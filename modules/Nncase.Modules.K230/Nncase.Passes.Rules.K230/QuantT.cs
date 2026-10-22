@@ -13,7 +13,11 @@ public class QuantT
 
     public byte U8
     {
-        get { return _u8Value; }
+        get
+        {
+            return _u8Value;
+        }
+
         set
         {
             _isU8 = true;
@@ -23,7 +27,11 @@ public class QuantT
 
     public sbyte I8
     {
-        get { return _i8Value; }
+        get
+        {
+            return _i8Value;
+        }
+
         set
         {
             _isU8 = false;

@@ -152,7 +152,7 @@ public abstract class ActParamBase
             for (int j = 0; j < Channels; j++)
             {
                 Ks[i, j] = Qp.Scale;
-                Bs[i, j] = ((!IsDeq) ? ((float)Qp.ZeroPoint) : 0f);
+                Bs[i, j] = (!IsDeq) ? ((float)Qp.ZeroPoint) : 0f;
             }
         }
 
@@ -161,7 +161,7 @@ public abstract class ActParamBase
 
     public void SetFusedClamp(ValueRange<Half> range)
     {
-        FusedClamp = (from _ in Enumerable.Range(0, Channels)
+        FusedClamp = (from i in Enumerable.Range(0, Channels)
             select new ValueRange<float> { Min = (float)range.Min, Max = (float)range.Max }).ToArray();
     }
 

@@ -24,7 +24,7 @@ public static class K230
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outchannels ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), outshiftbits ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -32,14 +32,15 @@ public static class K230
         Pattern? inputb = null, Pattern? act = null, Pattern? outchannels = null, Pattern? inashiftbits = null,
         Pattern? inbshiftbits = null, Pattern? outshiftbits = null, Pattern? is16segments = null)
     {
-        return new CallPattern(new OpPattern<FakeActivation>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeActivation>(condition, null),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outchannels ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), outshiftbits ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -58,7 +59,7 @@ public static class K230
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outchannels ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), outshiftbits ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -67,14 +68,15 @@ public static class K230
         Pattern? inashiftbits = null, Pattern? inbshiftbits = null, Pattern? outshiftbits = null,
         Pattern? is16segments = null)
     {
-        return new CallPattern(new OpPattern<FakeActivation>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeActivation>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outchannels ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), outshiftbits ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -93,7 +95,7 @@ public static class K230
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outchannels ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), outshiftbits ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -102,14 +104,15 @@ public static class K230
         Pattern? outchannels = null, Pattern? inashiftbits = null, Pattern? inbshiftbits = null,
         Pattern? outshiftbits = null, Pattern? is16segments = null)
     {
-        return new CallPattern(new OpPattern<FakeActivation>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeActivation>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outchannels ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), outshiftbits ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -119,62 +122,67 @@ public static class K230
         return new CallPattern(new OpPattern<FakeAi2dPad>((FakeAi2dPad x) => x.Mode == Mode, null), new VArgsPattern(
             new Pattern[3]
             {
-                input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
             }, null), null);
     }
 
     public static CallPattern IsFakeAi2dPad(Func<FakeAi2dPad, bool> condition, Pattern? input = null,
         Pattern? padding = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dPad>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeAi2dPad>(condition, null),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeAi2dPad(string? target_name, PadMode Mode, Pattern? input = null,
         Pattern? padding = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dPad>((FakeAi2dPad x) => x.Mode == Mode, target_name),
+        return new CallPattern(
+            new OpPattern<FakeAi2dPad>((FakeAi2dPad x) => x.Mode == Mode, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeAi2dPad(string? target_name, Func<FakeAi2dPad, bool> condition,
         Pattern? input = null, Pattern? padding = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dPad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeAi2dPad>(condition, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeAi2dPad(string? target_name, string? call_name, PadMode Mode, Pattern? input = null,
         Pattern? padding = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dPad>((FakeAi2dPad x) => x.Mode == Mode, target_name),
+        return new CallPattern(
+            new OpPattern<FakeAi2dPad>((FakeAi2dPad x) => x.Mode == Mode, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
     public static CallPattern IsFakeAi2dPad(string? target_name, string? call_name, Func<FakeAi2dPad, bool> condition,
         Pattern? input = null, Pattern? padding = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dPad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeAi2dPad>(condition, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -192,7 +200,8 @@ public static class K230
     public static CallPattern IsFakeAi2dResize(Func<FakeAi2dResize, bool> condition, Pattern? input = null,
         Pattern? newsize = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dResize>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeAi2dResize>(condition, null),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard() }, null),
             null);
     }
@@ -211,7 +220,8 @@ public static class K230
     public static CallPattern IsFakeAi2dResize(string? target_name, Func<FakeAi2dResize, bool> condition,
         Pattern? input = null, Pattern? newsize = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dResize>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeAi2dResize>(condition, target_name),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard() }, null),
             null);
     }
@@ -230,7 +240,8 @@ public static class K230
     public static CallPattern IsFakeAi2dResize(string? target_name, string? call_name,
         Func<FakeAi2dResize, bool> condition, Pattern? input = null, Pattern? newsize = null)
     {
-        return new CallPattern(new OpPattern<FakeAi2dResize>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeAi2dResize>(condition, target_name),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard() }, null),
             call_name);
     }
@@ -239,13 +250,14 @@ public static class K230
         Pattern? act = null, Pattern? padding = null, Pattern? stride = null, Pattern? dilation = null,
         Pattern? groups = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2D>((FakeConv2D x) => x.ActParam == ActParam, null),
+        return new CallPattern(
+            new OpPattern<FakeConv2D>((FakeConv2D x) => x.ActParam == ActParam, null),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -253,13 +265,14 @@ public static class K230
         Pattern? weights = null, Pattern? act = null, Pattern? padding = null, Pattern? stride = null,
         Pattern? dilation = null, Pattern? groups = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2D>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeConv2D>(condition, null),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -267,13 +280,14 @@ public static class K230
         Pattern? weights = null, Pattern? act = null, Pattern? padding = null, Pattern? stride = null,
         Pattern? dilation = null, Pattern? groups = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2D>((FakeConv2D x) => x.ActParam == ActParam, target_name),
+        return new CallPattern(
+            new OpPattern<FakeConv2D>((FakeConv2D x) => x.ActParam == ActParam, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -281,13 +295,14 @@ public static class K230
         Pattern? weights = null, Pattern? act = null, Pattern? padding = null, Pattern? stride = null,
         Pattern? dilation = null, Pattern? groups = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2D>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeConv2D>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -295,13 +310,14 @@ public static class K230
         Pattern? input = null, Pattern? weights = null, Pattern? act = null, Pattern? padding = null,
         Pattern? stride = null, Pattern? dilation = null, Pattern? groups = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2D>((FakeConv2D x) => x.ActParam == ActParam, target_name),
+        return new CallPattern(
+            new OpPattern<FakeConv2D>((FakeConv2D x) => x.ActParam == ActParam, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -309,13 +325,14 @@ public static class K230
         Pattern? input = null, Pattern? weights = null, Pattern? act = null, Pattern? padding = null,
         Pattern? stride = null, Pattern? dilation = null, Pattern? groups = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2D>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeConv2D>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -331,7 +348,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outputshape ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     outputpadding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -340,14 +357,15 @@ public static class K230
         Pattern? outputpadding = null, Pattern? stride = null, Pattern? dilation = null, Pattern? groups = null,
         Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<FakeConv2DTranspose>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeConv2DTranspose>(condition, null),
             new VArgsPattern(
                 new Pattern[10]
                 {
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outputshape ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     outputpadding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -364,7 +382,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outputshape ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     outputpadding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -379,7 +397,7 @@ public static class K230
                 input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 outputshape ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                 outputpadding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
             }, null), null);
     }
 
@@ -396,7 +414,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     outputshape ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     outputpadding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -411,7 +429,7 @@ public static class K230
                 input ?? Utility.IsWildcard(), weights ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 outputshape ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                 outputpadding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
-                dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
             }, null), call_name);
     }
 
@@ -423,18 +441,20 @@ public static class K230
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
-    public static CallPattern IsFakeDynamicGNNEMatMul(Func<FakeDynamicGNNEMatMul, bool> condition,
+    public static CallPattern IsFakeDynamicGNNEMatMul(
+        Func<FakeDynamicGNNEMatMul, bool> condition,
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeDynamicGNNEMatMul>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeDynamicGNNEMatMul>(condition, null),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -442,12 +462,13 @@ public static class K230
         Pattern? inputb = null, Pattern? act = null)
     {
         return new CallPattern(
-            new OpPattern<FakeDynamicGNNEMatMul>((FakeDynamicGNNEMatMul x) => x.DynamicChannel == DynamicChannel,
+            new OpPattern<FakeDynamicGNNEMatMul>(
+                (FakeDynamicGNNEMatMul x) => x.DynamicChannel == DynamicChannel,
                 target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -457,7 +478,7 @@ public static class K230
         return new CallPattern(new OpPattern<FakeDynamicGNNEMatMul>(condition, target_name), new VArgsPattern(
             new Pattern[3]
             {
-                inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
             }, null), null);
     }
 
@@ -465,12 +486,13 @@ public static class K230
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null)
     {
         return new CallPattern(
-            new OpPattern<FakeDynamicGNNEMatMul>((FakeDynamicGNNEMatMul x) => x.DynamicChannel == DynamicChannel,
+            new OpPattern<FakeDynamicGNNEMatMul>(
+                (FakeDynamicGNNEMatMul x) => x.DynamicChannel == DynamicChannel,
                 target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -481,7 +503,7 @@ public static class K230
         return new CallPattern(new OpPattern<FakeDynamicGNNEMatMul>(condition, target_name), new VArgsPattern(
             new Pattern[3]
             {
-                inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
             }, null), call_name);
     }
 
@@ -501,7 +523,7 @@ public static class K230
                     wrc ?? Utility.IsWildcard(), actrc ?? Utility.IsWildcard(), initialh ?? Utility.IsWildcard(),
                     initialc ?? Utility.IsWildcard(), segfittingparamft ?? Utility.IsWildcard(),
                     segfittingparamgt ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -510,7 +532,8 @@ public static class K230
         Pattern? initialc = null, Pattern? segfittingparamft = null, Pattern? segfittingparamgt = null,
         Pattern? hasstatic = null, Pattern? outputsize = null)
     {
-        return new CallPattern(new OpPattern<FakeLSTM>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeLSTM>(condition, null),
             new VArgsPattern(
                 new Pattern[11]
                 {
@@ -518,7 +541,7 @@ public static class K230
                     wrc ?? Utility.IsWildcard(), actrc ?? Utility.IsWildcard(), initialh ?? Utility.IsWildcard(),
                     initialc ?? Utility.IsWildcard(), segfittingparamft ?? Utility.IsWildcard(),
                     segfittingparamgt ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -538,7 +561,7 @@ public static class K230
                     wrc ?? Utility.IsWildcard(), actrc ?? Utility.IsWildcard(), initialh ?? Utility.IsWildcard(),
                     initialc ?? Utility.IsWildcard(), segfittingparamft ?? Utility.IsWildcard(),
                     segfittingparamgt ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -547,7 +570,8 @@ public static class K230
         Pattern? initialh = null, Pattern? initialc = null, Pattern? segfittingparamft = null,
         Pattern? segfittingparamgt = null, Pattern? hasstatic = null, Pattern? outputsize = null)
     {
-        return new CallPattern(new OpPattern<FakeLSTM>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeLSTM>(condition, target_name),
             new VArgsPattern(
                 new Pattern[11]
                 {
@@ -555,7 +579,7 @@ public static class K230
                     wrc ?? Utility.IsWildcard(), actrc ?? Utility.IsWildcard(), initialh ?? Utility.IsWildcard(),
                     initialc ?? Utility.IsWildcard(), segfittingparamft ?? Utility.IsWildcard(),
                     segfittingparamgt ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -576,7 +600,7 @@ public static class K230
                     wrc ?? Utility.IsWildcard(), actrc ?? Utility.IsWildcard(), initialh ?? Utility.IsWildcard(),
                     initialc ?? Utility.IsWildcard(), segfittingparamft ?? Utility.IsWildcard(),
                     segfittingparamgt ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -585,7 +609,8 @@ public static class K230
         Pattern? initialh = null, Pattern? initialc = null, Pattern? segfittingparamft = null,
         Pattern? segfittingparamgt = null, Pattern? hasstatic = null, Pattern? outputsize = null)
     {
-        return new CallPattern(new OpPattern<FakeLSTM>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeLSTM>(condition, target_name),
             new VArgsPattern(
                 new Pattern[11]
                 {
@@ -593,73 +618,79 @@ public static class K230
                     wrc ?? Utility.IsWildcard(), actrc ?? Utility.IsWildcard(), initialh ?? Utility.IsWildcard(),
                     initialc ?? Utility.IsWildcard(), segfittingparamft ?? Utility.IsWildcard(),
                     segfittingparamgt ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
     public static CallPattern IsFakeMatMul(ActParam2 ActParam2, Pattern? inputa = null, Pattern? inputb = null,
         Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeMatMul>((FakeMatMul x) => x.ActParam2 == ActParam2, null),
+        return new CallPattern(
+            new OpPattern<FakeMatMul>((FakeMatMul x) => x.ActParam2 == ActParam2, null),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeMatMul(Func<FakeMatMul, bool> condition, Pattern? inputa = null,
         Pattern? inputb = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeMatMul>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakeMatMul>(condition, null),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeMatMul(string? target_name, ActParam2 ActParam2, Pattern? inputa = null,
         Pattern? inputb = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeMatMul>((FakeMatMul x) => x.ActParam2 == ActParam2, target_name),
+        return new CallPattern(
+            new OpPattern<FakeMatMul>((FakeMatMul x) => x.ActParam2 == ActParam2, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeMatMul(string? target_name, Func<FakeMatMul, bool> condition,
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeMatMul>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeMatMul>(condition, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsFakeMatMul(string? target_name, string? call_name, ActParam2 ActParam2,
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeMatMul>((FakeMatMul x) => x.ActParam2 == ActParam2, target_name),
+        return new CallPattern(
+            new OpPattern<FakeMatMul>((FakeMatMul x) => x.ActParam2 == ActParam2, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
     public static CallPattern IsFakeMatMul(string? target_name, string? call_name, Func<FakeMatMul, bool> condition,
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<FakeMatMul>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakeMatMul>(condition, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -671,20 +702,21 @@ public static class K230
             {
                 input ?? Utility.IsWildcard(), padvalue ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(),
                 stride ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
-                countincludepad ?? Utility.IsWildcard()
+                countincludepad ?? Utility.IsWildcard(),
             }, null), null);
     }
 
     public static CallPattern IsFakePdp(Func<FakePdp, bool> condition, Pattern? input = null, Pattern? padvalue = null,
         Pattern? filter = null, Pattern? stride = null, Pattern? padding = null, Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<FakePdp>(condition, null),
+        return new CallPattern(
+            new OpPattern<FakePdp>(condition, null),
             new VArgsPattern(
                 new Pattern[6]
                 {
                     input ?? Utility.IsWildcard(), padvalue ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -692,13 +724,14 @@ public static class K230
         Pattern? padvalue = null, Pattern? filter = null, Pattern? stride = null, Pattern? padding = null,
         Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<FakePdp>((FakePdp x) => x.ReduceOp == ReduceOp, target_name),
+        return new CallPattern(
+            new OpPattern<FakePdp>((FakePdp x) => x.ReduceOp == ReduceOp, target_name),
             new VArgsPattern(
                 new Pattern[6]
                 {
                     input ?? Utility.IsWildcard(), padvalue ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -706,13 +739,14 @@ public static class K230
         Pattern? padvalue = null, Pattern? filter = null, Pattern? stride = null, Pattern? padding = null,
         Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<FakePdp>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakePdp>(condition, target_name),
             new VArgsPattern(
                 new Pattern[6]
                 {
                     input ?? Utility.IsWildcard(), padvalue ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -720,13 +754,14 @@ public static class K230
         Pattern? input = null, Pattern? padvalue = null, Pattern? filter = null, Pattern? stride = null,
         Pattern? padding = null, Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<FakePdp>((FakePdp x) => x.ReduceOp == ReduceOp, target_name),
+        return new CallPattern(
+            new OpPattern<FakePdp>((FakePdp x) => x.ReduceOp == ReduceOp, target_name),
             new VArgsPattern(
                 new Pattern[6]
                 {
                     input ?? Utility.IsWildcard(), padvalue ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -734,13 +769,14 @@ public static class K230
         Pattern? input = null, Pattern? padvalue = null, Pattern? filter = null, Pattern? stride = null,
         Pattern? padding = null, Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<FakePdp>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<FakePdp>(condition, target_name),
             new VArgsPattern(
                 new Pattern[6]
                 {
                     input ?? Utility.IsWildcard(), padvalue ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -752,19 +788,20 @@ public static class K230
                 new Pattern[5]
                 {
                     input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsAi2dPad(Func<Ai2dPad, bool> condition, Pattern? input = null, Pattern? padding = null,
         Pattern? value = null, Pattern? indeqbias = null, Pattern? outquantparam = null)
     {
-        return new CallPattern(new OpPattern<Ai2dPad>(condition, null),
+        return new CallPattern(
+            new OpPattern<Ai2dPad>(condition, null),
             new VArgsPattern(
                 new Pattern[5]
                 {
                     input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -777,19 +814,20 @@ public static class K230
                 new Pattern[5]
                 {
                     input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsAi2dPad(string? target_name, Func<Ai2dPad, bool> condition, Pattern? input = null,
         Pattern? padding = null, Pattern? value = null, Pattern? indeqbias = null, Pattern? outquantparam = null)
     {
-        return new CallPattern(new OpPattern<Ai2dPad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<Ai2dPad>(condition, target_name),
             new VArgsPattern(
                 new Pattern[5]
                 {
                     input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -803,7 +841,7 @@ public static class K230
                 new Pattern[5]
                 {
                     input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -811,12 +849,13 @@ public static class K230
         Pattern? input = null, Pattern? padding = null, Pattern? value = null, Pattern? indeqbias = null,
         Pattern? outquantparam = null)
     {
-        return new CallPattern(new OpPattern<Ai2dPad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<Ai2dPad>(condition, target_name),
             new VArgsPattern(
                 new Pattern[5]
                 {
                     input ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -832,19 +871,20 @@ public static class K230
                 new Pattern[4]
                 {
                     input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsAi2dResize(Func<Ai2dResize, bool> condition, Pattern? input = null,
         Pattern? newsize = null, Pattern? indeqbias = null, Pattern? outquantparam = null)
     {
-        return new CallPattern(new OpPattern<Ai2dResize>(condition, null),
+        return new CallPattern(
+            new OpPattern<Ai2dResize>(condition, null),
             new VArgsPattern(
                 new Pattern[4]
                 {
                     input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -861,19 +901,20 @@ public static class K230
                 new Pattern[4]
                 {
                     input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
     public static CallPattern IsAi2dResize(string? target_name, Func<Ai2dResize, bool> condition, Pattern? input = null,
         Pattern? newsize = null, Pattern? indeqbias = null, Pattern? outquantparam = null)
     {
-        return new CallPattern(new OpPattern<Ai2dResize>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<Ai2dResize>(condition, target_name),
             new VArgsPattern(
                 new Pattern[4]
                 {
                     input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -890,19 +931,20 @@ public static class K230
                 new Pattern[4]
                 {
                     input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
     public static CallPattern IsAi2dResize(string? target_name, string? call_name, Func<Ai2dResize, bool> condition,
         Pattern? input = null, Pattern? newsize = null, Pattern? indeqbias = null, Pattern? outquantparam = null)
     {
-        return new CallPattern(new OpPattern<Ai2dResize>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<Ai2dResize>(condition, target_name),
             new VArgsPattern(
                 new Pattern[4]
                 {
                     input ?? Utility.IsWildcard(), newsize ?? Utility.IsWildcard(),
-                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard()
+                    indeqbias ?? Utility.IsWildcard(), outquantparam ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -918,7 +960,7 @@ public static class K230
                     text ?? Utility.IsWildcard(), inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inputbbias ?? Utility.IsWildcard(),
                     act ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    dynamicchannel ?? Utility.IsWildcard()
+                    dynamicchannel ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -926,14 +968,15 @@ public static class K230
         Pattern? inputa = null, Pattern? inputb = null, Pattern? inputabias = null, Pattern? inputbbias = null,
         Pattern? act = null, Pattern? shiftbits = null, Pattern? dynamicchannel = null)
     {
-        return new CallPattern(new OpPattern<DynamicGNNEMatMul>(condition, null),
+        return new CallPattern(
+            new OpPattern<DynamicGNNEMatMul>(condition, null),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     text ?? Utility.IsWildcard(), inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inputbbias ?? Utility.IsWildcard(),
                     act ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    dynamicchannel ?? Utility.IsWildcard()
+                    dynamicchannel ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -949,7 +992,7 @@ public static class K230
                     text ?? Utility.IsWildcard(), inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inputbbias ?? Utility.IsWildcard(),
                     act ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    dynamicchannel ?? Utility.IsWildcard()
+                    dynamicchannel ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -957,14 +1000,15 @@ public static class K230
         Pattern? text = null, Pattern? inputa = null, Pattern? inputb = null, Pattern? inputabias = null,
         Pattern? inputbbias = null, Pattern? act = null, Pattern? shiftbits = null, Pattern? dynamicchannel = null)
     {
-        return new CallPattern(new OpPattern<DynamicGNNEMatMul>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<DynamicGNNEMatMul>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     text ?? Utility.IsWildcard(), inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inputbbias ?? Utility.IsWildcard(),
                     act ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    dynamicchannel ?? Utility.IsWildcard()
+                    dynamicchannel ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -980,7 +1024,7 @@ public static class K230
                     text ?? Utility.IsWildcard(), inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inputbbias ?? Utility.IsWildcard(),
                     act ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    dynamicchannel ?? Utility.IsWildcard()
+                    dynamicchannel ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -989,14 +1033,15 @@ public static class K230
         Pattern? inputabias = null, Pattern? inputbbias = null, Pattern? act = null, Pattern? shiftbits = null,
         Pattern? dynamicchannel = null)
     {
-        return new CallPattern(new OpPattern<DynamicGNNEMatMul>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<DynamicGNNEMatMul>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     text ?? Utility.IsWildcard(), inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inputbbias ?? Utility.IsWildcard(),
                     act ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    dynamicchannel ?? Utility.IsWildcard()
+                    dynamicchannel ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1017,7 +1062,7 @@ public static class K230
                     inashiftbits ?? Utility.IsWildcard(), inbshiftbits ?? Utility.IsWildcard(),
                     outshiftbits ?? Utility.IsWildcard(), deqaparams ?? Utility.IsWildcard(),
                     deqbparams ?? Utility.IsWildcard(), outchannels ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1026,7 +1071,8 @@ public static class K230
         Pattern? outshiftbits = null, Pattern? deqaparams = null, Pattern? deqbparams = null,
         Pattern? outchannels = null, Pattern? is16segments = null)
     {
-        return new CallPattern(new OpPattern<GNNEActivation>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEActivation>(condition, null),
             new VArgsPattern(
                 new Pattern[10]
                 {
@@ -1034,7 +1080,7 @@ public static class K230
                     inashiftbits ?? Utility.IsWildcard(), inbshiftbits ?? Utility.IsWildcard(),
                     outshiftbits ?? Utility.IsWildcard(), deqaparams ?? Utility.IsWildcard(),
                     deqbparams ?? Utility.IsWildcard(), outchannels ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1055,7 +1101,7 @@ public static class K230
                     inashiftbits ?? Utility.IsWildcard(), inbshiftbits ?? Utility.IsWildcard(),
                     outshiftbits ?? Utility.IsWildcard(), deqaparams ?? Utility.IsWildcard(),
                     deqbparams ?? Utility.IsWildcard(), outchannels ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1064,7 +1110,8 @@ public static class K230
         Pattern? inbshiftbits = null, Pattern? outshiftbits = null, Pattern? deqaparams = null,
         Pattern? deqbparams = null, Pattern? outchannels = null, Pattern? is16segments = null)
     {
-        return new CallPattern(new OpPattern<GNNEActivation>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEActivation>(condition, target_name),
             new VArgsPattern(
                 new Pattern[10]
                 {
@@ -1072,7 +1119,7 @@ public static class K230
                     inashiftbits ?? Utility.IsWildcard(), inbshiftbits ?? Utility.IsWildcard(),
                     outshiftbits ?? Utility.IsWildcard(), deqaparams ?? Utility.IsWildcard(),
                     deqbparams ?? Utility.IsWildcard(), outchannels ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1093,7 +1140,7 @@ public static class K230
                     inashiftbits ?? Utility.IsWildcard(), inbshiftbits ?? Utility.IsWildcard(),
                     outshiftbits ?? Utility.IsWildcard(), deqaparams ?? Utility.IsWildcard(),
                     deqbparams ?? Utility.IsWildcard(), outchannels ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1103,7 +1150,8 @@ public static class K230
         Pattern? deqaparams = null, Pattern? deqbparams = null, Pattern? outchannels = null,
         Pattern? is16segments = null)
     {
-        return new CallPattern(new OpPattern<GNNEActivation>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEActivation>(condition, target_name),
             new VArgsPattern(
                 new Pattern[10]
                 {
@@ -1111,7 +1159,7 @@ public static class K230
                     inashiftbits ?? Utility.IsWildcard(), inbshiftbits ?? Utility.IsWildcard(),
                     outshiftbits ?? Utility.IsWildcard(), deqaparams ?? Utility.IsWildcard(),
                     deqbparams ?? Utility.IsWildcard(), outchannels ?? Utility.IsWildcard(),
-                    is16segments ?? Utility.IsWildcard()
+                    is16segments ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1136,7 +1184,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1146,7 +1194,8 @@ public static class K230
         Pattern? qint8qp = null, Pattern? padding = null, Pattern? stride = null, Pattern? dilation = null,
         Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null, Pattern? weightsqint8 = null)
     {
-        return new CallPattern(new OpPattern<GNNEConv2D>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEConv2D>(condition, null),
             new VArgsPattern(
                 new Pattern[17]
                 {
@@ -1157,7 +1206,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1182,7 +1231,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1192,7 +1241,8 @@ public static class K230
         Pattern? qint8qp = null, Pattern? padding = null, Pattern? stride = null, Pattern? dilation = null,
         Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null, Pattern? weightsqint8 = null)
     {
-        return new CallPattern(new OpPattern<GNNEConv2D>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEConv2D>(condition, target_name),
             new VArgsPattern(
                 new Pattern[17]
                 {
@@ -1203,7 +1253,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1228,7 +1278,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1239,7 +1289,8 @@ public static class K230
         Pattern? dilation = null, Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null,
         Pattern? weightsqint8 = null)
     {
-        return new CallPattern(new OpPattern<GNNEConv2D>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEConv2D>(condition, target_name),
             new VArgsPattern(
                 new Pattern[17]
                 {
@@ -1250,7 +1301,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1276,7 +1327,7 @@ public static class K230
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
                     padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
-                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard()
+                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1287,7 +1338,8 @@ public static class K230
         Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null, Pattern? weightsqint8 = null,
         Pattern? outputpadding = null, Pattern? outputshape = null)
     {
-        return new CallPattern(new OpPattern<GNNEConv2DTranspose>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEConv2DTranspose>(condition, null),
             new VArgsPattern(
                 new Pattern[19]
                 {
@@ -1299,7 +1351,7 @@ public static class K230
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
                     padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
-                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard()
+                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1326,7 +1378,7 @@ public static class K230
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
                     padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
-                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard()
+                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1347,7 +1399,7 @@ public static class K230
                 qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                 dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
                 padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
-                outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard()
+                outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard(),
             }, null), null);
     }
 
@@ -1374,7 +1426,7 @@ public static class K230
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
                     padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
-                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard()
+                    outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1396,120 +1448,138 @@ public static class K230
                 qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                 dilation ?? Utility.IsWildcard(), groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
                 padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
-                outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard()
+                outputpadding ?? Utility.IsWildcard(), outputshape ?? Utility.IsWildcard(),
             }, null), call_name);
     }
 
     public static CallPattern IsGNNEFusion(Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNEFusion>((GNNEFusion x) => true, null),
+        return new CallPattern(
+            new OpPattern<GNNEFusion>((GNNEFusion x) => true, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNEFusion(Func<GNNEFusion, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNEFusion>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEFusion>(condition, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNEFusion(string? target_name, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNEFusion>((GNNEFusion x) => true, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEFusion>((GNNEFusion x) => true, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNEFusion(string? target_name, Func<GNNEFusion, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNEFusion>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEFusion>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNEFusion(string? target_name, string? call_name, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNEFusion>((GNNEFusion x) => true, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEFusion>((GNNEFusion x) => true, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
     public static CallPattern IsGNNEFusion(string? target_name, string? call_name, Func<GNNEFusion, bool> condition,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNEFusion>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEFusion>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
     public static CallPattern IsGNNELoad(PrimType DestType, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoad>((GNNELoad x) => x.DestType == DestType, null),
+        return new CallPattern(
+            new OpPattern<GNNELoad>((GNNELoad x) => x.DestType == DestType, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoad(Func<GNNELoad, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoad>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNELoad>(condition, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoad(string? target_name, PrimType DestType, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoad>((GNNELoad x) => x.DestType == DestType, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoad>((GNNELoad x) => x.DestType == DestType, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoad(string? target_name, Func<GNNELoad, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoad>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoad(string? target_name, string? call_name, PrimType DestType,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoad>((GNNELoad x) => x.DestType == DestType, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoad>((GNNELoad x) => x.DestType == DestType, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
     public static CallPattern IsGNNELoad(string? target_name, string? call_name, Func<GNNELoad, bool> condition,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoad>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
     public static CallPattern IsGNNELoadW(PrimType DestType, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoadW>((GNNELoadW x) => x.DestType == DestType, null),
+        return new CallPattern(
+            new OpPattern<GNNELoadW>((GNNELoadW x) => x.DestType == DestType, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoadW(Func<GNNELoadW, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoadW>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNELoadW>(condition, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoadW(string? target_name, PrimType DestType, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoadW>((GNNELoadW x) => x.DestType == DestType, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoadW>((GNNELoadW x) => x.DestType == DestType, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoadW(string? target_name, Func<GNNELoadW, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoadW>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoadW>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNELoadW(string? target_name, string? call_name, PrimType DestType,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoadW>((GNNELoadW x) => x.DestType == DestType, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoadW>((GNNELoadW x) => x.DestType == DestType, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
     public static CallPattern IsGNNELoadW(string? target_name, string? call_name, Func<GNNELoadW, bool> condition,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNELoadW>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELoadW>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
@@ -1546,7 +1616,7 @@ public static class K230
                     cshiftbits ?? Utility.IsWildcard(), rcshiftbits0 ?? Utility.IsWildcard(),
                     rcshiftbits1 ?? Utility.IsWildcard(), outhshiftbits ?? Utility.IsWildcard(),
                     outcshiftbits ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1559,7 +1629,8 @@ public static class K230
         Pattern? rcshiftbits1 = null, Pattern? outhshiftbits = null, Pattern? outcshiftbits = null,
         Pattern? hasstatic = null, Pattern? outputsize = null)
     {
-        return new CallPattern(new OpPattern<GNNELSTM>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNELSTM>(condition, null),
             new VArgsPattern(
                 new Pattern[25]
                 {
@@ -1574,7 +1645,7 @@ public static class K230
                     cshiftbits ?? Utility.IsWildcard(), rcshiftbits0 ?? Utility.IsWildcard(),
                     rcshiftbits1 ?? Utility.IsWildcard(), outhshiftbits ?? Utility.IsWildcard(),
                     outcshiftbits ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1611,7 +1682,7 @@ public static class K230
                     cshiftbits ?? Utility.IsWildcard(), rcshiftbits0 ?? Utility.IsWildcard(),
                     rcshiftbits1 ?? Utility.IsWildcard(), outhshiftbits ?? Utility.IsWildcard(),
                     outcshiftbits ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1624,7 +1695,8 @@ public static class K230
         Pattern? rcshiftbits1 = null, Pattern? outhshiftbits = null, Pattern? outcshiftbits = null,
         Pattern? hasstatic = null, Pattern? outputsize = null)
     {
-        return new CallPattern(new OpPattern<GNNELSTM>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELSTM>(condition, target_name),
             new VArgsPattern(
                 new Pattern[25]
                 {
@@ -1639,7 +1711,7 @@ public static class K230
                     cshiftbits ?? Utility.IsWildcard(), rcshiftbits0 ?? Utility.IsWildcard(),
                     rcshiftbits1 ?? Utility.IsWildcard(), outhshiftbits ?? Utility.IsWildcard(),
                     outcshiftbits ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1676,7 +1748,7 @@ public static class K230
                     cshiftbits ?? Utility.IsWildcard(), rcshiftbits0 ?? Utility.IsWildcard(),
                     rcshiftbits1 ?? Utility.IsWildcard(), outhshiftbits ?? Utility.IsWildcard(),
                     outcshiftbits ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1689,7 +1761,8 @@ public static class K230
         Pattern? rcshiftbits1 = null, Pattern? outhshiftbits = null, Pattern? outcshiftbits = null,
         Pattern? hasstatic = null, Pattern? outputsize = null)
     {
-        return new CallPattern(new OpPattern<GNNELSTM>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNELSTM>(condition, target_name),
             new VArgsPattern(
                 new Pattern[25]
                 {
@@ -1704,7 +1777,7 @@ public static class K230
                     cshiftbits ?? Utility.IsWildcard(), rcshiftbits0 ?? Utility.IsWildcard(),
                     rcshiftbits1 ?? Utility.IsWildcard(), outhshiftbits ?? Utility.IsWildcard(),
                     outcshiftbits ?? Utility.IsWildcard(), hasstatic ?? Utility.IsWildcard(),
-                    outputsize ?? Utility.IsWildcard()
+                    outputsize ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1720,7 +1793,7 @@ public static class K230
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    deqbbias ?? Utility.IsWildcard()
+                    deqbbias ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1728,14 +1801,15 @@ public static class K230
         Pattern? inputb = null, Pattern? act = null, Pattern? inputabias = null, Pattern? inashiftbits = null,
         Pattern? inbshiftbits = null, Pattern? shiftbits = null, Pattern? deqbbias = null)
     {
-        return new CallPattern(new OpPattern<GNNEMatMul>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEMatMul>(condition, null),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    deqbbias ?? Utility.IsWildcard()
+                    deqbbias ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1744,7 +1818,8 @@ public static class K230
         Pattern? inashiftbits = null, Pattern? inbshiftbits = null, Pattern? shiftbits = null, Pattern? deqbbias = null)
     {
         return new CallPattern(
-            new OpPattern<GNNEMatMul>((GNNEMatMul x) => x.ActParam == ActParam && x.OutputDType == OutputDType,
+            new OpPattern<GNNEMatMul>(
+                (GNNEMatMul x) => x.ActParam == ActParam && x.OutputDType == OutputDType,
                 target_name),
             new VArgsPattern(
                 new Pattern[8]
@@ -1752,7 +1827,7 @@ public static class K230
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    deqbbias ?? Utility.IsWildcard()
+                    deqbbias ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1760,14 +1835,15 @@ public static class K230
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null, Pattern? inputabias = null,
         Pattern? inashiftbits = null, Pattern? inbshiftbits = null, Pattern? shiftbits = null, Pattern? deqbbias = null)
     {
-        return new CallPattern(new OpPattern<GNNEMatMul>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEMatMul>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    deqbbias ?? Utility.IsWildcard()
+                    deqbbias ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1777,7 +1853,8 @@ public static class K230
         Pattern? shiftbits = null, Pattern? deqbbias = null)
     {
         return new CallPattern(
-            new OpPattern<GNNEMatMul>((GNNEMatMul x) => x.ActParam == ActParam && x.OutputDType == OutputDType,
+            new OpPattern<GNNEMatMul>(
+                (GNNEMatMul x) => x.ActParam == ActParam && x.OutputDType == OutputDType,
                 target_name),
             new VArgsPattern(
                 new Pattern[8]
@@ -1785,7 +1862,7 @@ public static class K230
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    deqbbias ?? Utility.IsWildcard()
+                    deqbbias ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1793,14 +1870,15 @@ public static class K230
         Pattern? inputa = null, Pattern? inputb = null, Pattern? act = null, Pattern? inputabias = null,
         Pattern? inashiftbits = null, Pattern? inbshiftbits = null, Pattern? shiftbits = null, Pattern? deqbbias = null)
     {
-        return new CallPattern(new OpPattern<GNNEMatMul>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEMatMul>(condition, target_name),
             new VArgsPattern(
                 new Pattern[8]
                 {
                     inputa ?? Utility.IsWildcard(), inputb ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                     inputabias ?? Utility.IsWildcard(), inashiftbits ?? Utility.IsWildcard(),
                     inbshiftbits ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    deqbbias ?? Utility.IsWildcard()
+                    deqbbias ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1810,18 +1888,19 @@ public static class K230
         return new CallPattern(new OpPattern<GNNEPad>((GNNEPad x) => x.Mode == Mode, null), new VArgsPattern(
             new Pattern[3]
             {
-                input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
             }, null), null);
     }
 
     public static CallPattern IsGNNEPad(Func<GNNEPad, bool> condition, Pattern? input = null, Pattern? pads = null,
         Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<GNNEPad>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEPad>(condition, null),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1831,18 +1910,19 @@ public static class K230
         return new CallPattern(new OpPattern<GNNEPad>((GNNEPad x) => x.Mode == Mode, target_name), new VArgsPattern(
             new Pattern[3]
             {
-                input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
             }, null), null);
     }
 
     public static CallPattern IsGNNEPad(string? target_name, Func<GNNEPad, bool> condition, Pattern? input = null,
         Pattern? pads = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<GNNEPad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPad>(condition, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1852,18 +1932,19 @@ public static class K230
         return new CallPattern(new OpPattern<GNNEPad>((GNNEPad x) => x.Mode == Mode, target_name), new VArgsPattern(
             new Pattern[3]
             {
-                input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
             }, null), call_name);
     }
 
     public static CallPattern IsGNNEPad(string? target_name, string? call_name, Func<GNNEPad, bool> condition,
         Pattern? input = null, Pattern? pads = null, Pattern? value = null)
     {
-        return new CallPattern(new OpPattern<GNNEPad>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPad>(condition, target_name),
             new VArgsPattern(
                 new Pattern[3]
                 {
-                    input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard()
+                    input ?? Utility.IsWildcard(), pads ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1888,7 +1969,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1898,7 +1979,8 @@ public static class K230
         Pattern? qint8qp = null, Pattern? padding = null, Pattern? stride = null, Pattern? dilation = null,
         Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null, Pattern? weightsqint8 = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp0DW>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEPdp0DW>(condition, null),
             new VArgsPattern(
                 new Pattern[17]
                 {
@@ -1909,7 +1991,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1934,7 +2016,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1944,7 +2026,8 @@ public static class K230
         Pattern? qint8qp = null, Pattern? padding = null, Pattern? stride = null, Pattern? dilation = null,
         Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null, Pattern? weightsqint8 = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp0DW>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPdp0DW>(condition, target_name),
             new VArgsPattern(
                 new Pattern[17]
                 {
@@ -1955,7 +2038,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -1980,7 +2063,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -1991,7 +2074,8 @@ public static class K230
         Pattern? dilation = null, Pattern? groups = null, Pattern? is16quant = null, Pattern? padvalue = null,
         Pattern? weightsqint8 = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp0DW>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPdp0DW>(condition, target_name),
             new VArgsPattern(
                 new Pattern[17]
                 {
@@ -2002,7 +2086,7 @@ public static class K230
                     qint8qp ?? Utility.IsWildcard(), padding ?? Utility.IsWildcard(),
                     stride ?? Utility.IsWildcard(), dilation ?? Utility.IsWildcard(),
                     groups ?? Utility.IsWildcard(), is16quant ?? Utility.IsWildcard(),
-                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard()
+                    padvalue ?? Utility.IsWildcard(), weightsqint8 ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -2020,7 +2104,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), depuantparams ?? Utility.IsWildcard(),
                     value ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2028,14 +2112,15 @@ public static class K230
         Pattern? filter = null, Pattern? stride = null, Pattern? padding = null, Pattern? depuantparams = null,
         Pattern? value = null, Pattern? shiftbits = null, Pattern? countincludepad = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp0Reduce>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEPdp0Reduce>(condition, null),
             new VArgsPattern(
                 new Pattern[9]
                 {
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), depuantparams ?? Utility.IsWildcard(),
                     value ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2054,7 +2139,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), depuantparams ?? Utility.IsWildcard(),
                     value ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2063,14 +2148,15 @@ public static class K230
         Pattern? depuantparams = null, Pattern? value = null, Pattern? shiftbits = null,
         Pattern? countincludepad = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp0Reduce>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPdp0Reduce>(condition, target_name),
             new VArgsPattern(
                 new Pattern[9]
                 {
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), depuantparams ?? Utility.IsWildcard(),
                     value ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2089,7 +2175,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), depuantparams ?? Utility.IsWildcard(),
                     value ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -2098,14 +2184,15 @@ public static class K230
         Pattern? padding = null, Pattern? depuantparams = null, Pattern? value = null, Pattern? shiftbits = null,
         Pattern? countincludepad = null, Pattern? act = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp0Reduce>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPdp0Reduce>(condition, target_name),
             new VArgsPattern(
                 new Pattern[9]
                 {
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), depuantparams ?? Utility.IsWildcard(),
                     value ?? Utility.IsWildcard(), shiftbits ?? Utility.IsWildcard(),
-                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard()
+                    countincludepad ?? Utility.IsWildcard(), act ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -2122,7 +2209,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), quantparams ?? Utility.IsWildcard(),
                     dequantparams ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard()
+                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2130,14 +2217,15 @@ public static class K230
         Pattern? stride = null, Pattern? padding = null, Pattern? quantparams = null, Pattern? dequantparams = null,
         Pattern? value = null, Pattern? shiftbits = null, Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp1>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEPdp1>(condition, null),
             new VArgsPattern(
                 new Pattern[9]
                 {
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), quantparams ?? Utility.IsWildcard(),
                     dequantparams ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard()
+                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2154,7 +2242,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), quantparams ?? Utility.IsWildcard(),
                     dequantparams ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard()
+                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2163,14 +2251,15 @@ public static class K230
         Pattern? dequantparams = null, Pattern? value = null, Pattern? shiftbits = null,
         Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp1>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPdp1>(condition, target_name),
             new VArgsPattern(
                 new Pattern[9]
                 {
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), quantparams ?? Utility.IsWildcard(),
                     dequantparams ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard()
+                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard(),
                 }, null), null);
     }
 
@@ -2187,7 +2276,7 @@ public static class K230
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), quantparams ?? Utility.IsWildcard(),
                     dequantparams ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard()
+                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
@@ -2196,20 +2285,22 @@ public static class K230
         Pattern? quantparams = null, Pattern? dequantparams = null, Pattern? value = null, Pattern? shiftbits = null,
         Pattern? countincludepad = null)
     {
-        return new CallPattern(new OpPattern<GNNEPdp1>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEPdp1>(condition, target_name),
             new VArgsPattern(
                 new Pattern[9]
                 {
                     input ?? Utility.IsWildcard(), filter ?? Utility.IsWildcard(), stride ?? Utility.IsWildcard(),
                     padding ?? Utility.IsWildcard(), quantparams ?? Utility.IsWildcard(),
                     dequantparams ?? Utility.IsWildcard(), value ?? Utility.IsWildcard(),
-                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard()
+                    shiftbits ?? Utility.IsWildcard(), countincludepad ?? Utility.IsWildcard(),
                 }, null), call_name);
     }
 
     public static CallPattern IsGNNEStore(PrimType DestType, Pattern? input = null, Pattern? strides = null)
     {
-        return new CallPattern(new OpPattern<GNNEStore>((GNNEStore x) => x.DestType == DestType, null),
+        return new CallPattern(
+            new OpPattern<GNNEStore>((GNNEStore x) => x.DestType == DestType, null),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), strides ?? Utility.IsWildcard() }, null),
             null);
     }
@@ -2217,7 +2308,8 @@ public static class K230
     public static CallPattern IsGNNEStore(Func<GNNEStore, bool> condition, Pattern? input = null,
         Pattern? strides = null)
     {
-        return new CallPattern(new OpPattern<GNNEStore>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNEStore>(condition, null),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), strides ?? Utility.IsWildcard() }, null),
             null);
     }
@@ -2225,7 +2317,8 @@ public static class K230
     public static CallPattern IsGNNEStore(string? target_name, PrimType DestType, Pattern? input = null,
         Pattern? strides = null)
     {
-        return new CallPattern(new OpPattern<GNNEStore>((GNNEStore x) => x.DestType == DestType, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEStore>((GNNEStore x) => x.DestType == DestType, target_name),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), strides ?? Utility.IsWildcard() }, null),
             null);
     }
@@ -2233,7 +2326,8 @@ public static class K230
     public static CallPattern IsGNNEStore(string? target_name, Func<GNNEStore, bool> condition, Pattern? input = null,
         Pattern? strides = null)
     {
-        return new CallPattern(new OpPattern<GNNEStore>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEStore>(condition, target_name),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), strides ?? Utility.IsWildcard() }, null),
             null);
     }
@@ -2241,7 +2335,8 @@ public static class K230
     public static CallPattern IsGNNEStore(string? target_name, string? call_name, PrimType DestType,
         Pattern? input = null, Pattern? strides = null)
     {
-        return new CallPattern(new OpPattern<GNNEStore>((GNNEStore x) => x.DestType == DestType, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEStore>((GNNEStore x) => x.DestType == DestType, target_name),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), strides ?? Utility.IsWildcard() }, null),
             call_name);
     }
@@ -2249,47 +2344,54 @@ public static class K230
     public static CallPattern IsGNNEStore(string? target_name, string? call_name, Func<GNNEStore, bool> condition,
         Pattern? input = null, Pattern? strides = null)
     {
-        return new CallPattern(new OpPattern<GNNEStore>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNEStore>(condition, target_name),
             new VArgsPattern(new Pattern[2] { input ?? Utility.IsWildcard(), strides ?? Utility.IsWildcard() }, null),
             call_name);
     }
 
     public static CallPattern IsGNNETranspose(MFU_TRANS_PERMUTE Perm, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNETranspose>((GNNETranspose x) => x.Perm == Perm, null),
+        return new CallPattern(
+            new OpPattern<GNNETranspose>((GNNETranspose x) => x.Perm == Perm, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNETranspose(Func<GNNETranspose, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNETranspose>(condition, null),
+        return new CallPattern(
+            new OpPattern<GNNETranspose>(condition, null),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNETranspose(string? target_name, MFU_TRANS_PERMUTE Perm, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNETranspose>((GNNETranspose x) => x.Perm == Perm, target_name),
+        return new CallPattern(
+            new OpPattern<GNNETranspose>((GNNETranspose x) => x.Perm == Perm, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNETranspose(string? target_name, Func<GNNETranspose, bool> condition,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNETranspose>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNETranspose>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), null);
     }
 
     public static CallPattern IsGNNETranspose(string? target_name, string? call_name, MFU_TRANS_PERMUTE Perm,
         Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNETranspose>((GNNETranspose x) => x.Perm == Perm, target_name),
+        return new CallPattern(
+            new OpPattern<GNNETranspose>((GNNETranspose x) => x.Perm == Perm, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 
     public static CallPattern IsGNNETranspose(string? target_name, string? call_name,
         Func<GNNETranspose, bool> condition, Pattern? input = null)
     {
-        return new CallPattern(new OpPattern<GNNETranspose>(condition, target_name),
+        return new CallPattern(
+            new OpPattern<GNNETranspose>(condition, target_name),
             new VArgsPattern(new Pattern[1] { input ?? Utility.IsWildcard() }, null), call_name);
     }
 }

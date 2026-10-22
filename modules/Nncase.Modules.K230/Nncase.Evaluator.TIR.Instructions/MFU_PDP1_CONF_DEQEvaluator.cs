@@ -14,7 +14,7 @@ internal sealed class MFU_PDP1_CONF_DEQEvaluator : ITypeInferencer<MFU_PDP1_CONF
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_PDP1_CONF_DEQ target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_PDP1_CONF_DEQ target, bool iLmode)
     {
         return
             $"I.MFU_PDP1_CONF_DEQ(rscale: {target.rscale}, rbias: {target.rbias}, quant_type: {target.quant_type}, funct5: {target.funct5}, rshift_bits: {context.GetArgument(target, MFU_PDP1_CONF_DEQ.rshift_bits)})";

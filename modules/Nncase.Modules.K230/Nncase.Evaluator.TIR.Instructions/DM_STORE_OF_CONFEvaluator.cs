@@ -14,7 +14,7 @@ internal sealed class DM_STORE_OF_CONFEvaluator : ITypeInferencer<DM_STORE_OF_CO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, DM_STORE_OF_CONF target, bool ILmode)
+    public string Visit(IIRPrinterContext context, DM_STORE_OF_CONF target, bool iLmode)
     {
         return
             $"I.DM_STORE_OF_CONF(tcu_id: {context.GetArgument(target, DM_STORE_OF_CONF.tcu_id)}, pu_id: {context.GetArgument(target, DM_STORE_OF_CONF.pu_id)}, rstride_d: {target.rstride_d}, datatype: {target.datatype}, funct4: {target.funct4})";

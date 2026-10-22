@@ -13,15 +13,16 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeConv2D("fakeConv2", "call2",
-        (FakeConv2D _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker("marker",
+        (FakeConv2D _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "marker",
             Nncase.PatternMatch.F.K230.IsFakeConv2D("fakeConv1", "call1", (FakeConv2D _) => true,
-                Nncase.PatternMatch.Utility.IsWildcard("input1")with
+                Nncase.PatternMatch.Utility.IsWildcard("input1") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 },
-                Nncase.PatternMatch.Utility.IsWildcard("weights1")with
+                Nncase.PatternMatch.Utility.IsWildcard("weights1") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsTensorConst("act1"),
                 Nncase.PatternMatch.Utility.IsTensorConst("padding1"),
                 Nncase.PatternMatch.Utility.IsTensorConst("stride1"),
@@ -42,8 +43,8 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
                     call1.CheckedShape[1] == groups1.Value.ToScalar<int>() && groups1 != 1;
         bool isDepthwise2 = call1.CheckedShape[1] == call2.CheckedShape[1] &&
                    call2.CheckedShape[1] == groups2.Value.ToScalar<int>() && groups2 != 1;
-        DataType quantType = base.CompileSession.CompileOptions.QuantizeOptions.QuantType;
-        DataType wQuantType = base.CompileSession.CompileOptions.QuantizeOptions.WQuantType;
+        DataType quantType = CompileSession.CompileOptions.QuantizeOptions.QuantType;
+        DataType wQuantType = CompileSession.CompileOptions.QuantizeOptions.WQuantType;
         if (isDepthwise2 && weights2.CheckedShape[2].FixedValue <= 3 && weights2.CheckedShape[3].FixedValue <= 3 && !isDepthwise1)
         {
             if (marker.MixQuantInfo == null)
@@ -52,7 +53,7 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
             }
 
             if (quantType != DataTypes.Int16 &&
-                base.CompileSession.CompileOptions.QuantizeOptions.QuantScheme == string.Empty)
+                CompileSession.CompileOptions.QuantizeOptions.QuantScheme == string.Empty)
             {
                 ((K230Target.K230MixQuantInfo)marker.MixQuantInfo).PermitInt16Quant = false;
             }
@@ -63,7 +64,7 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
             }
 
             if (wQuantType != DataTypes.Int16 &&
-                base.CompileSession.CompileOptions.QuantizeOptions.QuantScheme == string.Empty)
+                CompileSession.CompileOptions.QuantizeOptions.QuantScheme == string.Empty)
             {
                 ((K230Target.K230MixQuantInfo)markerW.MixQuantInfo).PermitInt16Quant = false;
             }
@@ -74,15 +75,15 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call1"];
-        TensorConst groups = (TensorConst)__result["groups1"];
-        Marker marker = (Marker)__result["marker"];
-        Call call2 = (Call)__result["call2"];
-        Expr weights = (Expr)__result["weights2"];
-        TensorConst groups2 = (TensorConst)__result["groups2"];
-        Marker markerW = (Marker)__result["markerW"];
+        Call call = (Call)result["call1"];
+        TensorConst groups = (TensorConst)result["groups1"];
+        Marker marker = (Marker)result["marker"];
+        Call call2 = (Call)result["call2"];
+        Expr weights = (Expr)result["weights2"];
+        TensorConst groups2 = (TensorConst)result["groups2"];
+        Marker markerW = (Marker)result["markerW"];
         return GetReplace(call, groups, marker, call2, weights, groups2, markerW);
     }
 }

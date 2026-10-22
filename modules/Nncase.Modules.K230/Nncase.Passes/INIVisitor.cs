@@ -30,15 +30,11 @@ internal sealed class INIVisitor : ExprVisitor<Unit, Unit>
 
     protected override Unit DefaultVisitLeaf(Expr expr)
     {
-        //IL_0002: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0008: Unknown result type (might be due to invalid IL or missing references)
         return default(Unit);
     }
 
     protected override Unit VisitLeafCall(Call expr)
     {
-        //IL_0088: Unknown result type (might be due to invalid IL or missing references)
-        //IL_008e: Unknown result type (might be due to invalid IL or missing references)
         if ((object)expr != null)
         {
             if (!(expr.Target is FakeMatMul))
@@ -52,7 +48,8 @@ internal sealed class INIVisitor : ExprVisitor<Unit, Unit>
         }
         else if ((object)expr == null || !(expr.Target is Op))
         {
-            throw new ArgumentOutOfRangeException("expr",
+            throw new ArgumentOutOfRangeException(
+                "expr",
                 "Target Type " + expr.Target.GetType().Name + " not support!");
         }
 

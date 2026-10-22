@@ -12,7 +12,6 @@ internal sealed class DumpTraceInfoPass : ModulePass
 {
     protected override Task<IRModule> RunCoreAsync(IRModule module, RunPassContext options)
     {
-        //IL_001d: Unknown result type (might be due to invalid IL or missing references)
         if (DumpScope.Current.IsEnabled(DumpFlags.PassIR))
         {
             TraceInfoVisitor traceInfoVisitor = new TraceInfoVisitor();

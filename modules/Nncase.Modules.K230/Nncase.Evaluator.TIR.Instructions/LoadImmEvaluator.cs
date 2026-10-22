@@ -13,7 +13,7 @@ internal sealed class LoadImmEvaluator : ITypeInferencer<LoadImm>, ITypeInferenc
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, LoadImm target, bool ILmode)
+    public string Visit(IIRPrinterContext context, LoadImm target, bool iLmode)
     {
         return $"I.LoadImm(rd: {target.Rd}, value: {context.GetArgument(target, LoadImm.Value)})";
     }

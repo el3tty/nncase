@@ -20,19 +20,22 @@ public class FoldReshapeTransposeOfDepthAnything : RewriteRule<Pattern>
     {
         if (perm1.SequenceEqual(new int[4] { 0, 1, 3, 2 }) && perm2.SequenceEqual(new int[4] { 2, 0, 3, 1 }))
         {
-            return Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Tensors.Transpose(Nncase.IR.F.Tensors.Reshape(input,
+            return Nncase.IR.F.Tensors.Reshape(
+                Nncase.IR.F.Tensors.Transpose(
+                Nncase.IR.F.Tensors.Reshape(
+                input,
                 new int[4] { shape1[3], shape1[0], shape1[2], shape1[4] }), new int[4] { 1, 2, 0, 3 }), shape1);
         }
 
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr input = (Expr)__result["input"];
-        int[] perm = ((TensorConst)__result["perm1"]).Value.ToArray<int>();
-        int[] perm2 = ((TensorConst)__result["perm2"]).Value.ToArray<int>();
-        int[] shape = ((TensorConst)__result["shape1"]).Value.ToArray<int>();
+        Expr input = (Expr)result["input"];
+        int[] perm = ((TensorConst)result["perm1"]).Value.ToArray<int>();
+        int[] perm2 = ((TensorConst)result["perm2"]).Value.ToArray<int>();
+        int[] shape = ((TensorConst)result["shape1"]).Value.ToArray<int>();
         return GetReplace(input, perm, perm2, shape);
     }
 
@@ -55,7 +58,7 @@ public class FoldReshapeTransposeOfDepthAnything : RewriteRule<Pattern>
                     Nncase.PatternMatch.Utility.IsTensorConst("perm1")),
                 Nncase.PatternMatch.Utility.IsTensorConst("shape1")) with
             {
-                TypePattern = (TypePatternUtility.HasRank(5) & TypePatternUtility.HasFixedShape())
+                TypePattern = TypePatternUtility.HasRank(5) & TypePatternUtility.HasFixedShape(),
             };
     }
 }

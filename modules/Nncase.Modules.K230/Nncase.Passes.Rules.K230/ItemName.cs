@@ -43,5 +43,5 @@ public enum ItemName
     LstmBinQAct,
     LstmSegFittingParamFt,
     LstmSegFittingParamGt,
-    WeightPreload
+    WeightPreload,
 }

@@ -36,11 +36,11 @@ public class Relu6ToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, relu6Call.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Relu6 relu = (Relu6)__result["relu6"];
-        Call relu6Call = (Call)__result["relu6Call"];
-        Expr input = (Expr)__result["input"];
+        Relu6 relu = (Relu6)result["relu6"];
+        Call relu6Call = (Call)result["relu6Call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(relu, relu6Call, input);
     }
 }

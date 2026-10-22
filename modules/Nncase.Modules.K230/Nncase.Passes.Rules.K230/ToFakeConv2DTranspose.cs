@@ -15,8 +15,8 @@ public sealed class ToFakeConv2DTranspose : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsConv2DTranspose("conv2dTranspose", "call",
         (Conv2DTranspose _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
-        Nncase.PatternMatch.Utility.IsWildcard("weights")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("weights") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsTensorConst("bias"), Nncase.PatternMatch.Utility.IsWildcard("outShape"),
         Nncase.PatternMatch.Utility.IsWildcard("stride"), Nncase.PatternMatch.Utility.IsWildcard("padding"),
         Nncase.PatternMatch.Utility.IsWildcard("outPadding"), Nncase.PatternMatch.Utility.IsWildcard("dilation"),
@@ -37,20 +37,20 @@ public sealed class ToFakeConv2DTranspose : RewriteRule<Pattern>
             outShape, padding, outPadding, stride, dilation, groups, 0, defaultConvActParam);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Conv2DTranspose conv2dTranspose = (Conv2DTranspose)__result["conv2dTranspose"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        Expr weights = (Expr)__result["weights"];
-        TensorConst bias = (TensorConst)__result["bias"];
-        Expr outShape = (Expr)__result["outShape"];
-        Expr stride = (Expr)__result["stride"];
-        Expr padding = (Expr)__result["padding"];
-        Expr outPadding = (Expr)__result["outPadding"];
-        Expr dilation = (Expr)__result["dilation"];
-        int groups = ((TensorConst)__result["groups"]).Value.ToScalar<int>();
-        Tensor<float> fusedClamp = ((TensorConst)__result["fusedClamp"]).Value.Cast<float>();
+        Conv2DTranspose conv2dTranspose = (Conv2DTranspose)result["conv2dTranspose"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        Expr weights = (Expr)result["weights"];
+        TensorConst bias = (TensorConst)result["bias"];
+        Expr outShape = (Expr)result["outShape"];
+        Expr stride = (Expr)result["stride"];
+        Expr padding = (Expr)result["padding"];
+        Expr outPadding = (Expr)result["outPadding"];
+        Expr dilation = (Expr)result["dilation"];
+        int groups = ((TensorConst)result["groups"]).Value.ToScalar<int>();
+        Tensor<float> fusedClamp = ((TensorConst)result["fusedClamp"]).Value.Cast<float>();
         return GetReplace(conv2dTranspose, call, input, weights, bias, outShape, stride, padding, outPadding, dilation,
             groups, fusedClamp);
     }

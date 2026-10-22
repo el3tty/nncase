@@ -32,7 +32,8 @@ public class TensorOnGlb : IBufferView<TensorOnGlb>
 
     public int AllocatedBytes { get; set; }
 
-    public int AddrOffset => SelectedRanges.ToArray().Zip(Stride.ToArray()).Aggregate(0,
+    public int AddrOffset => SelectedRanges.ToArray().Zip(Stride.ToArray()).Aggregate(
+        0,
         (int acc, (SelectedRange First, int Second) t) => acc + t.First.Start * t.Second);
 
     public int CurAddr => Addr + AddrOffset;
@@ -52,7 +53,8 @@ public class TensorOnGlb : IBufferView<TensorOnGlb>
             TileUtilities.Assert(segments.Count == SelectedRanges.Length, "segments.Count == SelectedRanges.Length",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
                 205);
-            return new TensorOnGlb((from t in segments.Zip(SelectedRanges.ToArray())
+            return new TensorOnGlb(
+                (from t in segments.Zip(SelectedRanges.ToArray())
                 select t.Second.Slice(t.First)).ToArray(), this);
         }
     }
@@ -92,19 +94,23 @@ public class TensorOnGlb : IBufferView<TensorOnGlb>
 
     public int GetAddr(int dim0, int dim1, int dim2, int dim3, int pp = 0, int bufNum = 2)
     {
-        TileUtilities.Assert(dim0 < Dimensions[0] || (dim0 == 0 && dim0 == Dimensions[0]),
+        TileUtilities.Assert(
+            dim0 < Dimensions[0] || (dim0 == 0 && dim0 == Dimensions[0]),
             "dim0 < Dimensions[0] || (dim0 == 0 && dim0 == Dimensions[0])",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
             217);
-        TileUtilities.Assert(dim1 < Dimensions[1] || (dim1 == 0 && dim1 == Dimensions[1]),
+        TileUtilities.Assert(
+            dim1 < Dimensions[1] || (dim1 == 0 && dim1 == Dimensions[1]),
             "dim1 < Dimensions[1] || (dim1 == 0 && dim1 == Dimensions[1])",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
             218);
-        TileUtilities.Assert(dim2 < Dimensions[2] || (dim2 == 0 && dim2 == Dimensions[2]),
+        TileUtilities.Assert(
+            dim2 < Dimensions[2] || (dim2 == 0 && dim2 == Dimensions[2]),
             "dim2 < Dimensions[2] || (dim2 == 0 && dim2 == Dimensions[2])",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
             219);
-        TileUtilities.Assert(dim3 < Dimensions[3] || (dim3 == 0 && dim3 == Dimensions[3]),
+        TileUtilities.Assert(
+            dim3 < Dimensions[3] || (dim3 == 0 && dim3 == Dimensions[3]),
             "dim3 < Dimensions[3] || (dim3 == 0 && dim3 == Dimensions[3])",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
             220);

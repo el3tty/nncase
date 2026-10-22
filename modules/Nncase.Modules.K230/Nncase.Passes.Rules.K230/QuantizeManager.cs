@@ -57,8 +57,8 @@ public class QuantizeManager
     {
         Trace.Assert(inIdx < 2);
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
-        int bits = ((quantType == DataTypes.Int16) ? 12 : 8);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
+        int bits = (quantType == DataTypes.Int16) ? 12 : 8;
         return QuantHelper.GetDeqParam(QuantUtility.GetQuantParam(InputRange, bits, quantMode));
     }
 
@@ -119,7 +119,7 @@ public class QuantizeManager
 
         float[] weights = _oldWeights.ToArray<float>();
         int weightsPerChannel = weights.Length / channelCount;
-        QuantT[] quantWeights = (from _ in Enumerable.Range(0, weights.Length)
+        QuantT[] quantWeights = (from i in Enumerable.Range(0, weights.Length)
             select new QuantT(_conf.WQuantType == DataTypes.UInt8)).ToArray();
         QuantizeParam[] weightsQuantParam = GetWeightsQuantParam();
         QuantizeParam[] weightsQuantParamQint = GetWeightsQuantParamQint8();
@@ -222,8 +222,8 @@ public class QuantizeManager
     public DeQuantizeParam GetOfDeqQuantParam(DataType quantType, int outIdx = 0)
     {
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
-        int bits = ((quantType == DataTypes.Int16) ? 12 : 8);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
+        int bits = (quantType == DataTypes.Int16) ? 12 : 8;
         return QuantHelper.GetDeqParam(QuantUtility.GetQuantParam(OutRange, bits, quantMode));
     }
 
@@ -238,17 +238,18 @@ public class QuantizeManager
         float[] weights = _oldWeights.ToArray<float>();
         QuantizeParam[] channelParams = new QuantizeParam[channelCount];
         int weightsPerChannel = _oldWeights.Shape.Prod().FixedValue / channelCount;
-        int bits = ((_conf.WQuantType == DataTypes.Int16) ? 12 : 8);
+        int bits = (_conf.WQuantType == DataTypes.Int16) ? 12 : 8;
         for (int i = 0; i < channelCount; i++)
         {
-            new Span<float>(weights, i * weightsPerChannel, weightsPerChannel);
+            _ = new Span<float>(weights, i * weightsPerChannel, weightsPerChannel);
             bool symmetric = _conf.WQuantType != DataTypes.UInt8;
-            QuantMode quantMode = ((!(_conf.WQuantType == DataTypes.UInt8))
+            QuantMode quantMode = (!(_conf.WQuantType == DataTypes.UInt8))
                 ? QuantMode.SignedAsymmetricMode
-                : QuantMode.UnsignedMode);
-            float min = ((_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { i, 0 }]);
-            float max = ((_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { i, 1 }]);
-            QuantizeParam quantParam = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(QuantUtility.FixupRange(
+                : QuantMode.UnsignedMode;
+            float min = (_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { i, 0 }];
+            float max = (_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { i, 1 }];
+            QuantizeParam quantParam = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(
+                QuantUtility.FixupRange(
                 new ValueRange<float> { Min = min, Max = max }, symmetric), bits, quantMode));
             channelParams[i].Scale = quantParam.Scale;
             channelParams[i].ZeroPoint = quantParam.ZeroPoint;
@@ -280,8 +281,8 @@ public class QuantizeManager
                 float bestError = float.MaxValue;
                 float[] dequantized = Enumerable.Repeat(0f, weightsPerChannel).ToArray();
                 byte[] quantized = Enumerable.Repeat((byte)0, weightsPerChannel).ToArray();
-                float min = ((_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { i, 0 }]);
-                float max = ((_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { i, 1 }]);
+                float min = (_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { i, 0 }];
+                float max = (_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { i, 1 }];
                 ValueRange<float> valueRange = QuantUtility.FixupRange(new ValueRange<float> { Min = min, Max = max });
                 float stepSize = (valueRange.Max - valueRange.Min) / 256f;
                 for (uint minStepIndex = 0u; minStepIndex < 32; minStepIndex++)
@@ -289,7 +290,7 @@ public class QuantizeManager
                     QuantizeParam quantParam = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(
                         QuantUtility.FixupRange(new ValueRange<float>
                         {
-                            Min = valueRange.Min - stepSize * (float)minStepIndex, Max = valueRange.Max
+                            Min = valueRange.Min - stepSize * (float)minStepIndex, Max = valueRange.Max,
                         }), 8, QuantMode.UnsignedMode));
                     qp.Scale = 1f / quantParam.Scale;
                     qp.ZeroPoint = quantParam.ZeroPoint;
@@ -317,7 +318,7 @@ public class QuantizeManager
                     QuantizeParam quantParam2 = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(
                         QuantUtility.FixupRange(new ValueRange<float>
                         {
-                            Min = valueRange.Min, Max = valueRange.Max + stepSize * (float)maxStepIndex
+                            Min = valueRange.Min, Max = valueRange.Max + stepSize * (float)maxStepIndex,
                         }), 8, QuantMode.UnsignedMode));
                     qp2.Scale = 1f / quantParam2.Scale;
                     qp2.ZeroPoint = quantParam2.ZeroPoint;
@@ -366,12 +367,13 @@ public class QuantizeManager
         int bits = 8;
         for (int n = 0; n < channelCount; n++)
         {
-            new Span<float>(weights, n * weightsPerChannel, weightsPerChannel);
+            _ = new Span<float>(weights, n * weightsPerChannel, weightsPerChannel);
             bool symmetric = false;
             QuantMode quantMode = QuantMode.UnsignedMode;
-            float min2 = ((_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { n, 0 }]);
-            float max2 = ((_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { n, 1 }]);
-            QuantizeParam quantParam3 = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(QuantUtility.FixupRange(
+            float min2 = (_wRange.Rank == 1) ? _wRange[new int[1]] : _wRange[new int[2] { n, 0 }];
+            float max2 = (_wRange.Rank == 1) ? _wRange[new int[1] { 1 }] : _wRange[new int[2] { n, 1 }];
+            QuantizeParam quantParam3 = QuantHelper.GetQuantParam(QuantUtility.GetQuantParam(
+                QuantUtility.FixupRange(
                 new ValueRange<float> { Min = min2, Max = max2 }, symmetric), bits, quantMode));
             channelParams[n].Scale = quantParam3.Scale;
             channelParams[n].ZeroPoint = quantParam3.ZeroPoint;

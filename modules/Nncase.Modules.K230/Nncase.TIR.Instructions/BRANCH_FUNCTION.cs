@@ -10,5 +10,5 @@ public enum BRANCH_FUNCTION : uint
     blt,
     bltu,
     bge,
-    bgeu
+    bgeu,
 }

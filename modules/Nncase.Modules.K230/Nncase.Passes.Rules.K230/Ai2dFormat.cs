@@ -10,5 +10,5 @@ public enum Ai2dFormat
     YUV420_I420,
     NCHW_FMT,
     RGB_packed,
-    RAW16
+    RAW16,
 }

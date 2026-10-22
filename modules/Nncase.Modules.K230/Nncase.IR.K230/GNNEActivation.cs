@@ -28,12 +28,10 @@ public sealed class GNNEActivation : Op, IEquatable<GNNEActivation?>
         TypePatternUtility.HasDataType(DataTypes.Int32) & TypePatternUtility.IsScalar());
 
     public static readonly ParameterInfo DeqAParams = new ParameterInfo(typeof(GNNEActivation), 6, "deq_a_params",
-        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)) |
-        TypePatternUtility.IsNoneType());
+        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)) | TypePatternUtility.IsNoneType());
 
     public static readonly ParameterInfo DeqBParams = new ParameterInfo(typeof(GNNEActivation), 7, "deq_b_params",
-        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)) |
-        TypePatternUtility.IsNoneType());
+        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)) | TypePatternUtility.IsNoneType());
 
     public static readonly ParameterInfo OutChannels = new ParameterInfo(typeof(GNNEActivation), 8, "out_channels",
         TypePatternUtility.IsIntegralScalar());
@@ -97,7 +95,8 @@ public sealed class GNNEActivation : Op, IEquatable<GNNEActivation?>
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(Type, OutputDType, ActParam, OutputShape, InputFromL1));
     }
 }

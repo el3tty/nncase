@@ -67,33 +67,33 @@ public sealed class DWToPdp : RewriteRule<Pattern>, IRewriteRule
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call dwCall = (Call)__result["dwCall"];
-        GNNEConv2D dw = (GNNEConv2D)__result["dw"];
-        Call ldCall = (Call)__result["ldCall"];
-        Call stCall = (Call)__result["stCall"];
-        Call convCall = (Call)__result["convCall"];
-        Call convInputCall = (Call)__result["convInputCall"];
-        Expr convGroups = (Expr)__result["convGroups"];
-        Call weightsCall = (Call)__result["weightsCall"];
-        Expr weightsBias = (Expr)__result["weightsBias"];
-        Expr weightsBiasQint = (Expr)__result["weightsBiasQint8"];
-        Expr act = (Expr)__result["act"];
-        Expr actQint = (Expr)__result["actQint8"];
-        Expr deqBias = (Expr)__result["deqBias"];
-        Expr shiftBits = (Expr)__result["shiftBits"];
-        Expr shiftBitsQint = (Expr)__result["shiftBitsQint8"];
-        Expr qint8Qp = (Expr)__result["qint8Qp"];
-        Expr padding = (Expr)__result["padding"];
-        Expr stride = (Expr)__result["stride"];
-        Expr dilation = (Expr)__result["dilation"];
-        Expr groups = (Expr)__result["groups"];
-        Expr is16Quant = (Expr)__result["is16Quant"];
-        Expr padValue = (Expr)__result["padValue"];
-        Expr weightsQInt = (Expr)__result["weightsQInt8"];
+        Call dwCall = (Call)result["dwCall"];
+        GNNEConv2D dw = (GNNEConv2D)result["dw"];
+        Call ldCall = (Call)result["ldCall"];
+        Call stCall = (Call)result["stCall"];
+        Call convCall = (Call)result["convCall"];
+        Call convInputCall = (Call)result["convInputCall"];
+        Expr convGroups = (Expr)result["convGroups"];
+        Call weightsCall = (Call)result["weightsCall"];
+        Expr weightsBias = (Expr)result["weightsBias"];
+        Expr weightsBiasQint = (Expr)result["weightsBiasQint8"];
+        Expr act = (Expr)result["act"];
+        Expr actQint = (Expr)result["actQint8"];
+        Expr deqBias = (Expr)result["deqBias"];
+        Expr shiftBits = (Expr)result["shiftBits"];
+        Expr shiftBitsQint = (Expr)result["shiftBitsQint8"];
+        Expr qint8Qp = (Expr)result["qint8Qp"];
+        Expr padding = (Expr)result["padding"];
+        Expr stride = (Expr)result["stride"];
+        Expr dilation = (Expr)result["dilation"];
+        Expr groups = (Expr)result["groups"];
+        Expr is16Quant = (Expr)result["is16Quant"];
+        Expr padValue = (Expr)result["padValue"];
+        Expr weightsQInt = (Expr)result["weightsQInt8"];
         return GetReplace(dwCall, dw, ldCall, stCall, convCall, convInputCall, convGroups, weightsCall, weightsBias,
             weightsBiasQint, act, actQint, deqBias, shiftBits, shiftBitsQint, qint8Qp, padding, stride, dilation,
-            groups, is16Quant, padValue, weightsQInt, __context);
+            groups, is16Quant, padValue, weightsQInt, context);
     }
 }

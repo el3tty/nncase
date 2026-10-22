@@ -13,7 +13,7 @@ internal sealed class BLTUEvaluator : ITypeInferencer<BLTU>, ITypeInferencer, IO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, BLTU target, bool ILmode)
+    public string Visit(IIRPrinterContext context, BLTU target, bool iLmode)
     {
         return
             $"I.BLTU(rs1: {target.rs1}, rs2: {target.rs2}, offset: {context.GetArgument(target, BLTU.offset)}, funct3: {target.funct3})";

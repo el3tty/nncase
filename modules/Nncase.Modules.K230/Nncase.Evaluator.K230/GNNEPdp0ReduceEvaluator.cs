@@ -44,9 +44,7 @@ public class GNNEPdp0ReduceEvaluator : IEvaluator<GNNEPdp0Reduce>, IEvaluator, I
             (Before: padding[new int[2]], After: padding[new int[2] { 0, 1 }]),
             (Before: padding[new int[2] { 1, 0 }], After: padding[new int[2] { 1, 1 }]),
             checked((sbyte)shiftBits), reduceFuncs.BinaryOp, reduceFuncs.WindowOp, countIncludePad[0],
-            (dequantParams is NoneValue)
-                ? new DeQuantizeParam(0, 1f)
-                : dequantParams.AsTensor().ToScalar<DeQuantizeParam>(), padValue);
+            (dequantParams is NoneValue) ? new DeQuantizeParam(0, 1f) : dequantParams.AsTensor().ToScalar<DeQuantizeParam>(), padValue);
         return CastOutput(output, p.DestType);
     }
 
@@ -136,7 +134,8 @@ public class GNNEPdp0ReduceEvaluator : IEvaluator<GNNEPdp0Reduce>, IEvaluator, I
                                 {
                                     // NOTE: the zero point is subtracted from the running accumulator at every
                                     // step, not only from the new value.
-                                    accumulator = binaryOp(accumulator - (float)deQuantizeParam.ZeroPoint,
+                                    accumulator = binaryOp(
+                                        accumulator - (float)deQuantizeParam.ZeroPoint,
                                         value - (float)deQuantizeParam.ZeroPoint);
                                 }
 

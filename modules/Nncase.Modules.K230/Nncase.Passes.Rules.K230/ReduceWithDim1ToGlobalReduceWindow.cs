@@ -12,12 +12,13 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class ReduceWithDim1ToGlobalReduceWindow : IRewriteRule
 {
-    public IPattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+    public IPattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "outputMarker",
         Nncase.PatternMatch.F.Math.IsReduce("reduce", "call", (Reduce _) => true,
             Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker", Nncase.PatternMatch.Utility.IsWildcard("input"),
-                    Nncase.PatternMatch.Utility.IsTensorConst("inputRange"))with
+                    Nncase.PatternMatch.Utility.IsTensorConst("inputRange")) with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsTensorConst("axis"),
             Nncase.PatternMatch.Utility.IsTensorConst("initValue"), Nncase.PatternMatch.Utility.IsTensorConst()),
         Nncase.PatternMatch.Utility.IsTensorConst("outputRange"));
@@ -33,9 +34,12 @@ public sealed class ReduceWithDim1ToGlobalReduceWindow : IRewriteRule
         }
 
         Marker input2 = Nncase.IR.F.Math
-            .RangeOfMarker(Nncase.IR.F.Tensors.Transpose(inputMarker, new int[4] { 2, 3, 0, 1 }), inputRange).With(null,
+            .RangeOfMarker(Nncase.IR.F.Tensors.Transpose(inputMarker, new int[4] { 2, 3, 0, 1 }), inputRange).With(
+                null,
                 null, null, adaQuantInfo: inputMarker.AdaQuantInfo, mixQuantInfo: inputMarker.MixQuantInfo);
-        return Nncase.IR.F.Math.RangeOfMarker(Nncase.IR.F.Tensors.Reshape(Nncase.IR.F.Math.RangeOfMarker(
+        return Nncase.IR.F.Math.RangeOfMarker(
+            Nncase.IR.F.Tensors.Reshape(
+            Nncase.IR.F.Math.RangeOfMarker(
                     Nncase.IR.F.NN.ReduceWindow2D(reduce.ReduceOp, input2, initValue, new int[2] { inputShape[0], inputShape[1] },
                         new int[2] { 1, 1 }, new int[2, 2], new int[2] { 1, 1 }, false, false), outputRange)
                 .With(null, null, null, adaQuantInfo: outputMarker.AdaQuantInfo,
@@ -55,17 +59,17 @@ public sealed class ReduceWithDim1ToGlobalReduceWindow : IRewriteRule
         return false;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Reduce reduce = (Reduce)__result["reduce"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        TensorConst axis = (TensorConst)__result["axis"];
-        TensorConst initValue = (TensorConst)__result["initValue"];
-        Marker inputMarker = (Marker)__result["inputMarker"];
-        Marker outputMarker = (Marker)__result["outputMarker"];
-        Expr inputRange = (Expr)__result["inputRange"];
-        Expr outputRange = (Expr)__result["outputRange"];
+        Reduce reduce = (Reduce)result["reduce"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        TensorConst axis = (TensorConst)result["axis"];
+        TensorConst initValue = (TensorConst)result["initValue"];
+        Marker inputMarker = (Marker)result["inputMarker"];
+        Marker outputMarker = (Marker)result["outputMarker"];
+        Expr inputRange = (Expr)result["inputRange"];
+        Expr outputRange = (Expr)result["outputRange"];
         return GetReplace(reduce, call, input, axis, initValue, inputMarker, outputMarker, inputRange, outputRange);
     }
 }

@@ -13,7 +13,7 @@ internal sealed class CCR_DECLEvaluator : ITypeInferencer<CCR_DECL>, ITypeInfere
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, CCR_DECL target, bool ILmode)
+    public string Visit(IIRPrinterContext context, CCR_DECL target, bool iLmode)
     {
         return $"I.CCR_DECL(rnum: {target.rnum})";
     }

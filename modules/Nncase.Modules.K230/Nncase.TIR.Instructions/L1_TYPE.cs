@@ -7,5 +7,5 @@ public enum L1_TYPE : uint
 {
     if_,
     w,
-    psum
+    psum,
 }

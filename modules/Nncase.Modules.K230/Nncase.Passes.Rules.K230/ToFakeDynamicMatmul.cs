@@ -13,9 +13,9 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class ToFakeDynamicMatmul : IRewriteRule
 {
     public IPattern Pattern { get; } = Math.IsMatMul(null, "oldMatmul",
-            Nncase.PatternMatch.Utility.IsWildcard("inputA"), Nncase.PatternMatch.Utility.IsWildcard("inputB"))with
+            Nncase.PatternMatch.Utility.IsWildcard("inputA"), Nncase.PatternMatch.Utility.IsWildcard("inputB")) with
         {
-            TypePattern = TypePatternUtility.HasShape((Shape shape) => !shape.IsFixed, "HasDynamicShape")
+            TypePattern = TypePatternUtility.HasShape((Shape shape) => !shape.IsFixed, "HasDynamicShape"),
         };
 
     private bool AnyUnknow(Shape shape, int start, int end)
@@ -27,18 +27,19 @@ public sealed class ToFakeDynamicMatmul : IRewriteRule
     {
         Shape checkedShape = inputA.CheckedShape;
         _ = inputB.CheckedShape;
-        Expr act = new ActivationParameter<float>((from d in checkedShape.SkipLast(1)
+        Expr act = new ActivationParameter<float>(
+            (from d in checkedShape.SkipLast(1)
             select (!d.IsFixed) ? 1 : d.FixedValue).ToArray(), ValueRange<float>.Full).ToAct0Data<float>();
         Shape checkedShape2 = inputA.CheckedShape;
         return Nncase.IR.K230.F.Tensors.FakeDynamicGNNEMatMul(inputA, inputB, act,
             checkedShape2[checkedShape2.Count - 2].IsUnknown);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call oldMatmul = (Call)__result["oldMatmul"];
-        Expr inputA = (Expr)__result["inputA"];
-        Expr inputB = (Expr)__result["inputB"];
+        Call oldMatmul = (Call)result["oldMatmul"];
+        Expr inputA = (Expr)result["inputA"];
+        Expr inputB = (Expr)result["inputB"];
         return GetReplace(oldMatmul, inputA, inputB);
     }
 }

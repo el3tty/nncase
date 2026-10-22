@@ -107,9 +107,6 @@ public static class GModelBuilderExtensions
     public static ArrayExtensions.SpanWhereEnumerable<Nncase.TIR.Buffer, FunctionWrapper<Nncase.TIR.Buffer, bool>>
         InputOf(this ReadOnlySpan<Nncase.TIR.Buffer> arr)
     {
-        //IL_0001: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0006: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0028: Unknown result type (might be due to invalid IL or missing references)
         return ArrayExtensions.AsValueEnumerable<Nncase.TIR.Buffer>(arr).Where(
             (Func<Nncase.TIR.Buffer, bool>)((Nncase.TIR.Buffer b) => b.MemSpan.Location == MemoryLocation.Input));
     }
@@ -117,9 +114,6 @@ public static class GModelBuilderExtensions
     public static ArrayExtensions.SpanWhereEnumerable<Nncase.TIR.Buffer, FunctionWrapper<Nncase.TIR.Buffer, bool>>
         InputBufferOf(this ReadOnlySpan<Nncase.TIR.Buffer> arr)
     {
-        //IL_0001: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0006: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0028: Unknown result type (might be due to invalid IL or missing references)
         return ArrayExtensions.AsValueEnumerable<Nncase.TIR.Buffer>(arr).Where(
             (Func<Nncase.TIR.Buffer, bool>)((Nncase.TIR.Buffer b) =>
                 b.MemSpan.Location == MemoryLocation.Input && b.Dimensions.Length != 0));
@@ -128,9 +122,6 @@ public static class GModelBuilderExtensions
     public static ArrayExtensions.SpanWhereEnumerable<Nncase.TIR.Buffer, FunctionWrapper<Nncase.TIR.Buffer, bool>>
         InputScalarOf(this ReadOnlySpan<Nncase.TIR.Buffer> arr)
     {
-        //IL_0001: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0006: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0028: Unknown result type (might be due to invalid IL or missing references)
         return ArrayExtensions.AsValueEnumerable<Nncase.TIR.Buffer>(arr).Where(
             (Func<Nncase.TIR.Buffer, bool>)((Nncase.TIR.Buffer b) =>
                 b.MemSpan.Location == MemoryLocation.Input && b.Dimensions.Length == 0));
@@ -139,9 +130,6 @@ public static class GModelBuilderExtensions
     public static ArrayExtensions.SpanWhereEnumerable<Nncase.TIR.Buffer, FunctionWrapper<Nncase.TIR.Buffer, bool>>
         OutputOf(this ReadOnlySpan<Nncase.TIR.Buffer> arr)
     {
-        //IL_0001: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0006: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0028: Unknown result type (might be due to invalid IL or missing references)
         return ArrayExtensions.AsValueEnumerable<Nncase.TIR.Buffer>(arr).Where(
             (Func<Nncase.TIR.Buffer, bool>)((Nncase.TIR.Buffer b) => b.MemSpan.Location == MemoryLocation.Output));
     }

@@ -17,15 +17,17 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class ReplaceFakeDynamicMatMulConstInBRangeToByChannel : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeDynamicGNNEMatMul("fakeMatmul", "call",
-        (FakeDynamicGNNEMatMul _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker("inputAMarker",
-                Nncase.PatternMatch.Utility.IsWildcard("inputA"),
-                Nncase.PatternMatch.Utility.IsConst("inputARange"))with
+        (FakeDynamicGNNEMatMul _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "inputAMarker",
+            Nncase.PatternMatch.Utility.IsWildcard("inputA"),
+            Nncase.PatternMatch.Utility.IsConst("inputARange")) with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
-            }, Nncase.PatternMatch.Utility.IsRangeOfMarker("inputBMarker",
-                Nncase.PatternMatch.Utility.IsConst("inputB"), Nncase.PatternMatch.Utility.IsConst("inputBRange"))with
+                TypePattern = TypePatternUtility.HasFixedShape(),
+            }, Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputBMarker",
+                Nncase.PatternMatch.Utility.IsConst("inputB"), Nncase.PatternMatch.Utility.IsConst("inputBRange")) with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
+                TypePattern = TypePatternUtility.HasFixedShape(),
             }, Nncase.PatternMatch.Utility.IsConst("act0"));
 
     private Expr? GetReplace(Expr inputA, Marker inputAMarker, Tensor<float> inputARange, Expr inputB,
@@ -36,7 +38,8 @@ public sealed class ReplaceFakeDynamicMatMulConstInBRangeToByChannel : RewriteRu
             inputBMarker.MixQuantInfo = new K230Target.K230MixQuantInfo();
         }
 
-        Expr act = new ActivationParameter<float>((from d in inputA.CheckedShape.SkipLast(1)
+        Expr act = new ActivationParameter<float>(
+            (from d in inputA.CheckedShape.SkipLast(1)
             select (!d.IsFixed) ? 1 : d.FixedValue).ToArray(), ValueRange<float>.Full).ToAct0Data<float>();
         float[] weights = ((TensorConst)inputB).Value.ToArray<float>();
         int fixedValue = inputB.CheckedShape[-1].FixedValue;
@@ -86,13 +89,13 @@ public sealed class ReplaceFakeDynamicMatMulConstInBRangeToByChannel : RewriteRu
         return call;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr inputA = (Expr)__result["inputA"];
-        Marker inputAMarker = (Marker)__result["inputAMarker"];
-        Tensor<float> inputARange = ((TensorConst)__result["inputARange"]).Value.Cast<float>();
-        Expr inputB = (Expr)__result["inputB"];
-        Marker inputBMarker = (Marker)__result["inputBMarker"];
-        return GetReplace(inputA, inputAMarker, inputARange, inputB, inputBMarker, __context);
+        Expr inputA = (Expr)result["inputA"];
+        Marker inputAMarker = (Marker)result["inputAMarker"];
+        Tensor<float> inputARange = ((TensorConst)result["inputARange"]).Value.Cast<float>();
+        Expr inputB = (Expr)result["inputB"];
+        Marker inputBMarker = (Marker)result["inputBMarker"];
+        return GetReplace(inputA, inputAMarker, inputARange, inputB, inputBMarker, context);
     }
 }

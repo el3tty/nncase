@@ -15,11 +15,13 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class ReplaceFakeConv2DTransposeWeightsRangeToByChannel : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeConv2DTranspose("fakeConvTranspose",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakeConv2DTranspose(
+        "fakeConvTranspose",
         "call", (FakeConv2DTranspose _) => true,
         Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker", Nncase.PatternMatch.Utility.IsWildcard("input"),
             Nncase.PatternMatch.Utility.IsConst("inputRange")),
-        Nncase.PatternMatch.Utility.IsRangeOfMarker("weightsMarker",
+        Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "weightsMarker",
             Nncase.PatternMatch.Utility.IsTensorConst("weights"), Nncase.PatternMatch.Utility.IsConst("weightsRange")),
         Nncase.PatternMatch.Utility.IsTensorConst("act"), Nncase.PatternMatch.Utility.IsTensorConst("outputShape"),
         Nncase.PatternMatch.Utility.IsTensorConst("padding"),
@@ -38,7 +40,8 @@ public sealed class ReplaceFakeConv2DTransposeWeightsRangeToByChannel : RewriteR
 
         float[] weightValues = ((TensorConst)weights).Value.ToArray<float>();
         int outChannels = weights.CheckedShape[0].FixedValue * groups;
-        TensorConst range = new TensorConst(Tensor.From(QuantUtility.GetWeightsRangesByChannel(weightValues, outChannels).ToArray(),
+        TensorConst range = new TensorConst(Tensor.From(
+            QuantUtility.GetWeightsRangesByChannel(weightValues, outChannels).ToArray(),
             new int[2] { outChannels, 2 }));
         Marker marker = Nncase.IR.F.Math.RangeOfMarker(weights, range);
         if (marker.MixQuantInfo == null)
@@ -53,23 +56,23 @@ public sealed class ReplaceFakeConv2DTransposeWeightsRangeToByChannel : RewriteR
         return call;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeConv2DTranspose fakeConvTranspose = (FakeConv2DTranspose)__result["fakeConvTranspose"];
-        Marker inputMarker = (Marker)__result["inputMarker"];
-        Marker weightsMarker = (Marker)__result["weightsMarker"];
-        Expr input = (Expr)__result["input"];
-        Expr inputRange = (Expr)__result["inputRange"];
-        Expr weights = (Expr)__result["weights"];
-        Tensor<float> act = ((TensorConst)__result["act"]).Value.Cast<float>();
-        Expr outputShape = (Expr)__result["outputShape"];
-        Expr padding = (Expr)__result["padding"];
-        Expr outputPadding = (Expr)__result["outputPadding"];
-        Expr stride = (Expr)__result["stride"];
-        Expr dilation = (Expr)__result["dilation"];
-        int groups = ((TensorConst)__result["groups"]).Value.ToScalar<int>();
-        Expr padValue = (Expr)__result["padValue"];
+        FakeConv2DTranspose fakeConvTranspose = (FakeConv2DTranspose)result["fakeConvTranspose"];
+        Marker inputMarker = (Marker)result["inputMarker"];
+        Marker weightsMarker = (Marker)result["weightsMarker"];
+        Expr input = (Expr)result["input"];
+        Expr inputRange = (Expr)result["inputRange"];
+        Expr weights = (Expr)result["weights"];
+        Tensor<float> act = ((TensorConst)result["act"]).Value.Cast<float>();
+        Expr outputShape = (Expr)result["outputShape"];
+        Expr padding = (Expr)result["padding"];
+        Expr outputPadding = (Expr)result["outputPadding"];
+        Expr stride = (Expr)result["stride"];
+        Expr dilation = (Expr)result["dilation"];
+        int groups = ((TensorConst)result["groups"]).Value.ToScalar<int>();
+        Expr padValue = (Expr)result["padValue"];
         return GetReplace(fakeConvTranspose, inputMarker, weightsMarker, input, inputRange, weights, act, outputShape,
-            padding, outputPadding, stride, dilation, groups, padValue, __context);
+            padding, outputPadding, stride, dilation, groups, padValue, context);
     }
 }

@@ -32,7 +32,7 @@ public class FakeConv2DEvaluator : IEvaluator<FakeConv2D>, IEvaluator, ITypeInfe
             [CostFactorNames.MemoryLoad] =
                 CostUtility.GetMemoryAccess(inputType) + CostUtility.GetMemoryAccess(weightsType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)opsPerOutput.FixedValue / 768f)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, (float)opsPerOutput.FixedValue / 768f),
         };
     }
 

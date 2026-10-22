@@ -74,7 +74,8 @@ public sealed class L2_STORE_CONF : InstructionOp, ISerializeInst, IEquatable<L2
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(rstride_d, rstride_s, l2_datatype, ddr_datatype));
     }
 }

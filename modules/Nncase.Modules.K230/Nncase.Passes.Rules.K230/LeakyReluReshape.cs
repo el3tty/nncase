@@ -13,7 +13,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public class LeakyReluReshape : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "outputMarker",
         Nncase.PatternMatch.F.NN.IsLeakyRelu("leaky", "leakyCall", (LeakyRelu _) => true,
             Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsTensorConst("alpha")),
         Nncase.PatternMatch.Utility.IsTensorConst("outputRange"));
@@ -52,14 +53,14 @@ public class LeakyReluReshape : RewriteRule<Pattern>
                 mixQuantInfo: ((Marker)outputMarker).MixQuantInfo);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        LeakyRelu leaky = (LeakyRelu)__result["leaky"];
-        Call leakyCall = (Call)__result["leakyCall"];
-        TensorConst alpha = (TensorConst)__result["alpha"];
-        Expr input = (Expr)__result["input"];
-        Expr outputMarker = (Expr)__result["outputMarker"];
-        Tensor<float> outputRange = ((TensorConst)__result["outputRange"]).Value.Cast<float>();
+        LeakyRelu leaky = (LeakyRelu)result["leaky"];
+        Call leakyCall = (Call)result["leakyCall"];
+        TensorConst alpha = (TensorConst)result["alpha"];
+        Expr input = (Expr)result["input"];
+        Expr outputMarker = (Expr)result["outputMarker"];
+        Tensor<float> outputRange = ((TensorConst)result["outputRange"]).Value.Cast<float>();
         return GetReplace(leaky, leakyCall, alpha, input, outputMarker, outputRange);
     }
 }

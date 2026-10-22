@@ -13,15 +13,16 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class DisableConvPdp0ReducePermitInt16Quant : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsFakePdp("fakePdp", "call2",
-        (FakePdp _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker("marker",
+        (FakePdp _) => true, Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "marker",
             Nncase.PatternMatch.F.K230.IsFakeConv2D("fakeConv", "call1", (FakeConv2D _) => true,
-                Nncase.PatternMatch.Utility.IsWildcard("input1")with
+                Nncase.PatternMatch.Utility.IsWildcard("input1") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 },
-                Nncase.PatternMatch.Utility.IsWildcard("weights1")with
+                Nncase.PatternMatch.Utility.IsWildcard("weights1") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsTensorConst("act1"),
                 Nncase.PatternMatch.Utility.IsTensorConst("padding1"),
                 Nncase.PatternMatch.Utility.IsTensorConst("stride1"),
@@ -37,7 +38,7 @@ public sealed class DisableConvPdp0ReducePermitInt16Quant : RewriteRule<Pattern>
     {
         bool isDepthwise = call1.Arguments[0].CheckedShape[1] == call1.CheckedShape[1] &&
                     call1.CheckedShape[1] == groups1.Value.ToScalar<int>() && groups1 != 1;
-        if (base.CompileSession.CompileOptions.QuantizeOptions.QuantType != DataTypes.Int16 && !isDepthwise &&
+        if (CompileSession.CompileOptions.QuantizeOptions.QuantType != DataTypes.Int16 && !isDepthwise &&
             filter2.Value.ToArray<int>()[0] <= 3 && filter2.Value.ToArray<int>()[1] <= 3)
         {
             if (marker.MixQuantInfo == null)
@@ -52,12 +53,12 @@ public sealed class DisableConvPdp0ReducePermitInt16Quant : RewriteRule<Pattern>
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call1"];
-        TensorConst groups = (TensorConst)__result["groups1"];
-        Marker marker = (Marker)__result["marker"];
-        TensorConst filter = (TensorConst)__result["filter2"];
+        Call call = (Call)result["call1"];
+        TensorConst groups = (TensorConst)result["groups1"];
+        Marker marker = (Marker)result["marker"];
+        TensorConst filter = (TensorConst)result["filter2"];
         return GetReplace(call, groups, marker, filter);
     }
 }

@@ -16,17 +16,19 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class ToFakeConv2D : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "outputMarker",
         Nncase.PatternMatch.F.NN.IsConv2D("conv", "call", (Conv2D _) => true,
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker",
-                Nncase.PatternMatch.Utility.IsWildcard("input")with
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputMarker",
+                Nncase.PatternMatch.Utility.IsWildcard("input") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsConst("inputRange")), Nncase.PatternMatch.Utility.IsRangeOfMarker(
                 "weightsMarker",
-                Nncase.PatternMatch.Utility.IsTensorConst("weights")with
+                Nncase.PatternMatch.Utility.IsTensorConst("weights") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsConst("weightsRange")),
             Nncase.PatternMatch.Utility.IsTensorConst("bias"), Nncase.PatternMatch.Utility.IsTensorConst("stride"),
             Nncase.PatternMatch.Utility.IsWildcard("padding"), Nncase.PatternMatch.Utility.IsTensorConst("dilation"),
@@ -47,7 +49,7 @@ public sealed class ToFakeConv2D : RewriteRule<Pattern>
             return null;
         }
 
-        CompileOptions compileOptions = base.CompileSession.CompileOptions;
+        CompileOptions compileOptions = CompileSession.CompileOptions;
         if (compileOptions.QuantizeOptions.QuantScheme != string.Empty &&
             weightsMarker?.MixQuantInfo?.MarkerQuantType != DataTypes.Int16 &&
             weightsRange.ToArray().Max() - weightsRange.ToArray().Min() > 255f)
@@ -84,24 +86,24 @@ public sealed class ToFakeConv2D : RewriteRule<Pattern>
                 adaQuantInfo: outputMarker.AdaQuantInfo, mixQuantInfo: outputMarker.MixQuantInfo);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Conv2D conv = (Conv2D)__result["conv"];
-        Expr input = (Expr)__result["input"];
-        TensorConst weights = (TensorConst)__result["weights"];
-        TensorConst bias = (TensorConst)__result["bias"];
-        Expr stride = (Expr)__result["stride"];
-        Expr padding = (Expr)__result["padding"];
-        Expr dilation = (Expr)__result["dilation"];
-        int groups = ((TensorConst)__result["groups"]).Value.ToScalar<int>();
-        Tensor<float> fusedClamp = ((TensorConst)__result["fusedClamp"]).Value.Cast<float>();
-        Tensor<float> weightsRange = ((TensorConst)__result["weightsRange"]).Value.Cast<float>();
-        Tensor<float> inputRange = ((TensorConst)__result["inputRange"]).Value.Cast<float>();
-        Tensor<float> outputRange = ((TensorConst)__result["outputRange"]).Value.Cast<float>();
-        Marker inputMarker = (Marker)__result["inputMarker"];
-        Marker outputMarker = (Marker)__result["outputMarker"];
-        Marker weightsMarker = (Marker)__result["weightsMarker"];
+        Call call = (Call)result["call"];
+        Conv2D conv = (Conv2D)result["conv"];
+        Expr input = (Expr)result["input"];
+        TensorConst weights = (TensorConst)result["weights"];
+        TensorConst bias = (TensorConst)result["bias"];
+        Expr stride = (Expr)result["stride"];
+        Expr padding = (Expr)result["padding"];
+        Expr dilation = (Expr)result["dilation"];
+        int groups = ((TensorConst)result["groups"]).Value.ToScalar<int>();
+        Tensor<float> fusedClamp = ((TensorConst)result["fusedClamp"]).Value.Cast<float>();
+        Tensor<float> weightsRange = ((TensorConst)result["weightsRange"]).Value.Cast<float>();
+        Tensor<float> inputRange = ((TensorConst)result["inputRange"]).Value.Cast<float>();
+        Tensor<float> outputRange = ((TensorConst)result["outputRange"]).Value.Cast<float>();
+        Marker inputMarker = (Marker)result["inputMarker"];
+        Marker outputMarker = (Marker)result["outputMarker"];
+        Marker weightsMarker = (Marker)result["weightsMarker"];
         return GetReplace(call, conv, input, weights, bias, stride, padding, dilation, groups, fusedClamp, weightsRange,
             inputRange, outputRange, inputMarker, outputMarker, weightsMarker);
     }

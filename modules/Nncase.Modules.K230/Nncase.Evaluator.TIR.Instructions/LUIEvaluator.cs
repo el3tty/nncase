@@ -13,7 +13,7 @@ internal sealed class LUIEvaluator : ITypeInferencer<LUI>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, LUI target, bool ILmode)
+    public string Visit(IIRPrinterContext context, LUI target, bool iLmode)
     {
         return $"I.LUI(rd: {target.rd}, imm: {context.GetArgument(target, LUI.imm)})";
     }

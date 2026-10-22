@@ -7,7 +7,8 @@ namespace Nncase.Passes;
 
 public static class PassesExtensions
 {
-    public static ValueRange<T> AsValueRange<T>(this Tensor<T> ts) where T : unmanaged, IEquatable<T>, IComparable<T>
+    public static ValueRange<T> AsValueRange<T>(this Tensor<T> ts)
+        where T : unmanaged, IEquatable<T>, IComparable<T>
     {
         if (ts.Dimensions.Length == 1 && ts.Dimensions[0] == 2)
         {

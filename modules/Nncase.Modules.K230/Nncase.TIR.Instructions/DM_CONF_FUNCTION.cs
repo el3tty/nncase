@@ -10,5 +10,5 @@ public enum DM_CONF_FUNCTION : uint
     load_w_conf_deq,
     load_act_params,
     store_of_conf,
-    load_w_conf2
+    load_w_conf2,
 }

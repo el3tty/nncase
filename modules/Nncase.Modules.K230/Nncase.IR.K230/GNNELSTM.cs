@@ -142,7 +142,8 @@ public sealed class GNNELSTM : Op, IEquatable<GNNELSTM?>
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(Direction, ActivationParamBin, ActivationParamBinQ, ActivationParamXc, ActivationParamRc0,
                 ActivationParamRc1, DestTypeO), HashCode.Combine(DestTypeOH));
     }

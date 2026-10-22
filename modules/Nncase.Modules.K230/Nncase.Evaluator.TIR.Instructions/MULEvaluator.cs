@@ -13,7 +13,7 @@ internal sealed class MULEvaluator : ITypeInferencer<MUL>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MUL target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MUL target, bool iLmode)
     {
         return $"I.MUL(rd: {target.rd}, rs1: {target.rs1}, rs2: {target.rs2}, funct5: {target.funct5})";
     }

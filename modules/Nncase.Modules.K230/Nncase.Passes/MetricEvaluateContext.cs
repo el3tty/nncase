@@ -15,17 +15,20 @@ internal sealed class MetricEvaluateContext : IMetricEvaluateContext
         CurrentCall = call;
     }
 
-    public T GetArgument<T>(Op op, ParameterInfo parameter) where T : Expr
+    public T GetArgument<T>(Op op, ParameterInfo parameter)
+        where T : Expr
     {
         return (T)CurrentCall[parameter];
     }
 
-    public T GetArgumentType<T>(Op op, ParameterInfo parameter) where T : IRType
+    public T GetArgumentType<T>(Op op, ParameterInfo parameter)
+        where T : IRType
     {
         return (T)CurrentCall[parameter].CheckedType;
     }
 
-    public T GetReturnType<T>() where T : IRType
+    public T GetReturnType<T>()
+        where T : IRType
     {
         return (T)CurrentCall.CheckedType;
     }

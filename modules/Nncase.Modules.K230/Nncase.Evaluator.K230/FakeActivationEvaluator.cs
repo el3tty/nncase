@@ -29,7 +29,7 @@ public class FakeActivationEvaluator : IEvaluator<FakeActivation>, IEvaluator, I
                                                ? CostUtility.GetMemoryAccess(type)
                                                : ((UInt128)(byte)0)),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, 0.125)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, 0.125),
         };
     }
 

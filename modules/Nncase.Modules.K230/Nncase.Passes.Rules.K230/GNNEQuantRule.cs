@@ -15,9 +15,9 @@ public abstract class GNNEQuantRule : QuantRule
 {
     private bool _isInt16Quant;
 
-    public Expr Input => (Expr)base.MatchResult["input"];
+    public Expr Input => (Expr)MatchResult["input"];
 
-    public Expr Output => (Expr)base.MatchResult["output"];
+    public Expr Output => (Expr)MatchResult["output"];
 
     public ValueRange<float> InputRange { get; private set; }
 
@@ -27,7 +27,7 @@ public abstract class GNNEQuantRule : QuantRule
     {
         get
         {
-            if (!(base.QuantType == DataTypes.Int16))
+            if (!(QuantType == DataTypes.Int16))
             {
                 return 8;
             }
@@ -40,7 +40,7 @@ public abstract class GNNEQuantRule : QuantRule
     {
         get
         {
-            if (!(base.WQuantType == DataTypes.Int16))
+            if (!(WQuantType == DataTypes.Int16))
             {
                 return 8;
             }
@@ -51,7 +51,7 @@ public abstract class GNNEQuantRule : QuantRule
 
     public ValueRange<float> GetValueRange(string name)
     {
-        float[] rangeValues = ((TensorConst)base.MatchResult[name]).Value.ToArray<float>();
+        float[] rangeValues = ((TensorConst)MatchResult[name]).Value.ToArray<float>();
         return new ValueRange<float>(rangeValues[0], rangeValues[1]);
     }
 
@@ -74,14 +74,14 @@ public abstract class GNNEQuantRule : QuantRule
         }
 
         _isInt16Quant = false;
-        PrimType destType = (_isInt16Quant ? DataTypes.Int16 : DataTypes.Int8);
-        if (base.ModelQuantMode == ModelQuantMode.UsePTQ)
+        PrimType destType = _isInt16Quant ? DataTypes.Int16 : DataTypes.Int8;
+        if (ModelQuantMode == ModelQuantMode.UsePTQ)
         {
-            QuantMode quantMode = ((!(base.QuantType == DataTypes.UInt8))
+            QuantMode quantMode = (!(QuantType == DataTypes.UInt8))
                 ? QuantMode.SignedSymmetricMode
-                : QuantMode.UnsignedMode);
+                : QuantMode.UnsignedMode;
             QuantParam quantParam = QuantUtility.GetQuantParam(InputRange, QuantBits, quantMode);
-            Call input2 = Nncase.IR.F.Math.Quantize(input, quantParam, base.QuantType);
+            Call input2 = Nncase.IR.F.Math.Quantize(input, quantParam, QuantType);
             GNNETypePatternUtility.GNNEGetDeqParams(input.CheckedShape[1].FixedValue, quantParam.Scale,
                 quantParam.ZeroPoint);
             return Nncase.IR.K230.F.Tensors.GNNELoadIFDeq(destType, input2);
@@ -92,14 +92,14 @@ public abstract class GNNEQuantRule : QuantRule
 
     public Expr LoadW(Expr weights, ValueRange<float> weightsRange)
     {
-        if (base.ModelQuantMode == ModelQuantMode.UsePTQ)
+        if (ModelQuantMode == ModelQuantMode.UsePTQ)
         {
-            QuantMode quantMode = ((!(base.WQuantType == DataTypes.UInt8))
+            QuantMode quantMode = (!(WQuantType == DataTypes.UInt8))
                 ? QuantMode.SignedSymmetricMode
-                : QuantMode.UnsignedMode);
+                : QuantMode.UnsignedMode;
             QuantParam quantParam = QuantUtility.GetQuantParam(weightsRange, WQuantBits, quantMode);
-            Call input = Nncase.IR.F.Math.Quantize(weights, quantParam, base.WQuantType);
-            return Nncase.IR.K230.F.Tensors.GNNELoadIFDeq(base.WQuantType, input);
+            Call input = Nncase.IR.F.Math.Quantize(weights, quantParam, WQuantType);
+            return Nncase.IR.K230.F.Tensors.GNNELoadIFDeq(WQuantType, input);
         }
 
         return Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Int8, weights);

@@ -14,7 +14,7 @@ internal sealed class MFU_MEMSETEvaluator : ITypeInferencer<MFU_MEMSET>, ITypeIn
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_MEMSET target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_MEMSET target, bool iLmode)
     {
         return
             $"I.MFU_MEMSET(raddr_d: {target.raddr_d}, rv: {target.rv}, rstride: {target.rstride}, rshape: {target.rshape}, l2_datatype: {target.l2_datatype})";

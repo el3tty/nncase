@@ -37,5 +37,5 @@ public enum GP_REGISTER : uint
     x29,
     x30,
     x31,
-    invalid
+    invalid,
 }

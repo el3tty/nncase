@@ -13,5 +13,5 @@ public enum PU_CONF_FUNCTION : uint
     pu_w_conf,
     pu_of_conf1,
     pu_of_conf2,
-    pu_compute_conf
+    pu_compute_conf,
 }

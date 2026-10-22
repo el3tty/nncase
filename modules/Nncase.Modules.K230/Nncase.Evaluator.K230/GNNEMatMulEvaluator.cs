@@ -76,10 +76,12 @@ public sealed class GNNEMatMulEvaluator : IEvaluator<GNNEMatMul>, IEvaluator, IT
 
         Tensor matMulResult = OrtKI
             .MatMul(
-                OrtKISharp.Tensor.MakeTensor(inputADeq,
+                OrtKISharp.Tensor.MakeTensor(
+                    inputADeq,
                     ((IEnumerable<int>)inputA.Dimensions.ToArray())
                     .Select((Func<int, long>)((int i) => i)).ToArray()),
-                OrtKISharp.Tensor.MakeTensor(inputBDeq,
+                OrtKISharp.Tensor.MakeTensor(
+                    inputBDeq,
                     ((IEnumerable<int>)inputB.Dimensions.ToArray())
                     .Select((Func<int, long>)((int i) => i)).ToArray())).ToTensor();
         float[] matMulData = matMulResult.ToArray<float>();
@@ -160,7 +162,8 @@ public sealed class GNNEMatMulEvaluator : IEvaluator<GNNEMatMul>, IEvaluator, IT
         matrixDims[1] = inputBShape[inputBShape.Count - 1];
         Shape maxShape = new Shape(from t in inputA.Shape.Zip(inputB.Shape)
             select System.Math.Max(t.First.FixedValue, t.Second.FixedValue));
-        return new TensorType(target.OutputDType,
+        return new TensorType(
+            target.OutputDType,
             maxShape.ToArray()[..(maxShape.Count - 2)].Concat(matrixDims).ToArray());
     }
 

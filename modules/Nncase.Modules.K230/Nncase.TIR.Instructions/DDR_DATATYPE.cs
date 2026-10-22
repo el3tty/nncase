@@ -10,5 +10,5 @@ public enum DDR_DATATYPE : uint
     fp32,
     i4,
     i6,
-    i16
+    i16,
 }

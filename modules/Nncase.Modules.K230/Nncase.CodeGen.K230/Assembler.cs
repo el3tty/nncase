@@ -13,11 +13,11 @@ internal sealed class Assembler
 {
     private abstract class AsmLine
     {
-        public string Line;
+        public string Line { get; set; }
 
-        public string Update;
+        public string Update { get; set; }
 
-        public int Pc;
+        public int Pc { get; set; }
 
         public AsmLine(string line, int pc)
         {
@@ -29,7 +29,7 @@ internal sealed class Assembler
 
     private sealed class AsmInst : AsmLine
     {
-        public string InstName;
+        public string InstName { get; set; }
 
         public AsmInst(string inst_name, string line, int pc)
             : base(line, pc)
@@ -40,7 +40,7 @@ internal sealed class Assembler
 
     private sealed class AsmSymobl : AsmLine
     {
-        public string SymbolName;
+        public string SymbolName { get; set; }
 
         public AsmSymobl(string symbol_name, string line, int pc)
             : base(line, pc)
@@ -51,7 +51,7 @@ internal sealed class Assembler
 
     private sealed class AsmLabel : AsmLine
     {
-        public string LabelName;
+        public string LabelName { get; set; }
 
         public AsmLabel(string label_name, string line, int pc)
             : base(line, pc)
@@ -68,48 +68,49 @@ internal sealed class Assembler
         }
     }
 
-    public string AsmPath;
+    public string AsmPath { get; set; }
 
-    private readonly List<AsmLine> AsmLines;
+    private readonly List<AsmLine> _asmLines;
 
-    private readonly Dictionary<string, int> SymobelMap;
+    private readonly Dictionary<string, int> _symobelMap;
 
-    private readonly Dictionary<string, int> LabelMap;
+    private readonly Dictionary<string, int> _labelMap;
 
     public Assembler(string asm_path)
     {
         AsmPath = asm_path;
-        AsmLines = new List<AsmLine>();
-        SymobelMap = new Dictionary<string, int>();
-        LabelMap = new Dictionary<string, int>();
+        _asmLines = new List<AsmLine>();
+        _symobelMap = new Dictionary<string, int>();
+        _labelMap = new Dictionary<string, int>();
     }
 
     public void Assemble()
     {
-        collect(AsmPath);
+        Collect(AsmPath);
         int num = 0;
         bool flag = false;
         do
         {
             if (flag)
             {
-                relocate();
-                dump_relocate(Path.Combine(Path.GetDirectoryName(AsmPath) ?? "",
+                Relocate();
+                DumpRelocate(Path.Combine(
+                    Path.GetDirectoryName(AsmPath) ?? string.Empty,
                     Path.GetFileNameWithoutExtension(AsmPath) + "_" + num++ + ".s"));
                 flag = false;
             }
 
-            foreach (var (inst, index) in from t in AsmLines.Select((AsmLine l, int i) => (l: l, i: i))
+            foreach (var (inst, index) in from t in _asmLines.Select((AsmLine l, int i) => (l: l, i: i))
                      where t.l is AsmInst
                      select ((AsmInst)t.l, i: t.i))
             {
-                if (replaceSymobl(inst, index))
+                if (ReplaceSymobl(inst, index))
                 {
                     flag = true;
                     break;
                 }
 
-                if (replaceLabel(inst, index))
+                if (ReplaceLabel(inst, index))
                 {
                     flag = true;
                     break;
@@ -118,7 +119,7 @@ internal sealed class Assembler
         } while (flag);
     }
 
-    private void collect(string asm_path)
+    private void Collect(string asm_path)
     {
         using StreamReader streamReader = new StreamReader(File.OpenRead(asm_path));
         int num = 0;
@@ -135,8 +136,8 @@ internal sealed class Assembler
             {
                 string text3 = text2;
                 AsmLabel asmLabel = new AsmLabel(text3.Substring(0, text3.Length - 1), text2, num);
-                AsmLines.Add(asmLabel);
-                LabelMap.Add(asmLabel.LabelName, num);
+                _asmLines.Add(asmLabel);
+                _labelMap.Add(asmLabel.LabelName, num);
                 continue;
             }
 
@@ -145,8 +146,8 @@ internal sealed class Assembler
             {
                 string text3 = text4;
                 AsmSymobl asmSymobl = new AsmSymobl(text3.Substring(0, text3.Length - 1), text4, num);
-                AsmLines.Add(asmSymobl);
-                SymobelMap.Add(asmSymobl.SymbolName, num);
+                _asmLines.Add(asmSymobl);
+                _symobelMap.Add(asmSymobl.SymbolName, num);
                 continue;
             }
 
@@ -154,14 +155,14 @@ internal sealed class Assembler
             if (text5.StartsWith("  I."))
             {
                 AsmInst asmInst = new AsmInst(text5.Substring(4, text5.IndexOf("(") - 4), text5, num);
-                AsmLines.Add(asmInst);
+                _asmLines.Add(asmInst);
                 num += CodeGenUtil.InstLength(asmInst.InstName);
                 continue;
             }
 
             if (text2.StartsWith("  ."))
             {
-                AsmLines.Add(new AsmOther(text, num));
+                _asmLines.Add(new AsmOther(text, num));
                 continue;
             }
 
@@ -169,7 +170,7 @@ internal sealed class Assembler
         }
     }
 
-    private bool is_overflow(int imm, int bits = 12)
+    private bool IsOverflow(int imm, int bits = 12)
     {
         if (imm < 0)
         {
@@ -185,19 +186,19 @@ internal sealed class Assembler
         return imm > 1 << bits - 1;
     }
 
-    private (uint high, uint low) split(int imm)
+    private (uint High, uint Low) Split(int imm)
     {
         int item = ((imm >> 12) + ((imm >> 11) & 1)) & 0xFFFFF;
         uint item2 = (uint)(imm & 0xFFF);
-        return (high: (uint)item, low: item2);
+        return (High: (uint)item, Low: item2);
     }
 
-    private void relocate()
+    private void Relocate()
     {
-        SymobelMap.Clear();
-        LabelMap.Clear();
+        _symobelMap.Clear();
+        _labelMap.Clear();
         int num = 0;
-        foreach (AsmLine asmLine in AsmLines)
+        foreach (AsmLine asmLine in _asmLines)
         {
             if (!(asmLine is AsmLabel asmLabel))
             {
@@ -216,18 +217,18 @@ internal sealed class Assembler
                 else
                 {
                     asmSymobl.Pc = num;
-                    SymobelMap[asmSymobl.SymbolName] = num;
+                    _symobelMap[asmSymobl.SymbolName] = num;
                 }
             }
             else
             {
                 asmLabel.Pc = num;
-                LabelMap[asmLabel.LabelName] = num;
+                _labelMap[asmLabel.LabelName] = num;
             }
         }
     }
 
-    private bool replaceLabel(AsmInst inst, int index)
+    private bool ReplaceLabel(AsmInst inst, int index)
     {
         Match match = new Regex("  I.(\\w+)\\(.*(\\.L\\..*)\\)").Match(inst.Line);
         if (match == Match.Empty)
@@ -239,54 +240,55 @@ internal sealed class Assembler
         int num;
         if (value.EndsWith(".high"))
         {
-            Dictionary<string, int> labelMap = LabelMap;
+            Dictionary<string, int> labelMap = _labelMap;
             string text = value;
             num = labelMap[text.Substring(0, text.Length - 5)] - inst.Pc;
-            inst.Update = inst.Line.Replace(value, split(num).high.ToString());
+            inst.Update = inst.Line.Replace(value, Split(num).High.ToString(), StringComparison.Ordinal);
         }
         else if (value.EndsWith(".low"))
         {
-            Dictionary<string, int> labelMap2 = LabelMap;
+            Dictionary<string, int> labelMap2 = _labelMap;
             string text = value;
             num = labelMap2[text.Substring(0, text.Length - 4)] - inst.Pc;
-            inst.Update = inst.Line.Replace(value, split(num + 4).low.ToString());
+            inst.Update = inst.Line.Replace(value, Split(num + 4).Low.ToString(), StringComparison.Ordinal);
         }
         else
         {
-            num = LabelMap[value] - inst.Pc;
+            num = _labelMap[value] - inst.Pc;
             int bits = 12;
             if (inst.InstName == "JAL")
             {
                 bits = 20;
             }
 
-            if (is_overflow(num, bits))
+            if (IsOverflow(num, bits))
             {
                 if (inst.InstName == "JAL")
                 {
                     throw new NotSupportedException("overflow imm!");
                 }
 
-                inst.Line = inst.Line.Replace(value, "8");
-                AsmLines.InsertRange(index + 1,
+                inst.Line = inst.Line.Replace(value, "8", StringComparison.Ordinal);
+                _asmLines.InsertRange(
+                    index + 1,
                     new AsmInst[4]
                     {
                         new AsmInst("JAL", "  I.JAL(R.r0,16)", 0),
                         new AsmInst("AUIPC", "  I.AUIPC(R.r10," + value + ".high)", 0),
                         new AsmInst("ADDI", "  I.ADDI(R.r10,R.r10," + value + ".low)", 0),
-                        new AsmInst("JALR", "  I.JALR(R.r0,R.r10,0) ", 0)
+                        new AsmInst("JALR", "  I.JALR(R.r0,R.r10,0) ", 0),
                     });
                 return true;
             }
 
-            inst.Update = inst.Line.Replace(value, num.ToString());
+            inst.Update = inst.Line.Replace(value, num.ToString(), StringComparison.Ordinal);
         }
 
         inst.Update += $" # {value} = {inst.Pc} + {num}";
         return false;
     }
 
-    private bool replaceSymobl(AsmInst inst, int index)
+    private bool ReplaceSymobl(AsmInst inst, int index)
     {
         Match match = new Regex("\\(.*,?.*(@[a-zA-Z\\d_]+\\.(\\w+)).*,?.*\\)").Match(inst.Line);
         if (match == Match.Empty)
@@ -295,14 +297,14 @@ internal sealed class Assembler
         }
 
         string text = match.Groups[1].Value.Trim();
-        Dictionary<string, int> symobelMap = SymobelMap;
+        Dictionary<string, int> symobelMap = _symobelMap;
         string text2 = text;
         int num = match.Groups[2].Length + 1;
         int num2 = symobelMap[text2.Substring(1, text2.Length - num - 1)] - inst.Pc;
         uint num3;
         if (match.Groups[2].Value == "high")
         {
-            num3 = split(num2).high;
+            num3 = Split(num2).High;
         }
         else
         {
@@ -311,18 +313,18 @@ internal sealed class Assembler
                 throw new ArgumentOutOfRangeException();
             }
 
-            num3 = split(num2 + 4).low;
+            num3 = Split(num2 + 4).Low;
         }
 
-        inst.Update = inst.Line.Replace(text, num3.ToString());
+        inst.Update = inst.Line.Replace(text, num3.ToString(), StringComparison.Ordinal);
         inst.Update += $" # {text} = {inst.Pc} + {num2}";
         return false;
     }
 
-    public void dump_relocate(string output_path)
+    public void DumpRelocate(string output_path)
     {
         using StreamWriter streamWriter = new StreamWriter(File.Open(output_path, FileMode.Create));
-        foreach (AsmLine asmLine in AsmLines)
+        foreach (AsmLine asmLine in _asmLines)
         {
             streamWriter.WriteLine(asmLine.Line);
         }
@@ -331,7 +333,7 @@ internal sealed class Assembler
     public void Dump(string output_path)
     {
         using StreamWriter streamWriter = new StreamWriter(File.Open(output_path, FileMode.Create));
-        foreach (AsmLine asmLine in AsmLines)
+        foreach (AsmLine asmLine in _asmLines)
         {
             if (asmLine is AsmInst asmInst)
             {

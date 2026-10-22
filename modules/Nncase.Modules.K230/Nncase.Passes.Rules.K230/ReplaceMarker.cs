@@ -11,7 +11,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class ReplaceMarker : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "inputMarker",
         Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsTensorConst("inputRange"));
 
     public Expr? GetReplace(Marker inputMarker, Expr input, Tensor<float> inputRange, RunPassContext options)
@@ -36,11 +37,11 @@ public sealed class ReplaceMarker : RewriteRule<Pattern>
         return marker;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Marker inputMarker = (Marker)__result["inputMarker"];
-        Expr input = (Expr)__result["input"];
-        Tensor<float> inputRange = ((TensorConst)__result["inputRange"]).Value.Cast<float>();
-        return GetReplace(inputMarker, input, inputRange, __context);
+        Marker inputMarker = (Marker)result["inputMarker"];
+        Expr input = (Expr)result["input"];
+        Tensor<float> inputRange = ((TensorConst)result["inputRange"]).Value.Cast<float>();
+        return GetReplace(inputMarker, input, inputRange, context);
     }
 }

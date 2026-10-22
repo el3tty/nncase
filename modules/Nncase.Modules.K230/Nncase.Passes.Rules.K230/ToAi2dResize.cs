@@ -21,10 +21,10 @@ public class ToAi2dResize : GNNEQuantRule
         Expr newSize, Expr outputRange)
     {
         MixQuantInfo mixQuantInfo = ((Marker)inputMarker).MixQuantInfo;
-        DataType dataType = ((mixQuantInfo?.MarkerQuantType == null) ? base.QuantType : mixQuantInfo.MarkerQuantType);
+        DataType dataType = (mixQuantInfo?.MarkerQuantType == null) ? QuantType : mixQuantInfo.MarkerQuantType;
         QuantMode quantMode =
-            ((!(dataType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
-        int bits = ((dataType == DataTypes.Int16) ? 12 : 8);
+            (!(dataType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
+        int bits = (dataType == DataTypes.Int16) ? 12 : 8;
         QuantParam quantParam = QuantUtility.GetQuantParam(
             new ValueRange<float>(inputRange.ToArray<float>()[0], inputRange.ToArray<float>()[1]), bits, quantMode);
         if (input.CheckedDataType == DataTypes.Float32)
@@ -34,7 +34,8 @@ public class ToAi2dResize : GNNEQuantRule
             Call input4 = Nncase.IR.K230.F.Tensors.Ai2dResize((PrimType)dataType, resize.ResizeMethod,
                 resize.AlignCorners, resize.HalfPixelCenters, input3, newSize, quantParam.ZeroPoint,
                 new QuantParam(quantParam.ZeroPoint, 1f / quantParam.Scale));
-            Call call2 = Nncase.IR.F.Math.Dequantize(Nncase.IR.K230.F.Tensors.GNNEStore(dataType, input4),
+            Call call2 = Nncase.IR.F.Math.Dequantize(
+                Nncase.IR.K230.F.Tensors.GNNEStore(dataType, input4),
                 Tensor.FromScalar(new QuantParam(quantParam.ZeroPoint, quantParam.Scale)), call.CheckedDataType);
             call2.CheckedType = new TensorType(call.CheckedDataType, call.CheckedShape);
             return Nncase.IR.F.Math.RangeOfMarker(call2, outputRange);
@@ -52,17 +53,17 @@ public class ToAi2dResize : GNNEQuantRule
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeAi2dResize resize = (FakeAi2dResize)__result["resize"];
-        Call call = (Call)__result["call"];
-        Tensor<float> inputRange = ((TensorConst)__result["inputRange"]).Value.Cast<float>();
-        Expr input = (Expr)__result["input"];
-        Expr inputMarker = (Expr)__result["inputMarker"];
-        Expr newSize = (Expr)__result["newSize"];
-        Expr outputRange = (Expr)__result["outputRange"];
-        base.Option = __context;
-        base.MatchResult = __result;
+        FakeAi2dResize resize = (FakeAi2dResize)result["resize"];
+        Call call = (Call)result["call"];
+        Tensor<float> inputRange = ((TensorConst)result["inputRange"]).Value.Cast<float>();
+        Expr input = (Expr)result["input"];
+        Expr inputMarker = (Expr)result["inputMarker"];
+        Expr newSize = (Expr)result["newSize"];
+        Expr outputRange = (Expr)result["outputRange"];
+        Option = context;
+        MatchResult = result;
         Init();
         return GetReplace(resize, call, inputRange, input, inputMarker, newSize, outputRange);
     }
@@ -70,13 +71,16 @@ public class ToAi2dResize : GNNEQuantRule
     public ToAi2dResize()
     {
         Func<FakeAi2dResize, bool> condition = (FakeAi2dResize _) => true;
-        Pattern = Nncase.PatternMatch.Utility.IsRangeOfMarker(Nncase.PatternMatch.F.K230.IsFakeAi2dResize("resize",
-                "call", condition,
-                Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker",
+        Pattern = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            Nncase.PatternMatch.F.K230.IsFakeAi2dResize(
+            "resize",
+            "call", condition,
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                    "inputMarker",
                     Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsConst("inputRange")),
-                Nncase.PatternMatch.Utility.IsTensorConst("newSize")) with
+            Nncase.PatternMatch.Utility.IsTensorConst("newSize")) with
             {
-                TypePattern = TypePatternUtility.HasRank(4)
+                TypePattern = TypePatternUtility.HasRank(4),
             }, Nncase.PatternMatch.Utility.IsConst("outputRange"));
     }
 }

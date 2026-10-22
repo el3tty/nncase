@@ -78,7 +78,8 @@ public sealed class L2_LOAD_W_CONF : InstructionOp, ISerializeInst, IEquatable<L
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(rlen_compressed, rlen_decompressed, l2_datatype, ddr_datatype));
     }
 }

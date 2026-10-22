@@ -31,7 +31,7 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        if (base.CompileSession.CompileOptions.QuantizeOptions.QuantScheme != string.Empty &&
+        if (CompileSession.CompileOptions.QuantizeOptions.QuantScheme != string.Empty &&
             (inputMarkerL?.MixQuantInfo?.MarkerQuantType == DataTypes.Float32 ||
              inputMarkerR?.MixQuantInfo?.MarkerQuantType == DataTypes.Float32))
         {
@@ -54,12 +54,12 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
         int[] rhsShape4 = new int[4] { 1, 1, 1, 1 };
         Array.Copy(rhs.CheckedShape.ToValueArray(), 0, rhsShape4, rhsShape4.Length - rhs.CheckedShape.Count,
             rhs.CheckedShape.Count);
-        int[] longShape = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
+        int[] longShape = (lhs.CheckedShape.Count > rhs.CheckedShape.Count)
             ? lhs.CheckedShape.ToValueArray()
-            : rhs.CheckedShape.ToValueArray());
-        int[] shortShape = ((lhs.CheckedShape.Count > rhs.CheckedShape.Count)
+            : rhs.CheckedShape.ToValueArray();
+        int[] shortShape = (lhs.CheckedShape.Count > rhs.CheckedShape.Count)
             ? rhs.CheckedShape.ToValueArray()
-            : lhs.CheckedShape.ToValueArray());
+            : lhs.CheckedShape.ToValueArray();
         for (int i = 0; i < longShape.Length; i++)
         {
             if (i >= longShape.Length - shortShape.Length && longShape[i] < shortShape[i - (longShape.Length - shortShape.Length)])
@@ -72,34 +72,36 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
         Array.Copy(longShape, 0, broadcastShape, broadcastShape.Length - longShape.Length, longShape.Length);
         int channels = broadcastShape[1];
         ActParam2 actParam = new ActParam2(channels);
-        GnneActivationType type = ((bn.BinaryOp != BinaryOp.Add && bn.BinaryOp != BinaryOp.Sub)
+        GnneActivationType type = (bn.BinaryOp != BinaryOp.Add && bn.BinaryOp != BinaryOp.Sub)
             ? GnneActivationType.Mul
-            : GnneActivationType.Add);
+            : GnneActivationType.Add;
         Tensor<float> tensor = new Tensor<float>(actParam.GetAct1Data, new int[2] { channels, 7 });
         Marker marker = Nncase.IR.F.Math
-            .RangeOfMarker(Nncase.IR.F.Math.Unary(UnaryOp.Neg, inputMarkerR),
+            .RangeOfMarker(
+                Nncase.IR.F.Math.Unary(UnaryOp.Neg, inputMarkerR),
                 new float[2] { 0f - inputRangeR[new int[1] { 1 }], 0f - inputRangeR[new int[1]] }).With(null, null,
                 null, adaQuantInfo: inputMarkerR?.AdaQuantInfo, mixQuantInfo: inputMarkerR?.MixQuantInfo);
         return Nncase.IR.F.Math
             .RangeOfMarker(
-                Nncase.IR.K230.F.Tensors.FakeActivation(inputMarkerL.With(null, lhs, inputRangeL),
+                Nncase.IR.K230.F.Tensors.FakeActivation(
+                    inputMarkerL.With(null, lhs, inputRangeL),
                     (bn.BinaryOp == BinaryOp.Sub) ? marker : inputMarkerR.With(null, rhs, inputRangeR), tensor, channels, 0,
                     0, 0, false, type, actParam, output.CheckedShape.ToValueArray()), outputRange).With(null, null,
                 null, adaQuantInfo: outputMarker.AdaQuantInfo, mixQuantInfo: outputMarker.MixQuantInfo);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Binary bn = (Binary)__result["bn"];
-        Marker inputMarkerL = (Marker)__result["inputMarkerL"];
-        Expr lhs = (Expr)__result["lhs"];
-        Tensor<float> inputRangeL = ((TensorConst)__result["inputRangeL"]).Value.Cast<float>();
-        Marker inputMarkerR = (Marker)__result["inputMarkerR"];
-        Expr rhs = (Expr)__result["rhs"];
-        Tensor<float> inputRangeR = ((TensorConst)__result["inputRangeR"]).Value.Cast<float>();
-        Marker outputMarker = (Marker)__result["outputMarker"];
-        Call output = (Call)__result["output"];
-        Tensor<float> outputRange = ((TensorConst)__result["outputRange"]).Value.Cast<float>();
+        Binary bn = (Binary)result["bn"];
+        Marker inputMarkerL = (Marker)result["inputMarkerL"];
+        Expr lhs = (Expr)result["lhs"];
+        Tensor<float> inputRangeL = ((TensorConst)result["inputRangeL"]).Value.Cast<float>();
+        Marker inputMarkerR = (Marker)result["inputMarkerR"];
+        Expr rhs = (Expr)result["rhs"];
+        Tensor<float> inputRangeR = ((TensorConst)result["inputRangeR"]).Value.Cast<float>();
+        Marker outputMarker = (Marker)result["outputMarker"];
+        Call output = (Call)result["output"];
+        Tensor<float> outputRange = ((TensorConst)result["outputRange"]).Value.Cast<float>();
         return GetReplace(bn, inputMarkerL, lhs, inputRangeL, inputMarkerR, rhs, inputRangeR, outputMarker, output,
             outputRange);
     }
@@ -107,23 +109,25 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
     public GeneralAddSubMulDivToFakeActivation()
     {
         Func<Binary, bool> condition = (Binary _) => true;
-        MarkerPattern lhs = Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarkerL",
-            Nncase.PatternMatch.Utility.IsWildcard("lhs")with
+        MarkerPattern lhs = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "inputMarkerL",
+            Nncase.PatternMatch.Utility.IsWildcard("lhs") with
             {
-                TypePattern = (TypePatternUtility.HasFixedShape() &
-                               TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"))
+                TypePattern = TypePatternUtility.HasFixedShape() &
+                               TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"),
             }, Nncase.PatternMatch.Utility.IsTensorConst("inputRangeL"));
         ExprPattern target = Nncase.PatternMatch.Utility.IsWildcard("rhs") with
         {
-            TypePattern = (TypePatternUtility.HasFixedShape() &
-                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"))
+            TypePattern = TypePatternUtility.HasFixedShape() &
+                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"),
         };
-        Pattern = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+        Pattern = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+            "outputMarker",
             Nncase.PatternMatch.F.Math.IsBinary("bn", "output", condition, lhs,
                     Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarkerR", target,
-                        Nncase.PatternMatch.Utility.IsTensorConst("inputRangeR")))with
+                        Nncase.PatternMatch.Utility.IsTensorConst("inputRangeR"))) with
                 {
-                    TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32)
+                    TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32),
                 }, Nncase.PatternMatch.Utility.IsTensorConst("outputRange"));
     }
 }

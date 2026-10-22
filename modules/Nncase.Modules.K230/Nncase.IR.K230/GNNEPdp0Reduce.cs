@@ -24,8 +24,7 @@ public sealed class GNNEPdp0Reduce : Op, IEquatable<GNNEPdp0Reduce?>
 
     public static readonly ParameterInfo DepuantParams = new ParameterInfo(typeof(GNNEPdp0Reduce), 4,
         "dequantize_param",
-        TypePatternUtility.IsNoneType() |
-        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)));
+        TypePatternUtility.IsNoneType() | (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)));
 
     public static readonly ParameterInfo Value = new ParameterInfo(typeof(GNNEPdp0Reduce), 5, "value",
         TypePatternUtility.IsScalar() & TypePatternUtility.HasDataType(DataTypes.Int32));

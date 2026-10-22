@@ -8,7 +8,8 @@ using System.Linq;
 
 namespace Nncase.Passes.Rules;
 
-public sealed class ActivationParameter<T> where T : unmanaged, IEquatable<T>, IComparable<T>
+public sealed class ActivationParameter<T>
+    where T : unmanaged, IEquatable<T>, IComparable<T>
 {
     private const int Maxshiftbits = 30;
 
@@ -183,7 +184,8 @@ public sealed class ActivationParameter<T> where T : unmanaged, IEquatable<T>, I
         ShiftBitsAdaptXs((1 << (int?)shiftBits).Value);
     }
 
-    public Tensor<TTo> ToAct0Data<TTo>() where TTo : unmanaged, IEquatable<TTo>
+    public Tensor<TTo> ToAct0Data<TTo>()
+        where TTo : unmanaged, IEquatable<TTo>
     {
         if (_data.Rank > 4)
         {

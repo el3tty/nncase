@@ -42,12 +42,12 @@ public sealed class ResizeToFakeActivation : IRewriteRule
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        ResizeImage resize = (ResizeImage)__result["resize"];
-        Expr input = (Expr)__result["input"];
-        TensorConst newSize = (TensorConst)__result["newSize"];
+        Call call = (Call)result["call"];
+        ResizeImage resize = (ResizeImage)result["resize"];
+        Expr input = (Expr)result["input"];
+        TensorConst newSize = (TensorConst)result["newSize"];
         return GetReplace(call, resize, input, newSize);
     }
 
@@ -56,15 +56,15 @@ public sealed class ResizeToFakeActivation : IRewriteRule
         Func<ResizeImage, bool> condition = (ResizeImage _) => true;
         ExprPattern input = Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = TypePatternUtility.HasFixedShape()
+            TypePattern = TypePatternUtility.HasFixedShape(),
         };
         Pattern = Imaging.IsResizeImage("resize", "call", condition, input,
                 Nncase.PatternMatch.Utility.IsWildcard("roi"), Nncase.PatternMatch.Utility.IsTensorConst("newSize"),
                 Nncase.PatternMatch.Utility.IsWildcard("cubiccoeffa"),
                 Nncase.PatternMatch.Utility.IsWildcard("excludeOutside"),
-                Nncase.PatternMatch.Utility.IsWildcard("extrapolationValue"))with
+                Nncase.PatternMatch.Utility.IsWildcard("extrapolationValue")) with
             {
-                TypePattern = TypePatternUtility.HasRank(4)
+                TypePattern = TypePatternUtility.HasRank(4),
             };
     }
 }

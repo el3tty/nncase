@@ -14,10 +14,10 @@ namespace Nncase.Passes.Rules.K230;
 public class SigmoidToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsSigmoid("Sigmoid", "call", (Sigmoid _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with
+        Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (TypePatternUtility.HasFixedShape() &
-                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"))
+            TypePattern = TypePatternUtility.HasFixedShape() &
+                           TypePatternUtility.HasRank((int r) => r <= 4, "Only support rank <= 4"),
         });
 
     private Expr? GetReplace(Call call, Expr input)
@@ -26,7 +26,7 @@ public class SigmoidToFakeActivation : RewriteRule<Pattern>
         ActParam16 actParam = new ActParam16(actChannels);
         float[] xs = new float[15]
         {
-            -7f, -4.5f, -3.5f, -2.7f, -2.1f, -1.6f, -1f, 0f, 1f, 1.6f, 2.1f, 2.7f, 3.5f, 4.5f, 7f
+            -7f, -4.5f, -3.5f, -2.7f, -2.1f, -1.6f, -1f, 0f, 1f, 1.6f, 2.1f, 2.7f, 3.5f, 4.5f, 7f,
         };
         double[] ks = new double[32]
         {
@@ -36,7 +36,7 @@ public class SigmoidToFakeActivation : RewriteRule<Pattern>
             0.4312276071962273, 0.23123362875892262, 0.4955178069668943, 0.23398496370676491, 0.5031840614393268,
             0.17066333504274322, 0.5625762717242175, 0.1197647477013204, 0.6417049229131112, 0.07822321089963047,
             0.7281582013897308, 0.04270052410967129, 0.8235195920244173, 0.01849619693381177, 0.9073131477622514,
-            0.0037644096557241102, 0.9742926548134362, 0.000567715948649905, 0.9951637114353361
+            0.0037644096557241102, 0.9742926548134362, 0.000567715948649905, 0.9951637114353361,
         };
         for (int i = 0; i < 15; i++)
         {
@@ -54,10 +54,10 @@ public class SigmoidToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, call.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(call, input);
     }
 }

@@ -9,5 +9,5 @@ public enum PU_PDP0_MODE : uint
     min,
     max,
     sum,
-    average
+    average,
 }

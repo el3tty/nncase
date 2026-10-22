@@ -249,7 +249,8 @@ public static class I
     public static Call L2_LOAD_W_CONF(GP_REGISTER rlen_compressed, GP_REGISTER rlen_decompressed,
         L2_DATATYPE l2_datatype, DDR_DATATYPE ddr_datatype, Expr enable_decompress, Expr? reserved0 = null)
     {
-        return new Call(new L2_LOAD_W_CONF(rlen_compressed, rlen_decompressed, l2_datatype, ddr_datatype),
+        return new Call(
+            new L2_LOAD_W_CONF(rlen_compressed, rlen_decompressed, l2_datatype, ddr_datatype),
             enable_decompress, reserved0 ?? ((Expr)0));
     }
 
@@ -493,7 +494,8 @@ public static class I
     public static Call MFU_TRANSPOSE_CONF(SHAPE_REGISTER rstride_d, SHAPE_REGISTER rstride_s, L2_DATATYPE l2_datatype,
         MFU_TRANS_PERMUTE permute, MFU_CONF_FUNCTION funct5 = MFU_CONF_FUNCTION.transpose_conf, Expr? reserved0 = null)
     {
-        return new Call(new MFU_TRANSPOSE_CONF(funct5, rstride_d, rstride_s, l2_datatype, permute),
+        return new Call(
+            new MFU_TRANSPOSE_CONF(funct5, rstride_d, rstride_s, l2_datatype, permute),
             reserved0 ?? ((Expr)0));
     }
 
@@ -519,7 +521,8 @@ public static class I
     public static Call MFU_PDP1_CONF3(GP_REGISTER rpe_channels, GP_REGISTER rpe_last_channels, GP_REGISTER rpad_value,
         SHAPE_REGISTER sspad, MFU_CONF_FUNCTION funct5 = MFU_CONF_FUNCTION.pdp1_conf3, Expr? reserved0 = null)
     {
-        return new Call(new MFU_PDP1_CONF3(funct5, rpe_channels, rpe_last_channels, rpad_value, sspad),
+        return new Call(
+            new MFU_PDP1_CONF3(funct5, rpe_channels, rpe_last_channels, rpad_value, sspad),
             reserved0 ?? ((Expr)0));
     }
 
@@ -586,7 +589,8 @@ public static class I
             reserved0 ?? ((Expr)0));
     }
 
-    public static Call MFU_ACT1_CONF_QUANT(QUANT_TYPE quant_type,
+    public static Call MFU_ACT1_CONF_QUANT(
+        QUANT_TYPE quant_type,
         MFU_CONF_FUNCTION funct5 = MFU_CONF_FUNCTION.act1_conf_quant, Expr? rshift_bits = null, Expr? reserved0 = null)
     {
         return new Call(new MFU_ACT1_CONF_QUANT(funct5, quant_type), rshift_bits ?? ((Expr)0), reserved0 ?? ((Expr)0));

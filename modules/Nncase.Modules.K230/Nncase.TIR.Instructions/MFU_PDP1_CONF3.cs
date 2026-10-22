@@ -79,7 +79,8 @@ public sealed class MFU_PDP1_CONF3 : InstructionOp, ISerializeInst, IEquatable<M
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(funct5, rpe_channels, rpe_last_channels, rpad_value, sspad));
     }
 }

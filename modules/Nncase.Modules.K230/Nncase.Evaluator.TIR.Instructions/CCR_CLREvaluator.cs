@@ -13,7 +13,7 @@ internal sealed class CCR_CLREvaluator : ITypeInferencer<CCR_CLR>, ITypeInferenc
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, CCR_CLR target, bool ILmode)
+    public string Visit(IIRPrinterContext context, CCR_CLR target, bool iLmode)
     {
         return $"I.CCR_CLR(ccr: {context.GetArgument(target, CCR_CLR.ccr)})";
     }

@@ -40,18 +40,18 @@ public sealed class FoldPadFakePdp : IRewriteRule
         return null;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEStore gnneStore = (GNNEStore)__result["gnneStore"];
-        Call call = (Call)__result["call"];
-        FakePdp fakePdp = (FakePdp)__result["fakePdp"];
-        Expr input = (Expr)__result["input"];
-        Expr filter = (Expr)__result["filter"];
-        Expr stride = (Expr)__result["stride"];
-        Expr countIncludePad = (Expr)__result["countIncludePad"];
-        TensorConst padding = (TensorConst)__result["padding1"];
-        TensorConst padding2 = (TensorConst)__result["padding2"];
-        Tensor<float> padValue = ((TensorConst)__result["padValue"]).Value.Cast<float>();
+        GNNEStore gnneStore = (GNNEStore)result["gnneStore"];
+        Call call = (Call)result["call"];
+        FakePdp fakePdp = (FakePdp)result["fakePdp"];
+        Expr input = (Expr)result["input"];
+        Expr filter = (Expr)result["filter"];
+        Expr stride = (Expr)result["stride"];
+        Expr countIncludePad = (Expr)result["countIncludePad"];
+        TensorConst padding = (TensorConst)result["padding1"];
+        TensorConst padding2 = (TensorConst)result["padding2"];
+        Tensor<float> padValue = ((TensorConst)result["padValue"]).Value.Cast<float>();
         return GetReplace(gnneStore, call, fakePdp, input, filter, stride, countIncludePad, padding, padding2,
             padValue);
     }

@@ -60,7 +60,7 @@ public class GnneActionAct0Src1Conf : GnneAction
 
     public override bool Equals(object? obj)
     {
-        if (this == obj)
+        if (ReferenceEquals(this, obj))
         {
             return true;
         }

@@ -18,7 +18,8 @@ internal sealed class CheckedConvertMutator : ExprRewriter
 
     private readonly RunPassContext _passOptions;
 
-    public CheckedConvertMutator(Dictionary<Fusion, BaseFunction> fusionConvertedCache,
+    public CheckedConvertMutator(
+        Dictionary<Fusion, BaseFunction> fusionConvertedCache,
         Dictionary<string, RoofLineInfo> fusionMacsMap, IDictionary<Fusion, IFusionChecker> fusionchecker_cache,
         RunPassContext passOptions)
     {
@@ -30,7 +31,6 @@ internal sealed class CheckedConvertMutator : ExprRewriter
 
     protected override Expr RewriteLeafFusion(Fusion expr)
     {
-        //IL_00ba: Unknown result type (might be due to invalid IL or missing references)
         if ((object)expr != null && expr.ModuleKind == "k230")
         {
             if (!_fusionConertedCache.TryGetValue(expr, out BaseFunction _))

@@ -16,7 +16,7 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class OptSlice : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsSlice("slice", "call", (Slice _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsTensorConst("begin"), Nncase.PatternMatch.Utility.IsTensorConst("ends"),
         Nncase.PatternMatch.Utility.IsTensorConst("axes"), Nncase.PatternMatch.Utility.IsTensorConst("strides"));
 
@@ -111,9 +111,10 @@ public sealed class OptSlice : IRewriteRule
                     strideDims.Insert(strideDims[0], 1);
                 }
 
-                Call input2 = Nncase.IR.F.Tensors.Slice(Nncase.IR.F.Tensors.Reshape(input, Enumerable.ToArray(inputDims)),
+                Call input2 = Nncase.IR.F.Tensors.Slice(
+                    Nncase.IR.F.Tensors.Reshape(input, Enumerable.ToArray(inputDims)),
                     beginDims.ToArray(), endDims.ToArray(), new int[4], new int[4] { 1, 1, 1, 1 });
-                DataType storeType = ((call.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : call.CheckedDataType);
+                DataType storeType = (call.CheckedDataType == DataTypes.Float32) ? DataTypes.Float16 : call.CheckedDataType;
                 return Nncase.IR.F.Tensors.Reshape(
                     Nncase.IR.K230.F.Tensors.GNNEStore(storeType, Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)storeType, input2)),
                     call.CheckedShape);
@@ -123,15 +124,15 @@ public sealed class OptSlice : IRewriteRule
         return null;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Slice slice = (Slice)__result["slice"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        TensorConst begin = (TensorConst)__result["begin"];
-        TensorConst ends = (TensorConst)__result["ends"];
-        TensorConst axes = (TensorConst)__result["axes"];
-        TensorConst strides = (TensorConst)__result["strides"];
+        Slice slice = (Slice)result["slice"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        TensorConst begin = (TensorConst)result["begin"];
+        TensorConst ends = (TensorConst)result["ends"];
+        TensorConst axes = (TensorConst)result["axes"];
+        TensorConst strides = (TensorConst)result["strides"];
         return GetReplace(slice, call, input, begin, ends, axes, strides);
     }
 }

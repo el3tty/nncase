@@ -105,12 +105,14 @@ public class CKPDeSerializerVisitor
                     int value33 = reader.Read<int>(11uL);
                     return $"I.PU_FETCHIF_CONF1({value}, {value2}, {value30}, {value31}, ({value32},{value33}))";
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf2:
                 {
                     uint value28 = reader.Read<uint>(5uL);
                     uint value29 = reader.Read<uint>(5uL);
                     return $"I.PU_FETCHIF_CONF2({value}, {value2}, {value28}, {value29})";
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf3:
                 {
                     uint value24 = reader.Read<uint>(11uL);
@@ -119,6 +121,7 @@ public class CKPDeSerializerVisitor
                     uint value27 = reader.Read<uint>(11uL);
                     return $"I.PU_FETCHIF_CONF3({value}, {value2}, {value24}, {value25}, ({value26}, {value27}))";
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf4:
                 {
                     uint value19 = reader.Read<uint>(9uL);
@@ -129,6 +132,7 @@ public class CKPDeSerializerVisitor
                     return
                         $"I.PU_FETCHIF_CONF4({value}, {value2}, {value19}, (({value20}, {value21}), ({value22}, {value23})))";
                 }
+
             case PU_CONF_FUNCTION.pu_fetchif_conf_deq:
                 {
                     uint value16 = reader.Read<uint>(5uL);
@@ -136,12 +140,14 @@ public class CKPDeSerializerVisitor
                     QUANT_TYPE value18 = (QUANT_TYPE)reader.Read<uint>(2uL);
                     return $"I.PU_FETCHIF_CONF_DEQ({value}, {value2}, {value16}, {value17}, {value18})";
                 }
+
             case PU_CONF_FUNCTION.pu_w_conf:
                 {
                     int value14 = reader.Read<int>(5uL);
                     int value15 = reader.Read<int>(5uL);
                     return $"I.PU_W_CONF({value}, {value2}, {value14}, {value15})";
                 }
+
             case PU_CONF_FUNCTION.pu_of_conf1:
                 {
                     uint value11 = reader.Read<uint>(5uL);
@@ -149,6 +155,7 @@ public class CKPDeSerializerVisitor
                     uint value13 = reader.Read<uint>(11uL);
                     return $"I.PU_OF_CONF1({value}, {value2}, {value11}, NULL, ({value12}, {value13}))";
                 }
+
             case PU_CONF_FUNCTION.pu_of_conf2:
                 {
                     uint value8 = reader.Read<uint>(12uL);
@@ -156,6 +163,7 @@ public class CKPDeSerializerVisitor
                     uint value10 = reader.Read<uint>(11uL);
                     return $"I.PU_OF_CONF2({value}, {value2}, {value8}, ({value9},{value10}))";
                 }
+
             case PU_CONF_FUNCTION.pu_compute_conf:
                 {
                     int value3 = reader.Read<int>(1uL);
@@ -165,6 +173,7 @@ public class CKPDeSerializerVisitor
                     PU_COMPUTE_MODE value7 = (PU_COMPUTE_MODE)reader.Read<uint>(1uL);
                     return $"I.PU_COMPUTE_CONF({value}, {value2}, {value3}, {value4}, {value5}, {value6}, {value7})";
                 }
+
             default:
                 throw new ArgumentOutOfRangeException("Bad Funct");
         }

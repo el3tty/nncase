@@ -14,15 +14,16 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class ReshapeLeakyReshapeMotion : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsReshape("bc2", (Reshape _) => true,
-        Nncase.PatternMatch.F.Math.IsBinary("bin2", BinaryOp.Max, Nncase.PatternMatch.F.Math.IsBinary("bin1",
+        Nncase.PatternMatch.F.Math.IsBinary("bin2", BinaryOp.Max, Nncase.PatternMatch.F.Math.IsBinary(
+            "bin1",
             BinaryOp.Mul, Nncase.PatternMatch.F.Tensors.IsReshape("bc1", (Reshape _) => true,
-                Nncase.PatternMatch.Utility.IsTensorConst("input")with
+                Nncase.PatternMatch.Utility.IsTensorConst("input") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }),
-            Nncase.PatternMatch.Utility.IsTensorConst("rhs")with
+            Nncase.PatternMatch.Utility.IsTensorConst("rhs") with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
+                TypePattern = TypePatternUtility.HasFixedShape(),
             })));
 
     private Expr? GetReplace(Reshape bc2, Binary bin2, Binary bin1, Reshape bc1, Expr input, Expr rhs)
@@ -32,14 +33,14 @@ public sealed class ReshapeLeakyReshapeMotion : IRewriteRule
         return Nncase.IR.F.Tensors.Reshape(call, call.CheckedShape);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Reshape bc = (Reshape)__result["bc2"];
-        Binary bin = (Binary)__result["bin2"];
-        Binary bin2 = (Binary)__result["bin1"];
-        Reshape bc2 = (Reshape)__result["bc1"];
-        Expr input = (Expr)__result["input"];
-        Expr rhs = (Expr)__result["rhs"];
+        Reshape bc = (Reshape)result["bc2"];
+        Binary bin = (Binary)result["bin2"];
+        Binary bin2 = (Binary)result["bin1"];
+        Reshape bc2 = (Reshape)result["bc1"];
+        Expr input = (Expr)result["input"];
+        Expr rhs = (Expr)result["rhs"];
         return GetReplace(bc, bin, bin2, bc2, input, rhs);
     }
 }

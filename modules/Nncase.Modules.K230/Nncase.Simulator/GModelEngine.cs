@@ -45,11 +45,11 @@ public sealed class GModelEngine
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.RedirectStandardOutput = true;
-                process.ErrorDataReceived += delegate(object _, DataReceivedEventArgs e)
+                process.ErrorDataReceived += (_, e) =>
                 {
                     errWriter.WriteLine(e.Data);
                 };
-                process.OutputDataReceived += delegate(object _, DataReceivedEventArgs msg) { logWriter.Write(msg); };
+                process.OutputDataReceived += (_, msg) => { logWriter.Write(msg); };
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();

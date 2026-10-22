@@ -23,7 +23,7 @@ internal sealed class LinkedModule : ILinkedModule
         Sections = new LinkedSection[2]
         {
             new LinkedSection(text, ".text", 0u, 8u, (uint)text.Length),
-            new LinkedSection(rdata, ".rdata", 0u, 8u, (uint)rdata.Length)
+            new LinkedSection(rdata, ".rdata", 0u, 8u, (uint)rdata.Length),
         };
     }
 }

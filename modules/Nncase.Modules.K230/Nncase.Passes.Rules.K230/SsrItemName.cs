@@ -42,5 +42,5 @@ public enum SsrItemName
     MfuMemcpyRstrideS,
     MfuMemcpyRshape,
     MfuMemsetRstride,
-    MfuMemsetRshape
+    MfuMemsetRshape,
 }

@@ -13,7 +13,7 @@ internal sealed class LHEvaluator : ITypeInferencer<LH>, ITypeInferencer, IOpPri
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, LH target, bool ILmode)
+    public string Visit(IIRPrinterContext context, LH target, bool iLmode)
     {
         return
             $"I.LH(rd: {target.rd}, rs: {target.rs}, offset: {context.GetArgument(target, LH.offset)}, funct3: {target.funct3})";

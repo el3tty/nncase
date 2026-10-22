@@ -14,7 +14,7 @@ internal sealed class SS_PACK_STRIDEEvaluator : ITypeInferencer<SS_PACK_STRIDE>,
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, SS_PACK_STRIDE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, SS_PACK_STRIDE target, bool iLmode)
     {
         return $"I.SS_PACK_STRIDE(rn: {target.rn}, rc: {target.rc}, rh: {target.rh}, rss: {target.rss})";
     }

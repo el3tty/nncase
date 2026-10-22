@@ -14,7 +14,7 @@ internal sealed class MFU_ACT1_CONF_DESTEvaluator : ITypeInferencer<MFU_ACT1_CON
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_ACT1_CONF_DEST target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_ACT1_CONF_DEST target, bool iLmode)
     {
         return $"I.MFU_ACT1_CONF_DEST(rlen: {target.rlen}, rshape: {target.rshape}, funct5: {target.funct5})";
     }

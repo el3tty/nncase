@@ -10,13 +10,10 @@ namespace Nncase.IR.K230;
 public sealed class GNNEPdp0DW : Op, IEquatable<GNNEPdp0DW?>
 {
     public static readonly ParameterInfo Input = new ParameterInfo(typeof(GNNEPdp0DW), 0, "input",
-        TypePatternUtility.HasRank(4) & (TypePatternUtility.HasDataType(DataTypes.Int8) |
-                                         TypePatternUtility.HasDataType(DataTypes.Int16) |
-                                         TypePatternUtility.HasDataType(DataTypes.UInt8)));
+        TypePatternUtility.HasRank(4) & (TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Int16) | TypePatternUtility.HasDataType(DataTypes.UInt8)));
 
     public static readonly ParameterInfo Weights = new ParameterInfo(typeof(GNNEPdp0DW), 1, "weights",
-        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Int16) |
-        TypePatternUtility.HasDataType(DataTypes.UInt8));
+        TypePatternUtility.HasDataType(DataTypes.Int8) | TypePatternUtility.HasDataType(DataTypes.Int16) | TypePatternUtility.HasDataType(DataTypes.UInt8));
 
     public static readonly ParameterInfo WeightsBias = new ParameterInfo(typeof(GNNEPdp0DW), 2, "weights_bias",
         TypePatternUtility.HasDataType(DataTypes.UInt8));

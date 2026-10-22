@@ -7,5 +7,5 @@ public enum STORE_FUNCTION : uint
 {
     sw,
     sh,
-    sb
+    sb,
 }

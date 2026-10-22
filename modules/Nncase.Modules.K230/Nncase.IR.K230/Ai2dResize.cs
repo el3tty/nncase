@@ -67,7 +67,8 @@ public sealed class Ai2dResize : Op, IEquatable<Ai2dResize?>
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(AlignCorners, ResizeMethod, HalfPixelCenters, OutputDatatype));
     }
 }

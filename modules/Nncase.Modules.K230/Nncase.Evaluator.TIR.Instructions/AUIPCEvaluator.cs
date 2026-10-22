@@ -13,7 +13,7 @@ internal sealed class AUIPCEvaluator : ITypeInferencer<AUIPC>, ITypeInferencer, 
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, AUIPC target, bool ILmode)
+    public string Visit(IIRPrinterContext context, AUIPC target, bool iLmode)
     {
         return $"I.AUIPC(rd: {target.rd}, imm: {context.GetArgument(target, AUIPC.imm)})";
     }

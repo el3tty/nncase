@@ -15,17 +15,20 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class ToFakeMatmul : IRewriteRule
 {
-    public IPattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+    public IPattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "outputMarker",
         Nncase.PatternMatch.F.Math.IsMatMul("matmul", "call", (MatMul _) => true,
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("inputAMarker",
-                Nncase.PatternMatch.Utility.IsWildcard("inputA")with
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputAMarker",
+                Nncase.PatternMatch.Utility.IsWildcard("inputA") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsTensorConst("inputARange")),
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("inputBMarker",
-                Nncase.PatternMatch.Utility.IsWildcard("inputB")with
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputBMarker",
+                Nncase.PatternMatch.Utility.IsWildcard("inputB") with
                 {
-                    TypePattern = TypePatternUtility.HasFixedShape()
+                    TypePattern = TypePatternUtility.HasFixedShape(),
                 }, Nncase.PatternMatch.Utility.IsTensorConst("inputBRange"))),
         Nncase.PatternMatch.Utility.IsTensorConst("outputRange"));
 
@@ -70,17 +73,17 @@ public sealed class ToFakeMatmul : IRewriteRule
                 null, adaQuantInfo: outputMarker.AdaQuantInfo, mixQuantInfo: outputMarker.MixQuantInfo);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Marker inputAMarker = (Marker)__result["inputAMarker"];
-        Expr inputA = (Expr)__result["inputA"];
-        Marker inputBMarker = (Marker)__result["inputBMarker"];
-        Expr inputB = (Expr)__result["inputB"];
-        Marker outputMarker = (Marker)__result["outputMarker"];
-        Call call = (Call)__result["call"];
-        Tensor<float> inputARange = ((TensorConst)__result["inputARange"]).Value.Cast<float>();
-        Tensor<float> inputBRange = ((TensorConst)__result["inputBRange"]).Value.Cast<float>();
-        Tensor<float> outputRange = ((TensorConst)__result["outputRange"]).Value.Cast<float>();
+        Marker inputAMarker = (Marker)result["inputAMarker"];
+        Expr inputA = (Expr)result["inputA"];
+        Marker inputBMarker = (Marker)result["inputBMarker"];
+        Expr inputB = (Expr)result["inputB"];
+        Marker outputMarker = (Marker)result["outputMarker"];
+        Call call = (Call)result["call"];
+        Tensor<float> inputARange = ((TensorConst)result["inputARange"]).Value.Cast<float>();
+        Tensor<float> inputBRange = ((TensorConst)result["inputBRange"]).Value.Cast<float>();
+        Tensor<float> outputRange = ((TensorConst)result["outputRange"]).Value.Cast<float>();
         return GetReplace(inputAMarker, inputA, inputBMarker, inputB, outputMarker, call, inputARange, inputBRange,
             outputRange);
     }

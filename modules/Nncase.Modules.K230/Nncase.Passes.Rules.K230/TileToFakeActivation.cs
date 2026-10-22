@@ -16,7 +16,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public class TileToFakeActivation : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("marker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "marker",
         Nncase.PatternMatch.F.Tensors.IsTile("tile", "call", (Nncase.IR.Tensors.Tile _) => true,
             Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsTensorConst("repeats")),
         Nncase.PatternMatch.Utility.IsTensorConst("range"));
@@ -46,7 +47,7 @@ public class TileToFakeActivation : RewriteRule<Pattern>
         }
 
         newRepeats[^1] = 1;
-        newRepeats[0] *= ((repeats.Length != 4) ? 1 : repeats[0]);
+        newRepeats[0] *= (repeats.Length != 4) ? 1 : repeats[0];
         int[] inputShape = new int[4] { 1, 1, 1, 1 };
         Array.Copy(input.CheckedShape.ToValueArray(), 0, inputShape, inputShape.Length - input.CheckedShape.Rank,
             input.CheckedShape.Rank);
@@ -62,14 +63,14 @@ public class TileToFakeActivation : RewriteRule<Pattern>
                     ((Marker)marker).MixQuantInfo, ((Marker)marker).AdaQuantInfo), call.CheckedShape);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Nncase.IR.Tensors.Tile tile = (Nncase.IR.Tensors.Tile)__result["tile"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        int[] repeats = ((TensorConst)__result["repeats"]).Value.ToArray<int>();
-        Expr marker = (Expr)__result["marker"];
-        Expr range = (Expr)__result["range"];
+        Nncase.IR.Tensors.Tile tile = (Nncase.IR.Tensors.Tile)result["tile"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        int[] repeats = ((TensorConst)result["repeats"]).Value.ToArray<int>();
+        Expr marker = (Expr)result["marker"];
+        Expr range = (Expr)result["range"];
         return GetReplace(tile, call, input, repeats, marker, range);
     }
 }

@@ -15,13 +15,16 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public class ToGNNEActivation : GNNEActLowerRule
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "outputMarker",
         Nncase.PatternMatch.F.K230.IsFakeActivation("fakeActivation", "call", (FakeActivation _) => true,
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("inputAMarker",
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputAMarker",
                 Nncase.PatternMatch.Utility.IsWildcard("inputA"),
                 Nncase.PatternMatch.Utility.IsTensorConst("inputARange")),
             Nncase.PatternMatch.Utility.IsAlt(
-                Nncase.PatternMatch.Utility.IsRangeOfMarker("inputBMarker",
+                Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                    "inputBMarker",
                     Nncase.PatternMatch.Utility.IsWildcard("inputB"),
                     Nncase.PatternMatch.Utility.IsTensorConst("inputBRange")), Nncase.PatternMatch.Utility.IsNone()),
             Nncase.PatternMatch.Utility.IsTensorConst("act"), Nncase.PatternMatch.Utility.IsTensorConst("outChannels"),
@@ -94,22 +97,22 @@ public class ToGNNEActivation : GNNEActLowerRule
             needsOutputReshape, outChannels, is16Segment, activationTable, outputMarker, outputRange);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeActivation fakeActivation = (FakeActivation)__result["fakeActivation"];
-        Call call = (Call)__result["call"];
-        Expr inputA = (Expr)__result["inputA"];
-        Tensor<float> inputARange = ((TensorConst)__result["inputARange"]).Value.Cast<float>();
-        Tensor<int> outChannels = ((TensorConst)__result["outChannels"]).Value.Cast<int>();
-        Expr is16Segment = (Expr)__result["is16Segment"];
-        Expr inputAMarker = (Expr)__result["inputAMarker"];
-        Expr outputMarker = (Expr)__result["outputMarker"];
-        Expr outputRange = (Expr)__result["outputRange"];
-        base.Option = __context;
-        base.MatchResult = __result;
+        FakeActivation fakeActivation = (FakeActivation)result["fakeActivation"];
+        Call call = (Call)result["call"];
+        Expr inputA = (Expr)result["inputA"];
+        Tensor<float> inputARange = ((TensorConst)result["inputARange"]).Value.Cast<float>();
+        Tensor<int> outChannels = ((TensorConst)result["outChannels"]).Value.Cast<int>();
+        Expr is16Segment = (Expr)result["is16Segment"];
+        Expr inputAMarker = (Expr)result["inputAMarker"];
+        Expr outputMarker = (Expr)result["outputMarker"];
+        Expr outputRange = (Expr)result["outputRange"];
+        Option = context;
+        MatchResult = result;
         Init();
         return GetReplace(fakeActivation, call, inputA, inputARange, outChannels, is16Segment, inputAMarker,
-            outputMarker, __result, outputRange);
+            outputMarker, result, outputRange);
     }
 
     private static int[] PadShapeToRank4(Shape shape)

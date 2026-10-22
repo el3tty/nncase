@@ -12,6 +12,6 @@ public class MulToFakeActivation : BinaryToFakeActivation
 
     public override void ProcessActParam(ActParam2 actParam, bool isCRHS, int i, float v)
     {
-        actParam.Ks[0, i] = (actParam.Ks[1, i] = v);
+        actParam.Ks[0, i] = actParam.Ks[1, i] = v;
     }
 }

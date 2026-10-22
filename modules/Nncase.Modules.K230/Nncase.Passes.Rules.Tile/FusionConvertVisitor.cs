@@ -204,7 +204,7 @@ internal sealed class FusionConvertVisitor
             }
 
             UpdateAlignType(list);
-            _ofBufNum = (list.Exists((NodeInfo ni) => ni.Children.Count > 1)
+            _ofBufNum = list.Exists((NodeInfo ni) => ni.Children.Count > 1)
                 ? 3
                 : ((list.Count(delegate(NodeInfo ni)
                 {
@@ -212,7 +212,7 @@ internal sealed class FusionConvertVisitor
                     return (object)op2 != null && op2.Target is GNNELoad;
                 }) > 1)
                     ? 3
-                    : 2));
+                    : 2);
             List<int[]> list9 = new List<int[]>();
             int[] array = fusion.Body.CheckedShape.ToValueArray();
             if (fusion.Body is Call call2 && call2.Target is Reshape)
@@ -267,7 +267,8 @@ internal sealed class FusionConvertVisitor
                 int[] tileOutShape = list9[num6];
                 List<BoxOnGlb> list10 = new List<BoxOnGlb>();
                 GlbItemSize glbItemSize = new GlbItemSize();
-                glbItemSize.BasementSize = TileUtilities.GetAlignedNum(SpaceSearcher.GetBasementSize(),
+                glbItemSize.BasementSize = TileUtilities.GetAlignedNum(
+                    SpaceSearcher.GetBasementSize(),
                     GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
                 List<NodeInfo> nodeInfo = list;
                 Visit(fusionType, tileOutShape, glbItemSize, list);
@@ -278,17 +279,17 @@ internal sealed class FusionConvertVisitor
                     new int[2]
                     {
                         GNNEEnv.OfmapBankWidth,
-                        glbItemSize.MaxOfmapSize / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth
+                        glbItemSize.MaxOfmapSize / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth,
                     }, ItemName.Ofmap));
                 list10.Add(new BoxOnGlb(
                     new int[2]
                     {
-                        GNNEEnv.WBankWidth, glbItemSize.MaxWeightSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth
+                        GNNEEnv.WBankWidth, glbItemSize.MaxWeightSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth,
                     }, ItemName.Weight));
                 list10.Add(new BoxOnGlb(
                     new int[2]
                     {
-                        GNNEEnv.ActBankWidth, glbItemSize.MaxActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth
+                        GNNEEnv.ActBankWidth, glbItemSize.MaxActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth,
                     }, ItemName.Act));
                 if (glbItemSize.MaxDwWeightSize > 0)
                 {
@@ -296,7 +297,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.WBankWidth,
-                            glbItemSize.MaxDwWeightSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxDwWeightSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.DwWeight));
                 }
 
@@ -306,7 +307,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.ActBankWidth,
-                            glbItemSize.MaxDwActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxDwActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.DwAct1));
                 }
 
@@ -316,7 +317,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.WQargBankWidth,
-                            glbItemSize.MaxWeightQargSize / GNNEEnv.WQargBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxWeightQargSize / GNNEEnv.WQargBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.WQarg));
                 }
 
@@ -326,7 +327,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.WQargBankWidth,
-                            glbItemSize.MaxDwWeightQargSize / GNNEEnv.WQargBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxDwWeightQargSize / GNNEEnv.WQargBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.DwQarg));
                 }
 
@@ -336,7 +337,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.ActBankWidth,
-                            glbItemSize.MaxPdp0ActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxPdp0ActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.PdpAct1));
                 }
 
@@ -346,7 +347,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.IfmapBankWidth,
-                            glbItemSize.MaxIfmap2Size / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxIfmap2Size / GNNEEnv.IfmapBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.Ifmap2));
                 }
 
@@ -356,7 +357,7 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.ActBankWidth,
-                            glbItemSize.MaxAct1Size / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxAct1Size / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.MfuAct1));
                 }
 
@@ -366,18 +367,18 @@ internal sealed class FusionConvertVisitor
                         new int[2]
                         {
                             GNNEEnv.WBankWidth,
-                            glbItemSize.MaxWeightPreloadSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth
+                            glbItemSize.MaxWeightPreloadSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth,
                         }, ItemName.WeightPreload));
                 }
 
                 allocateResult = SpaceSearcher.TryAllocate(new BoxPacker(16) { Boxes = list10 });
                 allocateResult.LastOutShape = list9[num6];
-                int value = ((fusionType == FusionType.L2IfFullWPp || fusionType == FusionType.L2IfSplitWPp)
+                int value = (fusionType == FusionType.L2IfFullWPp || fusionType == FusionType.L2IfSplitWPp)
                     ? glbItemSize.MaxWeightSize
-                    : 0);
+                    : 0;
                 allocateResult.BufferSize = new Dictionary<ItemName, int>
                 {
-                    { ItemName.Ofmap, glbItemSize.MaxOfmapSize / _ofBufNum }, { ItemName.Weight, value }
+                    { ItemName.Ofmap, glbItemSize.MaxOfmapSize / _ofBufNum }, { ItemName.Weight, value },
                 };
                 allocateResult.NodeInfo = nodeInfo;
                 if (fusionType == FusionType.L2IfSplitWPp || fusionType == FusionType.L2IfSplitWFull)
@@ -591,7 +592,7 @@ internal sealed class FusionConvertVisitor
     public List<NodeInfo> GetFusionInfo(Fusion fusion, AllocateResult allocation)
     {
         List<NodeInfo> list = new List<NodeInfo>();
-        List<int> list2 = ((_ofBufNum == 2) ? new int[2] { 0, 1 }.ToList() : new int[3] { 0, 1, 2 }.ToList());
+        List<int> list2 = (_ofBufNum == 2) ? new int[2] { 0, 1 }.ToList() : new int[3] { 0, 1, 2 }.ToList();
         Dictionary<Call, int> dictionary = new Dictionary<Call, int>();
         List<NodeInfo> list3 = new List<NodeInfo>();
         list3.AddRange(allocation.NodeInfo);
@@ -618,10 +619,10 @@ internal sealed class FusionConvertVisitor
                             ((GNNEActivation)ni.Op.Target).InputFromL1.Any((bool x) => x))
                         {
                             op = ni.Op;
-                            int num = (((object)op != null && op.Target is GNNEActivation &&
+                            int num = ((object)op != null && op.Target is GNNEActivation &&
                                         ((GNNEActivation)ni.Op.Target).InputFromL1[1])
                                 ? 1
-                                : 0);
+                                : 0;
                             int index = num;
                             NodeInfo preNi = list3.Find((NodeInfo nI) => nI.Op == ni.Op.Arguments[index]);
                             ni.Nb.OfBufferIndex = preNi.Nb.OfBufferIndex;
@@ -792,7 +793,8 @@ internal sealed class FusionConvertVisitor
         }
         else
         {
-            nodeInfos.Add(new NodeInfo(call,
+            nodeInfos.Add(new NodeInfo(
+                call,
                 (currNode != null) ? new List<NodeInfo> { currNode } : new List<NodeInfo>()));
         }
     }
@@ -928,7 +930,7 @@ internal sealed class FusionConvertVisitor
             int[] array = tileOutShape;
             int num = array[2];
             int num2 = array[3];
-            int alignmentFactor = ((TileUtilities.GetBytesPerElement(call.CheckedDataType) == 1) ? 32 : 16);
+            int alignmentFactor = (TileUtilities.GetBytesPerElement(call.CheckedDataType) == 1) ? 32 : 16;
             if (currNode.Nb.AlignType == AlignedType.EAligned)
             {
                 num = TileUtilities.GetAlignedNum(num, alignmentFactor);
@@ -1008,16 +1010,17 @@ internal sealed class FusionConvertVisitor
         int num3 = array6[2];
         if (flag)
         {
-            int num4 = ((num > 16) ? 16 : num);
+            int num4 = (num > 16) ? 16 : num;
             num3 = (int)Math.Ceiling(1f * (float)array[2] / (float)num4);
         }
 
         int num5 = array6[3];
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(flag ? DataTypes.Float16 : checkedDataType) == 1)
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(flag ? DataTypes.Float16 : checkedDataType) == 1)
             ? 32
-            : 16);
+            : 16;
         int alignedNum = TileUtilities.GetAlignedNum(num5, alignmentFactor);
-        int allocatedBytes = new TensorOnGlb(new int[4] { array6[0], array6[1], num3, alignedNum },
+        int allocatedBytes = new TensorOnGlb(
+            new int[4] { array6[0], array6[1], num3, alignedNum },
             flag ? DataTypes.Float16 : checkedDataType, 0).AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
@@ -1041,10 +1044,10 @@ internal sealed class FusionConvertVisitor
         nodesInfo.Where((NodeInfo node) => node.Op == call[GNNEPdp1.Input]).ToList().ForEach(delegate(NodeInfo node)
         {
             node.OutShape =
-                ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                     node.OutShape.Aggregate((int a, int b) => a * b))
                     ? currentInputShape
-                    : node.OutShape);
+                    : node.OutShape;
         });
     }
 
@@ -1070,7 +1073,7 @@ internal sealed class FusionConvertVisitor
         int r2 = num2;
         int c = num3;
         int[] array6 = outShape;
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
         int num4 = array6[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
@@ -1106,7 +1109,8 @@ internal sealed class FusionConvertVisitor
 
         NodeBuffer nb = currNode.Nb;
         nb.Pdp0ActOffset = maxSizes.MaxPdp0ActSize;
-        int alignedNum = TileUtilities.GetAlignedNum(SpaceSearcher.GetActSize(c, GNNEEnv.ActNumPerChan, 2),
+        int alignedNum = TileUtilities.GetAlignedNum(
+            SpaceSearcher.GetActSize(c, GNNEEnv.ActNumPerChan, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxPdp0ActSize += alignedNum;
         currNode.Nb = nb;
@@ -1114,10 +1118,10 @@ internal sealed class FusionConvertVisitor
             delegate(NodeInfo node)
             {
                 node.OutShape =
-                    ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                    (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                         node.OutShape.Aggregate((int a, int b) => a * b))
                         ? currentInputShape
-                        : node.OutShape);
+                        : node.OutShape;
             });
     }
 
@@ -1144,7 +1148,7 @@ internal sealed class FusionConvertVisitor
         int num5 = array3[3];
         int num6 = num2;
         int[] array5 = outShape;
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
         int num7 = array5[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
@@ -1203,7 +1207,7 @@ internal sealed class FusionConvertVisitor
 
         goto IL_044e;
         IL_044e:
-        new TensorOnGlb(new int[4] { num4, num5, num3, num2 }, checkedDataType2, 0);
+        _ = new TensorOnGlb(new int[4] { num4, num5, num3, num2 }, checkedDataType2, 0);
         if (fusionType == FusionType.L2IfFullWPp || fusionType == FusionType.L2IfSplitWPp)
         {
             int alignedNum = TileUtilities.GetAlignedNum(
@@ -1224,7 +1228,8 @@ internal sealed class FusionConvertVisitor
         }
 
         nb.ActOffset = maxSizes.MaxActSize;
-        int alignedNum3 = TileUtilities.GetAlignedNum(SpaceSearcher.GetActSize(num6, GNNEEnv.ActNumPerChan, 2),
+        int alignedNum3 = TileUtilities.GetAlignedNum(
+            SpaceSearcher.GetActSize(num6, GNNEEnv.ActNumPerChan, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxActSize += alignedNum3;
         if (checkedDataType2 == DataTypes.UInt8 || checkedDataType2 == DataTypes.Int16)
@@ -1241,10 +1246,10 @@ internal sealed class FusionConvertVisitor
         nodesInfo.Where((NodeInfo node) => node.Op == call[GNNEConv2D.Input]).ToList().ForEach(delegate(NodeInfo node)
         {
             node.OutShape =
-                ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                     node.OutShape.Aggregate((int a, int b) => a * b))
                     ? currentInputShape
-                    : node.OutShape);
+                    : node.OutShape;
         });
     }
 
@@ -1273,7 +1278,7 @@ internal sealed class FusionConvertVisitor
         int num5 = array3[3];
         int num6 = num3 * num2;
         int[] array5 = outShape;
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
         int num7 = array5[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
@@ -1311,20 +1316,22 @@ internal sealed class FusionConvertVisitor
             maxSizes.MaxOfmapSize = allocatedBytes;
         }
 
-        new TensorOnGlb(new int[4] { num4, num5, num3, num2 }, checkedDataType2, 0);
+        _ = new TensorOnGlb(new int[4] { num4, num5, num3, num2 }, checkedDataType2, 0);
         nb.DwWeightOffset = maxSizes.MaxDwWeightSize;
         int alignedNum = TileUtilities.GetAlignedNum(
             SpaceSearcher.GetWeightSize(num4, num5, TileUtilities.GetAlignedNum(num3, GNNEEnv.PuWidth), num2,
                 TileUtilities.GetBytesPerElement(checkedDataType2)), GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxDwWeightSize += alignedNum;
         nb.DwActOffset = maxSizes.MaxDwActSize;
-        int alignedNum2 = TileUtilities.GetAlignedNum(SpaceSearcher.GetActSize(num6, GNNEEnv.ActNumPerChan, 2),
+        int alignedNum2 = TileUtilities.GetAlignedNum(
+            SpaceSearcher.GetActSize(num6, GNNEEnv.ActNumPerChan, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxDwActSize += alignedNum2;
         if (checkedDataType2 == DataTypes.UInt8 || checkedDataType2 == DataTypes.Int16)
         {
             nb.DwWeightQargOffset = maxSizes.MaxDwWeightQargSize;
-            int alignedNum3 = TileUtilities.GetAlignedNum(SpaceSearcher.GetWQargSize(num6, 1),
+            int alignedNum3 = TileUtilities.GetAlignedNum(
+                SpaceSearcher.GetWQargSize(num6, 1),
                 GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
             maxSizes.MaxDwWeightQargSize += alignedNum3;
         }
@@ -1333,10 +1340,10 @@ internal sealed class FusionConvertVisitor
         nodesInfo.Where((NodeInfo node) => node.Op == call[GNNEPdp0DW.Input]).ToList().ForEach(delegate(NodeInfo node)
         {
             node.OutShape =
-                ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                     node.OutShape.Aggregate((int a, int b) => a * b))
                     ? currentInputShape
-                    : node.OutShape);
+                    : node.OutShape;
         });
     }
 
@@ -1353,7 +1360,7 @@ internal sealed class FusionConvertVisitor
         DataType checkedDataType = call.CheckedDataType;
         int[] array = outShape;
         int value = array[3];
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
         int alignedNum = TileUtilities.GetAlignedNum(value, alignmentFactor);
         int allocatedBytes =
             new TensorOnGlb(new int[4] { array[0], array[1], array[2], alignedNum }, checkedDataType, 0).AllocatedBytes;
@@ -1371,10 +1378,10 @@ internal sealed class FusionConvertVisitor
             delegate(NodeInfo node)
             {
                 node.OutShape =
-                    ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                    (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                         node.OutShape.Aggregate((int a, int b) => a * b))
                         ? currentInputShape
-                        : node.OutShape);
+                        : node.OutShape;
             });
 
         static int[] GetInputShapes(int d0, int d1, int d2, int d3, MFU_TRANS_PERMUTE permute)
@@ -1445,7 +1452,7 @@ internal sealed class FusionConvertVisitor
         DataType checkedDataType2 = call.CheckedDataType;
         int num = array3[1];
         int[] array4 = outShape;
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(checkedDataType2) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType2) == 1) ? 32 : 16;
         int num2 = array4[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
@@ -1478,7 +1485,8 @@ internal sealed class FusionConvertVisitor
         {
             num4 = array[2];
             num5 = array[3];
-            num6 = new TensorOnGlb(new int[4] { array[0], array[1], TileUtilities.GetAlignedNum(num4, 32), num5 },
+            num6 = new TensorOnGlb(
+                new int[4] { array[0], array[1], TileUtilities.GetAlignedNum(num4, 32), num5 },
                 checkedDataType, 0).AllocatedBytes;
             num6 = TileUtilities.GetAlignedNum(num6, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         }
@@ -1488,7 +1496,8 @@ internal sealed class FusionConvertVisitor
         {
             num4 = array2[2];
             num5 = array2[3];
-            num6 = new TensorOnGlb(new int[4] { array2[0], array2[1], TileUtilities.GetAlignedNum(num4, 32), num5 },
+            num6 = new TensorOnGlb(
+                new int[4] { array2[0], array2[1], TileUtilities.GetAlignedNum(num4, 32), num5 },
                 dataType, 0).AllocatedBytes;
             num6 = TileUtilities.GetAlignedNum(num6, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         }
@@ -1496,9 +1505,10 @@ internal sealed class FusionConvertVisitor
         maxSizes.MaxIfmap2Size += num6;
         nb.Act1Offset = maxSizes.MaxAct1Size;
         bool num7 = ((TensorConst)call[GNNEActivation.Is16Segments]).Value.ToScalar<bool>();
-        int c = (num7 ? 1 : num);
-        int nActParam = (num7 ? 49 : GNNEEnv.ActNumPerChan);
-        int alignedNum = TileUtilities.GetAlignedNum(SpaceSearcher.GetActSize(c, nActParam, 2),
+        int c = num7 ? 1 : num;
+        int nActParam = num7 ? 49 : GNNEEnv.ActNumPerChan;
+        int alignedNum = TileUtilities.GetAlignedNum(
+            SpaceSearcher.GetActSize(c, nActParam, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxAct1Size += alignedNum;
         currNode.Nb = nb;
@@ -1511,10 +1521,10 @@ internal sealed class FusionConvertVisitor
             delegate(NodeInfo node)
             {
                 node.OutShape =
-                    ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                    (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                         node.OutShape.Aggregate((int a, int b) => a * b))
                         ? currentInputShape
-                        : node.OutShape);
+                        : node.OutShape;
             });
         if (flag)
         {
@@ -1525,10 +1535,10 @@ internal sealed class FusionConvertVisitor
             delegate(NodeInfo node)
             {
                 node.OutShape =
-                    ((node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
+                    (node.OutShape.Length == 0 || currentInputShape.Aggregate((int a, int b) => a * b) >
                         node.OutShape.Aggregate((int a, int b) => a * b))
                         ? currentInputShape
-                        : node.OutShape);
+                        : node.OutShape;
             });
     }
 }

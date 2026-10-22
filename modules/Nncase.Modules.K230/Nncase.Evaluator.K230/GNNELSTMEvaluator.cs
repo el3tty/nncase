@@ -128,10 +128,12 @@ public class GNNELSTMEvaluator : IEvaluator<GNNELSTM>, IEvaluator, ITypeInferenc
             IRType[] outputTypes = (new TensorType[3]
             {
                 new TensorType(target.DestTypeO, outputShape),
-                new TensorType(target.DestTypeOH,
+                new TensorType(
+                    target.DestTypeOH,
                     new Dimension[4] { 1, initialH.Shape[1], initialH.Shape[2], initialH.Shape[3] }),
-                new TensorType(DataTypes.Float16,
-                    new Dimension[4] { 1, initialC.Shape[1], initialC.Shape[2], initialC.Shape[3] })
+                new TensorType(
+                    DataTypes.Float16,
+                    new Dimension[4] { 1, initialC.Shape[1], initialC.Shape[2], initialC.Shape[3] }),
             })[..outputSizeConst.Value.ToScalar<int>()];
             return new TupleType(outputTypes);
         }

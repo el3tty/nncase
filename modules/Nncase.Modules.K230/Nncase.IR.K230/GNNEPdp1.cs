@@ -23,12 +23,10 @@ public sealed class GNNEPdp1 : Op, IEquatable<GNNEPdp1?>
         TypePatternUtility.HasRank(2) & TypePatternUtility.IsIntegral());
 
     public static readonly ParameterInfo QuantParams = new ParameterInfo(typeof(GNNEPdp1), 4, "quant_params",
-        TypePatternUtility.IsNoneType() |
-        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.QuantParam)));
+        TypePatternUtility.IsNoneType() | (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.QuantParam)));
 
     public static readonly ParameterInfo DequantParams = new ParameterInfo(typeof(GNNEPdp1), 5, "dequantize_param",
-        TypePatternUtility.IsNoneType() |
-        (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)));
+        TypePatternUtility.IsNoneType() | (TypePatternUtility.IsTensor() & TypePatternUtility.HasDataType(ExtDataTypes.DeQuantParam)));
 
     public static readonly ParameterInfo Value = new ParameterInfo(typeof(GNNEPdp1), 6, "value",
         TypePatternUtility.IsScalar() & TypePatternUtility.HasDataType(DataTypes.Float32));

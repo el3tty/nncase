@@ -15,7 +15,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class UniteConcatRange : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("marker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "marker",
         Nncase.PatternMatch.F.Tensors.IsConcat("concat", null, (Concat _) => true, Nncase.PatternMatch.Utility.IsTuple(
             Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", delegate(ReadOnlySpan<Expr> exprs)
             {
@@ -49,19 +50,20 @@ public sealed class UniteConcatRange : RewriteRule<Pattern>
         if (!tensor.Equals(range))
         {
             return Nncase.IR.F.Math
-                .RangeOfMarker(Nncase.IR.F.Tensors.Concat(new Nncase.IR.Tuple(tupleInputs.ToArray()), concat.Axis),
+                .RangeOfMarker(
+                    Nncase.IR.F.Tensors.Concat(new Nncase.IR.Tuple(tupleInputs.ToArray()), concat.Axis),
                     tensor).With(null, null, null, marker.MixQuantInfo, marker.AdaQuantInfo);
         }
 
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Marker marker = (Marker)__result["marker"];
-        Tensor<float> range = ((TensorConst)__result["range"]).Value.Cast<float>();
-        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)__result["tupleInputs"];
-        Concat concat = (Concat)__result["concat"];
-        return GetReplace(marker, range, tupleInputs, concat, __result);
+        Marker marker = (Marker)result["marker"];
+        Tensor<float> range = ((TensorConst)result["range"]).Value.Cast<float>();
+        IReadOnlyList<Expr> tupleInputs = (IReadOnlyList<Expr>)result["tupleInputs"];
+        Concat concat = (Concat)result["concat"];
+        return GetReplace(marker, range, tupleInputs, concat, result);
     }
 }

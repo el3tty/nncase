@@ -14,7 +14,8 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class BroadcastConcatRange : RewriteRule<Pattern>
 {
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("marker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "marker",
         Nncase.PatternMatch.Utility.IsWildcard("input"), Nncase.PatternMatch.Utility.IsTensorConst("range"));
 
     private Expr? GetReplace(Marker marker, Tensor<float> range, Expr input, RunPassContext context)
@@ -38,7 +39,7 @@ public sealed class BroadcastConcatRange : RewriteRule<Pattern>
                             range[new int[1]] / (tensor[new int[1]] + float.Epsilon),
                             range[new int[1] { 1 }] / (tensor[new int[1] { 1 }] + float.Epsilon),
                             tensor[new int[1]] / (range[new int[1]] + float.Epsilon),
-                            tensor[new int[1] { 1 }] / (range[new int[1] { 1 }] + float.Epsilon)
+                            tensor[new int[1] { 1 }] / (range[new int[1] { 1 }] + float.Epsilon),
                         }.Max()) < rangeThreshold)
                     {
                         return Nncase.IR.F.Math.RangeOfMarker(input, tensor).With(null, null, null,
@@ -51,11 +52,11 @@ public sealed class BroadcastConcatRange : RewriteRule<Pattern>
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Marker marker = (Marker)__result["marker"];
-        Tensor<float> range = ((TensorConst)__result["range"]).Value.Cast<float>();
-        Expr input = (Expr)__result["input"];
-        return GetReplace(marker, range, input, __context);
+        Marker marker = (Marker)result["marker"];
+        Tensor<float> range = ((TensorConst)result["range"]).Value.Cast<float>();
+        Expr input = (Expr)result["input"];
+        return GetReplace(marker, range, input, context);
     }
 }

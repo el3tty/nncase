@@ -17,7 +17,7 @@ namespace Nncase.Passes.Rules.K230;
 public class EluToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsElu("u", "call", (Elu _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsWildcard("alpha"));
 
     private Expr? GetReplace(Elu u, Call call, Expr input)
@@ -30,7 +30,7 @@ public class EluToFakeActivation : RewriteRule<Pattern>
             SplitPointCenter = 0f,
             CenterPoint = 14,
             MinParam = new List<float> { 0f, -1f },
-            MaxParam = new List<float> { 1f, 0f }
+            MaxParam = new List<float> { 1f, 0f },
         };
         actFun.Func = (float x) => (!(x >= 0f)) ? (MathF.Exp(x) - 1f) : x;
         Set_seg_fitting_param(actParam, actFun);
@@ -73,11 +73,11 @@ public class EluToFakeActivation : RewriteRule<Pattern>
         actParam.SetFusedClamp(ValueRange<float>.Full);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Elu u = (Elu)__result["u"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Elu u = (Elu)result["u"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(u, call, input);
     }
 }

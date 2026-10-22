@@ -27,7 +27,7 @@ public class ACosToFakeActivation : UnaryToFakeActivation
             SplitPointCenter = 0f,
             CenterPoint = 7,
             MinParam = new List<float> { 0f, (float)System.Math.PI / 2f },
-            MaxParam = new List<float> { 0f, 0f }
+            MaxParam = new List<float> { 0f, 0f },
         };
         actFun.Func = (float x) => MathF.Acos(x);
         Set_seg_fitting_param(actParam, actFun);
@@ -70,10 +70,10 @@ public class ACosToFakeActivation : UnaryToFakeActivation
         actParam.SetFusedClamp(ValueRange<float>.Full);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(call, input);
     }
 
@@ -83,7 +83,7 @@ public class ACosToFakeActivation : UnaryToFakeActivation
         Pattern = Nncase.PatternMatch.F.Math.IsUnary("u", "call", condition,
                 Nncase.PatternMatch.Utility.IsWildcard("input")) with
             {
-                TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32)
+                TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32),
             };
     }
 }

@@ -15,7 +15,7 @@ namespace Nncase.Passes.Rules.K230;
 public class BatchNormToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = NN.IsBatchNormalization("bn", "bnCall", (BatchNormalization _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasRank(4) },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasRank(4) },
         Nncase.PatternMatch.Utility.IsTensorConst("scale"), Nncase.PatternMatch.Utility.IsTensorConst("bias"),
         Nncase.PatternMatch.Utility.IsTensorConst("mean"), Nncase.PatternMatch.Utility.IsTensorConst("var"),
         Nncase.PatternMatch.Utility.IsTensorConst("eps"));
@@ -40,16 +40,16 @@ public class BatchNormToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, bnCall.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        BatchNormalization bn = (BatchNormalization)__result["bn"];
-        Call bnCall = (Call)__result["bnCall"];
-        Expr input = (Expr)__result["input"];
-        float[] scale = ((TensorConst)__result["scale"]).Value.ToArray<float>();
-        float[] bias = ((TensorConst)__result["bias"]).Value.ToArray<float>();
-        float[] mean = ((TensorConst)__result["mean"]).Value.ToArray<float>();
-        float[] var = ((TensorConst)__result["var"]).Value.ToArray<float>();
-        float eps = ((TensorConst)__result["eps"]).Value.ToScalar<float>();
+        BatchNormalization bn = (BatchNormalization)result["bn"];
+        Call bnCall = (Call)result["bnCall"];
+        Expr input = (Expr)result["input"];
+        float[] scale = ((TensorConst)result["scale"]).Value.ToArray<float>();
+        float[] bias = ((TensorConst)result["bias"]).Value.ToArray<float>();
+        float[] mean = ((TensorConst)result["mean"]).Value.ToArray<float>();
+        float[] var = ((TensorConst)result["var"]).Value.ToArray<float>();
+        float eps = ((TensorConst)result["eps"]).Value.ToScalar<float>();
         return GetReplace(bn, bnCall, input, scale, bias, mean, var, eps);
     }
 }

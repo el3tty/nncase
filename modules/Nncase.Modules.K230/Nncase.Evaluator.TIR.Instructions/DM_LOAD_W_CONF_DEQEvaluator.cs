@@ -14,7 +14,7 @@ internal sealed class DM_LOAD_W_CONF_DEQEvaluator : ITypeInferencer<DM_LOAD_W_CO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, DM_LOAD_W_CONF_DEQ target, bool ILmode)
+    public string Visit(IIRPrinterContext context, DM_LOAD_W_CONF_DEQ target, bool iLmode)
     {
         return
             $"I.DM_LOAD_W_CONF_DEQ(tcu_id: {context.GetArgument(target, DM_LOAD_W_CONF_DEQ.tcu_id)}, pu_id: {context.GetArgument(target, DM_LOAD_W_CONF_DEQ.pu_id)}, quant_type: {target.quant_type}, funct4: {target.funct4})";

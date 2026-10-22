@@ -16,7 +16,8 @@ public sealed class FoldGNNEPdp0ReduceAndGNNEActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsGNNEActivation("act", "call2",
         (GNNEActivation _) => true,
-        Nncase.PatternMatch.F.K230.IsGNNELoad((GNNELoad _) => true,
+        Nncase.PatternMatch.F.K230.IsGNNELoad(
+            (GNNELoad _) => true,
             Nncase.PatternMatch.F.K230.IsGNNEStore("st", "stCall", (GNNEStore _) => true,
                 Nncase.PatternMatch.F.K230.IsGNNEPdp0Reduce("pdp0", "call1", (GNNEPdp0Reduce _) => true,
                     Nncase.PatternMatch.Utility.IsWildcard("input"),
@@ -27,9 +28,11 @@ public sealed class FoldGNNEPdp0ReduceAndGNNEActivation : RewriteRule<Pattern>
                     Nncase.PatternMatch.Utility.IsTensorConst("value"),
                     Nncase.PatternMatch.Utility.IsTensorConst("shiftBits"),
                     Nncase.PatternMatch.Utility.IsTensorConst("countIncludePad"),
-                    Nncase.PatternMatch.F.K230.IsGNNELoadW((GNNELoadW _) => true,
+                    Nncase.PatternMatch.F.K230.IsGNNELoadW(
+                        (GNNELoadW _) => true,
                         Nncase.PatternMatch.Utility.IsTensorConst("act1"))))), Nncase.PatternMatch.Utility.IsNone(),
-        Nncase.PatternMatch.F.K230.IsGNNELoadW((GNNELoadW _) => true,
+        Nncase.PatternMatch.F.K230.IsGNNELoadW(
+            (GNNELoadW _) => true,
             Nncase.PatternMatch.Utility.IsTensorConst("act2")),
         Nncase.PatternMatch.Utility.IsTensorConst("inAShiftBits"),
         Nncase.PatternMatch.Utility.IsTensorConst("inBShiftBits"),
@@ -61,24 +64,24 @@ public sealed class FoldGNNEPdp0ReduceAndGNNEActivation : RewriteRule<Pattern>
             actParam, input, filter, stride, padding, dequantizeParam, value, shiftBits, countIncludePad, act2);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Expr pdp = (Expr)__result["pdp0"];
-        Expr input = (Expr)__result["input"];
-        Expr filter = (Expr)__result["filter"];
-        Call call = (Call)__result["call2"];
-        TensorConst stride = (TensorConst)__result["stride"];
-        TensorConst padding = (TensorConst)__result["padding"];
-        TensorConst dequantizeParam = (TensorConst)__result["dequantizeParam"];
-        TensorConst value = (TensorConst)__result["value"];
-        TensorConst shiftBits = (TensorConst)__result["shiftBits"];
-        TensorConst countIncludePad = (TensorConst)__result["countIncludePad"];
-        GNNEActivation act = (GNNEActivation)__result["act"];
-        TensorConst deqAParams = (TensorConst)__result["deqAParams"];
-        TensorConst outChannels = (TensorConst)__result["outChannels"];
-        TensorConst is16Segments = (TensorConst)__result["is16Segments"];
-        Expr stCall = (Expr)__result["stCall"];
+        Expr pdp = (Expr)result["pdp0"];
+        Expr input = (Expr)result["input"];
+        Expr filter = (Expr)result["filter"];
+        Call call = (Call)result["call2"];
+        TensorConst stride = (TensorConst)result["stride"];
+        TensorConst padding = (TensorConst)result["padding"];
+        TensorConst dequantizeParam = (TensorConst)result["dequantizeParam"];
+        TensorConst value = (TensorConst)result["value"];
+        TensorConst shiftBits = (TensorConst)result["shiftBits"];
+        TensorConst countIncludePad = (TensorConst)result["countIncludePad"];
+        GNNEActivation act = (GNNEActivation)result["act"];
+        TensorConst deqAParams = (TensorConst)result["deqAParams"];
+        TensorConst outChannels = (TensorConst)result["outChannels"];
+        TensorConst is16Segments = (TensorConst)result["is16Segments"];
+        Expr stCall = (Expr)result["stCall"];
         return GetReplace(pdp, input, filter, call, stride, padding, dequantizeParam, value, shiftBits, countIncludePad,
-            act, deqAParams, outChannels, is16Segments, stCall, __context);
+            act, deqAParams, outChannels, is16Segments, stCall, context);
     }
 }

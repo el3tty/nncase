@@ -64,15 +64,11 @@ internal sealed class TraceInfoVisitor : ExprVisitor<Unit, Unit>
 
     protected override Unit DefaultVisitLeaf(Expr expr)
     {
-        //IL_0002: Unknown result type (might be due to invalid IL or missing references)
-        //IL_0008: Unknown result type (might be due to invalid IL or missing references)
         return default(Unit);
     }
 
     protected override Unit VisitLeafCall(Call expr)
     {
-        //IL_00a8: Unknown result type (might be due to invalid IL or missing references)
-        //IL_00ae: Unknown result type (might be due to invalid IL or missing references)
         if ((object)expr != null && expr.Target is PrimFunctionWrapper primFunctionWrapper)
         {
             PrimFunction target = primFunctionWrapper.Target;

@@ -26,25 +26,26 @@ public sealed class FuseQuantIntoAct1 : RewriteRule<Pattern>
             return null;
         }
 
-        ActParamBase actParamBase = ((act.ActParam.N == 2)
+        ActParamBase actParamBase = (act.ActParam.N == 2)
             ? FuseQuantHelper.FuseActAndQuant(quant, qp, (ActParam2)act.ActParam)
-            : FuseQuantHelper.FuseActAndQuant(quant, qp, (ActParam16)act.ActParam));
+            : FuseQuantHelper.FuseActAndQuant(quant, qp, (ActParam16)act.ActParam);
         DataType targetType = quant.TargetType;
         ActParamBase actParam = actParamBase;
         PrimType outputDType = (PrimType)quant.TargetType;
-        return Tensors.GNNEStore(targetType,
+        return Tensors.GNNEStore(
+            targetType,
             ReplaceUtility.ReplaceCallParams(act.With(null, outputDType, actParam), actCallParams,
                 (GNNEActivation.Act, GetReplaceHelper.LoadAct1(actParamBase))), stStrides);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Quantize quant = (Quantize)__result["quant"];
-        QuantParam qp = ((TensorConst)__result["qp"]).Value.ToScalar<QuantParam>();
-        Call st = (Call)__result["st"];
-        Expr stStrides = (Expr)__result["stStrides"];
-        GNNEActivation act = (GNNEActivation)__result["act"];
-        IReadOnlyList<Expr> actCallParams = (IReadOnlyList<Expr>)__result["actCallParams"];
-        return GetReplace(quant, qp, st, stStrides, act, actCallParams, __context);
+        Quantize quant = (Quantize)result["quant"];
+        QuantParam qp = ((TensorConst)result["qp"]).Value.ToScalar<QuantParam>();
+        Call st = (Call)result["st"];
+        Expr stStrides = (Expr)result["stStrides"];
+        GNNEActivation act = (GNNEActivation)result["act"];
+        IReadOnlyList<Expr> actCallParams = (IReadOnlyList<Expr>)result["actCallParams"];
+        return GetReplace(quant, qp, st, stStrides, act, actCallParams, context);
     }
 }

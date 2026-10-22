@@ -53,11 +53,11 @@ public sealed class K230FusionConvertVisitor : ExprRewriter
             int num4 = ((TensorConst)obj[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
             int num5 = ((TensorConst)obj[GNNEConv2D.Groups]).Value.ToScalar<int>();
             rewriteRule =
-                ((array[0] <= 1 || array2[2] != 1 || array2[3] != 1 || array[2] != 1 || array[3] != 1 ||
+                (array[0] <= 1 || array2[2] != 1 || array2[3] != 1 || array[2] != 1 || array[3] != 1 ||
                   array3[2] != 1 || array3[3] != 1 || num != 1 || num2 != 1 || num3 != 1 || num4 != 1 ||
                   source.Sum() != 0 || num5 != 1)
                     ? ((RewriteRule<Pattern>)new TileConv2D())
-                    : ((RewriteRule<Pattern>)new TileTransposeMatmul()));
+                    : ((RewriteRule<Pattern>)new TileTransposeMatmul());
         }
         else if (fusion.Name.StartsWith("TileConv2dTransposeCase"))
         {

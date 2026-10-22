@@ -43,7 +43,7 @@ public sealed class Expand1x1Conv : RewriteRule<Pattern>
             byte[] weightBytes = ((TensorConst)lwCall[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
             byte[] bias = ((TensorConst)lwBiasCall[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
             int padChannels = (24 - lwCall.CheckedShape[1].FixedValue % 24) % 24;
-            int elementScale = ((!(lwCall.CheckedDataType == DataTypes.Float16)) ? 1 : 2);
+            int elementScale = (!(lwCall.CheckedDataType == DataTypes.Float16)) ? 1 : 2;
             int bytesPerOutChannel = weightBytes.Length / lwCall.CheckedShape[0].FixedValue;
             int paddedBytesPerOutChannel = bytesPerOutChannel / lwCall.CheckedShape[1].FixedValue * (lwCall.CheckedShape[1].FixedValue + padChannels);
             byte[] newWeights = new byte[paddedBytesPerOutChannel * lwCall.CheckedShape[0].FixedValue];
@@ -58,7 +58,8 @@ public sealed class Expand1x1Conv : RewriteRule<Pattern>
 
             int[] newShape = lwCall.CheckedShape.ToValueArray();
             newShape[1] += padChannels;
-            Call weights = Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)lwCall.CheckedDataType,
+            Call weights = Nncase.IR.K230.F.Tensors.GNNELoadW(
+                (PrimType)lwCall.CheckedDataType,
                 Tensor.FromBytes(new TensorType(lwCall.CheckedDataType, newShape), newWeights));
             return Nncase.IR.K230.F.Tensors.GNNEConv2D((PrimType)convCall.CheckedDataType, ldCall, weights,
                 weightsQInt8, lwBiasCall, weightsBiasQint8, act, actQint8, deqBias, shiftBits, shiftBitsQint8, qint8Qp,
@@ -68,27 +69,27 @@ public sealed class Expand1x1Conv : RewriteRule<Pattern>
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEConv2D conv = (GNNEConv2D)__result["conv"];
-        Call ldCall = (Call)__result["ldCall"];
-        Call convCall = (Call)__result["convCall"];
-        Call lwCall = (Call)__result["lwCall"];
-        Call lwBiasCall = (Call)__result["lwBiasCall"];
-        Expr weightsBiasQint = (Expr)__result["weightsBiasQint8"];
-        Expr act = (Expr)__result["act"];
-        Expr actQint = (Expr)__result["actQint8"];
-        Expr deqBias = (Expr)__result["deqBias"];
-        Expr shiftBits = (Expr)__result["shiftBits"];
-        Expr shiftBitsQint = (Expr)__result["shiftBitsQint8"];
-        Expr qint8Qp = (Expr)__result["qint8Qp"];
-        Tensor<int> padding = ((TensorConst)__result["padding"]).Value.Cast<int>();
-        int[] stride = ((TensorConst)__result["stride"]).Value.ToArray<int>();
-        int[] dilation = ((TensorConst)__result["dilation"]).Value.ToArray<int>();
-        int groups = ((TensorConst)__result["groups"]).Value.ToScalar<int>();
-        Expr is16Quant = (Expr)__result["is16Quant"];
-        Expr padValue = (Expr)__result["padValue"];
-        Expr weightsQInt = (Expr)__result["weightsQInt8"];
+        GNNEConv2D conv = (GNNEConv2D)result["conv"];
+        Call ldCall = (Call)result["ldCall"];
+        Call convCall = (Call)result["convCall"];
+        Call lwCall = (Call)result["lwCall"];
+        Call lwBiasCall = (Call)result["lwBiasCall"];
+        Expr weightsBiasQint = (Expr)result["weightsBiasQint8"];
+        Expr act = (Expr)result["act"];
+        Expr actQint = (Expr)result["actQint8"];
+        Expr deqBias = (Expr)result["deqBias"];
+        Expr shiftBits = (Expr)result["shiftBits"];
+        Expr shiftBitsQint = (Expr)result["shiftBitsQint8"];
+        Expr qint8Qp = (Expr)result["qint8Qp"];
+        Tensor<int> padding = ((TensorConst)result["padding"]).Value.Cast<int>();
+        int[] stride = ((TensorConst)result["stride"]).Value.ToArray<int>();
+        int[] dilation = ((TensorConst)result["dilation"]).Value.ToArray<int>();
+        int groups = ((TensorConst)result["groups"]).Value.ToScalar<int>();
+        Expr is16Quant = (Expr)result["is16Quant"];
+        Expr padValue = (Expr)result["padValue"];
+        Expr weightsQInt = (Expr)result["weightsQInt8"];
         return GetReplace(conv, ldCall, convCall, lwCall, lwBiasCall, weightsBiasQint, act, actQint, deqBias, shiftBits,
             shiftBitsQint, qint8Qp, padding, stride, dilation, groups, is16Quant, padValue, weightsQInt);
     }

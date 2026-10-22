@@ -48,7 +48,7 @@ public class FakeAi2dPadEvaluator : IEvaluator<FakeAi2dPad>, IEvaluator, ITypeIn
         return new Cost
         {
             [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType) / (byte)2,
-            [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType) / (byte)2
+            [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType) / (byte)2,
         };
     }
 

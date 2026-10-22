@@ -42,7 +42,8 @@ internal static class SplitLarge
         int roundTo = getRound(axis);
         int w = chunkSize / roundTo * roundTo;
         int element = dimSize - w * (n - 1);
-        Call call2 = Tensors.Concat(new Nncase.IR.Tuple((from s in Enumerable.Range(0, n - 1)
+        Call call2 = Tensors.Concat(
+            new Nncase.IR.Tuple((from s in Enumerable.Range(0, n - 1)
             select w).Append(element).Select(delegate(int sliceW, int i)
         {
             int[] inShape = input.CheckedShape.ToValueArray();

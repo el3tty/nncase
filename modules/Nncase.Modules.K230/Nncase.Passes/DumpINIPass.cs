@@ -11,7 +11,6 @@ internal sealed class DumpINIPass : ModulePass
 {
     protected override Task<IRModule> RunCoreAsync(IRModule module, RunPassContext options)
     {
-        //IL_002c: Unknown result type (might be due to invalid IL or missing references)
         if (DumpScope.Current.IsEnabled(DumpFlags.PassIR))
         {
             new INIVisitor(DumpScope.Current.Directory + "/fake_model").Visit(module.Entry);

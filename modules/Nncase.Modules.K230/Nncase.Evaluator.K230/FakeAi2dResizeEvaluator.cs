@@ -25,7 +25,7 @@ public class FakeAi2dResizeEvaluator : IEvaluator<FakeAi2dResize>, IEvaluator, I
         {
             [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType),
         };
     }
 

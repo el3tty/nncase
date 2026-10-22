@@ -43,6 +43,5 @@ internal sealed class LinkableFunction : ILinkableFunction
         Sections[0].Serialize(descStream);
         descStream.Seek(0, SeekOrigin.Begin);
         k230DeSerializerVisitor.DeSerializeDesc(descStream, descWriter);
-
     }
 }

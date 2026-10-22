@@ -13,9 +13,9 @@ namespace Nncase.Passes.Rules.K230;
 [RuleGenerator]
 public sealed class SplitLargeActivation : RewriteRule<Pattern>
 {
-    public override Pattern Pattern => Nncase.PatternMatch.Utility.IsCallSpecific("call",
-        Nncase.PatternMatch.Utility.IsOp<FakeActivation>(), (FakeActivation.InputA,
-            Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() }));
+    public override Pattern Pattern => Nncase.PatternMatch.Utility.IsCallSpecific(
+        "call",
+        Nncase.PatternMatch.Utility.IsOp<FakeActivation>(), (FakeActivation.InputA, Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() }));
 
     public Expr? GetReplace(Call call, Expr input)
     {
@@ -47,12 +47,15 @@ public sealed class SplitLargeActivation : RewriteRule<Pattern>
                 FakeActivation target = new FakeActivation(t.Type, t.ActParam, lhsSlice.CheckedShape.ToValueArray());
                 if (splitRhs)
                 {
-                    Expr rhsSliceExpr = ((!(lhsSlice is Marker marker))
-                        ? ((Expr)ReplaceUtility.ReplaceCallFirstParam(((Call)lhsSlice).Target,
+                    Expr rhsSliceExpr = (!(lhsSlice is Marker marker))
+                        ? ((Expr)ReplaceUtility.ReplaceCallFirstParam(
+                            ((Call)lhsSlice).Target,
                             ((Call)lhsSlice).Arguments.ToArray(), rhs))
-                        : ((Expr)marker.With(null,
-                            ReplaceUtility.ReplaceCallFirstParam(((Call)marker.Target).Target,
-                                ((Call)marker.Target).Arguments.ToArray(), rhs))));
+                        : ((Expr)marker.With(
+                            null,
+                            ReplaceUtility.ReplaceCallFirstParam(
+                                ((Call)marker.Target).Target,
+                                ((Call)marker.Target).Arguments.ToArray(), rhs)));
                     return ReplaceUtility.ReplaceCallParams(target, call.Arguments.ToArray(),
                         (FakeActivation.InputA, lhsSlice), (FakeActivation.InputB, rhsSliceExpr));
                 }
@@ -61,10 +64,10 @@ public sealed class SplitLargeActivation : RewriteRule<Pattern>
             });
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(call, input);
     }
 }

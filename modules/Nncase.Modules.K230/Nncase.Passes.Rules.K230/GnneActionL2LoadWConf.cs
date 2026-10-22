@@ -57,7 +57,7 @@ public class GnneActionL2LoadWConf : GnneAction
 
     public override bool Equals(object? obj)
     {
-        if (this == obj)
+        if (ReferenceEquals(this, obj))
         {
             return true;
         }

@@ -16,15 +16,16 @@ public sealed class ReshapeLeakyPadReshapeMotion : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsReshape("bc2", "call", (Reshape _) => true,
         Nncase.PatternMatch.F.NN.IsPad("p", (Pad _) => true, Nncase.PatternMatch.F.Math.IsBinary("bn2", BinaryOp.Max,
-                Nncase.PatternMatch.F.Math.IsBinary("bn1", BinaryOp.Mul, Nncase.PatternMatch.F.Tensors.IsReshape("bc1",
-                        (Reshape _) => true,
-                        Nncase.PatternMatch.Utility.IsTensorConst("input")with
+                Nncase.PatternMatch.F.Math.IsBinary("bn1", BinaryOp.Mul, Nncase.PatternMatch.F.Tensors.IsReshape(
+                    "bc1",
+                    (Reshape _) => true,
+                    Nncase.PatternMatch.Utility.IsTensorConst("input") with
                         {
-                            TypePattern = TypePatternUtility.HasFixedShape()
+                            TypePattern = TypePatternUtility.HasFixedShape(),
                         }),
-                    Nncase.PatternMatch.Utility.IsTensorConst("rhs")with
+                    Nncase.PatternMatch.Utility.IsTensorConst("rhs") with
                     {
-                        TypePattern = TypePatternUtility.HasFixedShape()
+                        TypePattern = TypePatternUtility.HasFixedShape(),
                     })), Nncase.PatternMatch.Utility.IsTensorConst("pads"),
             Nncase.PatternMatch.Utility.IsTensorConst("value")));
 
@@ -38,7 +39,8 @@ public sealed class ReshapeLeakyPadReshapeMotion : IRewriteRule
         }
 
         Shape checkedShape = call.CheckedShape;
-        Call input2 = Nncase.IR.F.Tensors.Reshape(bc1,
+        Call input2 = Nncase.IR.F.Tensors.Reshape(
+            bc1,
             new Dimension[4] { 1, checkedShape[0], checkedShape[1], checkedShape[2] });
         Tensor<int> tensor = pads.Value.Cast<int>();
         int[][] paddings = new int[4][];
@@ -56,18 +58,18 @@ public sealed class ReshapeLeakyPadReshapeMotion : IRewriteRule
         return Nncase.IR.F.NN.Pad(input2, paddings, p.PadMode, value);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Reshape bc = (Reshape)__result["bc2"];
-        Call call = (Call)__result["call"];
-        Pad p = (Pad)__result["p"];
-        Binary bn = (Binary)__result["bn2"];
-        Binary bn2 = (Binary)__result["bn1"];
-        Reshape bc2 = (Reshape)__result["bc1"];
-        Expr rhs = (Expr)__result["rhs"];
-        TensorConst pads = (TensorConst)__result["pads"];
-        TensorConst value = (TensorConst)__result["value"];
-        TensorConst input = (TensorConst)__result["input"];
+        Reshape bc = (Reshape)result["bc2"];
+        Call call = (Call)result["call"];
+        Pad p = (Pad)result["p"];
+        Binary bn = (Binary)result["bn2"];
+        Binary bn2 = (Binary)result["bn1"];
+        Reshape bc2 = (Reshape)result["bc1"];
+        Expr rhs = (Expr)result["rhs"];
+        TensorConst pads = (TensorConst)result["pads"];
+        TensorConst value = (TensorConst)result["value"];
+        TensorConst input = (TensorConst)result["input"];
         return GetReplace(bc, call, p, bn, bn2, bc2, rhs, pads, value, input);
     }
 }

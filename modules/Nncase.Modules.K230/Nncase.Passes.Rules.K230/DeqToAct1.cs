@@ -16,7 +16,7 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class DeqToAct1 : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Math.IsDequantize("deq", "call", (Dequantize _) => true,
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
         Nncase.PatternMatch.Utility.IsWildcard("qp"));
 
     private Expr? GetReplace(Call call, Expr input, QuantParam qp)
@@ -26,9 +26,12 @@ public sealed class DeqToAct1 : IRewriteRule
             call.CheckedShape.Count);
         int actChannels = inputShape[1];
         ActParam2 actParam = new ActParam2(actChannels);
-        return Nncase.IR.F.Tensors.Reshape(Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
-                Nncase.IR.K230.F.Tensors.GNNEActivation(
-                    Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)input.CheckedDataType,
+        return Nncase.IR.F.Tensors.Reshape(
+            Nncase.IR.K230.F.Tensors.GNNEStore(
+            DataTypes.Float32,
+            Nncase.IR.K230.F.Tensors.GNNEActivation(
+                    Nncase.IR.K230.F.Tensors.GNNELoad(
+                        (PrimType)input.CheckedDataType,
                         Nncase.IR.F.Tensors.Reshape(input, inputShape)), None.Default,
                     Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, actParam.ToAct1Data()), 0, 0, 0,
                     Tensor.FromArray(
@@ -38,11 +41,11 @@ public sealed class DeqToAct1 : IRewriteRule
             call.CheckedShape);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        QuantParam qp = ((TensorConst)__result["qp"]).Value.ToScalar<QuantParam>();
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        QuantParam qp = ((TensorConst)result["qp"]).Value.ToScalar<QuantParam>();
         return GetReplace(call, input, qp);
     }
 }

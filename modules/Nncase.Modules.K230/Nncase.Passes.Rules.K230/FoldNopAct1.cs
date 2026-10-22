@@ -14,7 +14,8 @@ public sealed class FoldNopAct1 : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.K230.IsGNNEStore("st", "stCall", (GNNEStore _) => true,
         Nncase.PatternMatch.F.K230.IsGNNEActivation("gnneAct", "actCall", (GNNEActivation _) => true,
-            Nncase.PatternMatch.F.K230.IsGNNELoad((GNNELoad _) => true,
+            Nncase.PatternMatch.F.K230.IsGNNELoad(
+                (GNNELoad _) => true,
                 Nncase.PatternMatch.Utility.IsWildcard("input")), Nncase.PatternMatch.Utility.IsNone(), null,
             Nncase.PatternMatch.Utility.IsWildcard("inAShiftbits"),
             Nncase.PatternMatch.Utility.IsWildcard("inBShiftbits"),
@@ -39,11 +40,11 @@ public sealed class FoldNopAct1 : IRewriteRule
         return null;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call actCall = (Call)__result["actCall"];
-        GNNEActivation gnneAct = (GNNEActivation)__result["gnneAct"];
-        Expr input = (Expr)__result["input"];
-        return GetReplace(actCall, gnneAct, __result, __context, input);
+        Call actCall = (Call)result["actCall"];
+        GNNEActivation gnneAct = (GNNEActivation)result["gnneAct"];
+        Expr input = (Expr)result["input"];
+        return GetReplace(actCall, gnneAct, result, context, input);
     }
 }

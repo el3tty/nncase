@@ -23,7 +23,7 @@ public class TanhToFakeActivation : RewriteRule<Pattern>
         double[] xs = new double[15]
         {
             -5.0, -4.28515625, -3.572265625, -2.857421875, -2.142578125, -1.4287109375, -0.71435546875, 0.0,
-            0.71435546875, 1.4287109375, 2.142578125, 2.857421875, 3.572265625, 4.28515625, 5.0
+            0.71435546875, 1.4287109375, 2.142578125, 2.857421875, 3.572265625, 4.28515625, 5.0,
         };
         double[] ks = new double[32]
         {
@@ -31,7 +31,7 @@ public class TanhToFakeActivation : RewriteRule<Pattern>
             0.006992340087890625, -0.9736328125, 0.02880859375, -0.9111328125, 0.11407470703125, -373.0 / 512.0,
             0.38916015625, -0.33544921875, 0.85888671875, 0.0, 0.85888671875, 0.0, 0.38916015625, 0.33544921875,
             0.11407470703125, 373.0 / 512.0, 0.02880859375, 0.9111328125, 0.006992340087890625, 0.9736328125,
-            0.0016813278198242188, 127.0 / 128.0, 0.0004031658172607422, 511.0 / 512.0, 0.0, 1.0
+            0.0016813278198242188, 127.0 / 128.0, 0.0004031658172607422, 511.0 / 512.0, 0.0, 1.0,
         };
         for (int i = 0; i < 15; i++)
         {
@@ -49,11 +49,11 @@ public class TanhToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Add, actParam, call.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Unary u = (Unary)__result["u"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Unary u = (Unary)result["u"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(u, call, input);
     }
 
@@ -63,7 +63,7 @@ public class TanhToFakeActivation : RewriteRule<Pattern>
         Pattern = Nncase.PatternMatch.F.Math.IsUnary("u", "call", condition,
                 Nncase.PatternMatch.Utility.IsWildcard("input")) with
             {
-                TypePattern = (TypePatternUtility.HasDataType(DataTypes.Float32) & TypePatternUtility.HasFixedShape())
+                TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32) & TypePatternUtility.HasFixedShape(),
             };
     }
 }

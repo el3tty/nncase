@@ -13,7 +13,7 @@ internal sealed class FENCE_IEvaluator : ITypeInferencer<FENCE_I>, ITypeInferenc
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, FENCE_I target, bool ILmode)
+    public string Visit(IIRPrinterContext context, FENCE_I target, bool iLmode)
     {
         return "I.FENCE_I()";
     }

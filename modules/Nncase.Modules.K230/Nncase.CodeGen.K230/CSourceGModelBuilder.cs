@@ -15,9 +15,12 @@ namespace Nncase.CodeGen.K230;
 
 public sealed class CSourceGModelBuilder : IRTModule
 {
-    public GModelBuilder GModelBuilder;
+    public GModelBuilder GModelBuilder { get; set; }
 
+    // NOTE: never assigned (as decompiled), so Entry is always null.
+#pragma warning disable CS0649
     private PrimFunction? _entry;
+#pragma warning restore CS0649
 
     public ModuleType ModuleType => ModuleType.Create("k230");
 
@@ -55,7 +58,7 @@ public sealed class CSourceGModelBuilder : IRTModule
         throw new NotImplementedException();
     }
 
-    private static string _save_csoure_context(Stream src)
+    private static string SaveCsoureContext(Stream src)
     {
         string tempFileName = Nncase.CodeGen.CodeGenUtil.GetTempFileName(".c");
         using FileStream destination = File.Open(tempFileName, FileMode.Create, FileAccess.Write);
@@ -64,7 +67,7 @@ public sealed class CSourceGModelBuilder : IRTModule
     }
 
     public CSourceGModelBuilder(Stream s)
-        : this(_save_csoure_context(s))
+        : this(SaveCsoureContext(s))
     {
     }
 
@@ -95,9 +98,9 @@ public sealed class CSourceGModelBuilder : IRTModule
 
         if (Path.GetDirectoryName(AsmFilePath) != dumpDirPath)
         {
-            Func<string, string, string, string> func = delegate(string _name, string indent, string old_path)
+            Func<string, string, string, string> func = (fileName, indent, old_path) =>
             {
-                string text = Path.Join(dumpDirPath, indent, _name + Path.GetExtension(old_path));
+                string text = Path.Join(dumpDirPath, indent, fileName + Path.GetExtension(old_path));
                 if (File.Exists(text))
                 {
                     File.Delete(text);
@@ -106,14 +109,14 @@ public sealed class CSourceGModelBuilder : IRTModule
                 File.Copy(old_path, text);
                 return text;
             };
-            AsmFilePath = func(name, "", AsmFilePath);
-            AsmOutFilePath = func(name, "", AsmOutFilePath);
+            AsmFilePath = func(name, string.Empty, AsmFilePath);
+            AsmOutFilePath = func(name, string.Empty, AsmOutFilePath);
         }
 
         return GModelBuilder.Dump(name, dumpDirPath);
     }
 
-    private string getFullExePath(string exe_name)
+    private string GetFullExePath(string exe_name)
     {
         string environmentVariable = Environment.GetEnvironmentVariable("PATH");
         if (environmentVariable != null)
@@ -132,7 +135,7 @@ public sealed class CSourceGModelBuilder : IRTModule
         return Path.Join(Path.GetDirectoryName(GetType().Assembly.Location), exe_name);
     }
 
-    private void compile()
+    private void Compile()
     {
         StringBuilder stringBuilder = new StringBuilder();
         StringBuilder sb = new StringBuilder();
@@ -143,18 +146,18 @@ public sealed class CSourceGModelBuilder : IRTModule
             try
             {
                 using Process process = new Process();
-                process.StartInfo.FileName = getFullExePath("chibicc");
+                process.StartInfo.FileName = GetFullExePath("chibicc");
                 process.StartInfo.Arguments =
                     $"{CSourceFilePath} -cc1 -cc1-input {CSourceFilePath} -cc1-output {AsmFilePath}";
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.RedirectStandardOutput = true;
-                process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)
+                process.ErrorDataReceived += (sender, e) =>
                 {
                     errWriter.WriteLine(e.Data);
                 };
-                process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs msg)
+                process.OutputDataReceived += (sender, msg) =>
                 {
                     logWriter.Write(msg);
                 };
@@ -184,7 +187,7 @@ public sealed class CSourceGModelBuilder : IRTModule
         }
     }
 
-    private void assemble()
+    private void Assemble()
     {
         string asmFilePath = AsmFilePath;
         string asmOutFilePath = AsmOutFilePath;
@@ -197,8 +200,8 @@ public sealed class CSourceGModelBuilder : IRTModule
     {
         if (!IsSerialized)
         {
-            compile();
-            assemble();
+            Compile();
+            Assemble();
             AssemblyParser assemblyParser = new AssemblyParser(AsmOutFilePath, Signature);
             GModelBuilder = new GModelBuilder(null, assemblyParser);
             GModelBuilder.Serialize();

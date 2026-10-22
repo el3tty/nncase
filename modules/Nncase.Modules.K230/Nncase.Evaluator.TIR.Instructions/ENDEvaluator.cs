@@ -13,7 +13,7 @@ internal sealed class ENDEvaluator : ITypeInferencer<END>, ITypeInferencer, IOpP
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, END target, bool ILmode)
+    public string Visit(IIRPrinterContext context, END target, bool iLmode)
     {
         return $"I.END(rs: {target.rs})";
     }

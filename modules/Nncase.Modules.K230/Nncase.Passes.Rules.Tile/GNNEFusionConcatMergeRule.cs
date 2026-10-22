@@ -32,15 +32,17 @@ internal sealed class GNNEFusionConcatMergeRule : IMergeRewriteRule
         Func<Concat, bool> condition = (Concat _) => true;
         Func<Pattern> creator = () => Nncase.PatternMatch.Utility.IsWildcard();
         array[0] = Nncase.PatternMatch.F.Tensors.IsConcat("concat", "callee", condition,
-                Nncase.PatternMatch.Utility.IsTuple("tuple",
-                    Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", creator)))with
+                Nncase.PatternMatch.Utility.IsTuple(
+                    "tuple",
+                    Nncase.PatternMatch.Utility.IsVArgsRepeat("tupleInputs", creator))) with
             {
-                TypePattern = TypePatternUtility.IsFloat()
+                TypePattern = TypePatternUtility.IsFloat(),
             };
         return Nncase.PatternMatch.Utility.IsCall("caller", target, array);
     }
 
-    public Expr? GetReplace(Func<Expr, Expr> mergedFusionRewriteCallBack,
+    public Expr? GetReplace(
+        Func<Expr, Expr> mergedFusionRewriteCallBack,
         Func<Fusion, HashSet<Fusion>, bool> mergedFusionCheckCallBack,
         Func<HashSet<Fusion>, bool> candidateFusionCheckCallBack, Action<HashSet<Fusion>> candidateFusionRecordCallBack,
         IExprUserAnalysisResult usedByReslut, IMatchResult result, RunPassContext options)
@@ -72,12 +74,11 @@ internal sealed class GNNEFusionConcatMergeRule : IMergeRewriteRule
         return null;
     }
 
-    private bool ProcessFusionMerge(Func<Expr, Expr> mergedFusionRewriteCallBack,
+    private bool ProcessFusionMerge(
+        Func<Expr, Expr> mergedFusionRewriteCallBack,
         Func<HashSet<Fusion>, bool> candidate_fusion_checker, Concat concat, Fusion caller_fusion, IMatchResult result,
         out HashSet<Fusion> candidate_fusions, out Fusion merged_fusion)
     {
-        //IL_00d0: Unknown result type (might be due to invalid IL or missing references)
-        //IL_00d6: Unknown result type (might be due to invalid IL or missing references)
         Var[] array = (from i in ((IReadOnlyList<Expr>)result["tupleInputs"]).ToArray()
             select new Var(new TensorType(i.CheckedDataType, i.CheckedShape))).ToArray();
         merged_fusion = null;
@@ -87,8 +88,9 @@ internal sealed class GNNEFusionConcatMergeRule : IMergeRewriteRule
         Var key = caller_fusion.Parameters[0];
         Expr[] fields = array;
         dictionary.Add(key, Nncase.IR.F.Tensors.Concat(new Nncase.IR.Tuple(fields), concat.Axis));
-        Expr arg = new IMergeRewriteRule.FusionMerger(dictionary,
-                new Dictionary<Var, Var>(array.Select((Var i) => new KeyValuePair<Var, Var>(i, i))))
+        Expr arg = new IMergeRewriteRule.FusionMerger(
+            dictionary,
+            new Dictionary<Var, Var>(array.Select((Var i) => new KeyValuePair<Var, Var>(i, i))))
             .Clone(caller_fusion.Body, default(Unit));
         arg = mergedFusionRewriteCallBack(arg);
         if (!arg.InferenceType())

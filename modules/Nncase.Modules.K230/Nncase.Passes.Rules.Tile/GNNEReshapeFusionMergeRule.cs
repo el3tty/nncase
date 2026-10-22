@@ -26,14 +26,16 @@ internal sealed class GNNEReshapeFusionMergeRule : IMergeRewriteRule
         VArgsPattern parameters =
             Nncase.PatternMatch.Utility.IsVArgsRepeat(() => Nncase.PatternMatch.Utility.IsWildcard());
         return Nncase.PatternMatch.F.Tensors.IsReshape("reshape", "caller",
-            Nncase.PatternMatch.Utility.IsCall("callee",
+            Nncase.PatternMatch.Utility.IsCall(
+                "callee",
                 Nncase.PatternMatch.Utility.IsFusion("callee_fusion", target_module_kind,
                     Nncase.PatternMatch.Utility.IsWildcard(),
                     Nncase.PatternMatch.Utility.IsVArgsRepeat(() => Nncase.PatternMatch.Utility.IsWildcard())),
                 parameters), Nncase.PatternMatch.Utility.IsWildcard("shape"));
     }
 
-    public Expr? GetReplace(Func<Expr, Expr> mergedFusionRewriteCallBack,
+    public Expr? GetReplace(
+        Func<Expr, Expr> mergedFusionRewriteCallBack,
         Func<Fusion, HashSet<Fusion>, bool> mergedFusionCheckCallBack,
         Func<HashSet<Fusion>, bool> candidateFusionCheckCallBack, Action<HashSet<Fusion>> candidateFusionRecordCallBack,
         IExprUserAnalysisResult usedByReslut, IMatchResult result, RunPassContext options)
@@ -60,7 +62,8 @@ internal sealed class GNNEReshapeFusionMergeRule : IMergeRewriteRule
         return null;
     }
 
-    private bool ProcessFusionMerge(Func<Expr, Expr> mergedFusionRewriteCallBack,
+    private bool ProcessFusionMerge(
+        Func<Expr, Expr> mergedFusionRewriteCallBack,
         Func<HashSet<Fusion>, bool> candidate_fusion_checker, Expr shape, Fusion callee_fusion, IMatchResult result,
         out HashSet<Fusion> candidate_fusions, out Fusion merged_fusion)
     {

@@ -14,7 +14,7 @@ internal sealed class SS_PACK_SHAPEEvaluator : ITypeInferencer<SS_PACK_SHAPE>, I
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, SS_PACK_SHAPE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, SS_PACK_SHAPE target, bool iLmode)
     {
         return
             $"I.SS_PACK_SHAPE(rn: {target.rn}, rc: {target.rc}, rh: {target.rh}, rw: {target.rw}, rss: {target.rss})";

@@ -46,12 +46,12 @@ public class PReluToFakeActivation : RewriteRule<Pattern>
             GnneActivationType.Uninitialized, actParam, preluCall.CheckedShape.ToValueArray());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        PRelu prelu = (PRelu)__result["prelu"];
-        Call preluCall = (Call)__result["preluCall"];
-        TensorConst slope = (TensorConst)__result["slope"];
-        Expr input = (Expr)__result["input"];
+        PRelu prelu = (PRelu)result["prelu"];
+        Call preluCall = (Call)result["preluCall"];
+        TensorConst slope = (TensorConst)result["slope"];
+        Expr input = (Expr)result["input"];
         return GetReplace(prelu, preluCall, slope, input);
     }
 }

@@ -129,7 +129,7 @@ public class GnneActionUpdater
                            return new
                            {
                                itemOther = itemOther,
-                               lap = Overlap(startDepth, x1R, startDepth2, startDepth3 + keyValuePair.Value.Depth)
+                               lap = Overlap(startDepth, x1R, startDepth2, startDepth3 + keyValuePair.Value.Depth),
                            };
                        })
                        where overlapInfo.lap > 0
@@ -151,7 +151,7 @@ public class GnneActionUpdater
 
         static int Overlap(int x1L, int x1R, int x2L, int x2R)
         {
-            int overlapStart = ((x1L > x2L) ? x1L : x2L);
+            int overlapStart = (x1L > x2L) ? x1L : x2L;
             return ((x1R < x2R) ? x1R : x2R) - overlapStart;
         }
     }
@@ -413,9 +413,9 @@ public class GnneActionUpdater
             int end = dwSlice[0].End;
             Segment1D[] dwSliceSegments = new Segment1D[4] { ..1, start..end, null, null };
             Index? index = dimension.Value;
-            dwSliceSegments[2] = (index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null);
+            dwSliceSegments[2] = index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null;
             index = dimension2.Value;
-            dwSliceSegments[3] = (index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null);
+            dwSliceSegments[3] = index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null;
             SegmentND tensor4d = new SegmentND(dwSliceSegments);
             weightGroup.UpdateDwWeightGroup(tensor4d);
         }
@@ -430,9 +430,9 @@ public class GnneActionUpdater
             int alignedNum = TileUtilities.GetAlignedNum(dwSlice2[1].End, GNNEEnv.PuWidth);
             Segment1D[] dwAlignedSegments = new Segment1D[4] { ..1, start2..alignedNum, null, null };
             Index? index = dimension.Value;
-            dwAlignedSegments[2] = (index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null);
+            dwAlignedSegments[2] = index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null;
             index = dimension2.Value;
-            dwAlignedSegments[3] = (index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null);
+            dwAlignedSegments[3] = index.HasValue ? ((Segment1D)(..index.GetValueOrDefault())) : null;
             SegmentND dwAlignedSegment = new SegmentND(dwAlignedSegments);
             int shapeSize = dwAlignedSegment.Shape_size;
             Gpr lenCompressed = new Gpr(-1, shapeSize, needRenewal: false);
@@ -513,7 +513,7 @@ public class GnneActionUpdater
         {
             stridesS = new int[3]
             {
-                checkedShape[1].Value.Value, checkedShape[2].Value.Value, checkedShape[3].Value.Value
+                checkedShape[1].Value.Value, checkedShape[2].Value.Value, checkedShape[3].Value.Value,
             }.ToList();
         }
 
@@ -671,9 +671,9 @@ public class GnneActionUpdater
         bool restored = false, int strideNReshape = 0, int strideCReshape = 0, int strideHReshape = 0, bool h2c = false,
         int r = 0, int uh = 1, bool slice_from = true)
     {
-        DataType l2Datatype = (((object)call != null)
+        DataType l2Datatype = ((object)call != null)
             ? call[GNNELoad.Input].CheckedDataType
-            : (((object)type == null) ? DataTypes.UInt8 : type));
+            : (((object)type == null) ? DataTypes.UInt8 : type);
         if (restored)
         {
             Ssr strideS = new Ssr(-1, PackStride(strideNReshape, strideCReshape, strideHReshape), needRenewal: false);
@@ -694,7 +694,8 @@ public class GnneActionUpdater
         }
         else
         {
-            Ssr strideS2 = new Ssr(-1,
+            Ssr strideS2 = new Ssr(
+                -1,
                 PackStride(_glb.GlbMap[name].Dimensions[1], _glb.GlbMap[name].Dimensions[2],
                     _glb.GlbMap[name].Dimensions[3]), needRenewal: false);
             GnneActionDmLoadL1Conf gnneActionDmLoadL1Conf2 =
@@ -705,7 +706,8 @@ public class GnneActionUpdater
                 Gpr n2 = _gprHandler.SetGprItem(_glb.GlbMap[name].Dimensions[1]);
                 Gpr c2 = _gprHandler.SetGprItem(_glb.GlbMap[name].Dimensions[2]);
                 Gpr h2 = _gprHandler.SetGprItem(_glb.GlbMap[name].Dimensions[3]);
-                strideS2 = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[name].Dimensions[1],
+                strideS2 = _ssRegHandler.SetSsrItem(PackStride(
+                    _glb.GlbMap[name].Dimensions[1],
                     _glb.GlbMap[name].Dimensions[2], _glb.GlbMap[name].Dimensions[3]));
                 Actions.Add(new GnneActionPackStrideReg(n2, c2, h2, strideS2));
                 gnneActionDmLoadL1Conf2 = new GnneActionDmLoadL1Conf(0, 0, 0, strideS2, l2Datatype, L1_TYPE.if_);
@@ -758,7 +760,7 @@ public class GnneActionUpdater
         }
 
         Gpr addrS = _gprHandler.SetGprItem(ToGlbAddr(_glb.GlbMap[name].Mmu.Id, addrOffset));
-        int value = (h2c ? ((uh << 16) + r) : 0);
+        int value = h2c ? ((uh << 16) + r) : 0;
         Gpr htocWindow = _gprHandler.SetGprItem(value);
         Actions.Add(new GnneActionDmLoadL1(0, 0, addrS, ssr, htocWindow, L1_TYPE.if_, slice));
     }
@@ -848,7 +850,7 @@ public class GnneActionUpdater
         }
 
         Gpr addrS = _gprHandler.SetGprItem(ToGlbAddr(_glb.GlbMap[wName].Mmu.Id, weightAddr));
-        int mmuItem = ((!(primType == DataTypes.Int8)) ? _glb.GlbMap[wQargName].Mmu.Id : 0);
+        int mmuItem = (!(primType == DataTypes.Int8)) ? _glb.GlbMap[wQargName].Mmu.Id : 0;
         Gpr addrBw = _gprHandler.SetGprItem(ToGlbAddr(mmuItem, addr));
         Actions.Add(new GnneActionDmLoadW(0, 0, addrS, addrBw, ssr, DM_LOAD_W_DEST.pu, slice));
     }
@@ -929,7 +931,7 @@ public class GnneActionUpdater
         }
 
         Gpr addrS = _gprHandler.SetGprItem(ToGlbAddr(_glb.GlbMap[wName].Mmu.Id, weightAddr));
-        int mmuItem = ((!(primType == DataTypes.Int8)) ? _glb.GlbMap[wQargName].Mmu.Id : 0);
+        int mmuItem = (!(primType == DataTypes.Int8)) ? _glb.GlbMap[wQargName].Mmu.Id : 0;
         Gpr addrBw = _gprHandler.SetGprItem(ToGlbAddr(mmuItem, addr));
         Actions.Add(new GnneActionDmLoadW(0, 0, addrS, addrBw, ssr, DM_LOAD_W_DEST.pu, slice));
     }
@@ -992,7 +994,7 @@ public class GnneActionUpdater
         Ssr ssr = _ssRegHandler.SetSsrItem(PackStride(0, channelValue, heightValue));
         Actions.Add(new GnneActionPackStrideReg(n, c, h, ssr));
         Gpr addrS = _gprHandler.SetGprItem(ToGlbAddr(_glb.GlbMap[ItemName.DwWeight].Mmu.Id, addr));
-        int mmuItem = ((!(dataType == DataTypes.Int8)) ? _glb.GlbMap[ItemName.DwQarg].Mmu.Id : 0);
+        int mmuItem = (!(dataType == DataTypes.Int8)) ? _glb.GlbMap[ItemName.DwQarg].Mmu.Id : 0;
         Gpr addrBw = _gprHandler.SetGprItem(ToGlbAddr(mmuItem, addr2));
         if (GNNEEnv.UseCcr)
         {
@@ -1006,9 +1008,9 @@ public class GnneActionUpdater
     public void UpdateL2RIf(SegmentND slice, SegmentND ifmap, int strideH, int strideW, int icPerGroup, Call call,
         int padValue, int pos, int bias, DataType type = null, bool h2c = false, int r = 0)
     {
-        DataType dataType = (((object)call != null)
+        DataType dataType = ((object)call != null)
             ? call[GNNELoad.Input].CheckedDataType
-            : (((object)type == null) ? DataTypes.UInt8 : type));
+            : (((object)type == null) ? DataTypes.UInt8 : type);
         PrimType quantType = DataTypes.Int8;
         if (dataType == DataTypes.UInt8 || (dataType == DataTypes.Int16 && pos == 0))
         {
@@ -1263,7 +1265,8 @@ public class GnneActionUpdater
         if (tcuMode == TcuComputeMode.TransposeConv2d)
         {
             Gpr addrD = new Gpr(-1, addrOffset, needRenewal: false);
-            ssr2 = new Ssr(-1,
+            ssr2 = new Ssr(
+                -1,
                 PackShape(r2LPsum[0].Length, r2LPsum[1].Length,
                     (int)System.Math.Ceiling(1.0 * (double)r2LPsum[2].Length / (double)strideH),
                     (int)System.Math.Ceiling(1.0 * (double)r2LPsum[3].Length / (double)strideW)), needRenewal: false);
@@ -1310,12 +1313,12 @@ public class GnneActionUpdater
 
         bool loadPsum = !loopStart;
         bool clrPsum = loopStart && tcuMode == TcuComputeMode.TransposeConv2d;
-        PU_COMPUTE_MODE puComputeMode = ((tcuMode == TcuComputeMode.TransposeConv2d)
+        PU_COMPUTE_MODE puComputeMode = (tcuMode == TcuComputeMode.TransposeConv2d)
             ? PU_COMPUTE_MODE.pu_mode_deconv
-            : PU_COMPUTE_MODE.pu_mode_normal);
-        PU_OUTPUT_DEST destTarget2 = ((loopEnd && puComputeMode != PU_COMPUTE_MODE.pu_mode_deconv)
+            : PU_COMPUTE_MODE.pu_mode_normal;
+        PU_OUTPUT_DEST destTarget2 = (loopEnd && puComputeMode != PU_COMPUTE_MODE.pu_mode_deconv)
             ? PU_OUTPUT_DEST.act0
-            : PU_OUTPUT_DEST.psum);
+            : PU_OUTPUT_DEST.psum;
         GnneActionPuComputeConf gnneActionPuComputeConf =
             new GnneActionPuComputeConf(0, 0, 8, loadPsum, clrPsum, destTarget2, releaseIf, puComputeMode);
         if ((object)_latestConfActions.PuComputeConf == null ||
@@ -1328,7 +1331,7 @@ public class GnneActionUpdater
         PU_OF_SHIFT_MODE mode = PU_OF_SHIFT_MODE.none;
         if (ifType == DataTypes.Int16 || wType == DataTypes.Int16)
         {
-            mode = ((pos != 0) ? PU_OF_SHIFT_MODE.left_shift_4 : PU_OF_SHIFT_MODE.right_shift_4);
+            mode = (pos != 0) ? PU_OF_SHIFT_MODE.left_shift_4 : PU_OF_SHIFT_MODE.right_shift_4;
         }
 
         Actions.Add(new GnneActionPuCompute(0, mode));
@@ -1387,9 +1390,7 @@ public class GnneActionUpdater
                 rshiftBitsD, ((TensorConst)act1[GNNEActivation.Is16Segments]).Value.ToScalar<bool>(), ofPp, l1Pp,
                 l2RIf2CcrsToClr, ofCcrsToSet, ofCcrsToClr, offsetSSrc2, offsetAct1, offsetOfmap, src2ItemName,
                 act1CcrsToClr,
-                (((GNNEActivation)act1.Target).Type == GnneActivationType.Mul)
-                    ? MFU_ACT1_FUNCTION.mul
-                    : MFU_ACT1_FUNCTION.add);
+                (((GNNEActivation)act1.Target).Type == GnneActivationType.Mul) ? MFU_ACT1_FUNCTION.mul : MFU_ACT1_FUNCTION.add);
         }
         else
         {
@@ -1622,7 +1623,8 @@ public class GnneActionUpdater
         ACT0_CHANNEL channel = ACT0_CHANNEL.pu, List<CcrSet> ccrsToSet = null, List<CcrClr> ccrs_to_clr = null,
         int offsetD = 0, bool slice_from = true)
     {
-        Ssr strideD = new Ssr(-1,
+        Ssr strideD = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ItemName.Ofmap].Dimensions[1], _glb.GlbMap[ItemName.Ofmap].Dimensions[2],
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[3]), needRenewal: false);
         GnneActionDmStoreOfConf gnneActionDmStoreOfConf = new GnneActionDmStoreOfConf(0, 0, 4, strideD, ofType);
@@ -1632,7 +1634,8 @@ public class GnneActionUpdater
             Gpr n = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[1]);
             Gpr c = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[2]);
             Gpr h = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[3]);
-            strideD = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ItemName.Ofmap].Dimensions[1],
+            strideD = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ItemName.Ofmap].Dimensions[1],
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[2], _glb.GlbMap[ItemName.Ofmap].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n, c, h, strideD));
             gnneActionDmStoreOfConf = new GnneActionDmStoreOfConf(0, 0, 4, strideD, ofType);
@@ -1737,7 +1740,7 @@ public class GnneActionUpdater
         {
             stridesS = new int[3]
             {
-                _glb.GlbMap[name].Dimensions[1], _glb.GlbMap[name].Dimensions[2], _glb.GlbMap[name].Dimensions[3]
+                _glb.GlbMap[name].Dimensions[1], _glb.GlbMap[name].Dimensions[2], _glb.GlbMap[name].Dimensions[3],
             }.ToList();
         }
 
@@ -1745,7 +1748,7 @@ public class GnneActionUpdater
         {
             stridesD = new int[3]
             {
-                checkedShape[1].Value.Value, checkedShape[2].Value.Value, checkedShape[3].Value.Value
+                checkedShape[1].Value.Value, checkedShape[2].Value.Value, checkedShape[3].Value.Value,
             }.ToList();
         }
 
@@ -1821,7 +1824,7 @@ public class GnneActionUpdater
             {
                 _glb.GlbMap[src1ItemName].Dimensions[1],
                 _glb.GlbMap[src1ItemName].Dimensions[2],
-                _glb.GlbMap[src1ItemName].Dimensions[3]
+                _glb.GlbMap[src1ItemName].Dimensions[3],
             };
         }
 
@@ -1831,7 +1834,7 @@ public class GnneActionUpdater
             {
                 _glb.GlbMap[src2ItemName].Dimensions[1],
                 _glb.GlbMap[src2ItemName].Dimensions[2],
-                _glb.GlbMap[src2ItemName].Dimensions[3]
+                _glb.GlbMap[src2ItemName].Dimensions[3],
             };
         }
         else if (src2Stride == null)
@@ -1845,7 +1848,7 @@ public class GnneActionUpdater
             {
                 _glb.GlbMap[dstItemName].Dimensions[1],
                 _glb.GlbMap[dstItemName].Dimensions[2],
-                _glb.GlbMap[dstItemName].Dimensions[3]
+                _glb.GlbMap[dstItemName].Dimensions[3],
             };
         }
 
@@ -2081,10 +2084,12 @@ public class GnneActionUpdater
         int offsetSSrc2 = 0, int offsetAct1 = 0, int offsetOfmap = 0, ItemName src2ItemName = ItemName.Ifmap2,
         List<CcrClr> act1CcrsToClr = null, MFU_ACT1_FUNCTION actType = MFU_ACT1_FUNCTION.add)
     {
-        Ssr ssr = new Ssr(-1,
+        Ssr ssr = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ItemName.Ifmap2].Dimensions[1], _glb.GlbMap[ItemName.Ifmap2].Dimensions[2],
                 _glb.GlbMap[ItemName.Ifmap2].Dimensions[3]), needRenewal: false);
-        Ssr strideD = new Ssr(-1,
+        Ssr strideD = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ItemName.Ofmap].Dimensions[1], _glb.GlbMap[ItemName.Ofmap].Dimensions[2],
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[3]), needRenewal: false);
         GnneActionMfuAct1ConfStride gnneActionMfuAct1ConfStride = new GnneActionMfuAct1ConfStride(8, ssr, ssr, strideD);
@@ -2094,13 +2099,15 @@ public class GnneActionUpdater
             Gpr n = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ifmap2].Dimensions[1]);
             Gpr c = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ifmap2].Dimensions[2]);
             Gpr h = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ifmap2].Dimensions[3]);
-            ssr = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ItemName.Ifmap2].Dimensions[1],
+            ssr = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ItemName.Ifmap2].Dimensions[1],
                 _glb.GlbMap[ItemName.Ifmap2].Dimensions[2], _glb.GlbMap[ItemName.Ifmap2].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n, c, h, ssr));
             Gpr n2 = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[1]);
             Gpr c2 = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[2]);
             Gpr h2 = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[3]);
-            strideD = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ItemName.Ofmap].Dimensions[1],
+            strideD = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ItemName.Ofmap].Dimensions[1],
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[2], _glb.GlbMap[ItemName.Ofmap].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n2, c2, h2, strideD));
             gnneActionMfuAct1ConfStride = new GnneActionMfuAct1ConfStride(8, ssr, ssr, strideD);
@@ -2300,10 +2307,10 @@ public class GnneActionUpdater
             mmuItem2 = _glb.GlbMap[src2ItemName].Mmu.Id;
         }
 
-        int addr4 = (is16Segments
+        int addr4 = is16Segments
             ? offsetAct1
             : (l2GOf[1].Start * GNNEEnv.ActNumPerChan * TileUtilities.GetBytesPerElement(DataTypes.Float16) +
-               offsetAct1));
+               offsetAct1);
         Gpr addrD = _gprHandler.SetGprItem(ToGlbAddr(_glb.GlbMap[ItemName.Ofmap].Mmu.Id, addr));
         Gpr addrS = _gprHandler.SetGprItem(ToGlbAddr(mmuItem, addr2));
         Gpr addrS2 = _gprHandler.SetGprItem(ToGlbAddr(mmuItem2, addr3));
@@ -2319,10 +2326,12 @@ public class GnneActionUpdater
         int iPp, List<CcrSet> ccrsToSet = null, List<CcrClr> ccrsToClr = null, int offsetS = 0, int offsetD = 0,
         ItemName ifName = ItemName.Ifmap, ItemName ofName = ItemName.Ofmap, int of_pp = -1)
     {
-        Ssr strideS = new Ssr(-1,
+        Ssr strideS = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ifName].Dimensions[1], _glb.GlbMap[ifName].Dimensions[2],
                 _glb.GlbMap[ifName].Dimensions[3]), needRenewal: false);
-        Ssr strideD = new Ssr(-1,
+        Ssr strideD = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ofName].Dimensions[1], _glb.GlbMap[ofName].Dimensions[2],
                 _glb.GlbMap[ofName].Dimensions[3]), needRenewal: false);
         GnneActionMfuTransposeConf gnneActionMfuTransposeConf =
@@ -2333,13 +2342,15 @@ public class GnneActionUpdater
             Gpr n = _gprHandler.SetGprItem(_glb.GlbMap[ifName].Dimensions[1]);
             Gpr c = _gprHandler.SetGprItem(_glb.GlbMap[ifName].Dimensions[2]);
             Gpr h = _gprHandler.SetGprItem(_glb.GlbMap[ifName].Dimensions[3]);
-            strideS = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ifName].Dimensions[1],
+            strideS = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ifName].Dimensions[1],
                 _glb.GlbMap[ifName].Dimensions[2], _glb.GlbMap[ifName].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n, c, h, strideS));
             Gpr n2 = _gprHandler.SetGprItem(_glb.GlbMap[ofName].Dimensions[1]);
             Gpr c2 = _gprHandler.SetGprItem(_glb.GlbMap[ofName].Dimensions[2]);
             Gpr h2 = _gprHandler.SetGprItem(_glb.GlbMap[ofName].Dimensions[3]);
-            strideD = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ofName].Dimensions[1],
+            strideD = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ofName].Dimensions[1],
                 _glb.GlbMap[ofName].Dimensions[2], _glb.GlbMap[ofName].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n2, c2, h2, strideD));
             gnneActionMfuTransposeConf = new GnneActionMfuTransposeConf(0, strideD, strideS, l2Datatype, perm);
@@ -2385,10 +2396,12 @@ public class GnneActionUpdater
         DataType inputDataType = pdp[GNNEPdp1.Input].CheckedDataType;
         DataType outputDataType = pdp.CheckedDataType;
         PDP_FUNCTION funct = PdpFunc(((GNNEPdp1)pdp.Target).ReduceOp);
-        Ssr strideS = new Ssr(-1,
+        Ssr strideS = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ItemName.Ifmap].Dimensions[1], _glb.GlbMap[ItemName.Ifmap].Dimensions[2],
                 _glb.GlbMap[ItemName.Ifmap].Dimensions[3]), needRenewal: false);
-        Ssr strideD = new Ssr(-1,
+        Ssr strideD = new Ssr(
+            -1,
             PackStride(_glb.GlbMap[ItemName.Ofmap].Dimensions[1], _glb.GlbMap[ItemName.Ofmap].Dimensions[2],
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[3]), needRenewal: false);
         _ = ref _glb.GlbMap[ItemName.Ofmap].Dimensions[3];
@@ -2399,13 +2412,15 @@ public class GnneActionUpdater
             Gpr n = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ifmap].Dimensions[1]);
             Gpr c = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ifmap].Dimensions[2]);
             Gpr h = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ifmap].Dimensions[3]);
-            strideS = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ItemName.Ifmap].Dimensions[1],
+            strideS = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ItemName.Ifmap].Dimensions[1],
                 _glb.GlbMap[ItemName.Ifmap].Dimensions[2], _glb.GlbMap[ItemName.Ifmap].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n, c, h, strideS));
             Gpr n2 = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[1]);
             Gpr c2 = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[2]);
             Gpr h2 = _gprHandler.SetGprItem(_glb.GlbMap[ItemName.Ofmap].Dimensions[3]);
-            strideD = _ssRegHandler.SetSsrItem(PackStride(_glb.GlbMap[ItemName.Ofmap].Dimensions[1],
+            strideD = _ssRegHandler.SetSsrItem(PackStride(
+                _glb.GlbMap[ItemName.Ofmap].Dimensions[1],
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[2], _glb.GlbMap[ItemName.Ofmap].Dimensions[3]));
             Actions.Add(new GnneActionPackStrideReg(n2, c2, h2, strideD));
             gnneActionMfuPdp1Conf = new GnneActionMfuPdp1Conf1(1, strideW, strideH, strideD, strideS, funct);
@@ -2577,7 +2592,7 @@ public class GnneActionUpdater
             ifStride = new int[3]
             {
                 _glb.GlbMap[ifName].Dimensions[1], _glb.GlbMap[ifName].Dimensions[2],
-                _glb.GlbMap[ifName].Dimensions[3]
+                _glb.GlbMap[ifName].Dimensions[3],
             }.ToList();
         }
 
@@ -2587,7 +2602,7 @@ public class GnneActionUpdater
             ofStride = new int[3]
             {
                 _glb.GlbMap[ItemName.Ofmap].Dimensions[1], _glb.GlbMap[ItemName.Ofmap].Dimensions[2],
-                _glb.GlbMap[ItemName.Ofmap].Dimensions[3]
+                _glb.GlbMap[ItemName.Ofmap].Dimensions[3],
             }.ToList();
             if (inputType == DataTypes.Float16 && (outputType == DataTypes.UInt8 || outputType == DataTypes.Int8))
             {
@@ -2770,7 +2785,7 @@ public class GnneActionUpdater
     public void UpdateAi2dResize(Ai2dConfig config, List<CcrSet> ccrs_to_set = null, List<CcrClr> ccrs_to_clr = null,
         bool write_all = true)
     {
-        for (int i = ((!write_all) ? 28 : 0); i < 36; i++)
+        for (int i = (!write_all) ? 28 : 0; i < 36; i++)
         {
             uint addrValue = config.GetAddrValue((uint)i);
             Gpr gpr = _gprHandler.SetGprItem((int)addrValue);

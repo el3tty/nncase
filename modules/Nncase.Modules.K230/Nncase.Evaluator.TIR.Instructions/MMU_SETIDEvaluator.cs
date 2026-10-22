@@ -14,7 +14,7 @@ internal sealed class MMU_SETIDEvaluator : ITypeInferencer<MMU_SETID>, ITypeInfe
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MMU_SETID target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MMU_SETID target, bool iLmode)
     {
         return $"I.MMU_SETID(rd: {target.rd}, mmu_id: {context.GetArgument(target, MMU_SETID.mmu_id)})";
     }

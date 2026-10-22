@@ -31,11 +31,13 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
 
     private Tensor? _originWeights;
 
-    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker("outputMarker",
+    public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
+        "outputMarker",
         Nncase.PatternMatch.F.K230.IsFakeConv2D("fakeConv", "call", (FakeConv2D _) => true,
             Nncase.PatternMatch.Utility.IsRangeOfMarker("inputMarker", Nncase.PatternMatch.Utility.IsWildcard("input"),
                 Nncase.PatternMatch.Utility.IsConst("inputRange")),
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("weightsMarker",
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "weightsMarker",
                 Nncase.PatternMatch.Utility.IsTensorConst("weights"),
                 Nncase.PatternMatch.Utility.IsConst("weightsRange")), Nncase.PatternMatch.Utility.IsTensorConst("act"),
             Nncase.PatternMatch.Utility.IsTensorConst("padding"), Nncase.PatternMatch.Utility.IsTensorConst("stride"),
@@ -78,16 +80,16 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
     {
         Tensor tensor = weights;
         Tensor<float> wRange = weightsRange;
-        CompileOptions compileOptions = base.CompileSession.CompileOptions;
+        CompileOptions compileOptions = CompileSession.CompileOptions;
         _ = compileOptions.QuantizeOptions.BindQuantMethod;
         MixQuantInfo mixQuantInfo = ((Marker)inputMarker).MixQuantInfo;
         MixQuantInfo mixQuantInfo2 = ((Marker)weightsMarker).MixQuantInfo;
-        DataType quantType = ((compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+        DataType quantType = (compileOptions.QuantizeOptions.QuantScheme == string.Empty)
             ? compileOptions.QuantizeOptions.QuantType
-            : mixQuantInfo.MarkerQuantType);
-        DataType dataType = ((compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+            : mixQuantInfo.MarkerQuantType;
+        DataType dataType = (compileOptions.QuantizeOptions.QuantScheme == string.Empty)
             ? compileOptions.QuantizeOptions.WQuantType
-            : mixQuantInfo2.MarkerQuantType);
+            : mixQuantInfo2.MarkerQuantType;
         if (isPdp0DW && compileOptions.QuantizeOptions.QuantType == DataTypes.Int16 &&
             compileOptions.QuantizeOptions.QuantScheme == string.Empty)
         {
@@ -103,11 +105,11 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
         _conf = new ConvQuantConf { QuantType = quantType, UseMseQuantW = false, WQuantType = dataType };
         if (mixQuantInfo2 != null && mixQuantInfo2.DoSquant)
         {
-            tensor = ((dataType == DataTypes.UInt8)
+            tensor = (dataType == DataTypes.UInt8)
                 ? ((K230Target.K230MixQuantInfo)mixQuantInfo2).U8FineTunedWeights.Value
                 : ((!(dataType == DataTypes.Int8))
                     ? ((K230Target.K230MixQuantInfo)mixQuantInfo2).I16FineTunedWeights.Value
-                    : ((K230Target.K230MixQuantInfo)mixQuantInfo2).I8FineTunedWeights.Value));
+                    : ((K230Target.K230MixQuantInfo)mixQuantInfo2).I8FineTunedWeights.Value);
         }
 
         if (dataType == DataTypes.UInt8 &&
@@ -194,7 +196,8 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
         QuantizeParam ifQuantParam = _quantize.GetIfQuantParam(quantType);
         short padValue2 = GetPadValue(padValue, ifQuantParam, quantType);
         bool isInt16 = _conf.QuantType == DataTypes.Int16 || _conf.WQuantType == DataTypes.Int16;
-        Call call4 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32,
+        Call call4 = Nncase.IR.K230.F.Tensors.GNNEStore(
+            DataTypes.Float32,
             Nncase.IR.K230.F.Tensors.GNNEConv2D(DataTypes.Float16, input2, weights2,
                 Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.UInt8, _qWeightsQint8), weightsBias,
                 Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.UInt8, _qWeightsBiasQint8), act2,
@@ -234,7 +237,8 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
             }
         }
 
-        return Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)realType,
+        return Nncase.IR.K230.F.Tensors.GNNELoad(
+            (PrimType)realType,
             Nncase.IR.F.Math.Quantize(inputMarker, new QuantParam(ifDeqQuantParam.ZeroPoint, ifDeqQuantParam.Scale),
                 realType));
     }
@@ -247,12 +251,13 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
             _qWeightsQint8 = _quantize.GetQuantWeightsU8().ToArray();
             if (oldWeights.Shape != _originWeights.Shape)
             {
-                QuantT[] second = Enumerable.Repeat(new QuantT(_conf.WQuantType == DataTypes.UInt8),
+                QuantT[] second = Enumerable.Repeat(
+                    new QuantT(_conf.WQuantType == DataTypes.UInt8),
                     oldWeights.Shape.Prod().FixedValue - quantWeights.Length).ToArray();
                 quantWeights = quantWeights.Concat(second).ToArray();
             }
 
-            DataType? weightsType = (isPdp0dw ? DataTypes.UInt8 : _conf.WQuantType);
+            DataType? weightsType = isPdp0dw ? DataTypes.UInt8 : _conf.WQuantType;
             return Nncase.IR.K230.F.Tensors.GNNELoadW(
                 input: (_conf.WQuantType == DataTypes.UInt8)
                     ? ((Tensor)Tensor.From(quantWeights.Select((QuantT w) => w.U8).ToArray(), oldWeights.Shape))
@@ -296,26 +301,26 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
         return Nncase.IR.K230.F.Tensors.GNNELoadW(DataTypes.Float16, _actParam.ToAct0Data());
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeConv2D fakeConv = (FakeConv2D)__result["fakeConv"];
-        Call call = (Call)__result["call"];
-        Marker inputMarker = (Marker)__result["inputMarker"];
-        Expr input = (Expr)__result["input"];
-        Tensor<float> inputRange = ((TensorConst)__result["inputRange"]).Value.Cast<float>();
-        Expr weightsMarker = (Expr)__result["weightsMarker"];
-        Tensor value = ((TensorConst)__result["weights"]).Value;
-        Tensor<float> weightsRange = ((TensorConst)__result["weightsRange"]).Value.Cast<float>();
-        Expr padding = (Expr)__result["padding"];
-        Expr stride = (Expr)__result["stride"];
-        Expr dilation = (Expr)__result["dilation"];
-        int groups = ((TensorConst)__result["groups"]).Value.ToScalar<int>();
-        Expr outputMarker = (Expr)__result["outputMarker"];
-        Tensor<float> outputRange = ((TensorConst)__result["outputRange"]).Value.Cast<float>();
-        Tensor<float> padValue = ((TensorConst)__result["padValue"]).Value.Cast<float>();
-        TensorConst act = (TensorConst)__result["act"];
-        base.Option = __context;
-        base.MatchResult = __result;
+        FakeConv2D fakeConv = (FakeConv2D)result["fakeConv"];
+        Call call = (Call)result["call"];
+        Marker inputMarker = (Marker)result["inputMarker"];
+        Expr input = (Expr)result["input"];
+        Tensor<float> inputRange = ((TensorConst)result["inputRange"]).Value.Cast<float>();
+        Expr weightsMarker = (Expr)result["weightsMarker"];
+        Tensor value = ((TensorConst)result["weights"]).Value;
+        Tensor<float> weightsRange = ((TensorConst)result["weightsRange"]).Value.Cast<float>();
+        Expr padding = (Expr)result["padding"];
+        Expr stride = (Expr)result["stride"];
+        Expr dilation = (Expr)result["dilation"];
+        int groups = ((TensorConst)result["groups"]).Value.ToScalar<int>();
+        Expr outputMarker = (Expr)result["outputMarker"];
+        Tensor<float> outputRange = ((TensorConst)result["outputRange"]).Value.Cast<float>();
+        Tensor<float> padValue = ((TensorConst)result["padValue"]).Value.Cast<float>();
+        TensorConst act = (TensorConst)result["act"];
+        Option = context;
+        MatchResult = result;
         Init();
         return GetReplace(fakeConv, call, inputMarker, input, inputRange, weightsMarker, value, weightsRange, padding,
             stride, dilation, groups, outputMarker, outputRange, padValue, act);

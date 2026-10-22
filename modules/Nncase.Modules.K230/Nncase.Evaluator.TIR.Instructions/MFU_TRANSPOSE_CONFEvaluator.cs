@@ -14,7 +14,7 @@ internal sealed class MFU_TRANSPOSE_CONFEvaluator : ITypeInferencer<MFU_TRANSPOS
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, MFU_TRANSPOSE_CONF target, bool ILmode)
+    public string Visit(IIRPrinterContext context, MFU_TRANSPOSE_CONF target, bool iLmode)
     {
         return
             $"I.MFU_TRANSPOSE_CONF(rstride_d: {target.rstride_d}, rstride_s: {target.rstride_s}, l2_datatype: {target.l2_datatype}, permute: {target.permute}, funct5: {target.funct5})";

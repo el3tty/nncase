@@ -13,7 +13,7 @@ internal sealed class SWEvaluator : ITypeInferencer<SW>, ITypeInferencer, IOpPri
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, SW target, bool ILmode)
+    public string Visit(IIRPrinterContext context, SW target, bool iLmode)
     {
         return
             $"I.SW(rd: {target.rd}, rs: {target.rs}, offset: {context.GetArgument(target, SW.offset)}, funct3: {target.funct3})";

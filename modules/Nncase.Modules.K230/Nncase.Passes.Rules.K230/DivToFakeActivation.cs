@@ -17,6 +17,6 @@ public class DivToFakeActivation : BinaryToFakeActivation
     public override void ProcessActParam(ActParam2 actParam, bool isCRHS, int i, float v)
     {
         Trace.Assert(isCRHS);
-        actParam.Ks[0, i] = (actParam.Ks[1, i] = 1f / v);
+        actParam.Ks[0, i] = actParam.Ks[1, i] = 1f / v;
     }
 }

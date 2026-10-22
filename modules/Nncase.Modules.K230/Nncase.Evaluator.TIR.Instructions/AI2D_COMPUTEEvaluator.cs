@@ -14,7 +14,7 @@ internal sealed class AI2D_COMPUTEEvaluator : ITypeInferencer<AI2D_COMPUTE>, ITy
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, AI2D_COMPUTE target, bool ILmode)
+    public string Visit(IIRPrinterContext context, AI2D_COMPUTE target, bool iLmode)
     {
         return "I.AI2D_COMPUTE()";
     }

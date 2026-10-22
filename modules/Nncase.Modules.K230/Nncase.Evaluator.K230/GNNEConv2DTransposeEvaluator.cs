@@ -104,10 +104,12 @@ public class GNNEConv2DTransposeEvaluator : IEvaluator<GNNEConv2DTranspose>, IEv
                             int originY = (int)(inY * stride[0] - padding[0]);
                             int originX = (int)(inX * stride[1] - padding[2]);
                             int kernelYBegin = System.Math.Max(0, (int)((-originY + dilation[0] - 1) / dilation[0]));
-                            int kernelYEnd = (int)System.Math.Min(weightsShape[2],
+                            int kernelYEnd = (int)System.Math.Min(
+                                weightsShape[2],
                                 ((int)outputShape[2] - originY + dilation[0] - 1) / dilation[0]);
                             int kernelXBegin = (int)System.Math.Max(0L, (-originX + dilation[1] - 1) / dilation[1]);
-                            int kernelXEnd = (int)System.Math.Min(weightsShape[3],
+                            int kernelXEnd = (int)System.Math.Min(
+                                weightsShape[3],
                                 ((int)outputShape[3] - originX + dilation[1] - 1) / dilation[1]);
 
                             // NOTE: the bounds check is always true here.
@@ -213,17 +215,17 @@ public class GNNEConv2DTransposeEvaluator : IEvaluator<GNNEConv2DTranspose>, IEv
         // dtype checks have no effect; kept as is.
         if (input.DType != DataTypes.Int8 && input.DType != DataTypes.UInt8 && input.DType != DataTypes.Int16)
         {
-            new InvalidType("Unsupported input_type, should be one of [int8, uint8, int16]");
+            _ = new InvalidType("Unsupported input_type, should be one of [int8, uint8, int16]");
         }
 
         if (weights.DType != DataTypes.Int8 && weights.DType != DataTypes.UInt8 && weights.DType != DataTypes.Int16)
         {
-            new InvalidType("Unsupported w_type, should be one of [int8, uint8, int16]");
+            _ = new InvalidType("Unsupported w_type, should be one of [int8, uint8, int16]");
         }
 
         if (input.DType == DataTypes.Int16 && weights.DType == DataTypes.Int16)
         {
-            new InvalidType("int16 for both of input_type and w_type is not supported");
+            _ = new InvalidType("int16 for both of input_type and w_type is not supported");
         }
 
         if (context.GetArgument(target, GNNEConv2DTranspose.OutputShape) is Const outputShape)

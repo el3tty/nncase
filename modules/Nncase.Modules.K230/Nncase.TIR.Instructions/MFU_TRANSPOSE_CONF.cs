@@ -79,7 +79,8 @@ public sealed class MFU_TRANSPOSE_CONF : InstructionOp, ISerializeInst, IEquatab
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(funct5, rstride_d, rstride_s, l2_datatype, permute));
     }
 }

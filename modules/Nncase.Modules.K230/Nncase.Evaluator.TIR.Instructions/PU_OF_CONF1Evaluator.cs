@@ -14,7 +14,7 @@ internal sealed class PU_OF_CONF1Evaluator : ITypeInferencer<PU_OF_CONF1>, IType
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, PU_OF_CONF1 target, bool ILmode)
+    public string Visit(IIRPrinterContext context, PU_OF_CONF1 target, bool iLmode)
     {
         return
             $"I.PU_OF_CONF1(tcu_id: {context.GetArgument(target, PU_OF_CONF1.tcu_id)}, pu_id: {context.GetArgument(target, PU_OF_CONF1.pu_id)}, rgoc: {target.rgoc}, rgoc_last: {target.rgoc_last}, rstride_d: {target.rstride_d}, funct4: {target.funct4})";

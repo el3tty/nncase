@@ -12,5 +12,5 @@ public enum SHAPE_REGISTER : uint
     ss4,
     ss5,
     ss6,
-    ss7
+    ss7,
 }

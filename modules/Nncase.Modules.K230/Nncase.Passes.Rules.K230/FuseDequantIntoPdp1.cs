@@ -31,21 +31,21 @@ public sealed class FuseDequantIntoPdp1 : IRewriteRule
             padding, depuantparams, value, shiftbits, count_include_pad, act);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEPdp1 pdp1Reduce = (GNNEPdp1)__result["pdp1_reduce"];
-        Call ldCall = (Call)__result["ldCall"];
-        Dequantize deq = (Dequantize)__result["deq"];
-        Call deqCall = (Call)__result["deqCall"];
-        Expr input = (Expr)__result["input"];
-        Expr filter = (Expr)__result["filter"];
-        Expr stride = (Expr)__result["stride"];
-        Expr padding = (Expr)__result["padding"];
-        Expr depuantparams = (Expr)__result["depuantparams"];
-        Expr value = (Expr)__result["value"];
-        Expr shiftbits = (Expr)__result["shiftbits"];
-        Expr countIncludePad = (Expr)__result["count_include_pad"];
-        Expr act = (Expr)__result["act"];
+        GNNEPdp1 pdp1Reduce = (GNNEPdp1)result["pdp1_reduce"];
+        Call ldCall = (Call)result["ldCall"];
+        Dequantize deq = (Dequantize)result["deq"];
+        Call deqCall = (Call)result["deqCall"];
+        Expr input = (Expr)result["input"];
+        Expr filter = (Expr)result["filter"];
+        Expr stride = (Expr)result["stride"];
+        Expr padding = (Expr)result["padding"];
+        Expr depuantparams = (Expr)result["depuantparams"];
+        Expr value = (Expr)result["value"];
+        Expr shiftbits = (Expr)result["shiftbits"];
+        Expr countIncludePad = (Expr)result["count_include_pad"];
+        Expr act = (Expr)result["act"];
         return GetReplace(pdp1Reduce, ldCall, deq, deqCall, input, filter, stride, padding, depuantparams, value,
             shiftbits, countIncludePad, act);
     }

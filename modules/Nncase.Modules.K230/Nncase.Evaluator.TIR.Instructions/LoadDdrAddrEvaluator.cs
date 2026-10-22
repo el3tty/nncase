@@ -14,7 +14,7 @@ internal sealed class LoadDdrAddrEvaluator : ITypeInferencer<LoadDDrAddr>, IType
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, LoadDDrAddr target, bool ILmode)
+    public string Visit(IIRPrinterContext context, LoadDDrAddr target, bool iLmode)
     {
         return
             $"I.LoadDdrAddr(rd_basement: {target.rd_basement}, value: {context.GetArgument(target, LoadDDrAddr.Basement)}; rd_offset: {target.rd_target}, value: {context.GetArgument(target, LoadDDrAddr.Offset)})";

@@ -36,9 +36,9 @@ public sealed class ProcessPdp0DWShiftBits : IRewriteRule
         return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        GNNEPdp0DW dw = (GNNEPdp0DW)__result["dw"];
-        return GetReplace(dw, __result, __context);
+        GNNEPdp0DW dw = (GNNEPdp0DW)result["dw"];
+        return GetReplace(dw, result, context);
     }
 }

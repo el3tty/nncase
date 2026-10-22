@@ -15,10 +15,10 @@ namespace Nncase.Passes.Rules.K230;
 public class BroadcastToFakeActivation : RewriteRule<Pattern>
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsBroadcast("broadcast", "call",
-        (Broadcast _) => true, Nncase.PatternMatch.Utility.IsWildcard("input")with
+        (Broadcast _) => true, Nncase.PatternMatch.Utility.IsWildcard("input") with
         {
-            TypePattern = (TypePatternUtility.HasRank((int r) => r <= 4, "GNNE not support more than 4D") &
-                           TypePatternUtility.HasFixedShape())
+            TypePattern = TypePatternUtility.HasRank((int r) => r <= 4, "GNNE not support more than 4D") &
+                           TypePatternUtility.HasFixedShape(),
         }, Nncase.PatternMatch.Utility.IsTensorConst("shape"));
 
     public Expr? GetReplace(Broadcast broadcast, Call call, Expr input, TensorConst shape)
@@ -53,12 +53,12 @@ public class BroadcastToFakeActivation : RewriteRule<Pattern>
         return false;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Broadcast broadcast = (Broadcast)__result["broadcast"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
-        TensorConst shape = (TensorConst)__result["shape"];
+        Broadcast broadcast = (Broadcast)result["broadcast"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
+        TensorConst shape = (TensorConst)result["shape"];
         return GetReplace(broadcast, call, input, shape);
     }
 }

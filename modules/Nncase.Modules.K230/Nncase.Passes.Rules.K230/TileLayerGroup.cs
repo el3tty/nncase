@@ -23,7 +23,7 @@ public class TileLayerGroup
         NoFused,
         FusedPool,
         FusedAct1,
-        FusedDw
+        FusedDw,
     }
 
     private static int _count = -1;
@@ -201,7 +201,7 @@ public class TileLayerGroup
 
     private List<List<Tuple<Call, int>>> _nodesQuenesAsW = new List<List<Tuple<Call, int>>>(2)
     {
-        new List<Tuple<Call, int>>(), new List<Tuple<Call, int>>()
+        new List<Tuple<Call, int>>(), new List<Tuple<Call, int>>(),
     };
 
     private int _if1BufIdx = -1;
@@ -231,7 +231,7 @@ public class TileLayerGroup
         {
             List<NodeInfo> sliceNodes = currSliceInfo[sliceIdx];
             Dictionary<Call, NodeInfo> sliceInfo = preSliceInfo[sliceIdx];
-            for (int layerIdx = 0; layerIdx < sliceNodes.Count; layerIdx += ((!_l1Fused) ? 1 : 2))
+            for (int layerIdx = 0; layerIdx < sliceNodes.Count; layerIdx += (!_l1Fused) ? 1 : 2)
             {
                 UpdateL2FusePara(fusionInfo, sliceNodes[layerIdx], sliceInfo, glb, weightGroupOnly: true, layerIdx == 0);
                 ItemRecStatusUpdate();
@@ -262,7 +262,7 @@ public class TileLayerGroup
             SegmentND lastOfmap = sliceNodes[sliceNodes.Count - 1].Ofmap;
             _logger.LogTrace(
                 $"dim2-> start: {lastOfmap[2].Start}, end: {lastOfmap[2].End}, dim3-> start: {lastOfmap[3].Start}, end: {lastOfmap[3].End}");
-            for (int layerIdx = 0; layerIdx < sliceNodes.Count; layerIdx += ((!_l1Fused) ? 1 : 2))
+            for (int layerIdx = 0; layerIdx < sliceNodes.Count; layerIdx += (!_l1Fused) ? 1 : 2)
             {
                 UpdateL2FusePara(fusionInfo, sliceNodes[layerIdx], preSlice, glb, weightGroupOnly: false, layerIdx == 0);
                 if ((object)_lif != null)
@@ -304,7 +304,8 @@ public class TileLayerGroup
                 }
             }
 
-            TileUtilities.Assert(ifBuffersCopy.Count == 0 && ofBuffersCopy.Count == 0,
+            TileUtilities.Assert(
+                ifBuffersCopy.Count == 0 && ofBuffersCopy.Count == 0,
                 "ifBuffersCopy.Count == 0 && ofBuffersCopy.Count == 0",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                 260);
@@ -365,7 +366,7 @@ public class TileLayerGroup
                 List<int> stridesD = new int[3]
                 {
                     glb.GlbMap[ItemName.Ofmap].Dimensions[1], glb.GlbMap[ItemName.Ofmap].Dimensions[2],
-                    glb.GlbMap[ItemName.Ofmap].Dimensions[3]
+                    glb.GlbMap[ItemName.Ofmap].Dimensions[3],
                 }.ToList();
                 List<int> stridesS = new int[3] { inputShape[1], inputShape[2], inputShape[3] }.ToList();
                 SegmentND fullChannelSegment = new SegmentND(_ofmapSt);
@@ -373,8 +374,7 @@ public class TileLayerGroup
                 SegmentND slice = new SegmentND(fullChannelSegment);
                 slice[1] = new Segment1D(channelOffset..(channelOffset + inputShape[1]), new Padding(0, 0));
                 gnneActionUpdater.UpdateLoadIf(fullChannelSegment, _lif, iPp, concatBuffers[i],
-                    _ni.Nb.OfmapOffset + TileUtilities.GetSliceOffsetInTensor(in _ofmapSt, in slice) *
-                    TileUtilities.GetBytesPerElement(_lif.CheckedDataType), stridesD, ItemName.Ifmap,
+                    _ni.Nb.OfmapOffset + TileUtilities.GetSliceOffsetInTensor(in _ofmapSt, in slice) * TileUtilities.GetBytesPerElement(_lif.CheckedDataType), stridesD, ItemName.Ifmap,
                     (i == concatInputs.Length - 1) ? ccrsToSet : null, (i == 0) ? ccrsToClr : null, _h2C, _memsetValue, stridesS,
                     new GNNEShape(inputShape), inputShape);
                 channelOffset += inputShape[1];
@@ -391,7 +391,8 @@ public class TileLayerGroup
                     loadSource = reshapeCall;
                 }
 
-                T.CreateBuffer(new TensorType(_lif[GNNELoad.Input].CheckedDataType, loadSource.CheckedShape),
+                T.CreateBuffer(
+                    new TensorType(_lif[GNNELoad.Input].CheckedDataType, loadSource.CheckedShape),
                     MemoryLocation.Input, out ddrBuffer, "ddrIf");
                 ifBuffers.Add(ddrBuffer);
                 _ifBufferMap.Add(
@@ -411,7 +412,7 @@ public class TileLayerGroup
             List<int> stridesD2 = new int[3]
             {
                 glb.GlbMap[ItemName.Ofmap].Dimensions[1], glb.GlbMap[ItemName.Ofmap].Dimensions[2],
-                glb.GlbMap[ItemName.Ofmap].Dimensions[3]
+                glb.GlbMap[ItemName.Ofmap].Dimensions[3],
             }.ToList();
             gnneActionUpdater.UpdateLoadIf(_ofmapSt, _lif, iPp, ddrBuffer, _ni.Nb.OfmapOffset, stridesD2, ItemName.Ifmap,
                 ccrsToSet, ccrsToClr, _h2C, _memsetValue, null, null, _lif.CheckedShape.ToValueArray());
@@ -456,7 +457,8 @@ public class TileLayerGroup
         T.AttachBuffer(
             Const.FromTensor(Tensor.FromBytes(DataTypes.UInt8, weightBytesCopy.ToArray(), new int[1] { weightBytesCopy.Length })),
             out Nncase.TIR.Buffer ddrW, "var ddrW");
-        T.AttachBuffer((TensorConst)((Call)_ni.Op[GNNEConv2D.WeightsBias])[GNNELoadW.Input],
+        T.AttachBuffer(
+            (TensorConst)((Call)_ni.Op[GNNEConv2D.WeightsBias])[GNNELoadW.Input],
             out Nncase.TIR.Buffer ddrWQarg, "var ddrWQarg");
         T.AttachBuffer((TensorConst)((Call)_ni.Op[GNNEConv2D.Act])[GNNELoadW.Input], out Nncase.TIR.Buffer ddrAct,
             "var ddrAct");
@@ -492,7 +494,8 @@ public class TileLayerGroup
                 {
                     if (!weightGroupOnly && firstSlice)
                     {
-                        T.CreateBuffer(new TensorType(_lif2[GNNELoad.Input].CheckedDataType, _lif2.CheckedShape),
+                        T.CreateBuffer(
+                            new TensorType(_lif2[GNNELoad.Input].CheckedDataType, _lif2.CheckedShape),
                             MemoryLocation.Input, out ddrIf2, "ddrIf2");
                         ifBuffers.Add(ddrIf2);
                         _ifBufferMap.Add((Var)_lif2[GNNELoad.Input], ddrIf2);
@@ -521,7 +524,8 @@ public class TileLayerGroup
         ArrangeWeights(_weightType, _weightsShape, bytesBuffer, _weightGroup);
         if ((object)_dw != null)
         {
-            ArrangeDwWeights(_dw[GNNEPdp0DW.Weights].CheckedDataType,
+            ArrangeDwWeights(
+                _dw[GNNEPdp0DW.Weights].CheckedDataType,
                 _dw[GNNEPdp0DW.Weights].CheckedShape.ToValueArray(), ddrDw.Const().Value.BytesBuffer, _weightGroup);
         }
 
@@ -542,7 +546,8 @@ public class TileLayerGroup
             {
                 if (isFirstSlice)
                 {
-                    T.CreateBuffer(new TensorType(_lif2[GNNELoad.Input].CheckedDataType, _lif2.CheckedShape),
+                    T.CreateBuffer(
+                        new TensorType(_lif2[GNNELoad.Input].CheckedDataType, _lif2.CheckedShape),
                         MemoryLocation.Input, out ddrIf2, "ddrIf2");
                     ifBuffers.Add(ddrIf2);
                     _ifBufferMap.Add((Var)_lif2[GNNELoad.Input], ddrIf2);
@@ -662,7 +667,8 @@ public class TileLayerGroup
         if (weightGroupOnly && _weightBufIdx != -1)
         {
             _nodesWeightRec[_conv][_weightBufIdx]
-                .Add(new Tuple<SegmentND, TensorStat>(_weight,
+                .Add(new Tuple<SegmentND, TensorStat>(
+                    _weight,
                     new TensorStat(isFirstSlice: false, isLastSlice: false)));
         }
 
@@ -672,16 +678,16 @@ public class TileLayerGroup
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                 595);
             TensorStat if2Stat = _nodesL2RIf2Rec[_conv][0][0].Item2;
-            int ccrValue = ((if2Stat != null && if2Stat.IsFirstSlice && if2Stat.IsLastSlice) ? 1 : 2);
+            int ccrValue = (if2Stat != null && if2Stat.IsFirstSlice && if2Stat.IsLastSlice) ? 1 : 2;
             List<CcrSet> ccrsToSet = new List<CcrSet>
             {
-                new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap2)), ccrValue)
+                new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap2)), ccrValue),
             };
             List<int> stridesD = new List<int>
             {
                 glb.GlbMap[ItemName.Ifmap2].Dimensions[1],
                 glb.GlbMap[ItemName.Ifmap2].Dimensions[2],
-                glb.GlbMap[ItemName.Ifmap2].Dimensions[3]
+                glb.GlbMap[ItemName.Ifmap2].Dimensions[3],
             };
             actionUpdater.UpdateLoadIf(_ifmap2, _lif2, ofPp, ddrIf2, _ifmap2Offset, stridesD, _src2ItemName, ccrsToSet);
         }
@@ -720,13 +726,13 @@ public class TileLayerGroup
         {
             List<CcrSet> ccrsToSet = new List<CcrSet>
             {
-                new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap2)), 1)
+                new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ifmap2)), 1),
             };
             List<int> stridesD = new List<int>
             {
                 glb.GlbMap[ItemName.Ifmap2].Dimensions[1],
                 glb.GlbMap[ItemName.Ifmap2].Dimensions[2],
-                glb.GlbMap[ItemName.Ifmap2].Dimensions[3]
+                glb.GlbMap[ItemName.Ifmap2].Dimensions[3],
             };
             actionUpdater.UpdateLoadIf(_ifmap2, _lif2, iPp, ddrIf2, _ifmap2Offset, stridesD, ItemName.Ifmap2,
                 ccrsToSet);
@@ -792,7 +798,7 @@ public class TileLayerGroup
             {
                 glb.GlbMap[ItemName.Ifmap2].Dimensions[1],
                 glb.GlbMap[ItemName.Ifmap2].Dimensions[2],
-                glb.GlbMap[ItemName.Ifmap2].Dimensions[3]
+                glb.GlbMap[ItemName.Ifmap2].Dimensions[3],
             };
             src1Segment = _ifmapA;
             src2Segment = _ifmapB;
@@ -835,9 +841,7 @@ public class TileLayerGroup
             inputBType, _act1.CheckedDataType, deqAParams, deqBParams, inAShiftBits, inBShiftBits, rshiftBitsD, is16Segments,
             iPp, ccrSets, ccrsToClr, _ifmapOffset, _ifmap2Offset, _ni.Nb.OfmapOffset, _ni.Nb.Act1Offset, _src2ItemName,
             ItemName.Ifmap, ItemName.MfuAct1,
-            (((GNNEActivation)_act1.Target).Type == GnneActivationType.Mul)
-                ? MFU_ACT1_FUNCTION.mul
-                : MFU_ACT1_FUNCTION.add, ItemName.Ofmap, null, src2Stride);
+            (((GNNEActivation)_act1.Target).Type == GnneActivationType.Mul) ? MFU_ACT1_FUNCTION.mul : MFU_ACT1_FUNCTION.add, ItemName.Ofmap, null, src2Stride);
     }
 
     private void BuildSchedulePdp1(GnneActionUpdater action_updater, TiledGlb glb)
@@ -888,7 +892,7 @@ public class TileLayerGroup
             new TensorOnGlb(
                 new int[4]
                 {
-                    globalOfmap[0].Length, globalOfmap[1].Length, globalOfmap[2].Length, originalGlbOfmap.Dimensions[3]
+                    globalOfmap[0].Length, globalOfmap[1].Length, globalOfmap[2].Length, originalGlbOfmap.Dimensions[3],
                 }, DataTypes.Float16, 0, originalGlbOfmap.Mmu);
         List<SegmentND> ofmapSegments = new List<SegmentND> { globalOfmap };
         List<SegmentND> ifmapSegments = new List<SegmentND> { _ifmap };
@@ -899,7 +903,8 @@ public class TileLayerGroup
             List<Segment1D> rowSegments = TileUtilities.GetSegmentStartEndLength(0, splitR, _inputShape[2]);
             List<Segment1D> colSegments = TileUtilities.GetSegmentStartEndLength(0, splitS, _inputShape[3]);
             SegmentND ifmapSegmentCopy = new SegmentND(ifmapSegment);
-            int alignedNum = TileUtilities.GetAlignedNum(ifmapSegment[3].Length,
+            int alignedNum = TileUtilities.GetAlignedNum(
+                ifmapSegment[3].Length,
                 (TileUtilities.GetBytesPerElement(_inputType) == 1) ? 32 : 16);
             SegmentND alignedIfmap = new SegmentND(ifmapSegment[0], ifmapSegment[1], ifmapSegment[2],
                 new Segment1D(..alignedNum, Padding.Zero()));
@@ -919,7 +924,7 @@ public class TileLayerGroup
             {
                 for (int colIdx = 0; colIdx < colSegments.Count; colIdx++)
                 {
-                    int isFirstTile = ((rowIdx == 0 && colIdx == 0) ? 1 : 0);
+                    int isFirstTile = (rowIdx == 0 && colIdx == 0) ? 1 : 0;
                     List<CcrClr> tileCcrsToClr = new List<CcrClr>();
                     if (isFirstTile > 0)
                     {
@@ -948,7 +953,7 @@ public class TileLayerGroup
             List<int> ifStride = new List<int> { partialOfmap[1].Length, partialOfmap[2].Length, alignedPartialOfmap[3].Length };
             List<int> ofStride2 = new List<int>
             {
-                partialOfmap[1].Length, singleCellOfmap[2].Length, originalGlbOfmap.Dimensions[3]
+                partialOfmap[1].Length, singleCellOfmap[2].Length, originalGlbOfmap.Dimensions[3],
             };
             int ofmapOffset = _ofmapOffset;
             int ofmapOffset2 = _ofmapOffset;
@@ -981,7 +986,7 @@ public class TileLayerGroup
 
         static (int R, int S) SplitGlobalPdp(int w, int filterHeight)
         {
-            int r = ((filterHeight > 16) ? 16 : filterHeight);
+            int r = (filterHeight > 16) ? 16 : filterHeight;
             int s = Math.Min(Math.Min(256 / r, w), 64);
             return (R: r, S: s);
         }
@@ -1052,7 +1057,8 @@ public class TileLayerGroup
                             _convOutputShape[2], _fusedKernelH, _fusedStrideH, _fusedDilationH, in _fusedPaddingH);
                     }
 
-                    Segment1D ifmapRowSegment = TileUtilities.GetInputRowSegment(convInputRowSegment.Start,
+                    Segment1D ifmapRowSegment = TileUtilities.GetInputRowSegment(
+                        convInputRowSegment.Start,
                         convInputRowSegment.Length, _inputShape[2], _weightsShape[2], _strideH, _dilationH, in _paddingH);
                     foreach (Segment1D psumColSeg in psumColSegs)
                     {
@@ -1075,7 +1081,8 @@ public class TileLayerGroup
                                 _convOutputShape[3], _fusedKernelW, _fusedStrideW, _fusedDilationW, in _fusedPaddingW);
                         }
 
-                        Segment1D ifmapColSegment = TileUtilities.GetInputColumnSegment(convInputColSegment.Start,
+                        Segment1D ifmapColSegment = TileUtilities.GetInputColumnSegment(
+                            convInputColSegment.Start,
                             convInputColSegment.Length, _inputShape[3], _weightsShape[3], _strideW, _dilationW, in _paddingW);
                         SegmentND ofmapSlice = new SegmentND(batchSeg, outChannelSeg, psumRowSeg, psumColSeg);
                         RestoreTensorShape(_conv, ItemName.Ofmap, ofmapSlice);
@@ -1127,7 +1134,8 @@ public class TileLayerGroup
                                             if (ifStatCount > 0)
                                             {
                                                 ifCcrsToClr.Add(new CcrClr(
-                                                    _ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap,
+                                                    _ccrHandler.GetCcrItem(_ccrHandler.GetName(
+                                                        ItemName.Ofmap,
                                                         _if1BufIdx))));
                                             }
 
@@ -1175,7 +1183,8 @@ public class TileLayerGroup
                                             }
 
                                             _nodesG2LIfRec[_conv][_if1BufIdx]
-                                                .Add(new Tuple<SegmentND, TensorStat>(ifmap1,
+                                                .Add(new Tuple<SegmentND, TensorStat>(
+                                                    ifmap1,
                                                     new TensorStat(isFirstIfmap, isLastSlice: false)));
                                             isFirstIfmap = false;
                                         }
@@ -1189,8 +1198,8 @@ public class TileLayerGroup
                                             SegmentND slice2 = TileUtilities.ShiftInputTensor(in x, in w2,
                                                 _weightsShape[2], _weightsShape[3], _strideH, _strideW, _dilationH,
                                                 _dilationW);
-                                            int weightPasses = ((!(_weightType == DataTypes.Int16)) ? 1 : 2);
-                                            int inputPasses = ((!(_inputType == DataTypes.Int16)) ? 1 : 2);
+                                            int weightPasses = (!(_weightType == DataTypes.Int16)) ? 1 : 2;
+                                            int inputPasses = (!(_inputType == DataTypes.Int16)) ? 1 : 2;
                                             for (int weightPassIdx = 0; weightPassIdx < weightPasses; weightPassIdx++)
                                             {
                                                 for (int inputPassIdx = 0; inputPassIdx < inputPasses; inputPassIdx++)
@@ -1224,16 +1233,17 @@ public class TileLayerGroup
                                                                 1210);
                                                             if (g2rwSliceRec.Item2.IsFirstSlice)
                                                             {
-                                                                int clearWeightFake = ((_nodesQuenesAsW[_weightBufIdx][0].Item2 !=
+                                                                int clearWeightFake = (_nodesQuenesAsW[_weightBufIdx][0].Item2 !=
                                                                     0 && g2rwRec.Item2.IsFirstSlice)
                                                                     ? 1
-                                                                    : 0);
+                                                                    : 0;
                                                                 List<CcrClr> weightLoadCcrsToClr = new List<CcrClr>();
                                                                 if (clearWeightFake > 0)
                                                                 {
                                                                     weightLoadCcrsToClr.Add(new CcrClr(
                                                                         _ccrHandler.GetCcrItem(
-                                                                            _ccrHandler.GetName(ItemName.WeightFake,
+                                                                            _ccrHandler.GetName(
+                                                                                ItemName.WeightFake,
                                                                                 _weightBufIdx))));
                                                                 }
 
@@ -1241,9 +1251,9 @@ public class TileLayerGroup
                                                                 {
                                                                     new CcrSet(
                                                                         _ccrHandler.GetCcrItem(
-                                                                            _ccrHandler.GetName(ItemName.Weight,
-                                                                                (_weightBufIdx << 1) +
-                                                                                (g2rwSliceRec.Item2.SliceIdx & 1))), 1)
+                                                                            _ccrHandler.GetName(
+                                                                                ItemName.Weight,
+                                                                                (_weightBufIdx << 1) + (g2rwSliceRec.Item2.SliceIdx & 1))), 1),
                                                                 };
                                                                 actionUpdater.UpdateLoadW(w2, _lw, weightGroup, wPp,
                                                                     ddrW, ccrsToSet, weightLoadCcrsToClr, _ni.Nb.WeightOffset, _h2C,
@@ -1253,13 +1263,13 @@ public class TileLayerGroup
                                                             if (g2rwRec.Item2.IsLastSlice &&
                                                                 _nodesQuenesAsW[_weightBufIdx].Count > 0)
                                                             {
-                                                                setWeightFake = ((_nodesQuenesAsW[_weightBufIdx].Count > 1)
+                                                                setWeightFake = (_nodesQuenesAsW[_weightBufIdx].Count > 1)
                                                                     ? 1
-                                                                    : 0);
+                                                                    : 0;
                                                                 _nodesQuenesAsW[_weightBufIdx].RemoveAt(0);
                                                             }
 
-                                                            clearWeightBuf = (g2rwSliceRec.Item2.IsFirstSlice ? 1 : 0);
+                                                            clearWeightBuf = g2rwSliceRec.Item2.IsFirstSlice ? 1 : 0;
                                                             weightSliceIdx = g2rwSliceRec.Item2.SliceIdx;
                                                             wName = ItemName.Weight;
                                                             offsetWS = _ni.Nb.WeightOffset;
@@ -1278,7 +1288,8 @@ public class TileLayerGroup
                                                         {
                                                             g2rwCcrsToSet.Add(new CcrSet(
                                                                 _ccrHandler.GetCcrItem(
-                                                                    _ccrHandler.GetName(ItemName.WeightFake,
+                                                                    _ccrHandler.GetName(
+                                                                        ItemName.WeightFake,
                                                                         _weightBufIdx)), 1));
                                                         }
 
@@ -1287,7 +1298,8 @@ public class TileLayerGroup
                                                         {
                                                             g2rwCcrsToClr.Add(new CcrClr(
                                                                 _ccrHandler.GetCcrItem(
-                                                                    _ccrHandler.GetName(ItemName.Weight,
+                                                                    _ccrHandler.GetName(
+                                                                        ItemName.Weight,
                                                                         (_weightBufIdx << 1) + (weightSliceIdx & 1)))));
                                                         }
 
@@ -1317,11 +1329,14 @@ public class TileLayerGroup
                                                             }
 
                                                             _nodesG2RWRec[_conv][_weightBufIdx]
-                                                                .Add(new Tuple<SegmentND, TensorStat>(weight1,
+                                                                .Add(new Tuple<SegmentND, TensorStat>(
+                                                                    weight1,
                                                                     new TensorStat(isFirstWeight, isLastSlice: false)));
                                                             _nodesG2RWSliceRec[_conv][_weightBufIdx]
-                                                                .Add(new Tuple<SegmentND, TensorStat>(w2,
-                                                                    new TensorStat(isFirstSlice: false,
+                                                                .Add(new Tuple<SegmentND, TensorStat>(
+                                                                    w2,
+                                                                    new TensorStat(
+                                                                        isFirstSlice: false,
                                                                         isLastSlice: false, -1)));
                                                             isFirstWeight = false;
                                                         }
@@ -1331,8 +1346,7 @@ public class TileLayerGroup
                                                     {
                                                         actionUpdater.UpdateL2RIf(slice2, shiftedInput, _strideH,
                                                             _strideW, _icPerGroup, _lif, 0, inputPassIdx,
-                                                            ((TensorConst)_conv[GNNEConv2D.DeqBias]).Value
-                                                            .ToArray<int>()[0], _inputType, _h2C, _weightsShape[2]);
+                                                            ((TensorConst)_conv[GNNEConv2D.DeqBias]).Value.ToArray<int>()[0], _inputType, _h2C, _weightsShape[2]);
                                                     }
 
                                                     bool releaseIf = false;
@@ -1382,9 +1396,9 @@ public class TileLayerGroup
                                                                 _nodesQueNeedClearFake.Count > 0 &&
                                                                 _nodesQueNeedClearFake[0].Item1 == _conv)
                                                             {
-                                                                clearOfmapFake = ((_nodesQueNeedClearFake[0].Item2 != 0)
+                                                                clearOfmapFake = (_nodesQueNeedClearFake[0].Item2 != 0)
                                                                     ? 1
-                                                                    : 0);
+                                                                    : 0;
                                                                 _nodesQueNeedClearFake.RemoveAt(0);
                                                             }
 
@@ -1416,7 +1430,8 @@ public class TileLayerGroup
                                                         {
                                                             psumCcrsToClr.Add(new CcrClr(
                                                                 _ccrHandler.GetCcrItem(
-                                                                    _ccrHandler.GetName(ItemName.OfmapFake,
+                                                                    _ccrHandler.GetName(
+                                                                        ItemName.OfmapFake,
                                                                         _ofBufIdx))));
                                                         }
 
@@ -1445,7 +1460,8 @@ public class TileLayerGroup
                                                         }
 
                                                         _nodesL2GOfRec[_conv][_ofBufIdx]
-                                                            .Add(new Tuple<SegmentND, TensorStat>(psum,
+                                                            .Add(new Tuple<SegmentND, TensorStat>(
+                                                                psum,
                                                                 new TensorStat(isFirstOfmap, isLastSlice: false)));
                                                         isFirstOfmap = false;
                                                     }
@@ -1473,7 +1489,7 @@ public class TileLayerGroup
                             if ((object)_act1 != null && _act1[GNNEActivation.InputB] != None.Default)
                             {
                                 l2RIf = psumSlice;
-                                int index = ((_if2BufIdx != -1) ? _if2BufIdx : 0);
+                                int index = (_if2BufIdx != -1) ? _if2BufIdx : 0;
                                 int if2StatCount = _nodesL2RIf2Rec[_conv][index][0].Item2.Stat_cnt();
                                 _nodesL2RIf2Rec[_conv][index].RemoveAt(0);
                                 if ((object)_lif2 != null)
@@ -1508,7 +1524,7 @@ public class TileLayerGroup
                             if (l2gOfRecL2r.Item2.IsFirstSlice && _nodesQueNeedClearFake.Count > 0 &&
                                 _nodesQueNeedClearFake[0].Item1 == _conv)
                             {
-                                clearL2rOfmapFake = ((_nodesQueNeedClearFake[0].Item2 != 0) ? 1 : 0);
+                                clearL2rOfmapFake = (_nodesQueNeedClearFake[0].Item2 != 0) ? 1 : 0;
                                 _nodesQueNeedClearFake.RemoveAt(0);
                             }
 
@@ -1572,7 +1588,7 @@ public class TileLayerGroup
                         if ((object)_act1 != null && weightInChannelSeg.End == _weightsShape[1] &&
                             _act1[GNNEActivation.InputB] != None.Default)
                         {
-                            int index2 = ((_if2BufIdx != -1) ? _if2BufIdx : 0);
+                            int index2 = (_if2BufIdx != -1) ? _if2BufIdx : 0;
                             if (_nodesL2RIf2Rec[_conv][index2].Count > 0)
                             {
                                 List<Tuple<SegmentND, TensorStat>> if2RecList = _nodesL2RIf2Rec[_conv][index2];
@@ -1580,7 +1596,8 @@ public class TileLayerGroup
                             }
 
                             _nodesL2RIf2Rec[_conv][index2]
-                                .Add(new Tuple<SegmentND, TensorStat>(ifmap2,
+                                .Add(new Tuple<SegmentND, TensorStat>(
+                                    ifmap2,
                                     new TensorStat(isFirstIf2, isLastSlice: false)));
                             isFirstIf2 = false;
                         }
@@ -1634,7 +1651,7 @@ public class TileLayerGroup
 
     private int GetCcrSetAccordingPostNodes(NodeInfo currNode)
     {
-        int outputsSize = (_l1Fused ? _l1FuseNi.Nb.OutputsSize : _ni.Nb.OutputsSize);
+        int outputsSize = _l1Fused ? _l1FuseNi.Nb.OutputsSize : _ni.Nb.OutputsSize;
         int ccrSetCount = GetCcrSetCountForChild(currNode, currNode.Children[0].Op, outputsSize);
         if (outputsSize == 2)
         {
@@ -1772,7 +1789,8 @@ public class TileLayerGroup
                         "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                         1746);
                     slice[0] = slice[0];
-                    slice[1] = new Segment1D((slice[1].Start * slice[2].Length)..(slice[1].End * slice[2].Length),
+                    slice[1] = new Segment1D(
+                        (slice[1].Start * slice[2].Length)..(slice[1].End * slice[2].Length),
                         Padding.Zero());
                     slice[2] = new Segment1D(
                         (ofmapRowSeg.Start + slice[3].Start / ofmapColSeg.Length)..(ofmapRowSeg.Start +
@@ -1781,6 +1799,7 @@ public class TileLayerGroup
                     slice[3] = new Segment1D(ofmapColSeg.Start..ofmapColSeg.End, ofmapColSeg.Padding);
                     break;
                 }
+
             default:
                 {
                     Segment1D ifmapRowSeg = _ifmapLd[2];
@@ -1795,7 +1814,8 @@ public class TileLayerGroup
                     slice[2] = new Segment1D(
                         (slice[2].Start * slice[3].Length / ifmapColSeg.Length)..(slice[2].End * slice[3].Length /
                             ifmapColSeg.Length), ifmapRowSeg.Padding);
-                    slice[3] = new Segment1D((slice[3].Start / ifmapRowSeg.Length)..(slice[3].End / ifmapRowSeg.Length),
+                    slice[3] = new Segment1D(
+                        (slice[3].Start / ifmapRowSeg.Length)..(slice[3].End / ifmapRowSeg.Length),
                         ifmapColSeg.Padding);
                     break;
                 }
@@ -1814,8 +1834,8 @@ public class TileLayerGroup
         int h = 1;
         int w = 1;
         int e = 1;
-        int f = ((!useFullWidth) ? 1 : _ofmap[3].Length);
-        int fStep = ((!useFullWidth) ? 1 : _ofmap[3].Length);
+        int f = (!useFullWidth) ? 1 : _ofmap[3].Length;
+        int fStep = (!useFullWidth) ? 1 : _ofmap[3].Length;
         bool retriedWithMinWidth = false;
         int r;
         int s;
@@ -1827,8 +1847,8 @@ public class TileLayerGroup
         bool fitsInL1;
         while (true)
         {
-            r = ((_weightSplitPattern[_conv].Item1 == 0 || _dilationH > 3) ? 1 : _weightSplitPattern[_conv].Item1);
-            s = ((_weightSplitPattern[_conv].Item2 == 0 || _dilationW > 3) ? 1 : _weightSplitPattern[_conv].Item2);
+            r = (_weightSplitPattern[_conv].Item1 == 0 || _dilationH > 3) ? 1 : _weightSplitPattern[_conv].Item1;
+            s = (_weightSplitPattern[_conv].Item2 == 0 || _dilationW > 3) ? 1 : _weightSplitPattern[_conv].Item2;
             originalConvOutputShape = _conv.CheckedShape.ToValueArray();
             if (isConv1X1)
             {
@@ -1996,7 +2016,7 @@ public class TileLayerGroup
             e,
             f,
             r,
-            s
+            s,
         };
 
         bool IncreaseEByStep()
@@ -2140,7 +2160,8 @@ public class TileLayerGroup
             int dstIdx = 0;
             foreach (SegmentND slice in weightSlices)
             {
-                TileUtilities.Assert(offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement,
+                TileUtilities.Assert(
+                    offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement,
                     "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
                     "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                     2129);
@@ -2178,7 +2199,8 @@ public class TileLayerGroup
             int dstIdx = 0;
             foreach (SegmentND slice in weightSlices)
             {
-                TileUtilities.Assert(offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement,
+                TileUtilities.Assert(
+                    offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement,
                     "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
                     "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                     2162);
@@ -2319,7 +2341,8 @@ public class TileLayerGroup
                     nodeBuffer.OfmapOffset = GetOfBufOffset(nodeBuffer.OfBufferIndex);
                     nodeBuffer.WeightOffset = GetWeightBufOffset(prevNode, nodeBuffer, sliceIndex);
                     currSlice.Add(new NodeInfo(op, outputSlices[sliceIndex], nodes[nodeIdx].Nb, nodes[nodeIdx].Children));
-                    sliceNodeInfos.Add(prevNode,
+                    sliceNodeInfos.Add(
+                        prevNode,
                         new NodeInfo(prevNode, outputSlices[sliceIndex], nodeBuffer,
                             new List<NodeInfo> { currSlice.Find((NodeInfo n) => n.Op == op) }));
                 }
@@ -2354,14 +2377,13 @@ public class TileLayerGroup
                                                     bool isSingleInput = op[GNNEActivation.InputB] == None.Default;
                                                     var (inputASeg, inputBSeg) = GetAct1InputsShape(
                                                         op[GNNEActivation.InputA].CheckedShape.ToValueArray(),
-                                                        isSingleInput
-                                                            ? op[GNNEActivation.InputA].CheckedShape.ToValueArray()
-                                                            : op[GNNEActivation.InputB].CheckedShape.ToValueArray(),
+                                                        isSingleInput ? op[GNNEActivation.InputA].CheckedShape.ToValueArray() : op[GNNEActivation.InputB].CheckedShape.ToValueArray(),
                                                         op.CheckedShape.ToValueArray(), opOfmap);
                                                     if (nodes.Find((NodeInfo n) =>
                                                             n.Op == op[GNNEActivation.InputA]) != null)
                                                     {
-                                                        SegmentND prevSegmentA = new SegmentND(inputASeg[0],
+                                                        SegmentND prevSegmentA = new SegmentND(
+                                                            inputASeg[0],
                                                             inputASeg[1], inputASeg[2], inputASeg[3]);
                                                         prevNode = (Call)op[GNNEActivation.InputA];
                                                         NodeBuffer prevNodeBuffer = GetPreNodeBuffer(prevNode);
@@ -2379,7 +2401,8 @@ public class TileLayerGroup
                                                         }
                                                         else
                                                         {
-                                                            sliceNodeInfos.Add(prevNode,
+                                                            sliceNodeInfos.Add(
+                                                                prevNode,
                                                                 new NodeInfo(prevNode, prevSegmentA, prevNodeBuffer,
                                                                     new List<NodeInfo> { sliceNodeInfos[op] }));
                                                         }
@@ -2388,7 +2411,8 @@ public class TileLayerGroup
                                                     if (!isSingleInput && nodes.Find((NodeInfo n) =>
                                                             n.Op == op[GNNEActivation.InputB]) != null)
                                                     {
-                                                        SegmentND prevSegmentB = new SegmentND(inputBSeg[0],
+                                                        SegmentND prevSegmentB = new SegmentND(
+                                                            inputBSeg[0],
                                                             inputBSeg[1], inputBSeg[2], inputBSeg[3]);
                                                         prevNode = (Call)op[GNNEActivation.InputB];
                                                         NodeBuffer prevNodeBuffer = GetPreNodeBuffer(prevNode);
@@ -2406,7 +2430,8 @@ public class TileLayerGroup
                                                         }
                                                         else
                                                         {
-                                                            sliceNodeInfos.Add(prevNode,
+                                                            sliceNodeInfos.Add(
+                                                                prevNode,
                                                                 new NodeInfo(prevNode, prevSegmentB, prevNodeBuffer,
                                                                     new List<NodeInfo> { sliceNodeInfos[op] }));
                                                         }
@@ -2421,7 +2446,8 @@ public class TileLayerGroup
                                                 SegmentND opOfmap = sliceNodeInfos[_resize].Ofmap;
                                                 Segment1D resizeInputH = new Segment1D(..resizeInputShape[2], Padding.Zero());
                                                 Segment1D resizeInputW = new Segment1D(..resizeInputShape[3], Padding.Zero());
-                                                SegmentND prevSegment = new SegmentND(opOfmap[0],
+                                                SegmentND prevSegment = new SegmentND(
+                                                    opOfmap[0],
                                                     new Segment1D(..resizeInputShape[1], Padding.Zero()), resizeInputH, resizeInputW);
                                                 prevNode = (Call)op[Ai2dResize.Input];
                                                 NodeBuffer prevNodeBuffer = GetPreNodeBuffer(prevNode);
@@ -2435,7 +2461,8 @@ public class TileLayerGroup
                                                 }
                                                 else
                                                 {
-                                                    sliceNodeInfos.Add(prevNode,
+                                                    sliceNodeInfos.Add(
+                                                        prevNode,
                                                         new NodeInfo(prevNode, prevSegment, prevNodeBuffer,
                                                             new List<NodeInfo> { sliceNodeInfos[op] }));
                                                 }
@@ -2467,7 +2494,8 @@ public class TileLayerGroup
                                             }
                                             else
                                             {
-                                                sliceNodeInfos.Add(prevNode,
+                                                sliceNodeInfos.Add(
+                                                    prevNode,
                                                     new NodeInfo(prevNode, firstInputSegment, firstNodeBuffer,
                                                         new List<NodeInfo> { sliceNodeInfos[op] }));
                                             }
@@ -2494,7 +2522,8 @@ public class TileLayerGroup
                                             }
                                             else
                                             {
-                                                sliceNodeInfos.Add(prevNode,
+                                                sliceNodeInfos.Add(
+                                                    prevNode,
                                                     new NodeInfo(prevNode, secondInputSegment, secondNodeBuffer, children));
                                             }
 
@@ -2528,7 +2557,8 @@ public class TileLayerGroup
                                         }
                                         else
                                         {
-                                            sliceNodeInfos.Add(prevNode,
+                                            sliceNodeInfos.Add(
+                                                prevNode,
                                                 new NodeInfo(prevNode, prevSegment, prevNodeBuffer,
                                                     new List<NodeInfo> { sliceNodeInfos[op] }));
                                         }
@@ -2549,11 +2579,14 @@ public class TileLayerGroup
                                     int dilationW = 1;
                                     int kernelH = ((TensorConst)op[GNNEPdp1.Filter]).Value.ToArray<int>()[0];
                                     int kernelW = ((TensorConst)op[GNNEPdp1.Filter]).Value.ToArray<int>()[1];
-                                    Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(opOfmap[2].Start,
+                                    Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(
+                                        opOfmap[2].Start,
                                         opOfmap[2].Length, inputShape[2], kernelH, strideH, dilationH, in paddingH);
-                                    Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(opOfmap[3].Start,
+                                    Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(
+                                        opOfmap[3].Start,
                                         opOfmap[3].Length, inputShape[3], kernelW, strideW, dilationW, in paddingW);
-                                    SegmentND prevSegment = new SegmentND(opOfmap[0],
+                                    SegmentND prevSegment = new SegmentND(
+                                        opOfmap[0],
                                         new Segment1D(..inputShape[1], Padding.Zero()), inputRowSegment,
                                         inputColumnSegment);
                                     prevNode = (Call)op[GNNEPdp1.Input];
@@ -2570,7 +2603,8 @@ public class TileLayerGroup
                                     }
                                     else
                                     {
-                                        sliceNodeInfos.Add(prevNode,
+                                        sliceNodeInfos.Add(
+                                            prevNode,
                                             new NodeInfo(prevNode, prevSegment, prevNodeBuffer,
                                                 new List<NodeInfo> { sliceNodeInfos[op] }));
                                     }
@@ -2591,11 +2625,14 @@ public class TileLayerGroup
                                 int dilationW = 1;
                                 int kernelH = ((TensorConst)op[GNNEPdp0Reduce.Filter]).Value.ToArray<int>()[0];
                                 int kernelW = ((TensorConst)op[GNNEPdp0Reduce.Filter]).Value.ToArray<int>()[1];
-                                Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(opOfmap[2].Start,
+                                Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(
+                                    opOfmap[2].Start,
                                     opOfmap[2].Length, inputShape[2], kernelH, strideH, dilationH, in paddingH);
-                                Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(opOfmap[3].Start,
+                                Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(
+                                    opOfmap[3].Start,
                                     opOfmap[3].Length, inputShape[3], kernelW, strideW, dilationW, in paddingW);
-                                SegmentND prevSegment = new SegmentND(opOfmap[0],
+                                SegmentND prevSegment = new SegmentND(
+                                    opOfmap[0],
                                     new Segment1D(..inputShape[1], Padding.Zero()), inputRowSegment, inputColumnSegment);
                                 prevNode = (Call)op[GNNEPdp0Reduce.Input];
                                 NodeBuffer prevNodeBuffer = GetPreNodeBuffer(prevNode);
@@ -2611,7 +2648,8 @@ public class TileLayerGroup
                                 }
                                 else
                                 {
-                                    sliceNodeInfos.Add(prevNode,
+                                    sliceNodeInfos.Add(
+                                        prevNode,
                                         new NodeInfo(prevNode, prevSegment, prevNodeBuffer,
                                             new List<NodeInfo> { sliceNodeInfos[op] }));
                                 }
@@ -2631,11 +2669,14 @@ public class TileLayerGroup
                             int strideW = ((TensorConst)op[GNNEPdp0DW.Stride]).Value.ToArray<int>()[1];
                             int dilationH = ((TensorConst)op[GNNEPdp0DW.Dilation]).Value.ToArray<int>()[0];
                             int dilationW = ((TensorConst)op[GNNEPdp0DW.Dilation]).Value.ToArray<int>()[1];
-                            Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(opOfmap[2].Start,
+                            Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(
+                                opOfmap[2].Start,
                                 opOfmap[2].Length, inputShape[2], weightsShape[2], strideH, dilationH, in paddingH);
-                            Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(opOfmap[3].Start,
+                            Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(
+                                opOfmap[3].Start,
                                 opOfmap[3].Length, inputShape[3], weightsShape[3], strideW, dilationW, in paddingW);
-                            SegmentND prevSegment = new SegmentND(opOfmap[0],
+                            SegmentND prevSegment = new SegmentND(
+                                opOfmap[0],
                                 new Segment1D(..inputShape[1], Padding.Zero()), inputRowSegment, inputColumnSegment);
                             prevNode = (Call)op[GNNEPdp0DW.Input];
                             NodeBuffer prevNodeBuffer = GetPreNodeBuffer(prevNode);
@@ -2651,7 +2692,8 @@ public class TileLayerGroup
                             }
                             else
                             {
-                                sliceNodeInfos.Add(prevNode,
+                                sliceNodeInfos.Add(
+                                    prevNode,
                                     new NodeInfo(prevNode, prevSegment, prevNodeBuffer,
                                         new List<NodeInfo> { sliceNodeInfos[op] }));
                             }
@@ -2671,9 +2713,11 @@ public class TileLayerGroup
                         int strideW = ((TensorConst)op[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
                         int dilationH = ((TensorConst)op[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
                         int dilationW = ((TensorConst)op[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
-                        Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(opOfmap[2].Start,
+                        Segment1D inputRowSegment = TileUtilities.GetInputRowSegment(
+                            opOfmap[2].Start,
                             opOfmap[2].Length, inputShape[2], weightsShape[2], strideH, dilationH, in paddingH);
-                        Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(opOfmap[3].Start,
+                        Segment1D inputColumnSegment = TileUtilities.GetInputColumnSegment(
+                            opOfmap[3].Start,
                             opOfmap[3].Length, inputShape[3], weightsShape[3], strideW, dilationW, in paddingW);
                         prevNode = (Call)op[GNNEConv2D.Input];
                         SegmentND prevSegment = new SegmentND(opOfmap[0], new Segment1D(..inputShape[1], Padding.Zero()),
@@ -2691,7 +2735,8 @@ public class TileLayerGroup
                         }
                         else
                         {
-                            sliceNodeInfos.Add(prevNode,
+                            sliceNodeInfos.Add(
+                                prevNode,
                                 new NodeInfo(prevNode, prevSegment, prevNodeBuffer,
                                     new List<NodeInfo> { sliceNodeInfos[op] }));
                         }
@@ -2878,9 +2923,9 @@ public class TileLayerGroup
         int[] outScale = new int[4];
         for (int j = 0; j < 4; j++)
         {
-            aScale[j] = ((minShape[j] == 1) ? 1 : (inputAShape[j] / minShape[j]));
-            bScale[j] = ((minShape[j] == 1) ? 1 : (inputBShape[j] / minShape[j]));
-            outScale[j] = ((minShape[j] == 1) ? 1 : (outputShape[j] / minShape[j]));
+            aScale[j] = (minShape[j] == 1) ? 1 : (inputAShape[j] / minShape[j]);
+            bScale[j] = (minShape[j] == 1) ? 1 : (inputBShape[j] / minShape[j]);
+            outScale[j] = (minShape[j] == 1) ? 1 : (outputShape[j] / minShape[j]);
         }
 
         Segment1D sliceN = slice[0];
@@ -2954,7 +2999,7 @@ public class TileLayerGroup
         _nodesQuenesAsW.Clear();
         _nodesQuenesAsW = new List<List<Tuple<Call, int>>>(2)
         {
-            new List<Tuple<Call, int>>(), new List<Tuple<Call, int>>()
+            new List<Tuple<Call, int>>(), new List<Tuple<Call, int>>(),
         };
         _nodesQueNeedClearFake.Clear();
         for (int i = 0; i < currSliceInfo.Count - 1; i++)
@@ -3029,9 +3074,9 @@ public class TileLayerGroup
         _ofBufIdx = -1;
         _weightBufIdx = -1;
         Call op = curNode.Op;
-        _lif = (((object)op != null && op.Target is GNNELoad && !(curNode.Op[GNNELoad.Input] is TensorConst))
+        _lif = ((object)op != null && op.Target is GNNELoad && !(curNode.Op[GNNELoad.Input] is TensorConst))
             ? curNode.Op
-            : null);
+            : null;
         if ((object)_lif != null)
         {
             _ifmap = _ni.Ofmap;
@@ -3053,7 +3098,7 @@ public class TileLayerGroup
                 int nextDeqBias = ((TensorConst)op2[GNNEConv2D.DeqBias]).Value.ToScalar<int>();
                 _h2C = (object)op2 != null && op2.Target is GNNEConv2D && nextWeightsShape[1] * nextWeightsShape[2] <= GNNEEnv.PuHeight &&
                        nextWeightsShape[2] != 1 && nextInputShape[2] > 200 && nextInputShape[3] > 200 && !nextIsDepthwise && _outputType != DataTypes.Int16;
-                _memsetValue = (_h2C ? nextDeqBias : 0);
+                _memsetValue = _h2C ? nextDeqBias : 0;
             }
         }
 
@@ -3091,7 +3136,7 @@ public class TileLayerGroup
             _groups = ((TensorConst)_conv[GNNEConv2D.Groups]).Value.ToScalar<int>();
             int deqBias = ((TensorConst)_conv[GNNEConv2D.DeqBias]).Value.ToScalar<int>();
             bool isDepthwise = _inputShape[1] == _outputShape[1] && _outputShape[1] == _groups && _groups != 1;
-            _icPerGroup = ((_groups == 1) ? _weightsShape[1] : (_inputShape[1] / _groups));
+            _icPerGroup = (_groups == 1) ? _weightsShape[1] : (_inputShape[1] / _groups);
             _ocPerGroup = _outputShape[1] / _groups;
             _groupPerPass =
                 Math.Min(Math.Max(Math.Min(GNNEEnv.PuHeight / _icPerGroup, GNNEEnv.PuWidth / _ocPerGroup), 1), _groups);
@@ -3154,7 +3199,7 @@ public class TileLayerGroup
             _h2C = _weightsShape[1] * _weightsShape[2] <= GNNEEnv.PuHeight && _weightsShape[2] != 1 &&
                    _conv[GNNEConv2D.Input] is Call inputLoadCall && inputLoadCall.Target is GNNELoad && _inputShape[2] > 200 &&
                    _inputShape[3] > 200 && !isDepthwise && _inputType != DataTypes.Int16;
-            _memsetValue = (_h2C ? deqBias : 0);
+            _memsetValue = _h2C ? deqBias : 0;
             _fusedKernelH = 1;
             _fusedKernelW = 1;
             _fusedPaddingH = Padding.Zero();
@@ -3202,7 +3247,8 @@ public class TileLayerGroup
             {
                 bool isSingleInput = _act1[GNNEActivation.InputB] == None.Default;
                 _outputShape = _act1.CheckedShape.ToValueArray();
-                TileUtilities.Assert(_outputShape.SequenceEqual(_convOutputShape),
+                TileUtilities.Assert(
+                    _outputShape.SequenceEqual(_convOutputShape),
                     "_outputShape.SequenceEqual(_convOutputShape)",
                     "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                     3133);
@@ -3291,12 +3337,13 @@ public class TileLayerGroup
             _convOutputShape[3] = TileUtilities.GetInputColumnSegment(0, _outputShape[3], _convOutputShape[3],
                 _fusedKernelW, _fusedStrideW, _fusedDilationW, in _fusedPaddingW).Length;
             _weightGroup = _weightGroups[_conv];
-            _weight = new SegmentND(new Segment1D(.._weightsShape[0], Padding.Zero()),
+            _weight = new SegmentND(
+                new Segment1D(.._weightsShape[0], Padding.Zero()),
                 new Segment1D(.._weightsShape[1], Padding.Zero()), new Segment1D(.._weightsShape[2], Padding.Zero()),
                 new Segment1D(.._weightsShape[3], Padding.Zero()));
             _if1BufIdx = sliceInfo[convInput].Nb.OfBufferIndex;
-            _ofBufIdx = (_l1Fused ? _l1FuseNi.Nb.OfBufferIndex : _ni.Nb.OfBufferIndex);
-            _weightBufIdx = ((_ni.Nb.WeightPreloadOffset == -1) ? ((_ni.Nb.WeightOffset != 0) ? 1 : 0) : (-1));
+            _ofBufIdx = _l1Fused ? _l1FuseNi.Nb.OfBufferIndex : _ni.Nb.OfBufferIndex;
+            _weightBufIdx = (_ni.Nb.WeightPreloadOffset == -1) ? ((_ni.Nb.WeightOffset != 0) ? 1 : 0) : (-1);
         }
 
         op = curNode.Op;
@@ -3310,7 +3357,8 @@ public class TileLayerGroup
             _ofmapOffset = _ni.Nb.OfmapOffset;
             if (!(_act1[GNNEActivation.InputB] == None.Default))
             {
-                (_ifmapA, _ifmapB) = GetAct1InputsShape(_act1[GNNEActivation.InputA].CheckedShape.ToValueArray(),
+                (_ifmapA, _ifmapB) = GetAct1InputsShape(
+                    _act1[GNNEActivation.InputA].CheckedShape.ToValueArray(),
                     _act1[GNNEActivation.InputB].CheckedShape.ToValueArray(), _act1.CheckedShape.ToValueArray(),
                     _ofmap);
                 if (_act1[GNNEActivation.InputA] is Call loadedA && loadedA.Target is GNNELoad &&
@@ -3514,24 +3562,27 @@ public class TileLayerGroup
         }
 
         _ofmapSt = _ofmap;
-        Call convInputCall = (((object)_conv != null) ? ((Call)_conv[GNNEConv2D.Input]) : null);
-        _ifmapLd = (((object)convInputCall != null) ? sliceInfo[convInputCall].Ofmap : _ifmap);
+        Call convInputCall = ((object)_conv != null) ? ((Call)_conv[GNNEConv2D.Input]) : null;
+        _ifmapLd = ((object)convInputCall != null) ? sliceInfo[convInputCall].Ofmap : _ifmap;
         if (ReshapeConv(_conv, ref _inputShape, ref _outputShape, ref _convOutputShape, ref _weightsShape))
         {
-            int channelBlock = ((_conv[GNNEConv2D.Weights].CheckedShape.ToValueArray()[1] % 24 == 0)
+            int channelBlock = (_conv[GNNEConv2D.Weights].CheckedShape.ToValueArray()[1] % 24 == 0)
                 ? 24
-                : ((_conv[GNNEConv2D.Weights].CheckedShape.ToValueArray()[1] % 20 == 0) ? 20 : 16));
-            _ifmap = new SegmentND(new Segment1D(.._ifmap[0].Length, Padding.Zero()),
+                : ((_conv[GNNEConv2D.Weights].CheckedShape.ToValueArray()[1] % 20 == 0) ? 20 : 16);
+            _ifmap = new SegmentND(
+                new Segment1D(.._ifmap[0].Length, Padding.Zero()),
                 new Segment1D(..channelBlock, Padding.Zero()), new Segment1D(..(_ifmap[1].Length / channelBlock), Padding.Zero()),
                 new Segment1D(..(_ifmap[2].Length * _ifmap[3].Length), Padding.Zero()));
-            _ofmap = new SegmentND(new Segment1D(.._ofmap[0].Length, Padding.Zero()),
+            _ofmap = new SegmentND(
+                new Segment1D(.._ofmap[0].Length, Padding.Zero()),
                 new Segment1D(.._ofmap[1].Length, Padding.Zero()), new Segment1D(..1, Padding.Zero()),
                 new Segment1D(..(_ofmap[2].Length * _ofmap[3].Length), Padding.Zero()));
             _convOutputShape[2] = TileUtilities.GetInputRowSegment(0, _outputShape[2], _convOutputShape[2],
                 _fusedKernelH, _fusedStrideH, _fusedDilationH, in _fusedPaddingH).Length;
             _convOutputShape[3] = TileUtilities.GetInputColumnSegment(0, _outputShape[3], _convOutputShape[3],
                 _fusedKernelW, _fusedStrideW, _fusedDilationW, in _fusedPaddingW).Length;
-            _weight = new SegmentND(new Segment1D(.._weightsShape[0], Padding.Zero()),
+            _weight = new SegmentND(
+                new Segment1D(.._weightsShape[0], Padding.Zero()),
                 new Segment1D(.._weightsShape[1], Padding.Zero()), new Segment1D(.._weightsShape[2], Padding.Zero()),
                 new Segment1D(.._weightsShape[3], Padding.Zero()));
         }
@@ -3547,7 +3598,8 @@ public class TileLayerGroup
     {
         if (Conv1X1(conv))
         {
-            TileUtilities.Assert(conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % 24 == 0,
+            TileUtilities.Assert(
+                conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % 24 == 0,
                 "conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % 24 == 0",
                 "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
                 3504);
@@ -3562,29 +3614,29 @@ public class TileLayerGroup
                 conv[GNNEConv2D.Input].CheckedShape.ToValueList()[0], channelBlock,
                 conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] / channelBlock,
                 conv[GNNEConv2D.Input].CheckedShape.ToValueList()[2] *
-                conv[GNNEConv2D.Input].CheckedShape.ToValueList()[3]
+                conv[GNNEConv2D.Input].CheckedShape.ToValueList()[3],
             };
             weightsShape = new int[4]
             {
                 conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[0], channelBlock,
-                conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] / channelBlock, 1
+                conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] / channelBlock, 1,
             };
             outputShape = new int[4]
             {
                 conv.CheckedShape.ToValueList()[0], conv.CheckedShape.ToValueList()[1], 1,
-                conv.CheckedShape.ToValueList()[2] * conv.CheckedShape.ToValueList()[3]
+                conv.CheckedShape.ToValueList()[2] * conv.CheckedShape.ToValueList()[3],
             };
             convOutputShape = new int[4]
             {
                 conv.CheckedShape.ToValueList()[0], conv.CheckedShape.ToValueList()[1], 1,
-                conv.CheckedShape.ToValueList()[2] * conv.CheckedShape.ToValueList()[3]
+                conv.CheckedShape.ToValueList()[2] * conv.CheckedShape.ToValueList()[3],
             };
             if ((object)_dw != null)
             {
                 outputShape = new int[4]
                 {
                     _dw.CheckedShape.ToValueList()[0], _dw.CheckedShape.ToValueList()[1], 1,
-                    _dw.CheckedShape.ToValueList()[2] * _dw.CheckedShape.ToValueList()[3]
+                    _dw.CheckedShape.ToValueList()[2] * _dw.CheckedShape.ToValueList()[3],
                 };
             }
 
@@ -3593,7 +3645,7 @@ public class TileLayerGroup
                 outputShape = new int[4]
                 {
                     _pool.CheckedShape.ToValueList()[0], _pool.CheckedShape.ToValueList()[1], 1,
-                    _pool.CheckedShape.ToValueList()[2] * _pool.CheckedShape.ToValueList()[3]
+                    _pool.CheckedShape.ToValueList()[2] * _pool.CheckedShape.ToValueList()[3],
                 };
             }
 
@@ -3602,7 +3654,7 @@ public class TileLayerGroup
                 outputShape = new int[4]
                 {
                     _act1.CheckedShape.ToValueList()[0], _act1.CheckedShape.ToValueList()[1], 1,
-                    _act1.CheckedShape.ToValueList()[2] * _act1.CheckedShape.ToValueList()[3]
+                    _act1.CheckedShape.ToValueList()[2] * _act1.CheckedShape.ToValueList()[3],
                 };
             }
 
@@ -3628,7 +3680,7 @@ public class TileLayerGroup
             case AlignedType.FAligned:
                 {
                     int ofmapWidth = _ofmapSt[3].Length;
-                    int widthAlignment = ((TileUtilities.GetBytesPerElement(_outputType) == 1) ? 32 : 16);
+                    int widthAlignment = (TileUtilities.GetBytesPerElement(_outputType) == 1) ? 32 : 16;
                     int alignedWidth = TileUtilities.GetAlignedNum(ofmapWidth, widthAlignment);
                     glb.GlbMap[ItemName.Ofmap] =
                         new TensorOnGlb(
@@ -3636,10 +3688,11 @@ public class TileLayerGroup
                             _outputType, 0, mmu);
                     break;
                 }
+
             case AlignedType.EAligned:
                 {
                     int ofmapHeight = _ofmapSt[2].Length;
-                    int heightAlignment = ((TileUtilities.GetBytesPerElement(_outputType) == 1) ? 32 : 16);
+                    int heightAlignment = (TileUtilities.GetBytesPerElement(_outputType) == 1) ? 32 : 16;
                     int alignedHeight = TileUtilities.GetAlignedNum(ofmapHeight, heightAlignment);
                     glb.GlbMap[ItemName.Ofmap] =
                         new TensorOnGlb(
@@ -3647,6 +3700,7 @@ public class TileLayerGroup
                             _outputType, 0, mmu);
                     break;
                 }
+
             default:
                 glb.GlbMap[ItemName.Ofmap] =
                     new TensorOnGlb(
@@ -3673,7 +3727,7 @@ public class TileLayerGroup
                 int ifmapHeight = _ifmapLd[2].Length;
                 int ifmapWidth = _ifmapLd[3].Length;
                 int ifmapHeightOut = ifmapHeight;
-                int ifmapWidthAlignment = ((TileUtilities.GetBytesPerElement(_inputType) == 1) ? 32 : 16);
+                int ifmapWidthAlignment = (TileUtilities.GetBytesPerElement(_inputType) == 1) ? 32 : 16;
                 int ifmapAlignedWidth = TileUtilities.GetAlignedNum(ifmapWidth, ifmapWidthAlignment);
                 glb.GlbMap[ItemName.Ifmap] =
                     new TensorOnGlb(new int[4] { _ifmapLd[0].Length, _ifmapLd[1].Length, ifmapHeightOut, ifmapAlignedWidth }, _inputType,
@@ -3683,11 +3737,12 @@ public class TileLayerGroup
             {
                 int ifmapHeight = _ifmapLd[2].Length;
                 int ifmapWidth = _ifmapLd[3].Length;
-                int ifmapHeightAlignment = ((TileUtilities.GetBytesPerElement(_inputType) == 1) ? 32 : 16);
+                int ifmapHeightAlignment = (TileUtilities.GetBytesPerElement(_inputType) == 1) ? 32 : 16;
                 int ifmapAlignedHeight = TileUtilities.GetAlignedNum(ifmapHeight, ifmapHeightAlignment);
                 int ifmapWidthOut = ifmapWidth;
                 glb.GlbMap[ItemName.Ifmap] =
-                    new TensorOnGlb(new int[4] { _ifmapLd[0].Length, _ifmapLd[1].Length, ifmapAlignedHeight, ifmapWidthOut },
+                    new TensorOnGlb(
+                        new int[4] { _ifmapLd[0].Length, _ifmapLd[1].Length, ifmapAlignedHeight, ifmapWidthOut },
                         _inputType, 0, mmu);
             }
             else
@@ -3700,9 +3755,9 @@ public class TileLayerGroup
             }
         }
 
-        MmuItem mmu2 = (fusionInfo.Mmu.ContainsKey(ItemName.Ifmap2)
+        MmuItem mmu2 = fusionInfo.Mmu.ContainsKey(ItemName.Ifmap2)
             ? fusionInfo.Mmu[ItemName.Ifmap2]
-            : glb.GlbMap[ItemName.Ifmap2].Mmu);
+            : glb.GlbMap[ItemName.Ifmap2].Mmu;
         op = curNode.Op;
         if ((object)op != null && op.Target is GNNEActivation && curNode.Op[GNNEActivation.InputB] != None.Default)
         {
@@ -3758,7 +3813,7 @@ public class TileLayerGroup
         if ((object)op != null && op.Target is GNNEConv2D && (object)_act1 != null &&
             _act1[GNNEActivation.InputB] != None.Default)
         {
-            index = (((GNNEActivation)_act1.Target).InputFromL1[0] ? 1 : 0);
+            index = ((GNNEActivation)_act1.Target).InputFromL1[0] ? 1 : 0;
             int if2Height = _ifmap2[2].Length;
             int if2Width = _ifmap2[3].Length;
             int if2Alignment = 32 / TileUtilities.GetBytesPerElement(_if2Type);
@@ -3804,7 +3859,7 @@ public class TileLayerGroup
                         new int[4]
                         {
                             _ofmapSt[0].Length, _ofmapSt[1].Length, _ofmapSt[2].Length + convPadding[0] + convPadding[1],
-                            _ofmapSt[3].Length
+                            _ofmapSt[3].Length,
                         }, _outputType, 0, mmu3);
                 _ofmapSt[2].Padding = _ofmap[2].Padding;
                 _ofmapSt[3].Padding = _ofmap[3].Padding;
@@ -3819,7 +3874,7 @@ public class TileLayerGroup
                         new int[4]
                         {
                             _ifmapLd[0].Length, _ifmapLd[1].Length, _ifmapLd[2].Length + convPadding[0] + convPadding[1],
-                            _ifmapLd[3].Length
+                            _ifmapLd[3].Length,
                         }, _inputType, 0, mmu4);
                 _ifmapLd[2].Padding = _ifmap[2].Padding;
                 _ifmapLd[3].Padding = _ifmap[3].Padding;
@@ -3833,72 +3888,79 @@ public class TileLayerGroup
         {
             if (!_nodesWeightRec.ContainsKey(_conv))
             {
-                _nodesWeightRec.Add(_conv,
+                _nodesWeightRec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
-                        new List<Tuple<SegmentND, TensorStat>>(), new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(), new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
             if (!_nodesOfmapRec.ContainsKey(_conv))
             {
-                _nodesOfmapRec.Add(_conv,
+                _nodesOfmapRec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
                         new List<Tuple<SegmentND, TensorStat>>(),
                         new List<Tuple<SegmentND, TensorStat>>(),
-                        new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
             if (!_nodesG2LIfRec.ContainsKey(_conv))
             {
-                _nodesG2LIfRec.Add(_conv,
+                _nodesG2LIfRec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
                         new List<Tuple<SegmentND, TensorStat>>(),
                         new List<Tuple<SegmentND, TensorStat>>(),
-                        new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
             if (!_nodesG2RWRec.ContainsKey(_conv))
             {
-                _nodesG2RWRec.Add(_conv,
+                _nodesG2RWRec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
-                        new List<Tuple<SegmentND, TensorStat>>(), new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(), new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
             if (!_nodesL2GOfRec.ContainsKey(_conv))
             {
-                _nodesL2GOfRec.Add(_conv,
+                _nodesL2GOfRec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
                         new List<Tuple<SegmentND, TensorStat>>(),
                         new List<Tuple<SegmentND, TensorStat>>(),
-                        new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
             if (!_nodesL2RIf2Rec.ContainsKey(_conv))
             {
-                _nodesL2RIf2Rec.Add(_conv,
+                _nodesL2RIf2Rec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
                         new List<Tuple<SegmentND, TensorStat>>(),
                         new List<Tuple<SegmentND, TensorStat>>(),
-                        new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
             if (!_nodesG2RWSliceRec.ContainsKey(_conv))
             {
-                _nodesG2RWSliceRec.Add(_conv,
+                _nodesG2RWSliceRec.Add(
+                    _conv,
                     new List<List<Tuple<SegmentND, TensorStat>>>
                     {
-                        new List<Tuple<SegmentND, TensorStat>>(), new List<Tuple<SegmentND, TensorStat>>()
+                        new List<Tuple<SegmentND, TensorStat>>(), new List<Tuple<SegmentND, TensorStat>>(),
                     });
             }
 
@@ -4184,7 +4246,8 @@ public class TileLayerGroup
         }
 
         Call op = currNode.Op;
-        TileUtilities.Assert((object)op == null || !(op.Target is GNNEConv2D),
+        TileUtilities.Assert(
+            (object)op == null || !(op.Target is GNNEConv2D),
             "currNode.Op is not { Target: GNNEConv2D }",
             "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
             4100);
@@ -4202,7 +4265,8 @@ public class TileLayerGroup
             int ccrSetAccordingPostNodes = GetCcrSetAccordingPostNodes(currNode);
             if (ccrSetAccordingPostNodes != 0)
             {
-                ccrsToSet.Add(new CcrSet(_ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, _ofBufIdx)),
+                ccrsToSet.Add(new CcrSet(
+                    _ccrHandler.GetCcrItem(_ccrHandler.GetName(ItemName.Ofmap, _ofBufIdx)),
                     ccrSetAccordingPostNodes));
             }
         }

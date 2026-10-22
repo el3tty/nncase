@@ -27,7 +27,7 @@ public class ASinToFakeActivation : RewriteRule<Pattern>
             SplitPointCenter = 0f,
             CenterPoint = 7,
             MinParam = new List<float> { 0f, -(float)System.Math.PI / 2f },
-            MaxParam = new List<float> { 0f, (float)System.Math.PI / 2f }
+            MaxParam = new List<float> { 0f, (float)System.Math.PI / 2f },
         };
         actFun.Func = (float x) => MathF.Asin(x);
         Set_seg_fitting_param(actParam, actFun);
@@ -70,11 +70,11 @@ public class ASinToFakeActivation : RewriteRule<Pattern>
         actParam.SetFusedClamp(ValueRange<float>.Full);
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Unary u = (Unary)__result["u"];
-        Call call = (Call)__result["call"];
-        Expr input = (Expr)__result["input"];
+        Unary u = (Unary)result["u"];
+        Call call = (Call)result["call"];
+        Expr input = (Expr)result["input"];
         return GetReplace(u, call, input);
     }
 
@@ -84,7 +84,7 @@ public class ASinToFakeActivation : RewriteRule<Pattern>
         Pattern = Nncase.PatternMatch.F.Math.IsUnary("u", "call", condition,
                 Nncase.PatternMatch.Utility.IsWildcard("input")) with
             {
-                TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32)
+                TypePattern = TypePatternUtility.HasDataType(DataTypes.Float32),
             };
     }
 }

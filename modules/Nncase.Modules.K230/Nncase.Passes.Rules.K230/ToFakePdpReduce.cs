@@ -42,8 +42,8 @@ public class ToFakePdpReduce : RewriteRule<Pattern>
                       input.CheckedShape[2].FixedValue;
             int extraPadW = func(call.CheckedShape[3].FixedValue, filter[1], stride[1], paddings[1, 0] + paddings[1, 1]) -
                        input.CheckedShape[3].FixedValue;
-            paddings[0, 1] = ((extraPadH > 0) ? (paddings[0, 1] + extraPadH) : paddings[0, 1]);
-            paddings[1, 1] = ((extraPadW > 0) ? (paddings[1, 1] + extraPadW) : paddings[1, 1]);
+            paddings[0, 1] = (extraPadH > 0) ? (paddings[0, 1] + extraPadH) : paddings[0, 1];
+            paddings[1, 1] = (extraPadW > 0) ? (paddings[1, 1] + extraPadW) : paddings[1, 1];
         }
 
         return Nncase.IR.K230.F.Tensors.FakePdp(r.ReduceOp, input, 0, filter, stride, paddings, countIncludePad);
@@ -61,16 +61,16 @@ public class ToFakePdpReduce : RewriteRule<Pattern>
         };
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        ReduceWindow2D r = (ReduceWindow2D)__result["r"];
-        Expr input = (Expr)__result["input"];
-        int[] filter = ((TensorConst)__result["filter"]).Value.ToArray<int>();
-        int[] stride = ((TensorConst)__result["stride"]).Value.ToArray<int>();
-        int[] padding = ((TensorConst)__result["padding"]).Value.ToArray<int>();
-        bool ceilMode = ((TensorConst)__result["ceilMode"]).Value.ToScalar<bool>();
-        Expr countIncludePad = (Expr)__result["countIncludePad"];
+        Call call = (Call)result["call"];
+        ReduceWindow2D r = (ReduceWindow2D)result["r"];
+        Expr input = (Expr)result["input"];
+        int[] filter = ((TensorConst)result["filter"]).Value.ToArray<int>();
+        int[] stride = ((TensorConst)result["stride"]).Value.ToArray<int>();
+        int[] padding = ((TensorConst)result["padding"]).Value.ToArray<int>();
+        bool ceilMode = ((TensorConst)result["ceilMode"]).Value.ToScalar<bool>();
+        Expr countIncludePad = (Expr)result["countIncludePad"];
         return GetReplace(call, r, input, filter, stride, padding, ceilMode, countIncludePad);
     }
 }

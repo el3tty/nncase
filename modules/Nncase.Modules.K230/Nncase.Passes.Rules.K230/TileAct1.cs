@@ -64,9 +64,9 @@ public class TileAct1 : RewriteRule<Pattern>
             GNNEShape repeatOut = new GNNEShape(0, 0, 0, 0);
             for (int j = 0; j < 4; j++)
             {
-                repeatA[j] = ((minShape[j] == 1) ? 1 : (_inputAShape[j] / minShape[j]));
-                repeatB[j] = ((minShape[j] == 1) ? 1 : (_inputBShape[j] / minShape[j]));
-                repeatOut[j] = ((minShape[j] == 1) ? 1 : (_outputShape[j] / minShape[j]));
+                repeatA[j] = (minShape[j] == 1) ? 1 : (_inputAShape[j] / minShape[j]);
+                repeatB[j] = (minShape[j] == 1) ? 1 : (_inputBShape[j] / minShape[j]);
+                repeatOut[j] = (minShape[j] == 1) ? 1 : (_outputShape[j] / minShape[j]);
             }
 
             foreach (Segment1D segmentN in TileUtilities.GetSegmentStartEndLength(0, glb.LastOutShape[0], _outputShape[0]))
@@ -154,54 +154,46 @@ public class TileAct1 : RewriteRule<Pattern>
                                 SegmentND ofmap = new SegmentND(ofmapSegment[0], storeSegmentC, ofmapSegment[2], ofmapSegment[3]);
                                 List<CcrSet> ccrsToSet = new List<CcrSet>
                                 {
-                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, k)), 1)
+                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, k)), 1),
                                 };
                                 gnneActionUpdater.UpdateLoadIf(ifmapLoadA, _lif1, k, ddrIf, 0, null, ItemName.Ifmap,
                                     ccrsToSet);
                                 List<CcrSet> ccrsToSet2 = new List<CcrSet>
                                 {
-                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap2, k)), 1)
+                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap2, k)), 1),
                                 };
                                 gnneActionUpdater.UpdateLoadIf(ifmapLoadB, _lif2, k, ddrIf2, 0, null, ItemName.Ifmap2,
                                     ccrsToSet2);
                                 List<CcrSet> ccrsToSet3 = new List<CcrSet>
                                 {
-                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, k)), 1)
+                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, k)), 1),
                                 };
                                 List<CcrClr> ofmapCcrsToClr = new List<CcrClr>
                                 {
-                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, k)))
+                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, k))),
                                 };
                                 ofmapCcrsToClr.Add(new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap2, k))));
                                 List<int> src1Stride = new List<int>
                                 {
-                                    ifmapLoadA[1].Length, ifmapLoadA[2].Length, ifmapLoadA[3].Length
+                                    ifmapLoadA[1].Length, ifmapLoadA[2].Length, ifmapLoadA[3].Length,
                                 };
                                 List<int> src2Stride = new List<int>
                                 {
-                                    ifmapLoadB[1].Length, ifmapLoadB[2].Length, ifmapLoadB[3].Length
+                                    ifmapLoadB[1].Length, ifmapLoadB[2].Length, ifmapLoadB[3].Length,
                                 };
                                 gnneActionUpdater.UpdateMfuAct1(ifmapLoadA, ifmapLoadB, ofmap, ACT1_SOURCE_TYPE.l2,
                                     ACT1_SOURCE_TYPE.l2, _inputAType, _inputBType, _outputType,
-                                    (_inputAType == DataTypes.Float16)
-                                        ? new DeQuantizeParam(0, 1f)
-                                        : ((TensorConst)act[GNNEActivation.DeqAParams]).Value
-                                        .ToScalar<DeQuantizeParam>(),
-                                    (_inputBType == DataTypes.Float16)
-                                        ? new DeQuantizeParam(0, 1f)
-                                        : ((TensorConst)act[GNNEActivation.DeqBParams]).Value
-                                        .ToScalar<DeQuantizeParam>(),
+                                    (_inputAType == DataTypes.Float16) ? new DeQuantizeParam(0, 1f) : ((TensorConst)act[GNNEActivation.DeqAParams]).Value.ToScalar<DeQuantizeParam>(),
+                                    (_inputBType == DataTypes.Float16) ? new DeQuantizeParam(0, 1f) : ((TensorConst)act[GNNEActivation.DeqBParams]).Value.ToScalar<DeQuantizeParam>(),
                                     ((TensorConst)act[GNNEActivation.InAShiftBits]).Value.ToScalar<int>(),
                                     ((TensorConst)act[GNNEActivation.InBShiftBits]).Value.ToScalar<int>(),
                                     ((TensorConst)act[GNNEActivation.OutShiftBits]).Value.ToScalar<int>(),
                                     ((TensorConst)act[GNNEActivation.Is16Segments]).Value.ToScalar<bool>(), k,
                                     ccrsToSet3, ofmapCcrsToClr, 0, 0, 0, 0, ItemName.Ifmap2, ItemName.Ifmap, ItemName.MfuAct1,
-                                    (((GNNEActivation)act.Target).Type == GnneActivationType.Mul)
-                                        ? MFU_ACT1_FUNCTION.mul
-                                        : MFU_ACT1_FUNCTION.add, ItemName.Ofmap, src1Stride, src2Stride);
+                                    (((GNNEActivation)act.Target).Type == GnneActivationType.Mul) ? MFU_ACT1_FUNCTION.mul : MFU_ACT1_FUNCTION.add, ItemName.Ofmap, src1Stride, src2Stride);
                                 List<CcrClr> ccrsToClr = new List<CcrClr>
                                 {
-                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, k)))
+                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, k))),
                                 };
                                 gnneActionUpdater.UpdateStoreT(ofmap, _sof, k, ddrOf, 0, null, null, ccrsToClr);
                             }
@@ -217,7 +209,7 @@ public class TileAct1 : RewriteRule<Pattern>
             for (int l = 0; l < 4; l++)
             {
                 unitShape[l] = 1;
-                repeatShape[l] = ((_inputAShape[l] == 1) ? 1 : (_outputShape[l] / _inputAShape[l]));
+                repeatShape[l] = (_inputAShape[l] == 1) ? 1 : (_outputShape[l] / _inputAShape[l]);
             }
 
             foreach (Segment1D segmentN2 in TileUtilities.GetSegmentStartEndLength(0, glb.LastOutShape[0], _outputShape[0]))
@@ -272,46 +264,38 @@ public class TileAct1 : RewriteRule<Pattern>
                                     ofmapSegment2[3]);
                                 List<CcrSet> ccrsToSet4 = new List<CcrSet>
                                 {
-                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, m)), 1)
+                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, m)), 1),
                                 };
                                 List<int> stridesD = new List<int>
                                 {
                                     glb.GlbMap[ItemName.Ifmap].Dimensions[1],
                                     glb.GlbMap[ItemName.Ifmap].Dimensions[2],
-                                    glb.GlbMap[ItemName.Ifmap].Dimensions[3]
+                                    glb.GlbMap[ItemName.Ifmap].Dimensions[3],
                                 };
                                 gnneActionUpdater.UpdateLoadIf(ifmapLoad2, _lif1, m, ddrIf, 0, stridesD, ItemName.Ifmap,
                                     ccrsToSet4);
                                 List<CcrSet> ccrsToSet5 = new List<CcrSet>
                                 {
-                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, m)), 1)
+                                    new CcrSet(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, m)), 1),
                                 };
                                 List<CcrClr> ccrsToClr2 = new List<CcrClr>
                                 {
-                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, m)))
+                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ifmap, m))),
                                 };
                                 gnneActionUpdater.UpdateMfuAct1(ifmapLoad2, ifmap, ofmap2, ACT1_SOURCE_TYPE.l2,
                                     ACT1_SOURCE_TYPE.l2, _inputAType, _inputAType, _outputType,
-                                    (_inputAType == DataTypes.Float16)
-                                        ? new DeQuantizeParam(0, 1f)
-                                        : ((TensorConst)act[GNNEActivation.DeqAParams]).Value
-                                        .ToScalar<DeQuantizeParam>(),
-                                    (_inputBType == DataTypes.Float16)
-                                        ? new DeQuantizeParam(0, 1f)
-                                        : ((TensorConst)act[GNNEActivation.DeqBParams]).Value
-                                        .ToScalar<DeQuantizeParam>(),
+                                    (_inputAType == DataTypes.Float16) ? new DeQuantizeParam(0, 1f) : ((TensorConst)act[GNNEActivation.DeqAParams]).Value.ToScalar<DeQuantizeParam>(),
+                                    (_inputBType == DataTypes.Float16) ? new DeQuantizeParam(0, 1f) : ((TensorConst)act[GNNEActivation.DeqBParams]).Value.ToScalar<DeQuantizeParam>(),
                                     ((TensorConst)act[GNNEActivation.InAShiftBits]).Value.ToScalar<int>(),
                                     ((TensorConst)act[GNNEActivation.InBShiftBits]).Value.ToScalar<int>(),
                                     ((TensorConst)act[GNNEActivation.OutShiftBits]).Value.ToScalar<int>(),
                                     ((TensorConst)act[GNNEActivation.Is16Segments]).Value.ToScalar<bool>(), m,
                                     ccrsToSet5, ccrsToClr2, 0, 0, 0, 0, ItemName.Ifmap2, ItemName.Ifmap,
                                     ItemName.MfuAct1,
-                                    (((GNNEActivation)act.Target).Type == GnneActivationType.Mul)
-                                        ? MFU_ACT1_FUNCTION.mul
-                                        : MFU_ACT1_FUNCTION.add);
+                                    (((GNNEActivation)act.Target).Type == GnneActivationType.Mul) ? MFU_ACT1_FUNCTION.mul : MFU_ACT1_FUNCTION.add);
                                 List<CcrClr> ccrsToClr3 = new List<CcrClr>
                                 {
-                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, m)))
+                                    new CcrClr(ccrHandler.GetCcrItem(ccrHandler.GetName(ItemName.Ofmap, m))),
                                 };
                                 gnneActionUpdater.UpdateStoreT(ofmap2, _sof, m, ddrOf, 0, null, null, ccrsToClr3);
                             }
@@ -348,9 +332,9 @@ public class TileAct1 : RewriteRule<Pattern>
             scaleOut = new GNNEShape(0, 0, 0, 0);
             for (int j = 0; j < 4; j++)
             {
-                scaleA[j] = ((minShape[j] == 1) ? 1 : (_inputAShape[j] / minShape[j]));
-                scaleB[j] = ((minShape[j] == 1) ? 1 : (_inputBShape[j] / minShape[j]));
-                scaleOut[j] = ((minShape[j] == 1) ? 1 : (_outputShape[j] / minShape[j]));
+                scaleA[j] = (minShape[j] == 1) ? 1 : (_inputAShape[j] / minShape[j]);
+                scaleB[j] = (minShape[j] == 1) ? 1 : (_inputBShape[j] / minShape[j]);
+                scaleOut[j] = (minShape[j] == 1) ? 1 : (_outputShape[j] / minShape[j]);
             }
 
             int pingPongSplit = GNNEEnv.NPingPongSplit;
@@ -514,8 +498,8 @@ public class TileAct1 : RewriteRule<Pattern>
         int ofmapBytes = ofmapTensor.AllocatedBytes * nPingPongSplit;
         ofmapBytes = TileUtilities.GetAlignedNum(ofmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
         bool is16Segments = ((TensorConst)_act1[GNNEActivation.Is16Segments]).Value.ToScalar<bool>();
-        int c2 = (is16Segments ? 1 : _inputAShape[1]);
-        int nActParam = (is16Segments ? 49 : GNNEEnv.ActNumPerChan);
+        int c2 = is16Segments ? 1 : _inputAShape[1];
+        int nActParam = is16Segments ? 49 : GNNEEnv.ActNumPerChan;
         int actSize = SpaceSearcher.GetActSize(c2, nActParam, TileUtilities.GetBytesPerElement(_lact.CheckedDataType));
         actSize = TileUtilities.GetAlignedNum(actSize, GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         int basementSize = SpaceSearcher.GetBasementSize();
@@ -564,8 +548,8 @@ public class TileAct1 : RewriteRule<Pattern>
         int ofmapBytes = ofmapTensor.AllocatedBytes * nPingPongSplit;
         ofmapBytes = TileUtilities.GetAlignedNum(ofmapBytes, GNNEEnv.OfmapBankWidth * GNNEEnv.GlbBankWidth);
         bool is16Segments = ((TensorConst)_act1[GNNEActivation.Is16Segments]).Value.ToScalar<bool>();
-        int c = (is16Segments ? 1 : _inputAShape[1]);
-        int nActParam = (is16Segments ? 49 : GNNEEnv.ActNumPerChan);
+        int c = is16Segments ? 1 : _inputAShape[1];
+        int nActParam = is16Segments ? 49 : GNNEEnv.ActNumPerChan;
         int actSize = SpaceSearcher.GetActSize(c, nActParam, TileUtilities.GetBytesPerElement(_lact.CheckedDataType));
         actSize = TileUtilities.GetAlignedNum(actSize, GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         int basementSize = SpaceSearcher.GetBasementSize();
@@ -606,12 +590,12 @@ public class TileAct1 : RewriteRule<Pattern>
     {
         BoxPacker boxPacker = new BoxPacker(16);
         Dictionary<ItemName, TensorOnGlb> glbMap = new Dictionary<ItemName, TensorOnGlb>();
-        int alignmentFactor = ((TileUtilities.GetBytesPerElement(inType) == 1) ? 32 : 16);
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(inType) == 1) ? 32 : 16;
         int alignedNum = TileUtilities.GetAlignedNum(w, alignmentFactor);
         TensorOnGlb ifmapTensor = new TensorOnGlb(new int[4] { n, c, h, alignedNum }, inType, 0);
         int ifmapBytes = ifmapTensor.GlbNByte * GNNEEnv.NPingPongSplit;
         ifmapBytes = TileUtilities.GetAlignedNum(ifmapBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
-        alignmentFactor = ((TileUtilities.GetBytesPerElement(outType) == 1) ? 32 : 16);
+        alignmentFactor = (TileUtilities.GetBytesPerElement(outType) == 1) ? 32 : 16;
         int alignedNum2 = TileUtilities.GetAlignedNum(f, alignmentFactor);
         TensorOnGlb ofmapTensor = new TensorOnGlb(new int[4] { n, c, e, alignedNum2 }, outType, 0);
         int ofmapBytes = ofmapTensor.GlbNByte * GNNEEnv.NPingPongSplit;
@@ -644,9 +628,9 @@ public class TileAct1 : RewriteRule<Pattern>
     {
         _act1 = act;
         _inputAType = _act1[GNNEActivation.InputA].CheckedDataType;
-        _inputBType = ((_act1[GNNEActivation.InputB] != None.Default)
+        _inputBType = (_act1[GNNEActivation.InputB] != None.Default)
             ? _act1[GNNEActivation.InputB].CheckedDataType
-            : DataTypes.Float16);
+            : DataTypes.Float16;
         _outputType = act.CheckedDataType;
         _lif1 = ld;
         if (_act1[GNNEActivation.InputB] != None.Default)
@@ -658,10 +642,10 @@ public class TileAct1 : RewriteRule<Pattern>
         _sof = st;
         _inputAShape = new GNNEShape(_lif1.CheckedShape[0].FixedValue, _lif1.CheckedShape[1].FixedValue,
             _lif1.CheckedShape[2].FixedValue, _lif1.CheckedShape[3].FixedValue);
-        _inputBShape = ((_act1[GNNEActivation.InputB] != None.Default)
+        _inputBShape = (_act1[GNNEActivation.InputB] != None.Default)
             ? new GNNEShape(_lif2.CheckedShape[0].FixedValue, _lif2.CheckedShape[1].FixedValue,
                 _lif2.CheckedShape[2].FixedValue, _lif2.CheckedShape[3].FixedValue)
-            : _inputAShape);
+            : _inputAShape;
         _outputShape = new GNNEShape(st.CheckedShape[0].FixedValue, st.CheckedShape[1].FixedValue,
             st.CheckedShape[2].FixedValue, st.CheckedShape[3].FixedValue);
     }
@@ -708,12 +692,12 @@ public class TileAct1 : RewriteRule<Pattern>
             .Body(actionToInstruct.Instructions(actions), I.END(GP_REGISTER.x0, 0)).Build();
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        GNNEActivation callOp = (GNNEActivation)__result["callOp"];
-        Call ld = (Call)__result["ld"];
-        Call st = (Call)__result["st"];
+        Call call = (Call)result["call"];
+        GNNEActivation callOp = (GNNEActivation)result["callOp"];
+        Call ld = (Call)result["ld"];
+        Call st = (Call)result["st"];
         return GetReplace(call, callOp, ld, st);
     }
 }

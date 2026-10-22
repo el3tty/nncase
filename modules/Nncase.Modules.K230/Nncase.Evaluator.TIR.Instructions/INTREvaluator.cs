@@ -13,7 +13,7 @@ internal sealed class INTREvaluator : ITypeInferencer<INTR>, ITypeInferencer, IO
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, INTR target, bool ILmode)
+    public string Visit(IIRPrinterContext context, INTR target, bool iLmode)
     {
         return $"I.INTR(rs: {target.rs})";
     }

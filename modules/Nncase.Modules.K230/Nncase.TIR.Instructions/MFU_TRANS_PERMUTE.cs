@@ -28,5 +28,5 @@ public enum MFU_TRANS_PERMUTE : uint
     WCNH,
     WCHN,
     WHNC,
-    WHCN
+    WHCN,
 }

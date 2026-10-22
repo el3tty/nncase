@@ -53,7 +53,7 @@ public sealed class Reshape1x1Conv : RewriteRule<Pattern>
             int[] channelAlignments = new int[4] { 24, 20, 16, 0 };
             channelAlignments[3] = input.CheckedShape[1].FixedValue;
             int channelAlignment = channelAlignments.FirstOrDefault((int d) => input.CheckedShape[1].FixedValue % d == 0);
-            int elementScale = ((!(expr.CheckedDataType == DataTypes.Int16)) ? 1 : 2);
+            int elementScale = (!(expr.CheckedDataType == DataTypes.Int16)) ? 1 : 2;
             int fixedValue = (expr.CheckedShape[0] * input.CheckedShape[1] * expr.CheckedShape[2] *
                               expr.CheckedShape[3] * elementScale).FixedValue;
             byte[] weightBytes = ((TensorConst)((Call)expr)[GNNELoadW.Input]).Value.BytesBuffer.ToArray();
@@ -67,7 +67,8 @@ public sealed class Reshape1x1Conv : RewriteRule<Pattern>
             }
 
             Shape shape = new Shape(expr.CheckedShape[0], channelAlignment, input.CheckedShape[1] / channelAlignment, 1);
-            Call weights = Nncase.IR.K230.F.Tensors.GNNELoadW((PrimType)expr.CheckedDataType,
+            Call weights = Nncase.IR.K230.F.Tensors.GNNELoadW(
+                (PrimType)expr.CheckedDataType,
                 Tensor.FromBytes(new TensorType(expr.CheckedDataType, shape), reshapedWeights));
             Shape shape2 = new Shape(input.CheckedShape[0], channelAlignment, input.CheckedShape[1] / channelAlignment,
                 input.CheckedShape[2] * input.CheckedShape[3]);
@@ -79,20 +80,21 @@ public sealed class Reshape1x1Conv : RewriteRule<Pattern>
                 weightsBias, weightsBiasQint, act, actQint, deqBias, shiftBits, shiftBitsQint, qint8Qp, expr2, expr3,
                 dilation, expr4, is16Quant, padValue, gNNEConv2D.ActParam, gNNEConv2D.ActParamQInt8);
             Call body = Nncase.IR.K230.F.Tensors.GNNEStore(st.CheckedDataType, input3);
-            return Nncase.IR.F.Tensors.Reshape(new Call(new Fusion(fusion.Name, fusion.ModuleKind, body, var), call2),
+            return Nncase.IR.F.Tensors.Reshape(
+                new Call(new Fusion(fusion.Name, fusion.ModuleKind, body, var), call2),
                 st.CheckedShape);
         }
 
         return null;
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call call = (Call)__result["call"];
-        Call ld = (Call)__result["ld"];
-        Call st = (Call)__result["st"];
-        Call fusionCall = (Call)__result["fusionCall"];
-        IReadOnlyList<Expr> fusionCallParams = (IReadOnlyList<Expr>)__result["fusionCallParams"];
+        Call call = (Call)result["call"];
+        Call ld = (Call)result["ld"];
+        Call st = (Call)result["st"];
+        Call fusionCall = (Call)result["fusionCall"];
+        IReadOnlyList<Expr> fusionCallParams = (IReadOnlyList<Expr>)result["fusionCallParams"];
         return GetReplace(call, ld, st, fusionCall, fusionCallParams);
     }
 }

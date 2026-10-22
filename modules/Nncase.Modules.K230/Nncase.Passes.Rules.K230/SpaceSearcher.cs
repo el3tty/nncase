@@ -90,7 +90,7 @@ internal static class SpaceSearcher
         ReadOnlyCollection<BoxOnGlb> boxes = bp.Boxes.AsReadOnly();
         int[] v = boxes.Select((BoxOnGlb b) => b.Box[1]).ToArray();
         int[] boxOrderByDepth = SortIndexes(v);
-        boxOrderByDepth.Select((int i) => boxes[i]).ToArray();
+        _ = boxOrderByDepth.Select((int i) => boxes[i]).ToArray();
         int[] sortedIndexes = (from i in SortIndexes(boxes.Select((BoxOnGlb b) => b.Box[0]).ToArray())
             select boxOrderByDepth[i]).ToArray();
         List<int> allocOrder = sortedIndexes.ToList();
@@ -123,7 +123,8 @@ internal static class SpaceSearcher
         return new AllocateResult { IsOk = isOk, Items = mmuItems, Boxes = bp.Boxes };
     }
 
-    private static int[] SortIndexes<T>(T[] v) where T : unmanaged, IEquatable<T>
+    private static int[] SortIndexes<T>(T[] v)
+        where T : unmanaged, IEquatable<T>
     {
         List<int> indexes = Enumerable.Range(0, v.Length).ToList();
         indexes.Sort((int i1, int i2) => Comparer<T>.Default.Compare(v[i2], v[i1]));

@@ -230,7 +230,8 @@ public class K230Target : ITarget
             List<ENode> childrenOfRangeOfs, QuantizeOptions quantizeOptions)
     {
         return BindQuantMethodCosineImpl(
-            await AsyncEnumerable.ToListAsync<IReadOnlyDictionary<Var, IValue>>(calibrationDataset.Samples,
+            await AsyncEnumerable.ToListAsync<IReadOnlyDictionary<Var, IValue>>(
+                calibrationDataset.Samples,
                 default(CancellationToken)), rangeOfs, childrenOfRangeOfs, quantizeOptions);
     }
 
@@ -394,8 +395,6 @@ public class K230Target : ITarget
 
     public (Command Command, Func<InvocationContext, Command, ITargetCompileOptions> Parser) RegisterCommandAndParser()
     {
-        //IL_0006: Unknown result type (might be due to invalid IL or missing references)
-        //IL_002f: Expected O, but got Unknown
         return (Command: new Command("k230", (string)null),
             Parser: (InvocationContext _, Command _) => DefaultTargetCompileOptions.Instance);
     }
@@ -451,7 +450,8 @@ public class K230Target : ITarget
                 List<Tuple<List<DataType>, List<List<QuantParam>>, float>> list3 =
                     new List<Tuple<List<DataType>, List<List<QuantParam>>, float>>();
                 MarkerPattern markerPattern =
-                    Nncase.PatternMatch.Utility.IsRangeOfMarker(Nncase.PatternMatch.Utility.IsWildcard(),
+                    Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                        Nncase.PatternMatch.Utility.IsWildcard(),
                         Nncase.PatternMatch.Utility.IsWildcard());
                 List<Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>> list4 =
                     new List<Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>>();
@@ -497,7 +497,7 @@ public class K230Target : ITarget
                             new List<DataType> { DataTypes.UInt8 },
                             new List<DataType> { DataTypes.Int8 },
                             new List<DataType> { DataTypes.Int16 },
-                            new List<DataType> { DataTypes.Float16 }
+                            new List<DataType> { DataTypes.Float16 },
                         });
                         break;
                     case 2:
@@ -507,7 +507,7 @@ public class K230Target : ITarget
                             new List<DataType> { DataTypes.Int8, DataTypes.Int8 },
                             new List<DataType> { DataTypes.Int16, DataTypes.UInt8 },
                             new List<DataType> { DataTypes.UInt8, DataTypes.Int16 },
-                            new List<DataType> { DataTypes.Float16, DataTypes.Float16 }
+                            new List<DataType> { DataTypes.Float16, DataTypes.Float16 },
                         });
                         break;
                 }
@@ -556,9 +556,9 @@ public class K230Target : ITarget
                                 if (list6[k][1] == DataTypes.UInt8)
                                 {
                                     Dictionary<ENode, Tensor> dictionary2 = new Dictionary<ENode, Tensor>();
-                                    dictionary2.Add(list4[l].Item1.Keys.First(),
-                                        ((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
-                                        .U8FineTunedWeights.Value);
+                                    dictionary2.Add(
+                                        list4[l].Item1.Keys.First(),
+                                        ((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo.U8FineTunedWeights.Value);
                                     if (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
                                         ?.U8FineTunedWeightsRangesByChannel != null)
                                     {
@@ -566,16 +566,17 @@ public class K230Target : ITarget
                                             ?.U8FineTunedWeightsRangesByChannel).Value;
                                     }
 
-                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(dictionary2,
+                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
+                                        dictionary2,
                                         item6, list4[l].Item3);
                                 }
 
                                 if (list6[k][1] == DataTypes.Int8)
                                 {
                                     Dictionary<ENode, Tensor> dictionary3 = new Dictionary<ENode, Tensor>();
-                                    dictionary3.Add(list4[l].Item1.Keys.First(),
-                                        (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
-                                            ?.I8FineTunedWeights).Value);
+                                    dictionary3.Add(
+                                        list4[l].Item1.Keys.First(),
+                                        (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo?.I8FineTunedWeights).Value);
                                     if (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
                                         ?.I8FineTunedWeightsRangesByChannel != null)
                                     {
@@ -583,16 +584,17 @@ public class K230Target : ITarget
                                             .I8FineTunedWeightsRangesByChannel.Value;
                                     }
 
-                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(dictionary3,
+                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
+                                        dictionary3,
                                         item6, list4[l].Item3);
                                 }
 
                                 if (list6[k][1] == DataTypes.Int16)
                                 {
                                     Dictionary<ENode, Tensor> dictionary4 = new Dictionary<ENode, Tensor>();
-                                    dictionary4.Add(list4[l].Item1.Keys.First(),
-                                        ((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr)
-                                            .MixQuantInfo).I16FineTunedWeights.Value);
+                                    dictionary4.Add(
+                                        list4[l].Item1.Keys.First(),
+                                        ((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo).I16FineTunedWeights.Value);
                                     if (((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr)
                                             .MixQuantInfo)?.I16FineTunedWeightsRangesByChannel != null)
                                     {
@@ -600,7 +602,8 @@ public class K230Target : ITarget
                                             .Expr).MixQuantInfo).I16FineTunedWeightsRangesByChannel.Value;
                                     }
 
-                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(dictionary4,
+                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
+                                        dictionary4,
                                         item6, list4[l].Item3);
                                 }
                             }
@@ -616,17 +619,18 @@ public class K230Target : ITarget
                             Span<float> span =
                                 MemoryMarshal.Cast<byte, float>(list4[l].Item1.Values.ToArray()[0].BytesBuffer);
                             list9.Add(span.ToArray());
-                            QuantMode quantMode = ((!(dataType == DataTypes.UInt8))
+                            QuantMode quantMode = (!(dataType == DataTypes.UInt8))
                                 ? QuantMode.SignedSymmetricMode
-                                : QuantMode.UnsignedMode);
-                            int bits = ((dataType == DataTypes.Int16) ? 12 : 8);
+                                : QuantMode.UnsignedMode;
+                            int bits = (dataType == DataTypes.Int16) ? 12 : 8;
                             if (list4[l].Item2.Shape.Rank == 1)
                             {
                                 if (!(((Call)childrenOfRangeOf.Expr).Target is FakeActivation) ||
                                     !(dataType == DataTypes.Float16))
                                 {
                                     list10[0] = QuantUtility.GetQuantParam(
-                                        new ValueRange<float>((float)list4[l].Item2[new int[1]],
+                                        new ValueRange<float>(
+                                            (float)list4[l].Item2[new int[1]],
                                             (float)list4[l].Item2[new int[1] { 1 }]), bits, quantMode);
                                     for (int m = 0; m < span.Length; m++)
                                     {
@@ -651,7 +655,8 @@ public class K230Target : ITarget
                                 for (int n = 0; n < fixedValue; n++)
                                 {
                                     list10.Add(QuantUtility.GetQuantParam(
-                                        new ValueRange<float>((float)list4[l].Item2[new int[2] { n, 0 }],
+                                        new ValueRange<float>(
+                                            (float)list4[l].Item2[new int[2] { n, 0 }],
                                             (float)list4[l].Item2[new int[2] { n, 1 }]), bits, quantMode));
                                 }
 
@@ -741,7 +746,8 @@ public class K230Target : ITarget
 
             for (int num12 = 0; num12 < num10; num12++)
             {
-                list12.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(list2[num12].Item1,
+                list12.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(
+                    list2[num12].Item1,
                     list2[num12].Item2, list13[num12] / (float)samples.Count));
             }
 
@@ -752,9 +758,10 @@ public class K230Target : ITarget
 
             Tuple<List<DataType>, List<List<QuantParam>>, float> tuple2;
             Tuple<List<DataType>, List<List<QuantParam>>, float> tuple3;
-            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple = (tuple2 = (tuple3 =
-                new Tuple<List<DataType>, List<List<QuantParam>>, float>(new List<DataType>(),
-                    new List<List<QuantParam>>(), 0f)));
+            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple = tuple2 = tuple3 =
+                new Tuple<List<DataType>, List<List<QuantParam>>, float>(
+                    new List<DataType>(),
+                    new List<List<QuantParam>>(), 0f);
             for (int num13 = 0; num13 < list12.Count; num13++)
             {
                 if ((list12[num13].Item1.Count != 1 || (!(list12[num13].Item1[0] == DataTypes.Int16) &&
@@ -788,9 +795,9 @@ public class K230Target : ITarget
             }
 
             float num16 = 0.99f;
-            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple4 = ((!(tuple3.Item3 < num16 * tuple2.Item3))
+            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple4 = (!(tuple3.Item3 < num16 * tuple2.Item3))
                 ? tuple3
-                : ((!(tuple.Item3 < num16 * tuple2.Item3)) ? tuple : tuple2));
+                : ((!(tuple.Item3 < num16 * tuple2.Item3)) ? tuple : tuple2);
             ((Call)childrenOfRangeOf.Expr).EnodeQuantConfigWithCosine = list12;
             ((Call)childrenOfRangeOf.Expr).EnodeBestQuantConfigWithCosine = tuple4;
             int num17 = 0;

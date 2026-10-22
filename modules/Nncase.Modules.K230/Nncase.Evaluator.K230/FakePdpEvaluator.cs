@@ -29,7 +29,7 @@ public class FakePdpEvaluator : IEvaluator<FakePdp>, IEvaluator, ITypeInferencer
         {
             [CostFactorNames.MemoryLoad] = CostUtility.GetMemoryAccess(inputType),
             [CostFactorNames.MemoryStore] = CostUtility.GetMemoryAccess(returnType),
-            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, cpuCycleNumerator / cpuCycleDenominator)
+            [CostFactorNames.CPUCycles] = CostUtility.GetCPUCycles(returnType, cpuCycleNumerator / cpuCycleDenominator),
         };
     }
 

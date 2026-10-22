@@ -12,8 +12,8 @@ namespace Nncase.Passes.Rules.K230;
 public sealed class FiveDimWithOneBatchTranspose : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsTranspose(null, "transpose",
-        Nncase.PatternMatch.Utility.IsWildcard("input")with { TypePattern = TypePatternUtility.HasFixedShape() },
-        Nncase.PatternMatch.Utility.IsWildcard("perm")with { TypePattern = TypePatternUtility.HasRank(5) });
+        Nncase.PatternMatch.Utility.IsWildcard("input") with { TypePattern = TypePatternUtility.HasFixedShape() },
+        Nncase.PatternMatch.Utility.IsWildcard("perm") with { TypePattern = TypePatternUtility.HasRank(5) });
 
     private Expr? GetReplace(Call transpose, Expr input, TensorConst perm)
     {
@@ -22,11 +22,12 @@ public sealed class FiveDimWithOneBatchTranspose : IRewriteRule
             return null;
         }
 
-        Call input2 = Nncase.IR.F.Tensors.Reshape(transpose.CheckedShape,
+        Call input2 = Nncase.IR.F.Tensors.Reshape(
+            transpose.CheckedShape,
             new Dimension[4]
             {
                 transpose.CheckedShape[0], transpose.CheckedShape[1], transpose.CheckedShape[2],
-                transpose.CheckedShape[3]
+                transpose.CheckedShape[3],
             });
         int[] fourDimPerm = new int[4];
         for (int i = 0; i < 4; i++)
@@ -47,11 +48,11 @@ public sealed class FiveDimWithOneBatchTranspose : IRewriteRule
         return false;
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Call transpose = (Call)__result["transpose"];
-        Expr input = (Expr)__result["input"];
-        TensorConst perm = (TensorConst)__result["perm"];
+        Call transpose = (Call)result["transpose"];
+        Expr input = (Expr)result["input"];
+        TensorConst perm = (TensorConst)result["perm"];
         return GetReplace(transpose, input, perm);
     }
 }

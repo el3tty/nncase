@@ -19,9 +19,11 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
 {
     public override Pattern Pattern { get; } = Nncase.PatternMatch.Utility.IsRangeOfMarker(
         Nncase.PatternMatch.F.K230.IsFakeMatMul("fakeMatmul", "call", (FakeMatMul _) => true,
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("inputAMarker",
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputAMarker",
                 Nncase.PatternMatch.Utility.IsWildcard("inputA"), Nncase.PatternMatch.Utility.IsConst("inputARange")),
-            Nncase.PatternMatch.Utility.IsRangeOfMarker("inputBMarker",
+            Nncase.PatternMatch.Utility.IsRangeOfMarker(
+                "inputBMarker",
                 Nncase.PatternMatch.Utility.IsWildcard("inputB"), Nncase.PatternMatch.Utility.IsConst("inputBRange"))),
         Nncase.PatternMatch.Utility.IsTensorConst("outputRange"));
 
@@ -31,23 +33,24 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
         ActParam2 actParam = new ActParam2(fakeMatmul.ActParam2);
         MixQuantInfo mixQuantInfo = ((Marker)inputAMarker).MixQuantInfo;
         MixQuantInfo mixQuantInfo2 = ((Marker)inputBMarker).MixQuantInfo;
-        DataType dataType = ((mixQuantInfo?.MarkerQuantType == null) ? base.QuantType : mixQuantInfo.MarkerQuantType);
+        DataType dataType = (mixQuantInfo?.MarkerQuantType == null) ? QuantType : mixQuantInfo.MarkerQuantType;
         if (dataType == DataTypes.Int16)
         {
             dataType = DataTypes.UInt8;
         }
 
         DataType inputBDataType =
-            ((mixQuantInfo2?.MarkerQuantType == null) ? base.QuantType : mixQuantInfo2.MarkerQuantType);
+            (mixQuantInfo2?.MarkerQuantType == null) ? QuantType : mixQuantInfo2.MarkerQuantType;
         Call inputA2 = LoadQuantInA(inputARange, dataType, inputAMarker);
-        Call inputB2 = ((inputB is TensorConst)
+        Call inputB2 = (inputB is TensorConst)
             ? LoadInB((TensorConst)inputB, inputBRange.AsValueRange(), inputBDataType)
-            : LoadQuantInB(inputB, inputBRange, inputBDataType, inputBMarker));
+            : LoadQuantInB(inputB, inputBRange, inputBDataType, inputBMarker);
         Call inputABias = LoadInABias(inputA, inputARange.AsValueRange(), dataType);
         Call act = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, inputBDataType);
         Call input = Nncase.IR.K230.F.Tensors.GNNEMatMul(actParam, DataTypes.Float16, inputA2, inputB2, act, inputABias,
             0, 0, 0,
-            Enumerable.Repeat(GetInBDeqQuantParam(inputBDataType, inputBRange.AsValueRange()).ZeroPoint,
+            Enumerable.Repeat(
+                GetInBDeqQuantParam(inputBDataType, inputBRange.AsValueRange()).ZeroPoint,
                 call.CheckedShape[1].FixedValue).ToArray());
         Call call2 = Nncase.IR.K230.F.Tensors.GNNEStore(DataTypes.Float32, input);
         call2.CheckedType = new TensorType(DataTypes.Float32, call.CheckedShape);
@@ -57,7 +60,8 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private Call LoadQuantInA(Tensor<float> inARange, DataType quanType, Expr prevInputMarker)
     {
         DeQuantizeParam inADeqQuantParam = GetInADeqQuantParam(quanType, inARange.AsValueRange());
-        Call input = Nncase.IR.F.Math.Quantize(prevInputMarker,
+        Call input = Nncase.IR.F.Math.Quantize(
+            prevInputMarker,
             Tensor.FromScalar(new QuantParam(inADeqQuantParam.ZeroPoint, inADeqQuantParam.Scale)), quanType);
         return Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)quanType, input);
     }
@@ -71,7 +75,8 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
             Nncase.IR.F.Tensors.Unsqueeze(prevInput, Enumerable.Range(0, missingRank).ToArray());
         }
 
-        Call input = Nncase.IR.F.Math.Quantize(prevInputMarker,
+        Call input = Nncase.IR.F.Math.Quantize(
+            prevInputMarker,
             Tensor.FromScalar(new QuantParam(inBDeqQuantParam.ZeroPoint, inBDeqQuantParam.Scale)), quanType);
         return Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)quanType, input);
     }
@@ -147,7 +152,8 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
                 {
                     int flatIndex = i * checkedShape[2].FixedValue * checkedShape[3].FixedValue +
                               j * checkedShape[3].FixedValue + k;
-                    quantWeights[flatIndex] = (sbyte)System.Math.Clamp(Convert.ToInt32(Quantize<sbyte>(weights[flatIndex], inBQuantParam)),
+                    quantWeights[flatIndex] = (sbyte)System.Math.Clamp(
+                        Convert.ToInt32(Quantize<sbyte>(weights[flatIndex], inBQuantParam)),
                         -127, 127);
                 }
             }
@@ -181,7 +187,8 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private T Quantize<T>(float data, QuantizeParam qp)
     {
         return (T)Convert.ChangeType(
-            System.Math.Clamp((int)System.Math.Round(data * qp.Scale + (float)qp.ZeroPoint),
+            System.Math.Clamp(
+                (int)System.Math.Round(data * qp.Scale + (float)qp.ZeroPoint),
                 Convert.ToInt32(typeof(T).GetField("MinValue").GetValue(null)),
                 Convert.ToInt32(typeof(T).GetField("MaxValue").GetValue(null))), typeof(T));
     }
@@ -199,8 +206,8 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private DeQuantizeParam GetInADeqQuantParam(DataType quantType, ValueRange<float> inARange)
     {
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
-        int bits = ((quantType == DataTypes.Int16) ? 12 : 8);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
+        int bits = (quantType == DataTypes.Int16) ? 12 : 8;
         return Nncase.Quantization.K230.Utility.GetDeqParam(QuantUtility.GetQuantParam(inARange, bits, quantMode));
     }
 
@@ -212,24 +219,24 @@ public sealed class ToGNNEMatMul : GNNEDIFQuantRule
     private DeQuantizeParam GetInBDeqQuantParam(DataType quantType, ValueRange<float> inBRange)
     {
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
-        int bits = ((quantType == DataTypes.Int16) ? 12 : 8);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
+        int bits = (quantType == DataTypes.Int16) ? 12 : 8;
         return Nncase.Quantization.K230.Utility.GetDeqParam(QuantUtility.GetQuantParam(inBRange, bits, quantMode));
     }
 
-    public override Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public override Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        FakeMatMul fakeMatmul = (FakeMatMul)__result["fakeMatmul"];
-        Call call = (Call)__result["call"];
-        Expr inputA = (Expr)__result["inputA"];
-        Tensor<float> inputARange = ((TensorConst)__result["inputARange"]).Value.Cast<float>();
-        Expr inputAMarker = (Expr)__result["inputAMarker"];
-        Expr inputB = (Expr)__result["inputB"];
-        Tensor<float> inputBRange = ((TensorConst)__result["inputBRange"]).Value.Cast<float>();
-        Expr inputBMarker = (Expr)__result["inputBMarker"];
-        Tensor<float> outputRange = ((TensorConst)__result["outputRange"]).Value.Cast<float>();
-        base.Option = __context;
-        base.MatchResult = __result;
+        FakeMatMul fakeMatmul = (FakeMatMul)result["fakeMatmul"];
+        Call call = (Call)result["call"];
+        Expr inputA = (Expr)result["inputA"];
+        Tensor<float> inputARange = ((TensorConst)result["inputARange"]).Value.Cast<float>();
+        Expr inputAMarker = (Expr)result["inputAMarker"];
+        Expr inputB = (Expr)result["inputB"];
+        Tensor<float> inputBRange = ((TensorConst)result["inputBRange"]).Value.Cast<float>();
+        Expr inputBMarker = (Expr)result["inputBMarker"];
+        Tensor<float> outputRange = ((TensorConst)result["outputRange"]).Value.Cast<float>();
+        Option = context;
+        MatchResult = result;
         Init();
         return GetReplace(fakeMatmul, call, inputA, inputARange, inputAMarker, inputB, inputBRange, inputBMarker,
             outputRange);

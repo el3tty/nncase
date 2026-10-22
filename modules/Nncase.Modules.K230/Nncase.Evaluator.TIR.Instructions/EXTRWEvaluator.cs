@@ -13,7 +13,7 @@ internal sealed class EXTRWEvaluator : ITypeInferencer<EXTRW>, ITypeInferencer, 
         return TupleType.Void;
     }
 
-    public string Visit(IIRPrinterContext context, EXTRW target, bool ILmode)
+    public string Visit(IIRPrinterContext context, EXTRW target, bool iLmode)
     {
         return
             $"I.EXTRW(extrd: {context.GetArgument(target, EXTRW.extrd)}, rs: {target.rs}, imm: {context.GetArgument(target, EXTRW.imm)})";

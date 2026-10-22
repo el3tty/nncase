@@ -51,7 +51,7 @@ public class Gnne_action_l2_load_conf : GnneAction
 
     public override bool Equals(object? obj)
     {
-        if (this == obj)
+        if (ReferenceEquals(this, obj))
         {
             return true;
         }

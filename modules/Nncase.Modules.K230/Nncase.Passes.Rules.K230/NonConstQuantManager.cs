@@ -16,7 +16,7 @@ internal static class NonConstQuantManager
     public static DeQuantizeParam GetInADeqQuantParam(DataType quantType, ValueRange<float> inARange)
     {
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
         return Nncase.Quantization.K230.Utility.GetDeqParam(QuantUtility.GetQuantParam(inARange, 8, quantMode));
     }
 
@@ -28,7 +28,7 @@ internal static class NonConstQuantManager
     public static DeQuantizeParam GetInBDeqQuantParam(DataType quantType, ValueRange<float> inBRange)
     {
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
         return Nncase.Quantization.K230.Utility.GetDeqParam(QuantUtility.GetQuantParam(inBRange, 8, quantMode));
     }
 
@@ -40,8 +40,8 @@ internal static class NonConstQuantManager
     public static DeQuantizeParam GetOfDeqQuantParam(DataType quantType, ValueRange<float> outRange)
     {
         QuantMode quantMode =
-            ((!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode);
-        int bits = ((quantType == DataTypes.Int16) ? 12 : 8);
+            (!(quantType == DataTypes.UInt8)) ? QuantMode.SignedSymmetricMode : QuantMode.UnsignedMode;
+        int bits = (quantType == DataTypes.Int16) ? 12 : 8;
         return Nncase.Quantization.K230.Utility.GetDeqParam(QuantUtility.GetQuantParam(outRange, bits, quantMode));
     }
 }

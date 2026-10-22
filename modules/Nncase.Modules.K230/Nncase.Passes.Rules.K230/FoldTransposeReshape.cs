@@ -14,9 +14,9 @@ public sealed class FoldTransposeReshape : IRewriteRule
 {
     public IPattern Pattern { get; } = Nncase.PatternMatch.F.Tensors.IsTranspose("tp", "call", (Transpose _) => true,
         Nncase.PatternMatch.F.Tensors.IsReshape("bc", (Reshape _) => true,
-            Nncase.PatternMatch.Utility.IsTensorConst("input")with
+            Nncase.PatternMatch.Utility.IsTensorConst("input") with
             {
-                TypePattern = TypePatternUtility.HasFixedShape()
+                TypePattern = TypePatternUtility.HasFixedShape(),
             }), Nncase.PatternMatch.Utility.IsTensorConst("perm"));
 
     private Expr? GetReplace(Transpose tp, Call call, Reshape bc, TensorConst input, TensorConst perm)
@@ -31,13 +31,13 @@ public sealed class FoldTransposeReshape : IRewriteRule
         return Nncase.IR.F.Tensors.Transpose(input, new int[4] { 0, 3, 2, 1 });
     }
 
-    public Expr? GetReplace(IMatchResult __result, RunPassContext __context)
+    public Expr? GetReplace(IMatchResult result, RunPassContext context)
     {
-        Transpose tp = (Transpose)__result["tp"];
-        Call call = (Call)__result["call"];
-        Reshape bc = (Reshape)__result["bc"];
-        TensorConst input = (TensorConst)__result["input"];
-        TensorConst perm = (TensorConst)__result["perm"];
+        Transpose tp = (Transpose)result["tp"];
+        Call call = (Call)result["call"];
+        Reshape bc = (Reshape)result["bc"];
+        TensorConst input = (TensorConst)result["input"];
+        TensorConst perm = (TensorConst)result["perm"];
         return GetReplace(tp, call, bc, input, perm);
     }
 }

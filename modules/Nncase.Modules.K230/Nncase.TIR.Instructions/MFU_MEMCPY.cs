@@ -78,7 +78,8 @@ public sealed class MFU_MEMCPY : InstructionOp, ISerializeInst, IEquatable<MFU_M
 
     protected override int GetHashCodeCore()
     {
-        return HashCode.Combine(base.GetHashCodeCore(),
+        return HashCode.Combine(
+            base.GetHashCodeCore(),
             HashCode.Combine(raddr_d, raddr_s, rstride_d, rstride_s, rshape));
     }
 }
