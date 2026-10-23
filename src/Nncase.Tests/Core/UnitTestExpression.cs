@@ -381,7 +381,9 @@ public class UnitTestExpression
 
         var a = ImmutableArray.CreateRange(new[] { n, c });
         var b = ImmutableArray.CreateRange(new[] { new Dimension(1), new Dimension(1) });
-        Assert.Equal(a, b);
+
+        // ImmutableArray<T>.Equals compares the underlying array reference, so compare element-wise.
+        Assert.Equal<Dimension>(a, b);
 
         var sa = new Shape(new[] { 1, 2, 3 });
         var sb = new Shape(new[] { 1, 2, 3 });
