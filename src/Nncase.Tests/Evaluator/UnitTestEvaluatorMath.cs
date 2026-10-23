@@ -460,7 +460,7 @@ public class UnitTestEvaluatorMath : TestClassBase
         var scale = 0.01F;
 
         var input1 = OrtKISharp.Tensor.MakeTensor(input, new long[] { 2, 4 });
-        var expect = OrtKI.DequantizeLinear(input1, scale, zero_point, axis);
+        var expect = OrtKI.DequantizeLinear(input1, scale, zero_point, axis, block_size: 0);
 
         var quant_param = new QuantParam(zero_point, scale);
         var input2 = Tensor.From(input, new[] { 2, 4 });
@@ -478,7 +478,7 @@ public class UnitTestEvaluatorMath : TestClassBase
         var scale = 0.05F;
 
         var input1 = OrtKISharp.Tensor.MakeTensor(input, new long[] { 2, 4 });
-        var expect = OrtKI.QuantizeLinear(input1, scale, zero_point, axis, 1);
+        var expect = OrtKI.QuantizeLinear(input1, scale, zero_point, axis, block_size: 0, output_dtype: 0, saturate: 1);
 
         var quantParam = new QuantParam(zero_point, scale);
         var input2 = Tensor.From(input, new[] { 2, 4 });
@@ -499,7 +499,7 @@ public class UnitTestEvaluatorMath : TestClassBase
 
         // onnxruntime does not support quantize to i16, result of kernel is i8
         var expect = OrtKI.Cast(
-            OrtKI.QuantizeLinear(input1, scale, zeroPoint, axis, 1), 1,
+            OrtKI.QuantizeLinear(input1, scale, zeroPoint, axis, block_size: 0, output_dtype: 0, saturate: 1), 1,
             (int)DataTypes.Int16.ToOrtType());
 
         var quantParam = new QuantParam(zeroPoint, scale);

@@ -133,7 +133,7 @@ public class UnitTestCombineTranspose : TransformTestBase
             },
             new object[]
             {
-                new[] { 1, 2, 3, 4 }, new[] { 0, 3, 1, 2 },
+                new[] { 1, 3, 3, 4 }, new[] { 0, 3, 1, 2 },
                 new[,]
                 {
                     { 1, 1 },

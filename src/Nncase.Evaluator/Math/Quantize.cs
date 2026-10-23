@@ -28,7 +28,7 @@ public class QuantizeEvaluator : IEvaluator<Quantize>, ITypeInferencer<Quantize>
             return OrtKI.Cast((input / quantParam.Scale) + (float)quantParam.ZeroPoint, 1, (int)OrtDataType.Int16).ToValue();
         }
 
-        return OrtKI.QuantizeLinear(input, quantParam.Scale, zeroPoint.ToOrtTensor(), 0, 1).ToValue();
+        return OrtKI.QuantizeLinear(input, quantParam.Scale, zeroPoint.ToOrtTensor(), 0, block_size: 0, output_dtype: 0, saturate: 1).ToValue();
     }
 
     /// <inheritdoc/>

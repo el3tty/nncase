@@ -435,7 +435,7 @@ public class UnitTestEvaluatorTensors : TestClassBase
         var shape = new long[] { 1, 3, 16, 16 };
         var input = OrtKI.Random(shape);
         var axis = 1L;
-        var sections = new long[] { 1 };
+        var sections = new long[] { 1, 2 };
         var expect = OrtKI.Split(input, sections, axis);
 
         var expr = IR.F.Tensors.Split(input.ToTensor(), axis, sections);
@@ -667,7 +667,7 @@ public class UnitTestEvaluatorTensors : TestClassBase
         var axis = -1;
         var largest = 1;
         var sorted = 1;
-        var expect = OrtKI.TopK(x, k, axis, largest, sorted);
+        var expect = OrtKI.TopK(x, OrtKISharp.Tensor.MakeTensor(new[] { k }, new long[] { 1 }), axis, largest, sorted);
 
         var expr = IR.F.Tensors.TopK(x.ToTensor(), k, axis, largest, sorted);
         CompilerServices.InferenceType(expr);

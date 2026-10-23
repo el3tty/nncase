@@ -192,7 +192,7 @@
       "libortki-win": {
         "type": "Transitive",
         "resolved": "0.0.2",
-        "contentHash": "XvVhmbz8n/Oin0jJj6JLd+rUf++qFhA3+RkE0wp37u40AL6X9LoPFuYoI/H8xuLvwANYGs0IrXvYg91+j5vtMQ=="
+        "contentHash": "qD9ISj/kyGheUEGNIeYIwQd+OlHo1JgRT2shEsWwY49R00cTy/o2AU1kQc1h0XYoX2u67lB+TJ6TPchXpXlHVQ=="
       },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
@@ -1073,7 +1073,7 @@
         "type": "CentralTransitive",
         "requested": "[0.0.2, )",
         "resolved": "0.0.2",
-        "contentHash": "Y+kihuAPKdLvjwwExGJBzV2hxlU35rmwkHwIZv/4kfkddqosjvsd37gTsvUSCN1RIU8JFJgvBqpAnon6YATmhg==",
+        "contentHash": "mqegINkyT9LWD9T5KVzMrPBflGBr7qUBFbEzjlxQG3ghcZuXuxU43sBQ5iO8qK6e8xNY7DWG31jjp3NI0vr+4A==",
         "dependencies": {
           "libortki": "0.0.2"
         }

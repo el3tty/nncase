@@ -23,7 +23,9 @@ public class TopKEvaluator : IEvaluator<TopK>, ITypeInferencer<TopK>, ICostEvalu
     public IValue Visit(IEvaluateContext context, TopK topK)
     {
         var x = context.GetOrtArgumentValue(topK, TopK.X);
-        var k = context.GetOrtArgumentValue(topK, TopK.K);
+
+        // onnx TopK requires K to be a 1-D int64 tensor of shape [1].
+        var k = OrtKISharp.Tensor.MakeTensor(new[] { context.GetArgumentValueAsScalar<long>(topK, TopK.K) }, new long[] { 1 });
         var axis = context.GetArgumentValueAsScalar<long>(topK, TopK.Axis);
         var largest = context.GetArgumentValueAsScalar<long>(topK, TopK.Largest);
         var sorted = context.GetArgumentValueAsScalar<long>(topK, TopK.Sorted);
