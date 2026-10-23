@@ -1,0 +1,41 @@
+# Analyzer overrides for the K230 module (sources recovered by decompilation).
+# Everything listed here was reviewed; remaining hits are either layout rules without a code fix,
+# names that must match the hardware ISA / reflection lookups, or decompiled generator output.
+
+[*.cs]
+# Parameter wrapping of decompiled call sites; StyleCop has no code fix and reflowing ~2300 calls adds no value.
+dotnet_diagnostic.SA1117.severity = none
+
+# Member ordering; no code fix, and moving static fields would change their initialization order.
+dotnet_diagnostic.SA1201.severity = none
+dotnet_diagnostic.SA1202.severity = none
+dotnet_diagnostic.SA1204.severity = none
+
+# Exception messages are part of the observable behaviour; kept as decompiled.
+dotnet_diagnostic.CA2208.severity = none
+
+# Instruction ops, fields and parameters mirror the K230 ISA names (funct3, rd, rs, tcu_id, ...).
+[Nncase.TIR.Instructions/**.cs]
+dotnet_diagnostic.SA1300.severity = none
+dotnet_diagnostic.SA1307.severity = none
+dotnet_diagnostic.SA1310.severity = none
+dotnet_diagnostic.SA1311.severity = none
+
+# Register fields (R.r0..R.r31) are looked up by name via reflection in AssemblyParser.
+[Nncase.TIR/R.cs]
+dotnet_diagnostic.SA1307.severity = none
+dotnet_diagnostic.SA1311.severity = none
+
+# Instruction deserializers are named after the ISA opcodes (visit_l2_load, de_serialize_pu_conf, ...).
+[{Nncase.CodeGen/K230DeSerializerVisitor.cs,Nncase.CodeGen.K230/CKPDeSerializerVisitor.cs}]
+dotnet_diagnostic.SA1300.severity = none
+
+# Decompiled PatternMatch source-generator output; parameter names follow the op property names.
+[Nncase.PatternMatch.F/**.cs]
+dotnet_diagnostic.SA1313.severity = none
+
+# Positional record parameters 'name'/'handle' coexist with IRTFunction's Name/Handle;
+# renaming them changes the record's generated members.
+[Nncase.CodeGen.K230/GModelRTFunction.cs]
+dotnet_diagnostic.SA1300.severity = none
+dotnet_diagnostic.CA1708.severity = none
