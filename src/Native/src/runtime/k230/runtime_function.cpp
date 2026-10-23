@@ -109,27 +109,48 @@ result<value_t> k230_runtime_function::invoke_core(
     }
 
     // --- Stage 2: marshal outputs ---
+    // outputs without a physical address (plain host buffers) get a device
+    // buffer for the KPU, copied back into the original after the run
+    std::vector<std::pair<host_buffer_slice, tensor>> copy_back_outputs;
     for (size_t i = 0; i < output_descs_.size(); i++) {
         auto &param = parameters[input_descs_.size() + i];
         try_var(t, param.as<tensor>());
         try_var(host, t->buffer().as_host());
+
+        if (!host.has_physical_address()) {
+            try_var(t2, alloc_new_device_tensor(t, host));
+            try_var(host2, t2->buffer().as_host());
+            copy_back_outputs.emplace_back(host, t2);
+            host = host2;
+        }
         try_(host.sync(sync_op_t::sync_invalidate, true));
         try_var(phys, host.physical_address());
         output_addrs.push_back((uint32_t)phys);
     }
 
-    auto *l2_mem = reinterpret_cast<uint32_t *>(mod.l2_base_);
+    // l2_base_ is an uncached /dev/mmz mapping: store word by word, a memcpy
+    // there uses misaligned 8-byte stores and faults
+    auto *l2_mem = reinterpret_cast<volatile uint32_t *>(mod.l2_base_);
+    size_t next = 0;
+    if ((input_addrs.size() + output_addrs.size() + 2) * sizeof(uint32_t) >
+        mod.l2_size_)
+        return err(std::errc::argument_list_too_long);
 
-    std::copy(input_addrs.begin(), input_addrs.end(), l2_mem);
-    std::copy(output_addrs.begin(), output_addrs.end(), l2_mem + input_addrs.size());
+    for (auto addr : input_addrs)
+        l2_mem[next++] = addr;
+    for (auto addr : output_addrs)
+        l2_mem[next++] = addr;
 
-    size_t next = input_addrs.size() + output_addrs.size();
-
-    //try_var(rdata_host, mod.rdata_storage_);
-    assert(mod.rdata_storage_->has_physical_address());
-
-    try_var(rdata_phys, mod.rdata_storage_->physical_address());
-    l2_mem[next] = (uint32_t)rdata_phys;
+    // a model without weights has an empty .rdata: mmz hands out no physical
+    // address for 0 bytes, and the KPU program never reads it, so pass 0
+    uint32_t rdata_addr = 0;
+    if (!mod.rdata_.empty()) {
+        if (!mod.rdata_storage_->has_physical_address())
+            return err(std::errc::invalid_argument);
+        try_var(rdata_phys, mod.rdata_storage_->physical_address());
+        rdata_addr = (uint32_t)rdata_phys;
+    }
+    l2_mem[next] = rdata_addr;
 
     l2_mem[next + 1] = 0;
 
@@ -145,6 +166,16 @@ result<value_t> k230_runtime_function::invoke_core(
     fds.fd = mod.gnne_fd_;
     fds.events = POLLIN;
     poll(&fds, 1, -1);
+
+    // --- Stage 5: copy outputs back from their device buffers ---
+    for (auto &[orig, dev_tensor] : copy_back_outputs) {
+        try_var(dev, dev_tensor->buffer().as_host());
+        try_(dev.sync(sync_op_t::sync_invalidate, true));
+        try_var(dev_map, dev.map(map_access_t::map_read));
+        try_var(orig_map, orig.map(map_access_t::map_write));
+        std::memcpy(orig_map.buffer().data(), dev_map.buffer().data(),
+                    orig_map.buffer().size());
+    }
 
     return ok(value_t(tuple(std::in_place)));  // not ok(new tuple_node()): that adds a second reference, never freed
 }
