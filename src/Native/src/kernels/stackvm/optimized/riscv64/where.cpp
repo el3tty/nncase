@@ -15,6 +15,7 @@
  */
 #include "../../reference/ref_ops.h"
 #include "../opt_ops.h"
+#include <algorithm>
 #include <iostream>
 #include <nncase/kernels/kernel_utils.h>
 #include <nncase/runtime/runtime_op_utility.h>
@@ -155,20 +156,28 @@ int tenary_impl(const uint8_t *input_cond, const float *input_b,
                 gsl::span<const size_t> in_b_shape,
                 gsl::span<const size_t> in_c_shape,
                 gsl::span<const size_t> out_shape) {
+    // ternary_vec walks cond, b and c linearly over the output, so it only
+    // handles cond and the tensor operands having exactly the output shape,
+    // with b or c optionally a rank-0 scalar; every other broadcast goes to the
+    // reference kernel (equal element counts are not enough: [16,1] and [1,16]
+    // broadcast to [16,16])
+    auto is_out_shape = [&](gsl::span<const size_t> shape) {
+        return shape.size() == out_shape.size() &&
+               std::equal(shape.begin(), shape.end(), out_shape.begin());
+    };
+    if (!is_out_shape(in_cond_shape) ||
+        !((is_out_shape(in_b_shape) && is_out_shape(in_c_shape)) ||
+          (in_b_shape.empty() && is_out_shape(in_c_shape)) ||
+          (in_c_shape.empty() && is_out_shape(in_b_shape)))) {
+        return -1;
+    }
+
     int len_cond = (int)compute_size(in_cond_shape);
     int len_b = (int)compute_size(in_b_shape);
     int len_c = (int)compute_size(in_c_shape);
     int len_out = (int)compute_size(out_shape);
-
-    if (len_cond == len_b && len_cond == len_c) {
-        ternary_vec(input_cond, len_cond, input_b, len_b, input_c, len_c,
-                    output, len_out);
-    } else if (in_b_shape.empty() || in_c_shape.empty()) {
-        ternary_vec(input_cond, len_cond, input_b, len_b, input_c, len_c,
-                    output, len_out);
-    } else {
-        return -1;
-    }
+    ternary_vec(input_cond, len_cond, input_b, len_b, input_c, len_c, output,
+                len_out);
     return 0;
 }
 
@@ -192,14 +201,15 @@ result<void> nncase::kernels::stackvm::optimized::where(
     auto *input_x = IN_CAST(_ty, x);                                           \
     auto *input_y = IN_CAST(_ty, y);                                           \
     auto *out = OUT_CAST(_ty, output);                                         \
-    tenary_impl(cond_pointer, input_x, input_y, out, cond_shape, x_shape,      \
-                y_shape, out_shape);
+    if (tenary_impl(cond_pointer, input_x, input_y, out, cond_shape, x_shape,  \
+                    y_shape, out_shape) == 0)                                  \
+        return ok();
 
     try_var(typecode, to_typecode(dt));
     switch (typecode) {
     case dt_float32: {
         WHERE_IMPL(float);
-        return ok();
+        break; // shapes the RVV path does not handle
     }
     default:;
     }
