@@ -39,7 +39,7 @@ def _make_module(op, in_type, in_shape_0, in_shape_1):
             in_type,
             dims=in_shape_1,
             vals=(np.random.rand(*in_shape_1) +
-                  2).astype(onnx.mapping.TENSOR_TYPE_TO_NP_TYPE[in_type]).flatten().tolist()
+                  2).astype(onnx.helper.tensor_dtype_to_np_dtype(in_type)).flatten().tolist()
         )
         inputs.append('input2')
         initializers.append(tensor)

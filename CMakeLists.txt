@@ -22,6 +22,11 @@ endif()
 
 add_subdirectory(python/nncaseruntime/native)
 
+# compiler bindings (_nncase): host only, they start the .NET compiler through nethost
+if (NOT BUILDING_RUNTIME)
+    add_subdirectory(python/nncase/native)
+endif ()
+
 # Install layout (host builds): every exe, shared library and python file goes
 # to <prefix>/nncaseruntime, so the exes find the shared libraries next to them
 # and the python module finds them next to the extension module.
@@ -56,4 +61,15 @@ if (NOT BUILDING_RUNTIME)
     install(FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/python/nncaseruntime/__init__.py
             DESTINATION ${NNCASE_INSTALL_DIR})
+
+    # compiler package: <prefix>/nncase holds __init__.py and _nncase; the runtime libraries it links stay in
+    # <prefix>/nncaseruntime (nncase/__init__.py adds that folder to the DLL search path on Windows)
+    if (TARGET nncase_python)
+        install(TARGETS nncase_python
+                RUNTIME DESTINATION nncase
+                LIBRARY DESTINATION nncase)
+        install(FILES
+                ${CMAKE_CURRENT_SOURCE_DIR}/python/nncase/__init__.py
+                DESTINATION nncase)
+    endif ()
 endif ()

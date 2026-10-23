@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import itertools
 import re
@@ -31,8 +32,23 @@ from typing import List
 import platform
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-import _nncase
-from _nncase import RuntimeTensor, TensorDesc, Simulator
+
+if os.name == "nt":
+    # host install: _nncase links Nncase.Runtime.Native.dll and nethost.dll, and the runtime loads
+    # nncase.simulator.<kind>.dll; all of them are in the sibling nncaseruntime folder
+    _runtime_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "nncaseruntime")
+    if os.path.isdir(_runtime_dir):
+        os.add_dll_directory(os.path.abspath(_runtime_dir))
+
+if importlib.util.find_spec(f"{__name__}._nncase") is not None:
+    # host install: the extension module is next to this file (<prefix>/nncase)
+    from . import _nncase
+else:
+    # e.g. running from the source tree: the extension module is elsewhere on sys.path
+    import _nncase
+RuntimeTensor = _nncase.RuntimeTensor
+TensorDesc = _nncase.TensorDesc
+Simulator = _nncase.Simulator
 
 
 def _initialize():

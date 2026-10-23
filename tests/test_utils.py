@@ -81,6 +81,41 @@ def test_executable(target: str):
     return os.getenv('TEST_EXECUTABLE_{0}'.format(target.upper()))
 
 
+def ssh_host(target: str):
+    # e.g. K230_SSH=root@192.168.1.100, the board must accept key auth
+    return os.getenv('{0}_SSH'.format(target.upper()))
+
+
+def _required_env(name: str):
+    value = os.getenv(name)
+    if not value:
+        raise Exception(f'{name} is not set')
+    return value
+
+
+def ssh_runtime(target: str):
+    # nncaseruntime package dir on the board (__init__.py + _nncaseruntime*.so)
+    return _required_env('{0}_SSH_RUNTIME'.format(target.upper()))
+
+
+def ssh_env(target: str):
+    # extra environment for the board-side runner, e.g. 'LD_LIBRARY_PATH=/root/lib'
+    return os.getenv('{0}_SSH_ENV'.format(target.upper()), '')
+
+
+def ssh_dir(target: str):
+    # scratch dir on the board, one subfolder per case
+    return _required_env('{0}_SSH_DIR'.format(target.upper()))
+
+
+def ssh_python(target: str):
+    return os.getenv('{0}_SSH_PYTHON'.format(target.upper()), 'python3')
+
+
+def ssh_timeout(target: str):
+    return int(os.getenv('{0}_SSH_TIMEOUT'.format(target.upper()), '300'))
+
+
 def infer_report_file(default: str):
     return os.getenv('INFER_REPORT_FILE', default)
 

@@ -22,6 +22,10 @@ import preprocess_utils
 import socket
 import struct
 import json
+import io
+import shlex
+import subprocess
+import tarfile
 from test_utils import *
 import time
 from html import escape
@@ -39,6 +43,8 @@ class Inference:
         nuc_port = test_utils.nuc_port()
         test_executable = test_utils.test_executable(target)
         running_on_evb = target in kpu_targets and nuc_ip is not None and nuc_port is not None and test_executable is not None and len(
+            self.inputs) > 0 and len(self.outputs) > 0
+        running_on_ssh = target in kpu_targets and test_utils.ssh_host(target) is not None and len(
             self.inputs) > 0 and len(self.outputs) > 0
 
         if self.cfg['infer_report_opt']['enabled']:
@@ -65,7 +71,9 @@ class Inference:
                 f.write(kmodel)
 
         compile_opt = self.cfg['compile_opt']
-        if running_on_evb:
+        if running_on_ssh:
+            outputs = self.run_ssh(target, kmodel, compile_opt, infer_dir)
+        elif running_on_evb:
             outputs = self.run_evb(target, kmodel, compile_opt, infer_dir)
         else:
             sim = nncase.Simulator()
@@ -104,9 +112,12 @@ class Inference:
             f.write(s)
 
     def dump_infer_output(self, sim, compile_opt, infer_dir):
+        return self.postprocess_infer_output(
+            [sim.get_output_tensor(i).to_numpy() for i in range(sim.outputs_size)], compile_opt, infer_dir)
+
+    def postprocess_infer_output(self, raw_outputs, compile_opt, infer_dir):
         outputs = []
-        for i in range(sim.outputs_size):
-            output = sim.get_output_tensor(i).to_numpy()
+        for i, output in enumerate(raw_outputs):
             if compile_opt['preprocess']:
                 if(compile_opt['output_layout'] == 'NHWC' and self.model_type in ['caffe', 'onnx']):
                     output = np.transpose(output, [0, 3, 1, 2])
@@ -121,6 +132,58 @@ class Inference:
                 dump_bin_file(os.path.join(infer_dir, f'nncase_result_{i}.bin'), output)
                 dump_txt_file(os.path.join(infer_dir, f'nncase_result_{i}.txt'), output)
         return outputs
+
+    def run_ssh(self, target, kmodel, compile_opt, infer_dir):
+        # one ssh call per case: inputs go in as a tar on stdin, results come back as a tar on stdout
+        host = test_utils.ssh_host(target)
+        runtime = test_utils.ssh_runtime(target)
+        remote_dir = '{0}/{1}_{2}'.format(test_utils.ssh_dir(target),
+                                          os.path.basename(self.case_dir), os.getpid())
+
+        files = {self.cfg['kmodel_name']: kmodel}
+        with open(os.path.join(os.path.dirname(__file__), 'board', 'k230_run.py'), 'rb') as f:
+            files['k230_run.py'] = f.read()
+        input_args = []
+        for idx, value in enumerate(self.inputs):
+            data = self.transform_input(
+                value['data'], compile_opt['input_type'], "infer")[0]
+            files[f'input_{idx}.bin'] = data.tobytes()
+            input_args.append('input_{0}.bin:{1}:{2}'.format(
+                idx, data.dtype.name, ','.join(str(d) for d in data.shape)))
+
+        tar_in = io.BytesIO()
+        with tarfile.open(fileobj=tar_in, mode='w', format=tarfile.USTAR_FORMAT) as tar:
+            for name, content in files.items():
+                info = tarfile.TarInfo(name)
+                info.size = len(content)
+                tar.addfile(info, io.BytesIO(content))
+
+        d = shlex.quote(remote_dir)
+        run = ' '.join([f'PYTHONPATH={shlex.quote(os.path.dirname(runtime))}', test_utils.ssh_env(target),
+                        test_utils.ssh_python(target), 'k230_run.py', self.cfg['kmodel_name']] + input_args)
+        remote_cmd = (f'set -e; rm -rf {d}; mkdir -p {d}; cd {d}; tar xf -; {run} 1>&2; '
+                      f'tar cf - outputs.json nncase_result_*.bin; cd /; rm -rf {d}')
+        try:
+            proc = subprocess.run(['ssh', '-o', 'BatchMode=yes', host, remote_cmd], input=tar_in.getvalue(),
+                                  capture_output=True, timeout=test_utils.ssh_timeout(target))
+        except subprocess.TimeoutExpired:
+            raise Exception(f'ssh infer timeout on {host}, case files left in {remote_dir}')
+        log = proc.stderr.decode(errors='replace')
+        if proc.returncode != 0:
+            raise Exception(
+                f'ssh infer failed on {host} (exit {proc.returncode}), case files left in {remote_dir}:\n{log}')
+
+        results = {}
+        with tarfile.open(fileobj=io.BytesIO(proc.stdout), mode='r:') as tar:
+            for member in tar.getmembers():
+                results[member.name] = tar.extractfile(member).read()
+        desc = json.loads(results['outputs.json'])
+        if self.cfg['infer_report_opt']['enabled']:
+            self.infer_report_dict['actual_fps'] = str(round(1000 / desc['time_ms'], 3))
+
+        raw_outputs = [np.frombuffer(results[f'nncase_result_{i}.bin'], dtype=o['dtype']).reshape(o['shape'])
+                       for i, o in enumerate(desc['outputs'])]
+        return self.postprocess_infer_output(raw_outputs, compile_opt, infer_dir)
 
     def send_msg(self, sock, msg):
         # Prefix each message with a 4-byte length (network byte order)
