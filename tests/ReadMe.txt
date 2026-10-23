@@ -50,7 +50,7 @@ Other options (python run_k230_tests.py --help):
   --file-timeout       seconds per test file (default 3600)
   --board-python       python on the board (default python3)
   --board-env          extra environment for the board-side runner, e.g. "LD_LIBRARY_PATH=/root/lib"
-  --board-timeout      seconds per inference on the board (default 120)
+  --board-timeout      seconds per case on the board, incl. starting a session (default 120)
   -- <args>            anything after -- goes to pytest unchanged
 
 
@@ -71,10 +71,14 @@ Preparing the PC (host)
 Preparing the board
 -------------------
 
-The board runs Linux (k230_linux_sdk image). Nothing runs permanently on it: for every test case the PC
-sends the kmodel, the inputs and board/k230_run.py over ssh into <board-dir>/<case>, runs them with the
-board's python3 and nncaseruntime, and fetches nncase_result_*.bin back. The case folder is removed after a
-successful run and kept after a failure (the error message names it).
+The board runs Linux (k230_linux_sdk image). Nothing is installed on it except nncaseruntime: for every
+test file the PC opens one ssh session and starts board/k230_serve.py in it (the script itself is sent over
+the session), so python3, numpy and nncaseruntime are loaded once per file. The cases of that file are then
+sent over the session (kmodel + inputs in, outputs back), working folder <board-dir>/k230_serve_<id>, which
+is removed when the session ends. If a case crashes the board process (e.g. a segfault in the runtime) the
+case fails with the board's stderr and the next case starts a new session; after --board-timeout the session
+is killed on the board as well, so a hanging model does not keep the KPU busy.
+To keep the kmodel and inputs of failing cases, run with --keep-cases (they stay on the PC).
 
 1. Image requirements
    - python3 of the version the runtime module is built for (3.13 for the current sdk) with numpy
@@ -119,7 +123,8 @@ successful run and kept after a failure (the error message names it).
 
    run_k230_tests.py does the same check before a board run and stops with the error if it fails.
 
-To run one kmodel by hand on the board (e.g. under gdb), use board/k230_run.py from a case folder:
+To run one kmodel by hand on the board (e.g. under gdb), copy infer/k230/ptq/test.kmodel and input/*.bin of a case kept
+with --keep-cases and board/k230_run.py to the board and run:
 
      cd <case folder>
-     PYTHONPATH=/root/test python3 k230_run.py test.kmodel input_0.bin:float32:1,3,24,24
+     PYTHONPATH=/root/test python3 k230_run.py test.kmodel input_0_0.bin:float32:1,3,24,24

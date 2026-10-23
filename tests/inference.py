@@ -22,10 +22,11 @@ import preprocess_utils
 import socket
 import struct
 import json
-import io
+import atexit
+import collections
 import shlex
 import subprocess
-import tarfile
+import threading
 from test_utils import *
 import time
 from html import escape
@@ -33,6 +34,120 @@ from html import escape
 
 def data_shape_list_string(data):
     return '\n'.join(map(lambda d: ' '.join(map(lambda x: str(x), d['model_shape'])), data))
+
+
+class BoardSession:
+    # One ssh connection with tests/board/k230_serve.py running on the board, reused for all cases of this
+    # pytest process. A session that died (crash, timeout) is dropped and the next case starts a new one.
+    _sessions = {}
+    _count = 0
+
+    @classmethod
+    def get(cls, target):
+        session = cls._sessions.get(target)
+        if session is None or session.proc.poll() is not None:
+            session = cls._sessions[target] = cls(target)
+        return session
+
+    @classmethod
+    def drop(cls, target):
+        session = cls._sessions.pop(target, None)
+        if session is not None:
+            session.close()
+
+    @classmethod
+    def close_all(cls):
+        for target in list(cls._sessions):
+            cls.drop(target)
+
+    def __init__(self, target):
+        BoardSession._count += 1
+        self.host = test_utils.ssh_host(target)
+        self.timeout = test_utils.ssh_timeout(target)
+        runtime = test_utils.ssh_runtime(target)
+        # unique per session, also on the remote command line so a timed out session can be killed on the board
+        self.token = 'k230_serve_{0}_{1}_{2}'.format(int(time.time()), os.getpid(), BoardSession._count)
+        work_dir = self.work_dir = shlex.quote('{0}/{1}'.format(test_utils.ssh_dir(target), self.token))
+        # the server script comes over stdin (length line + source) and then keeps reading the cases from it
+        bootstrap = ('import sys; n = int(sys.stdin.buffer.readline()); '
+                     'exec(compile(sys.stdin.buffer.read(n), "k230_serve.py", "exec"))  # ' + self.token)
+        run = ' '.join([f'PYTHONPATH={shlex.quote(os.path.dirname(runtime))}', test_utils.ssh_env(target),
+                        test_utils.ssh_python(target), '-u', '-c', shlex.quote(bootstrap)])
+        remote_cmd = f'rm -rf {work_dir}; mkdir -p {work_dir} && cd {work_dir} && {run}; cd /; rm -rf {work_dir}'
+        self.proc = subprocess.Popen(['ssh', '-o', 'BatchMode=yes', self.host, remote_cmd], stdin=subprocess.PIPE,
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.log = collections.deque(maxlen=200)
+        threading.Thread(target=self._read_log, daemon=True).start()
+
+        with open(os.path.join(os.path.dirname(__file__), 'board', 'k230_serve.py'), 'rb') as f:
+            script = f.read()
+        hello = self._exchange(str(len(script)).encode() + b'\n' + script)
+        if not hello.get('ready'):
+            raise Exception(f'ssh infer failed on {self.host}: unexpected server start {hello}')
+
+    def _read_log(self):
+        for line in self.proc.stderr:
+            self.log.append(line.decode(errors='replace').rstrip())
+
+    def _read_exact(self, size):
+        data = self.proc.stdout.read(size)
+        if data is None or len(data) != size:
+            raise EOFError
+        return data
+
+    def _exchange(self, request):
+        # writes the request and reads the JSON header of the answer; a timeout kills the session
+        timer = threading.Timer(self.timeout, self.proc.kill)
+        timer.start()
+        try:
+            self.proc.stdin.write(request)
+            self.proc.stdin.flush()
+            line = self.proc.stdout.readline()
+            if not line:
+                raise EOFError
+            header = json.loads(line)
+            header['_payloads'] = [self._read_exact(o['size']) for o in header.get('outputs', [])]
+            return header
+        except (EOFError, OSError, ValueError):
+            timed_out = not timer.is_alive()
+            self.proc.kill()
+            self.proc.wait()
+            time.sleep(0.2)  # let the log thread pick up the last stderr lines
+            log = '\n'.join(self.log)
+            if timed_out:
+                # the board process may still hang (e.g. waiting for the KPU) and hold the device
+                # (dropping the connection also ends the remote shell before it removes the work dir; rm goes first
+                # because pkill -f also matches this shell, whose command line contains the token)
+                subprocess.run(['ssh', '-o', 'BatchMode=yes', self.host,
+                                f'rm -rf {self.work_dir}; pkill -f {self.token}'], capture_output=True, timeout=60)
+                raise Exception(f'ssh infer timeout on {self.host} after {self.timeout} s:\n{log}')
+            raise Exception(f'ssh infer failed on {self.host} (board process ended, exit {self.proc.returncode}):'
+                            f'\n{log}')
+        finally:
+            timer.cancel()
+
+    def infer(self, kmodel, inputs):
+        header = {'kmodel': len(kmodel),
+                  'inputs': [{'dtype': d.dtype.name, 'shape': list(d.shape), 'size': d.nbytes} for d in inputs]}
+        request = (json.dumps(header) + '\n').encode() + kmodel + b''.join(
+            np.ascontiguousarray(d).tobytes() for d in inputs)
+        answer = self._exchange(request)
+        if not answer['ok']:
+            raise Exception(f'ssh infer failed on {self.host}:\n{answer["error"]}')
+        outputs = [np.frombuffer(p, dtype=o['dtype']).reshape(o['shape'])
+                   for p, o in zip(answer['_payloads'], answer['outputs'])]
+        return outputs, answer['time_ms']
+
+    def close(self):
+        if self.proc.poll() is None:
+            try:
+                self.proc.stdin.close()
+                self.proc.wait(timeout=10)
+            except Exception:
+                self.proc.kill()
+
+
+atexit.register(BoardSession.close_all)
 
 
 class Inference:
@@ -134,55 +249,18 @@ class Inference:
         return outputs
 
     def run_ssh(self, target, kmodel, compile_opt, infer_dir):
-        # one ssh call per case: inputs go in as a tar on stdin, results come back as a tar on stdout
-        host = test_utils.ssh_host(target)
-        runtime = test_utils.ssh_runtime(target)
-        remote_dir = '{0}/{1}_{2}'.format(test_utils.ssh_dir(target),
-                                          os.path.basename(self.case_dir), os.getpid())
-
-        files = {self.cfg['kmodel_name']: kmodel}
-        with open(os.path.join(os.path.dirname(__file__), 'board', 'k230_run.py'), 'rb') as f:
-            files['k230_run.py'] = f.read()
-        input_args = []
-        for idx, value in enumerate(self.inputs):
-            data = self.transform_input(
-                value['data'], compile_opt['input_type'], "infer")[0]
-            files[f'input_{idx}.bin'] = data.tobytes()
-            input_args.append('input_{0}.bin:{1}:{2}'.format(
-                idx, data.dtype.name, ','.join(str(d) for d in data.shape)))
-
-        tar_in = io.BytesIO()
-        with tarfile.open(fileobj=tar_in, mode='w', format=tarfile.USTAR_FORMAT) as tar:
-            for name, content in files.items():
-                info = tarfile.TarInfo(name)
-                info.size = len(content)
-                tar.addfile(info, io.BytesIO(content))
-
-        d = shlex.quote(remote_dir)
-        run = ' '.join([f'PYTHONPATH={shlex.quote(os.path.dirname(runtime))}', test_utils.ssh_env(target),
-                        test_utils.ssh_python(target), 'k230_run.py', self.cfg['kmodel_name']] + input_args)
-        remote_cmd = (f'set -e; rm -rf {d}; mkdir -p {d}; cd {d}; tar xf -; {run} 1>&2; '
-                      f'tar cf - outputs.json nncase_result_*.bin; cd /; rm -rf {d}')
+        inputs = [self.transform_input(value['data'], compile_opt['input_type'], "infer")[0]
+                  for value in self.inputs]
+        session = BoardSession.get(target)
         try:
-            proc = subprocess.run(['ssh', '-o', 'BatchMode=yes', host, remote_cmd], input=tar_in.getvalue(),
-                                  capture_output=True, timeout=test_utils.ssh_timeout(target))
-        except subprocess.TimeoutExpired:
-            raise Exception(f'ssh infer timeout on {host}, case files left in {remote_dir}')
-        log = proc.stderr.decode(errors='replace')
-        if proc.returncode != 0:
-            raise Exception(
-                f'ssh infer failed on {host} (exit {proc.returncode}), case files left in {remote_dir}:\n{log}')
-
-        results = {}
-        with tarfile.open(fileobj=io.BytesIO(proc.stdout), mode='r:') as tar:
-            for member in tar.getmembers():
-                results[member.name] = tar.extractfile(member).read()
-        desc = json.loads(results['outputs.json'])
+            raw_outputs, time_ms = session.infer(kmodel, inputs)
+        except Exception:
+            if session.proc.poll() is not None:
+                # the board process is gone (crash, timeout): the next case starts a fresh one
+                BoardSession.drop(target)
+            raise
         if self.cfg['infer_report_opt']['enabled']:
-            self.infer_report_dict['actual_fps'] = str(round(1000 / desc['time_ms'], 3))
-
-        raw_outputs = [np.frombuffer(results[f'nncase_result_{i}.bin'], dtype=o['dtype']).reshape(o['shape'])
-                       for i, o in enumerate(desc['outputs'])]
+            self.infer_report_dict['actual_fps'] = str(round(1000 / time_ms, 3))
         return self.postprocess_infer_output(raw_outputs, compile_opt, infer_dir)
 
     def send_msg(self, sock, msg):
