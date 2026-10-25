@@ -5,20 +5,22 @@
 #                          (runtime/k230-simulator/platform.h) it loads the library (K230_SIMULATOR_DLL=ON) or starts
 #                          the executable (K230_SIMULATOR_DLL=OFF)
 #   BUILDING_RUNTIME       platform_k230.cpp: runs on a K230 board, memory from libmmz, registers through /dev/mmz
-set(ISA_TEST_SOURCES main.cpp test_case.cpp test_runner.cpp assembler.cpp)
+#
+# The assembler is the k230_asm library (../k230_asm).
+set(ISA_TEST_SOURCES main.cpp test_case.cpp test_runner.cpp)
 
 if(BUILDING_RUNTIME)
     # the register level driver of the runtime is used as it is (gnne.c is not part of a library the test could link
     # without pulling in the runtime module)
     add_executable(k230_isa_test ${ISA_TEST_SOURCES} platform_k230.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../runtime/k230/gnne.c)
     target_include_directories(k230_isa_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
-    target_link_libraries(k230_isa_test PRIVATE mmz)
+    target_link_libraries(k230_isa_test PRIVATE k230_asm mmz)
     install(TARGETS k230_isa_test RUNTIME DESTINATION bin)
 else()
     add_executable(k230_isa_test ${ISA_TEST_SOURCES} platform_simulator.cpp)
     target_include_directories(k230_isa_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../runtime)
     # nncase.simulator.k230 provides shared_memory
-    target_link_libraries(k230_isa_test PRIVATE nncase.simulator.k230)
+    target_link_libraries(k230_isa_test PRIVATE k230_asm nncase.simulator.k230)
     # the simulator has to be built, but is not linked
     add_dependencies(k230_isa_test nncase.simulator.k230.sc)
 

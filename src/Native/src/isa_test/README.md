@@ -13,7 +13,7 @@ The same tests run on two platforms. Everything platform specific is behind one 
 | K230 board | `platform_k230.cpp` | the runtime (cross) build, `BUILDING_RUNTIME` |
 
 Platform independent: `main.cpp` (command line, directory runs), `test_case.*` (test description), `test_runner.*`
-(memory layout, filling and checking the memory, assembling), `assembler.*`.
+(memory layout, filling and checking the memory, assembling). The assembler is the `k230_asm` library (`../k230_asm`).
 
 **Simulator.** It is not linked into the test app: as in the host runtime it is loaded as a library when
 `K230_SIMULATOR_DLL=ON` (the default in `src/Native/src/CMakeLists.txt`) and started as an executable otherwise. Set the
@@ -87,19 +87,5 @@ taken from the simulator. Most programs are short enough to read as a descriptio
 
 ## Assembler
 
-Syntax and encodings follow `../simulator/README.md`; operands are written in compiler-dump order (`lw rd, rs, offset`,
-`sw base, src, offset`, `blt rs1, rs2, label`). Labels, `#` comments, and the pseudo instructions `nop`, `mv`, `li`, `j` are
-supported. Mnemonics are looked up with `StringSwitch` (`string_switch.h`, same interface as `llvm::StringSwitch`); the
-instruction layouts are the table in `assembler.cpp`.
-
-Hardware notes for the `asm/conv` tests (found on a K230 board): the PU only convolves unsigned data, so signed values are stored as value + 128 with zero point 128 (`*_conf_deq` type 1); `dm_load_w_conf2`, `pu_fetchif_conf2` and `pu_of_conf1` need real `rgroups` / `rgic` / `rgoc` values or the convolution does not run; the CCR instructions must not be used without a producer (`ccr_clr` stalls the program). On the board the 3x3 stride-2 convolution only works when the windows fit the padded input exactly, i.e. `(size - kernel) % stride == 0` in both directions; otherwise the output row pitch is larger than the output shape. Signed int8 output must be stored with `dm_store_of_conf` type 0 (type 1 is a 16-bit mode). `pu_forward_psum` only hands the PSUM to ACT0 when the `pu_compute` before it accumulated (`load_psum` 1); after a single compute that overwrites or clears the PSUM (`load_psum` 0, with or without `clr_psum`) the board does nothing for it: the PU stays busy on the forward and the queued store never runs, but the program still reaches `end`, so the only sign is an output that was not written (the simulator writes the result). `conv1x1_accumulate_forward_psum.s` uses the working order. The PSUM keeps its contents from one program to the next, so a test must not depend on it being zero.
-
-### AI2D on the board
-
-* The engine runs on `ai2d_compute`, not on the write to register 35: `extrw` / `extraw` only queue register writes.
-  Write all 36 registers in ascending order (pointers 0..7 with `extraw`, the others with `extrw`), then `ai2d_compute` and `fence`.
-  The registers keep their values between operations, so every register the operation does not use has to be written as 0
-  (marked `unused, must be 0` in the tests), like the compiler does.
-* In the NPU instruction stream the AI2D only works on GLB (`src_ind = dst_ind = 0`); pointers are GLB offsets
-  (`offset + (mmu id << 28)`). DDR pointers written with `extraw` are truncated to 22 bits.
-* The AI2D timeout register (+0xC0) has to be set to 0x1388 before the run (done by `platform_k230.cpp`).
+The programs are assembled by the `k230_asm` library; its syntax is described in `../k230_asm/README.md`. The
+symbols `DDR_IN` / `DDR_OUT` are the only ones the test app defines.

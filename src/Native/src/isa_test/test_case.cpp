@@ -10,6 +10,8 @@
 
 namespace k230::isa_test {
 
+using k230::assembler::parse_integer;
+
 namespace {
 
 constexpr TypeInfo kTypes[] = {

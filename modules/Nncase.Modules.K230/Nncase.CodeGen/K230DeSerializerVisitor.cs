@@ -2702,7 +2702,7 @@ public class K230DeSerializerVisitor
         reader.Read<uint>(3uL);
         ACT0_CHANNEL value3 = (ACT0_CHANNEL)reader.Read<uint>(1uL);
         SHAPE_REGISTER value4 = (SHAPE_REGISTER)reader.Read<uint>(3uL);
-        reader.Read<int>(5uL);
+        int value5 = reader.Read<int>(5uL);
         reader.Read<int>(7uL);
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("inst act0_src1_conf");
@@ -2732,6 +2732,7 @@ public class K230DeSerializerVisitor
         handler.AppendLiteral("    rshape : ");
         handler.AppendFormatted(value4);
         stringBuilder6.AppendLine(ref handler);
+        stringBuilder.AppendLine($"    rshift_bits : {value5}");
         pc_offset += 32uL;
         return stringBuilder.ToString();
     }

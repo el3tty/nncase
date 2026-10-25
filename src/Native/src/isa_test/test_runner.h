@@ -11,6 +11,9 @@
 
 namespace k230::isa_test {
 
+// the assembler (../k230_asm) is a library of its own
+using namespace k230::assembler;
+
 // Exit codes of run_test() and of the test app.
 enum ExitCode {
     kPass = 0,
