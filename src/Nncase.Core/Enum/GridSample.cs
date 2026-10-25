@@ -49,19 +49,21 @@ public static class GridSampleModeHelper
     {
         return mode switch
         {
+            // opset 16 names "bilinear" / "bicubic", opset 20 renamed them to "linear" / "cubic"
             "nearest" => GridSampleMode.NearestNeighbor,
-            "bilinear" => GridSampleMode.Bilinear,
-            "cubic" => GridSampleMode.Cubic,
+            "bilinear" or "linear" => GridSampleMode.Bilinear,
+            "bicubic" or "cubic" => GridSampleMode.Cubic,
             _ => throw new NotSupportedException($"Unsupported GridSample Mode {mode}"),
         };
     }
 
+    // ONNX (opset 20) names, as the onnxruntime used by the evaluator expects them
     public static string ToString(GridSampleMode mode)
     {
         return mode switch
         {
             GridSampleMode.NearestNeighbor => "nearest",
-            GridSampleMode.Bilinear => "bilinear",
+            GridSampleMode.Bilinear => "linear",
             GridSampleMode.Cubic => "cubic",
             _ => throw new NotSupportedException($"Unsupported GridSample Mode {mode}"),
         };
