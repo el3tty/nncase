@@ -25,6 +25,15 @@ public sealed class ToFakeConv2DTranspose : RewriteRule<Pattern>
     private Expr? GetReplace(Conv2DTranspose conv2dTranspose, Call call, Expr input, Expr weights, TensorConst bias,
         Expr outShape, Expr stride, Expr padding, Expr outPadding, Expr dilation, int groups, Tensor<float> fusedClamp)
     {
+        // A 1x1 kernel gives the deconvolution a single pu_compute, which clears PSUM and is followed by
+        // pu_forward_psum. On the board pu_forward_psum only produces output after an accumulating (load_psum)
+        // compute, so the program stalls and the output is never written (see isa_test/asm/sim_only). Leave these
+        // on the CPU.
+        if (weights.CheckedShape[2].FixedValue == 1 && weights.CheckedShape[3].FixedValue == 1)
+        {
+            return null;
+        }
+
         int outChannels = weights.CheckedShape[0].FixedValue * groups;
         ActParam2 defaultConvActParam = ActParam2.GetDefaultConvActParam(outChannels, bias);
         for (int i = 0; i < outChannels; i++)
