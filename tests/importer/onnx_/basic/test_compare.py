@@ -62,13 +62,14 @@ def _make_module(compare_op, in_type, in_shape_0, in_shape_1):
     return model_def
 
 
-compare_ops = {
+# a list, not a set: the ids below are matched by position
+compare_ops = [
     'Equal',
     'Greater',
     'GreaterOrEqual',
     'Less',
     'LessOrEqual'
-}
+]
 
 in_types = [
     TensorProto.BOOL,

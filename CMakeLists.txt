@@ -37,7 +37,7 @@ if (NOT BUILDING_RUNTIME)
         nncase.simulator.k230
         nncase.simulator.k230.sc
         nncasetest_cli
-        nncaseruntime_python k230_isa_test k230-as)
+        nncaseruntime_python k230_isa_test)
 
     foreach (_target IN LISTS NNCASE_INSTALL_TARGETS)
         if (TARGET ${_target})
