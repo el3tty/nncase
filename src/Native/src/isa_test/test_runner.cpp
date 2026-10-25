@@ -95,6 +95,21 @@ void init_memory(const TestCase &tc, const Layout &l, const MemoryImage &mem) {
         write_bytes(mem.ddr_in + l.ddr_in_at[i], tc.ddr_inputs[i].bytes.data(), tc.ddr_inputs[i].bytes.size());
 }
 
+// "[5]", or "[1,0,2]" for a tensor with a shape
+static std::string format_index(const Tensor &t, size_t i) {
+    std::vector<size_t> index(t.shape.size());
+    for (size_t d = t.shape.size(); d-- > 0;) {
+        index[d] = i % t.shape[d];
+        i /= t.shape[d];
+    }
+    if (t.shape.empty())
+        index.push_back(i);
+    std::string s = "[";
+    for (size_t d = 0; d < index.size(); ++d)
+        s += (d ? "," : "") + std::to_string(index[d]);
+    return s + "]";
+}
+
 int verify_outputs(const TestCase &tc, const Layout &l, const MemoryImage &mem) {
     int mismatches = 0;
     auto verify = [&](const std::vector<Tensor> &tensors, const std::vector<size_t> &at, const uint8_t *base, const char *what) {
@@ -108,8 +123,8 @@ int verify_outputs(const TestCase &tc, const Layout &l, const MemoryImage &mem) 
                 const uint8_t *a = actual + i * t.type->size;
                 if (std::memcmp(e, a, t.type->size) != 0) {
                     if (++mismatches <= 16)
-                        std::fprintf(stderr, "  %s #%zu [%zu] (+0x%zx): expected %s, got %s\n", what, ti, i, o + i * t.type->size,
-                            format_element(*t.type, e).c_str(), format_element(*t.type, a).c_str());
+                        std::fprintf(stderr, "  %s #%zu %s (+0x%zx): expected %s, got %s\n", what, ti, format_index(t, i).c_str(),
+                            o + i * t.type->size, format_element(*t.type, e).c_str(), format_element(*t.type, a).c_str());
                 }
             }
         }

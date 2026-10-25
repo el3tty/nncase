@@ -83,80 +83,231 @@ std::string_view trim(std::string_view s) {
     return s;
 }
 
+std::string at_line(int line) { return "line " + std::to_string(line) + ": "; }
+
+// Text after a second '#' on a tensor line is a comment.
+std::string_view strip_comment(std::string_view s) { return s.substr(0, s.find('#')); }
+
+int bracket_depth(std::string_view s) {
+    int depth = 0;
+    for (char c : s)
+        depth += c == '[' ? 1 : c == ']' ? -1 : 0;
+    return depth;
+}
+
+// One element: a number of the element type; in f16 / f32 tensors a hex number is the bit pattern.
+void append_value(Tensor &t, std::string_view tok, int line) {
+    uint8_t raw[4];
+    const ElemType type = t.type->type;
+    const bool is_float = type == ElemType::F32 || type == ElemType::F16;
+    const bool hex = tok.size() > 2 && tok[0] == '0' && (tok[1] == 'x' || tok[1] == 'X');
+    if (is_float && !hex) {
+        const std::string s(tok);
+        float f;
+        try {
+            size_t used = 0;
+            f = std::stof(s, &used);
+            if (used != s.size())
+                throw std::invalid_argument(s);
+        } catch (const std::exception &) {
+            throw TestError(at_line(line) + "bad float value '" + s + "'");
+        }
+        if (type == ElemType::F16) {
+            const uint16_t h = float_to_half(f);
+            std::memcpy(raw, &h, 2);
+        } else
+            std::memcpy(raw, &f, 4);
+    } else {
+        auto v = parse_integer(tok);
+        if (!v)
+            throw TestError(at_line(line) + "bad integer '" + std::string(tok) + "'");
+        int64_t lo = 0, hi = 0;
+        switch (type) {
+        case ElemType::I8: lo = INT8_MIN; hi = INT8_MAX; break;
+        case ElemType::U8: lo = 0; hi = UINT8_MAX; break;
+        case ElemType::I16: lo = INT16_MIN; hi = INT16_MAX; break;
+        case ElemType::U16: case ElemType::F16: lo = 0; hi = UINT16_MAX; break;
+        case ElemType::I32: lo = INT32_MIN; hi = INT32_MAX; break;
+        default: lo = 0; hi = UINT32_MAX; break;
+        }
+        // hex is accepted for the bit pattern of a signed type as well (0xff in an i8 tensor = -1)
+        if (hex && (type == ElemType::I8 || type == ElemType::I16 || type == ElemType::I32))
+            hi = hi * 2 + 1;
+        if (*v < lo || *v > hi)
+            throw TestError(at_line(line) + std::string(tok) + " is out of range for " + t.type->name);
+        const uint32_t u = static_cast<uint32_t>(*v);
+        std::memcpy(raw, &u, 4); // little endian host
+    }
+    t.bytes.insert(t.bytes.end(), raw, raw + t.type->size);
+    ++t.count;
+}
+
+// "[1, 2*3, [4, 5]*2]": values with an optional repeat count; nested lists only group the values (and are checked
+// against the shape). Elements are separated by ',' or white space (also line breaks).
+class ValueParser {
+public:
+    ValueParser(Tensor &t, std::string_view text, int line) : t_(t), text_(text), line_(line) {}
+
+    void parse() {
+        skip_space();
+        if (pos_ >= text_.size() || text_[pos_] != '[')
+            throw TestError(at_line(line_) + "expected a value list in [..]");
+        parse_list(0);
+        skip_space();
+        if (pos_ != text_.size())
+            throw TestError(at_line(line_) + "unexpected text after ']'");
+        if (t_.count == 0)
+            throw TestError(at_line(line_) + "empty tensor");
+        check_shape();
+    }
+
+private:
+    struct List {
+        size_t level;
+        size_t elements; // values (with their repeat counts) and sub-lists at this level
+        bool has_values, has_lists;
+    };
+
+    void skip_space() {
+        while (pos_ < text_.size() && (std::isspace(static_cast<unsigned char>(text_[pos_])) || text_[pos_] == ','))
+            ++pos_;
+    }
+
+    // "*n" after a value or a list, 1 without
+    size_t repeat_count() {
+        if (pos_ >= text_.size() || text_[pos_] != '*')
+            return 1;
+        ++pos_;
+        const size_t begin = pos_;
+        while (pos_ < text_.size() && std::isalnum(static_cast<unsigned char>(text_[pos_])))
+            ++pos_;
+        auto n = parse_integer(text_.substr(begin, pos_ - begin));
+        if (!n || *n < 1)
+            throw TestError(at_line(line_) + "bad repeat count '" + std::string(text_.substr(begin, pos_ - begin)) + "'");
+        return static_cast<size_t>(*n);
+    }
+
+    void repeat_tail(size_t from_byte, size_t from_count, size_t times) {
+        const std::vector<uint8_t> once(t_.bytes.begin() + from_byte, t_.bytes.end());
+        const size_t count = t_.count - from_count;
+        for (size_t i = 1; i < times; ++i) {
+            t_.bytes.insert(t_.bytes.end(), once.begin(), once.end());
+            t_.count += count;
+        }
+    }
+
+    void parse_list(size_t level) {
+        ++pos_; // '['
+        const size_t index = lists_.size();
+        lists_.push_back({level, 0, false, false});
+        for (;;) {
+            skip_space();
+            if (pos_ >= text_.size())
+                throw TestError(at_line(line_) + "missing ']'");
+            const char c = text_[pos_];
+            const size_t bytes = t_.bytes.size(), count = t_.count;
+            if (c == ']') {
+                ++pos_;
+                return;
+            }
+            size_t times;
+            if (c == '[') {
+                parse_list(level + 1);
+                times = repeat_count();
+                lists_[index].has_lists = true;
+            } else {
+                const size_t begin = pos_;
+                while (pos_ < text_.size() && !std::isspace(static_cast<unsigned char>(text_[pos_])) &&
+                       std::strchr(",[]*", text_[pos_]) == nullptr)
+                    ++pos_;
+                append_value(t_, text_.substr(begin, pos_ - begin), line_);
+                times = repeat_count();
+                lists_[index].has_values = true;
+            }
+            repeat_tail(bytes, count, times);
+            lists_[index].elements += times;
+        }
+    }
+
+    // A flat list only has to have as many values as the shape; a nested one has to match it level by level.
+    void check_shape() {
+        const auto &shape = t_.shape;
+        if (shape.empty())
+            return;
+        size_t total = 1;
+        for (size_t d : shape)
+            total *= d;
+        if (lists_.size() == 1) {
+            if (t_.count != total)
+                throw TestError(at_line(line_) + "the shape has " + std::to_string(total) + " elements, the list " +
+                                std::to_string(t_.count));
+            return;
+        }
+        for (const auto &l : lists_) {
+            const bool leaf = l.level + 1 == shape.size();
+            if (l.level >= shape.size() || (leaf ? l.has_lists : l.has_values) || l.elements != shape[l.level])
+                throw TestError(at_line(line_) + "the nested lists do not match the shape (a list at depth " +
+                                std::to_string(l.level + 1) + " has " + std::to_string(l.elements) + " elements, the shape " +
+                                (l.level < shape.size() ? std::to_string(shape[l.level]) : std::string("none")) + ")");
+        }
+    }
+
+    Tensor &t_;
+    std::string_view text_;
+    int line_;
+    size_t pos_ = 0;
+    std::vector<List> lists_;
+};
+
+// "[@addr:] [type[shape]] [values]" (the key before the ':' was already removed)
 Tensor parse_tensor(std::string_view text, int line) {
     text = trim(text);
     int64_t addr = -1;
-    if (!text.empty() && text[0] == '@') { // "@0x4000: u8 [..]" (the key before the ':' was already removed)
+    if (!text.empty() && text[0] == '@') {
         const size_t colon = text.find(':');
         if (colon == std::string_view::npos)
-            throw TestError("line " + std::to_string(line) + ": expected ':' after the address");
+            throw TestError(at_line(line) + "expected ':' after the address");
         auto v = parse_integer(trim(text.substr(1, colon - 1)));
         if (!v || *v < 0)
-            throw TestError("line " + std::to_string(line) + ": bad address");
+            throw TestError(at_line(line) + "bad address");
         addr = *v;
         text = trim(text.substr(colon + 1));
     }
-    const size_t open = text.find('[');
-    const size_t close = text.rfind(']');
-    if (open == std::string_view::npos || close == std::string_view::npos || close < open)
-        throw TestError("line " + std::to_string(line) + ": expected a value list in [..]");
-    if (!trim(text.substr(close + 1)).empty())
-        throw TestError("line " + std::to_string(line) + ": unexpected text after ']'");
 
+    size_t name_end = 0;
+    while (name_end < text.size() && std::isalnum(static_cast<unsigned char>(text[name_end])))
+        ++name_end;
     const TypeInfo *type = &kTypes[4];
-    auto type_name = trim(text.substr(0, open));
-    if (!type_name.empty()) {
+    if (name_end > 0) {
+        const auto type_name = text.substr(0, name_end);
         auto it = std::find_if(std::begin(kTypes), std::end(kTypes), [&](const TypeInfo &t) { return type_name == t.name; });
         if (it == std::end(kTypes))
-            throw TestError("line " + std::to_string(line) + ": unknown element type '" + std::string(type_name) + "'");
+            throw TestError(at_line(line) + "unknown element type '" + std::string(type_name) + "'");
         type = &*it;
     }
-
     Tensor t{type, 0, {}, line, addr};
-    std::string body(text.substr(open + 1, close - open - 1));
-    std::replace(body.begin(), body.end(), ',', ' ');
-    std::istringstream is(body);
-    std::string tok;
-    while (is >> tok) {
-        uint8_t raw[4];
-        if (type->type == ElemType::F32 || type->type == ElemType::F16) {
-            float f;
-            try {
-                size_t used = 0;
-                f = std::stof(tok, &used);
-                if (used != tok.size())
-                    throw std::invalid_argument(tok);
-            } catch (const std::exception &) {
-                throw TestError("line " + std::to_string(line) + ": bad float value '" + tok + "'");
-            }
-            if (type->type == ElemType::F16) {
-                const uint16_t h = float_to_half(f);
-                std::memcpy(raw, &h, 2);
-            } else
-                std::memcpy(raw, &f, 4);
-        } else {
-            auto v = parse_integer(tok);
-            if (!v)
-                throw TestError("line " + std::to_string(line) + ": bad integer '" + tok + "'");
-            int64_t lo = 0, hi = 0;
-            switch (type->type) {
-            case ElemType::I8: lo = INT8_MIN; hi = INT8_MAX; break;
-            case ElemType::U8: lo = 0; hi = UINT8_MAX; break;
-            case ElemType::I16: lo = INT16_MIN; hi = INT16_MAX; break;
-            case ElemType::U16: lo = 0; hi = UINT16_MAX; break;
-            case ElemType::I32: lo = INT32_MIN; hi = INT32_MAX; break;
-            default: lo = 0; hi = UINT32_MAX; break;
-            }
-            if (*v < lo || *v > hi)
-                throw TestError("line " + std::to_string(line) + ": " + tok + " is out of range for " + type->name);
-            const uint32_t u = static_cast<uint32_t>(*v);
-            std::memcpy(raw, &u, 4); // little endian host
+    text.remove_prefix(name_end);
+
+    // shape: written right after the type, "u8[2,3]"
+    if (name_end > 0 && !text.empty() && text[0] == '[') {
+        const size_t close = text.find(']');
+        if (close == std::string_view::npos)
+            throw TestError(at_line(line) + "missing ']' after the shape");
+        std::string dims(text.substr(1, close - 1));
+        std::replace(dims.begin(), dims.end(), ',', ' ');
+        std::istringstream is(dims);
+        for (std::string d; is >> d;) {
+            auto v = parse_integer(d);
+            if (!v || *v < 1)
+                throw TestError(at_line(line) + "bad dimension '" + d + "'");
+            t.shape.push_back(static_cast<size_t>(*v));
         }
-        t.bytes.insert(t.bytes.end(), raw, raw + type->size);
-        ++t.count;
+        if (t.shape.empty())
+            throw TestError(at_line(line) + "empty shape");
+        text.remove_prefix(close + 1);
     }
-    if (t.count == 0)
-        throw TestError("line " + std::to_string(line) + ": empty tensor");
+
+    ValueParser(t, text, line).parse();
     return t;
 }
 
@@ -165,12 +316,15 @@ Tensor parse_tensor(std::string_view text, int line) {
 TestCase parse_test_case(const std::string &source) {
     TestCase tc;
     tc.source = source;
-    std::istringstream is(source);
-    std::string line;
-    int no = 0;
-    while (std::getline(is, line)) {
-        ++no;
-        auto text = trim(line);
+    std::vector<std::string> lines;
+    {
+        std::istringstream is(source);
+        for (std::string line; std::getline(is, line);)
+            lines.push_back(line);
+    }
+    for (size_t i = 0; i < lines.size(); ++i) {
+        const int no = static_cast<int>(i + 1);
+        auto text = trim(lines[i]);
         if (text.empty() || text[0] != '#')
             continue;
         text = trim(text.substr(1));
@@ -183,16 +337,29 @@ TestCase parse_test_case(const std::string &source) {
         if (colon == std::string_view::npos)
             continue;
         std::string_view head = trim(text.substr(0, colon));
-        std::string_view rest = text.substr(colon + 1);
-        std::string_view key = head.substr(0, head.find('@'));
-        key = trim(key);
+        std::string_view key = trim(head.substr(0, head.find('@')));
         if (key != "IN" && key != "OUT" && key != "DDR_IN" && key != "DDR_OUT")
             continue;
-        std::string with_addr = head.find('@') == std::string_view::npos ? std::string(rest)
-                                                                          : std::string(head.substr(head.find('@'))) + ":" + std::string(rest);
-        Tensor t = parse_tensor(with_addr, no);
+        std::string body = head.find('@') == std::string_view::npos
+                               ? std::string(strip_comment(text.substr(colon + 1)))
+                               : std::string(head.substr(head.find('@'))) + ":" + std::string(strip_comment(text.substr(colon + 1)));
+        // a list that is not closed continues on the following comment lines
+        int depth = bracket_depth(body);
+        while (depth > 0) {
+            if (++i >= lines.size())
+                throw TestError(at_line(no) + "missing ']' (the list continues on '#' lines)");
+            auto next = trim(lines[i]);
+            if (next.empty() || next[0] != '#')
+                throw TestError(at_line(no) + "missing ']' before line " + std::to_string(i + 1) +
+                                " (the list continues on '#' lines)");
+            const auto part = strip_comment(next.substr(1));
+            depth += bracket_depth(part);
+            body += '\n';
+            body += part;
+        }
+        Tensor t = parse_tensor(body, no);
         if (t.addr >= 0 && key != "IN" && key != "OUT")
-            throw TestError("line " + std::to_string(no) + ": DDR tensors cannot have an explicit address (the program gets their address through the DDR_IN / DDR_OUT symbols)");
+            throw TestError(at_line(no) + "DDR tensors cannot have an explicit address (the program gets their address through the DDR_IN / DDR_OUT symbols)");
         if (key == "IN")
             tc.inputs.push_back(std::move(t));
         else if (key == "OUT")

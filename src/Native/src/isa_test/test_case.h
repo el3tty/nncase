@@ -27,6 +27,7 @@ struct Tensor {
     std::vector<uint8_t> bytes;
     int line;
     int64_t addr = -1; // explicit GLB address or -1 = automatic layout
+    std::vector<size_t> shape; // optional, e.g. u8[2,3]; only used to check the values and to report positions
 };
 
 struct TestCase {

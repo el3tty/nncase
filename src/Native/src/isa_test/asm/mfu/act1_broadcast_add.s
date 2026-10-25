@@ -2,10 +2,16 @@
 # The fit table (act1 mode, 7 fp16 per parameter set) is: knee, slope(x<knee), slope(x>=knee), intercept(x<knee),
 # intercept(x>=knee), lower clamp, upper clamp.
 # src2 is a 1x4 row, repeated for both rows of src1 (slice repeats = 2)
-# IN @0x4000: f16 [1.0, 2.0, 3.0, 4.0, -5.0, 6.0, 0.5, 8.0]
+# IN @0x4000: f16[2,4] [
+#   [1.0, 2.0, 3.0, 4.0]
+#   [-5.0, 6.0, 0.5, 8.0]
+# ]
 # IN @0x5000: f16 [1.0, 2.0, 3.0, 4.0]
 # IN @0x6000: f16 [0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0]
-# OUT @0x7000: f16 [2.0, 4.0, 6.0, 8.0, -4.0, 8.0, 3.5, 12.0]
+# OUT @0x7000: f16[2,4] [
+#   [2.0, 4.0, 6.0, 8.0]
+#   [-4.0, 8.0, 3.5, 12.0]
+# ]
     li x1, 0x7000                      # destination
     li x2, 0x4000                      # src1
     li x3, 0x5000                      # src2

@@ -2,10 +2,19 @@
 # The fit table (act1 mode, 7 fp16 per parameter set) is: knee, slope(x<knee), slope(x>=knee), intercept(x<knee),
 # intercept(x>=knee), lower clamp, upper clamp.
 # funct4 != 0 selects the multiplication: src1 * src2 (any non-zero value does)
-# IN @0x4000: f16 [1.0, 2.0, 3.0, 4.0, -5.0, 6.0, 0.5, 8.0]
-# IN @0x5000: f16 [10.0, 20.0, 30.0, 40.0, 5.0, -6.0, 0.25, 1.0]
+# IN @0x4000: f16[2,4] [
+#   [1.0, 2.0, 3.0, 4.0]
+#   [-5.0, 6.0, 0.5, 8.0]
+# ]
+# IN @0x5000: f16[2,4] [
+#   [10.0, 20.0, 30.0, 40.0]
+#   [5.0, -6.0, 0.25, 1.0]
+# ]
 # IN @0x6000: f16 [0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0]
-# OUT @0x7000: f16 [10.0, 40.0, 90.0, 160.0, -25.0, -36.0, 0.125, 8.0]
+# OUT @0x7000: f16[2,4] [
+#   [10.0, 40.0, 90.0, 160.0]
+#   [-25.0, -36.0, 0.125, 8.0]
+# ]
     li x1, 0x7000                      # destination
     li x2, 0x4000                      # src1
     li x3, 0x5000                      # src2

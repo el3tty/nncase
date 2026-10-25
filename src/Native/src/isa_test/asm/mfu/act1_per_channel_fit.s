@@ -2,9 +2,17 @@
 # The fit table (act1 mode, 7 fp16 per parameter set) is: knee, slope(x<knee), slope(x>=knee), intercept(x<knee),
 # intercept(x>=knee), lower clamp, upper clamp.
 # is_by_channel = 1: channel c uses parameter set c (set 0 = ReLU6, set 1 = 2 * x + 1)
-# IN @0x4000: f16 [1.0, -2.0, 3.0, 10.0, 1.0, -2.0, 3.0, 10.0]
-# IN @0x6000: f16 [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 6.0, 0.0, 2.0, 2.0, 1.0, 1.0, -65504.0, 65504.0]
-# OUT @0x7000: f16 [1.0, 0.0, 3.0, 6.0, 3.0, -3.0, 7.0, 21.0]
+# IN @0x4000: f16[2,4] [
+#   [1.0, -2.0, 3.0, 10.0]*2
+# ]
+# IN @0x6000: f16[2,7] [
+#   [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 6.0]
+#   [0.0, 2.0, 2.0, 1.0, 1.0, -65504.0, 65504.0]
+# ]
+# OUT @0x7000: f16[2,4] [
+#   [1.0, 0.0, 3.0, 6.0]
+#   [3.0, -3.0, 7.0, 21.0]
+# ]
     li x1, 0x7000                      # destination
     li x2, 0x4000                      # src1
     li x3, 0x5000                      # src2

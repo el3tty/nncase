@@ -2,10 +2,19 @@
 # The fit table (act1 mode, 7 fp16 per parameter set) is: knee, slope(x<knee), slope(x>=knee), intercept(x<knee),
 # intercept(x>=knee), lower clamp, upper clamp.
 # add two fp16 tensors with an identity fit
-# IN @0x4000: f16 [1.0, 2.0, 3.0, 4.0, -5.0, 6.0, 0.5, 8.0]
-# IN @0x5000: f16 [10.0, 20.0, 30.0, 40.0, 5.0, -6.0, 0.25, 1.0]
+# IN @0x4000: f16[2,4] [
+#   [1.0, 2.0, 3.0, 4.0]
+#   [-5.0, 6.0, 0.5, 8.0]
+# ]
+# IN @0x5000: f16[2,4] [
+#   [10.0, 20.0, 30.0, 40.0]
+#   [5.0, -6.0, 0.25, 1.0]
+# ]
 # IN @0x6000: f16 [0.0, 1.0, 1.0, 0.0, 0.0, -65504.0, 65504.0]
-# OUT @0x7000: f16 [11.0, 22.0, 33.0, 44.0, 0.0, 0.0, 0.75, 9.0]
+# OUT @0x7000: f16[2,4] [
+#   [11.0, 22.0, 33.0, 44.0]
+#   [0.0, 0.0, 0.75, 9.0]
+# ]
     li x1, 0x7000                      # destination
     li x2, 0x4000                      # src1
     li x3, 0x5000                      # src2

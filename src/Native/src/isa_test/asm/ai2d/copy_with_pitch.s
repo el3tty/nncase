@@ -3,8 +3,20 @@
 # Same register sequence as the compiler (GnneActionUpdater.UpdateAi2dResize): all 36 registers in ascending order, the
 # pointers (0..7) with extraw, the others with extrw, then ai2d_compute + fence. The engine runs on ai2d_compute, not on the
 # write to register 35. Pointers are byte offsets in GLB bank 0 (src_ind = dst_ind = 0).
-# IN @0x4000: u8 [175, 196, 25, 246, 67, 211, 151, 103, 92, 185, 142, 23, 72, 89, 110, 42, 218, 136, 167, 230, 68, 176, 127, 135, 172, 0, 75, 55, 250, 6]
-# OUT @0x5000: u8 [175, 196, 25, 246, 67, 211, 165, 165, 151, 103, 92, 185, 142, 23, 165, 165, 72, 89, 110, 42, 218, 136, 165, 165, 167, 230, 68, 176, 127, 135, 165, 165, 172, 0, 75, 55, 250, 6, 165, 165]
+# IN @0x4000: u8[5,6] [
+#   [175, 196, 25, 246, 67, 211]
+#   [151, 103, 92, 185, 142, 23]
+#   [72, 89, 110, 42, 218, 136]
+#   [167, 230, 68, 176, 127, 135]
+#   [172, 0, 75, 55, 250, 6]
+# ]
+# OUT @0x5000: u8[5,8] [
+#   [175, 196, 25, 246, 67, 211, 0xa5, 0xa5]
+#   [151, 103, 92, 185, 142, 23, 0xa5, 0xa5]
+#   [72, 89, 110, 42, 218, 136, 0xa5, 0xa5]
+#   [167, 230, 68, 176, 127, 135, 0xa5, 0xa5]
+#   [172, 0, 75, 55, 250, 6, 0xa5, 0xa5]
+# ]
     li x1, 0x4000
     extraw 0, x1      # src_ch0_ptr
     extraw 4, x0      # (unused, must be 0)

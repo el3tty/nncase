@@ -1,6 +1,6 @@
 # l2_load with a non-zero l2_datatype copies 16 bit elements (row_len and pitches count halfwords)
-# DDR_IN: u16 [4660, 48879, 7, 65535, 300, 2]
-# OUT @0x4000: u16 [48879, 7, 65535, 300]
+# DDR_IN: u16 [0x1234, 0xbeef, 0x0007, 0xffff, 0x012c, 0x0002]
+# OUT @0x4000: u16 [0xbeef, 0x0007, 0xffff, 0x012c]
     li x1, DDR_IN+2       # skip the first halfword
     li x2, 0x4000
     li x3, 1

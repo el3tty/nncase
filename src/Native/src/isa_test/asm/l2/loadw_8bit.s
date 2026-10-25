@@ -4,7 +4,11 @@
 # l2_load_w copies the weights to the GLB in groups of rvalid_c_num + 1 BYTES (of the GLB data, whatever the element size), every group
 # starts a new row of 24 bytes; with 16 bit weights an odd group size splits an element between two rows.
 # DDR_IN: i8 [1, -2, 3, -4, 5, -6, 7, -8, 9, -10]
-# OUT @0x4000: u8 [1, 254, 3, 252, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 5, 250, 7, 248, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 9, 246, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165, 165]
+# OUT @0x4000: u8[3,24] [
+#   [1, 254, 3, 252, 0xa5*20]
+#   [5, 250, 7, 248, 0xa5*20]
+#   [9, 246, 0xa5*22]
+# ]
     li x1, 0x4000
     li x2, DDR_IN
     li x3, 10

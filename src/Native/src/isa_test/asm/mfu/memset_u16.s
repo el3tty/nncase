@@ -1,6 +1,6 @@
 # mfu_memset with l2_datatype = 1 writes 16 bit elements (the destination has to be 2-byte aligned)
 # the tile starts at the second halfword and is one row of 4 elements
-# OUT @0x4000: u16 [42405, 48879, 48879, 48879, 48879, 42405]
+# OUT @0x4000: u16 [0xa5a5, 0xbeef*4, 0xa5a5]
     li x1, 0x4002
     li x2, 0xBEEF
     li x3, 1

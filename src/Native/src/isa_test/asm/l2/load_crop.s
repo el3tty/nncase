@@ -1,7 +1,16 @@
 # l2_load of a 3x4 window out of a 4x6 u8 matrix (source pitch 6, destination pitch 4)
 # Stride register = {dim0, dim1, pitch} in elements; shape register = {batch, plane, rows, row_len}.
-# DDR_IN: u8 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
-# OUT @0x4000: u8 [8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23]
+# DDR_IN: u8[4,6] [
+#   [1, 2, 3, 4, 5, 6]
+#   [7, 8, 9, 10, 11, 12]
+#   [13, 14, 15, 16, 17, 18]
+#   [19, 20, 21, 22, 23, 24]
+# ]
+# OUT @0x4000: u8[3,4] [
+#   [8, 9, 10, 11]
+#   [14, 15, 16, 17]
+#   [20, 21, 22, 23]
+# ]
     li x1, DDR_IN+7       # DDR offset of element (1,1)
     li x2, 0x4000          # GLB destination
     li x3, 1

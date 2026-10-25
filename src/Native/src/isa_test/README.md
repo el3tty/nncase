@@ -35,8 +35,8 @@ example a missing `end`, an unsupported instruction, a timeout). `-v` prints the
 ## Test file
 
 ```asm
-# IN:  [3, 3]          input tensor(s), one line each; optional element type: i8 u8 i16 u16 i32 (default) u32 f32 f16
-# OUT: [9]             expected output tensor(s)
+# IN:  [3, 3]          # input tensor(s); optional element type: i8 u8 i16 u16 i32 (default) u32 f32 f16
+# OUT: [9]             # expected output tensor(s)
     lw   x5, x0, 0
     lw   x6, x0, 4
     mul  x7, x5, x6
@@ -56,14 +56,14 @@ DDR tensors (`DDR_IN`, `DDR_OUT`, below) are located by the test app, because th
 simulator but physical addresses on the board. The program gets them through two symbols that `li` accepts, optionally
 with an offset: `li x1, DDR_IN`, `li x2, DDR_OUT+16`. Inside a region the tensors are back to back, each aligned to 16
 bytes. The code is placed anywhere the platform likes (do not depend on its address: `jumps.s` stores pc differences)
-and has to finish with `end`. Matrices are flat row-major lists.
+and has to finish with `end`.
 
 Engine tests need data at other places, so every tensor line can name its own address:
 
 ```asm
-# IN  @0x4000: u8 [1, 2, 3]        GLB address (bank 0) the input is copied to before the run
-# OUT @0x5000: f16 [1.5, -2]       GLB address that is compared after the run (pre-filled with 0xA5)
-# DDR_IN:  f32 [1.0, 2.0]          DDR tensors for l2_load / l2_store (addresses: symbols DDR_IN / DDR_OUT)
+# IN  @0x4000: u8 [1, 2, 3]        # GLB address (bank 0) the input is copied to before the run
+# OUT @0x5000: f16 [1.5, -2]       # GLB address that is compared after the run (pre-filled with 0xA5)
+# DDR_IN:  f32 [1.0, 2.0]          # DDR tensors for l2_load / l2_store (addresses: symbols DDR_IN / DDR_OUT)
 # DDR_OUT: u8 [1, 2, 3]
 ```
 
@@ -71,6 +71,37 @@ Without `@` the tensors are laid out automatically: `IN` from GLB `0`, `OUT` fro
 back in their own region (16-byte aligned; the simulator puts them at DDR offsets `0x100000` / `0x200000`). `@` is only
 available for GLB tensors. `f16` values are rounded to nearest even; the
 comparison is always bit exact.
+
+Values:
+
+| Syntax | Meaning |
+|---|---|
+| `12`, `-3`, `0x1f`, `0b101` | integer; in a signed tensor hex is the bit pattern too (`0xff` in `i8` = -1) |
+| `1.5`, `-65504` | `f16` / `f32` value |
+| `0x3c00` | in an `f16` / `f32` tensor: the bit pattern (`0x3c00` = 1.0, `0x7c00` = +inf in `f16`) |
+| `v*n` | `n` times `v`, e.g. `0xa5*20` (bytes that must keep the fill) or `128*22` (zero points) |
+| `[..]*n` | `n` times a nested list, e.g. the row `[77*7]*2` below |
+
+Values are separated by `,` or white space. A list that is not closed on its line continues on the next `#` lines
+until its `]`; a `#` inside a tensor line starts a comment. A shape right after the type, `u8[2,3]`, is checked: a flat
+list needs as many values as the shape, nested lists have to match it level by level. Nesting only groups the values
+(the tensor is stored flat, row-major); mismatches are reported with their index in the shape (`OUT #0 [1,2]`).
+
+```asm
+# OUT @0x5000: u8[6,7] [        # a 3x4 image padded with 77: top 1, bottom 2, left 2, right 1
+#   [77*7]
+#   [77, 77, 198, 101, 181, 234, 77]
+#   [77, 77, 170, 30, 27, 65, 77]
+#   [77, 77, 253, 191, 215, 227, 77]
+#   [77*7]*2
+# ]
+# OUT @0x4000: u8[4,24] [       # one group of 4 bytes per 24 byte row, the rest keeps the fill
+#   [0x34, 0x12, 0xef, 0xbe, 0xa5*20]
+#   [0x07, 0x00, 0xff, 0xff, 0xa5*20]
+#   [0x2c, 0x01, 0x02, 0x00, 0xa5*20]
+#   [0x01, 0x00, 0x02, 0x00, 0xa5*20]
+# ]
+```
 
 ## Tests
 
