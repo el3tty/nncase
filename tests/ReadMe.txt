@@ -121,7 +121,9 @@ To keep the kmodel and inputs of failing cases, run with --keep-cases (they stay
 
      ssh -o BatchMode=yes root@<BOARD_IP> "PYTHONPATH=/root/test python3 -c 'import numpy, nncaseruntime; print(nncaseruntime.__version__)'"
 
-   run_k230_tests.py does the same check before a board run and stops with the error if it fails.
+   run_k230_tests.py does the same check before a board run and prints the runtime it found (folder, module,
+   size, md5). It stops if the import fails or if python takes nncaseruntime from anywhere else than
+   --board-runtime (e.g. a package installed in the board's site-packages).
 
 To run one kmodel by hand on the board (e.g. under gdb), copy infer/k230/ptq/test.kmodel and input/*.bin of a case kept
 with --keep-cases and board/k230_run.py to the board and run:

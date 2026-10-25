@@ -136,15 +136,33 @@ def check_setup(args, env, modes):
         sys.exit(f'host check failed (import nncase / check_target({args.target})):\n{probe.stdout}{probe.stderr}')
     print('host: ' + next(l for l in probe.stdout.splitlines() if l.startswith('nncase:')))
     if 'board' in modes:
+        # which nncaseruntime python really imports: without a package in --board-runtime it silently falls back to
+        # one installed on the board (e.g. /usr/lib/python3.*/site-packages)
+        code = ("import os, glob, time, hashlib, numpy, nncaseruntime as m; "
+                "d = os.path.dirname(os.path.realpath(m.__file__)); "
+                f"print('want=' + os.path.realpath('{args.board_runtime}')); "
+                "print('dir=' + d); print('version=' + str(getattr(m, '__version__', '?'))); "
+                "[print('so=%s size=%d md5=%s mtime=%s' % (os.path.basename(f), os.path.getsize(f), "
+                "hashlib.md5(open(f, 'rb').read()).hexdigest()[:12], "
+                "time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(f))))) "
+                "for f in sorted(glob.glob(d + '/_nncaseruntime*.so'))]")
         cmd = (f'PYTHONPATH={posixpath.dirname(args.board_runtime)} {args.board_env} {args.board_python} -c '
-               f'"import numpy, nncaseruntime; print(nncaseruntime.__file__)"')
+               f'"{code}"')
         probe = subprocess.run(['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', args.board, cmd],
                                capture_output=True, text=True, timeout=60)
         if probe.returncode != 0:
             hint = ('\n(Git Bash turned a board path into a Windows path: run with MSYS_NO_PATHCONV=1)'
                     if ':/' in args.board_runtime + args.board_dir else '')
             sys.exit(f'board check failed on {args.board}:\n{probe.stdout}{probe.stderr}{hint}')
-        print(f'board: {args.board}, runtime {probe.stdout.strip()}')
+        info = dict(l.split('=', 1) for l in probe.stdout.splitlines() if l[:4] in ('want', 'dir=', 'vers'))
+        modules = [l[3:] for l in probe.stdout.splitlines() if l.startswith('so=')]
+        print(f'board: {args.board}')
+        print(f'  runtime used: {info["dir"]} (nncaseruntime {info["version"]})')
+        for module in modules:
+            print(f'  module:       {module}')
+        if info['dir'] != info['want']:
+            sys.exit(f'board check failed: --board-runtime is {args.board_runtime}, but python imports nncaseruntime '
+                     f'from {info["dir"]} (no nncaseruntime package in {args.board_runtime}?)')
 
 
 def run_mode(args, mode, files):
