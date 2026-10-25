@@ -9,7 +9,9 @@ run_k230_tests.py runs pytest test files for the k230 target:
 
 Every test file runs in its own pytest process, so a compiler crash only loses that file. Results go to
 <output>/<mode>/ (logs/, junit/, tests_output/ with --keep-cases); the summary is printed and written to
-<output>/report.txt. The exit code is 1 if anything failed.
+<output>/report.txt. The exit code is 1 if anything failed. In board runs the tests listed in BOARD_SKIP
+(k230_test_plugin.py) are skipped, e.g. the random_*_like tests, whose reference cannot match the board; the
+report lists them with the reason.
 
 All commands below are run from this folder (tests/). On Git Bash, prefix board commands with
 MSYS_NO_PATHCONV=1, otherwise Git Bash turns /root/... and /tmp/... into Windows paths.

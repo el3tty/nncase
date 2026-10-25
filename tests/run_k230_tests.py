@@ -227,6 +227,7 @@ def summarize_file(name, junit, rc, secs, log):
             failure = tc.find('error')
         if tc.find('skipped') is not None:
             kind = 'skipped'
+            row['first'].setdefault(kind, (tc.find('skipped').get('message') or '').replace('\n', ' ')[:200])
         elif failure is None:
             kind = 'passed'
         else:
@@ -252,14 +253,15 @@ def report(args, results):
             total.update(row['counts'])
         lines.append(f'===== {mode}: ' + ', '.join(f'{v} {k}' for k, v in sorted(total.items())))
         for row in rows:
-            if set(row['counts']) - {'passed', 'skipped'}:
+            if set(row['counts']) - {'passed'}:
                 lines.append('  ' + format_row(row))
                 for kind, msg in row['first'].items():
                     lines.append(f'      {kind}: {msg}')
     if len(results) == 2:
         sim = {(r['name'], c): k for r in results['sim'] for c, k in r['cases'].items()}
         board = {(r['name'], c): k for r in results['board'] for c, k in r['cases'].items()}
-        diff = sorted(key for key, kind in board.items() if kind != 'passed' and sim.get(key) == 'passed')
+        diff = sorted(key for key, kind in board.items()
+                      if kind not in ('passed', 'skipped') and sim.get(key) == 'passed')
         lines.append(f'===== pass on simulator, fail on board: {len(diff)}')
         lines += [f'  {name}::{case}  ({board[(name, case)]})' for name, case in diff]
     text = '\n'.join(lines)

@@ -428,7 +428,8 @@ class TestRunner(Evaluator, Inference, metaclass=ABCMeta):
             for batch_idx in range(batch_number):
                 idx = input_idx * batch_number + batch_idx
                 if method == 'random':
-                    data = generator.from_random(input_shape, dtype, args)
+                    data = generator.from_random(input_shape, dtype, args,
+                                                 generator_cfg[method].get('range'))
                 elif method == 'bin':
                     assert(idx < len(file_list))
                     data = generator.from_bin(input_shape, dtype, file_list[idx])

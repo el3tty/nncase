@@ -21,7 +21,9 @@ import cv2
 
 class Generator:
 
-    def from_random(self, shape: List[int], dtype: np.dtype, abs: bool = False) -> np.ndarray:
+    def from_random(self, shape: List[int], dtype: np.dtype, abs: bool = False,
+                    value_range: List[float] = None) -> np.ndarray:
+        # value_range [low, high): floating point data only, default [0, 1)
         if dtype == np.uint8:
             data = np.random.randint(0, 256, shape)
         elif dtype == np.int8:
@@ -35,6 +37,8 @@ class Generator:
             # data = np.random.randint(1, 128, size=shape, dtype='int64')
         else:
             data = np.random.rand(*shape)
+            if value_range:
+                data = value_range[0] + data * (value_range[1] - value_range[0])
         data = data.astype(dtype=dtype)
 
         if abs:

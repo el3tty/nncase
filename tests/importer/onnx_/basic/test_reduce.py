@@ -126,7 +126,17 @@ def test_reduce(in_shape, in_datatype, reduce_op, axes, keepdims, request, op_ve
         else:
             model_def = _make_module(in_shape, in_datatype, reduce_op, axes, keepdims, op_version)
 
-            runner = OnnxTestRunner(request.node.name)
+            # the minima of the default [0, 1) data are about 0.001, i.e. within one uint8 quantization step, and
+            # the cosine over a few such values is meaningless: use [1, 2) for ReduceMin (inputs and calibration)
+            overwrite_cfg = None
+            if reduce_op == 'ReduceMin':
+                overwrite_cfg = """
+                [generator.inputs.random]
+                range = [1.0, 2.0]
+                [generator.calibs.random]
+                range = [1.0, 2.0]
+                """
+            runner = OnnxTestRunner(request.node.name, overwrite_cfg)
             model_file = runner.from_onnx_helper(model_def)
             runner.run(model_file)
 

@@ -17,11 +17,22 @@ NNCASE_TEST_DEFAULT_OPSET / NNCASE_TEST_DEFAULT_IR: opset and IR version that on
     test gives no opset_imports. onnx >= 1.17 stamps its newest (in-development) opset, which onnxruntime refuses.
     Empty NNCASE_TEST_DEFAULT_OPSET keeps the onnx default. The IR version is capped at what onnxruntime reads.
 NNCASE_TEST_TARGETS: comma separated targets to run (e.g. 'k230'); every other target in config.toml is disabled.
+
+In board runs (<TARGET>_SSH set) the tests in BOARD_SKIP are skipped with the reason given there.
 """
 
 import os
 
+import pytest
 from onnx import helper
+
+# tests whose reference cannot match a board run, by test function name
+BOARD_SKIP = {
+    'test_random_normal_like': 'random values: the board runtime (libstdc++) draws another sequence than the '
+                               'onnxruntime reference (MSVC) for the same seed',
+    'test_random_uniform_like': 'random values: the board runtime (libstdc++) draws another sequence than the '
+                                'onnxruntime reference (MSVC) for the same seed',
+}
 
 _MAX_ORT_IR = 13
 
@@ -56,3 +67,14 @@ if _targets:
         return _validate_config(self, config)
 
     test_runner.TestRunner.validte_config = _validate_config_selected
+
+_board_run = any(os.getenv('{0}_SSH'.format(t.upper())) for t in _targets)
+
+
+def pytest_collection_modifyitems(config, items):
+    if not _board_run:
+        return
+    for item in items:
+        reason = BOARD_SKIP.get(getattr(item, 'originalname', None) or item.name.split('[')[0])
+        if reason:
+            item.add_marker(pytest.mark.skip(reason='board run: ' + reason))
