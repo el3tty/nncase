@@ -1,3 +1,6 @@
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <poll.h>
 #include <vector>
 #include <nncase/tensor.h>
@@ -165,10 +168,33 @@ result<value_t> k230_runtime_function::invoke_core(
         return err(std::errc::device_or_resource_busy);
     }
 
+    // wait for the end of the program, but not forever: a stalled program (or a
+    // lost interrupt) would otherwise hang the caller
+    constexpr int kpu_wait_timeout_ms = 10000;
     pollfd fds{};
     fds.fd = mod.gnne_fd_;
     fds.events = POLLIN;
-    poll(&fds, 1, -1);
+    int ready = poll(&fds, 1, kpu_wait_timeout_ms);
+    if (ready <= 0) {
+        if (ready < 0)
+            std::fprintf(stderr, "k230: waiting for the KPU failed: %s\n",
+                         std::strerror(errno));
+        else
+            std::fprintf(stderr,
+                         "k230: the KPU did not finish within %d ms, text "
+                         "%p..%p, GNNE state:\n",
+                         kpu_wait_timeout_ms, (const void *)text_begin_,
+                         (const void *)text_end_);
+        std::fflush(stderr);
+        gnne_dump_status();
+        gnne_dump_pc();
+        gnne_dump_ccr();
+        std::fflush(stdout);
+        // stop the program: the buffers it may still write are released when
+        // this call returns
+        gnne_disable();
+        return err(ready < 0 ? std::errc::io_error : std::errc::timed_out);
+    }
 
     // --- Stage 5: make the KPU results visible to the CPU ---
     // invalidate every output after the run: lines of an output buffer can be
