@@ -83,7 +83,13 @@ public sealed partial class OnnxImporter : BaseImporter
     /// <inheritdoc/>
     protected override Expr CreateOutputs()
     {
-        var outputs = _graph.Output.Select(o => _outputTensors![o.Name]).ToArray();
+        // an output can also be an initializer, e.g. after onnx-simplifier folded the nodes computing it
+        var outputs = _graph.Output.Select(o =>
+            _outputTensors!.TryGetValue(o.Name, out var expr)
+                ? expr
+                : _constTensors!.TryGetValue(o.Name, out var tensor)
+                    ? Const.FromTensor(GetTensor(tensor))
+                    : throw new InvalidDataException($"Cannot find the graph output {o.Name}.")).ToArray();
         var body = outputs.Length > 1 ? new IR.Tuple(outputs) : outputs[0];
         return body;
     }
