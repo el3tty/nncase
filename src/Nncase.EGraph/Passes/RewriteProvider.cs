@@ -85,7 +85,17 @@ internal class EGraphRewriteProvider : IEGraphRewriteProvider
                         _logger.LogTrace("Version {Version} : Merge {OldClass} to {NewClass}", eGraph.Version, oldEClass, newEClass);
                     }
 
-                    eGraph.Union(newEClass, oldEClass);
+                    try
+                    {
+                        eGraph.Union(newEClass, oldEClass);
+                    }
+                    catch (InvalidDataException ex)
+                    {
+                        throw new InvalidDataException(
+                            $"{rule.GetType().Name} replaced a {oldExpr.CheckedType} expression ({oldExpr.GetType().Name}) " +
+                            $"with a {newExpr.CheckedType} one ({newExpr.GetType().Name}): {ex.Message}",
+                            ex);
+                    }
                 }
             }
 
