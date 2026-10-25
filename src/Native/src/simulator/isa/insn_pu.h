@@ -6,7 +6,7 @@
 // asm: pu_fetchif_conf3 tcu_id, pu_id, raddr_s, rgroups, rshape
 // asm: pu_fetchif_conf4 tcu_id, pu_id, rpad_value, sspad   (sspad at [29:27] per the decoder; operand order would suggest [26:22])
 // asm: pu_fetchif_conf_deq tcu_id, pu_id, ric, rbx, quant_type
-// asm: (not in compiler dumps) pu_forward_psum ...
+// asm: pu_forward_psum tcu_id, pu_id, raddr, rlen   (after the last pass of a transposed convolution; a board only forwards after an accumulating pu_compute, see README)
 // asm: pu_of_conf1 tcu_id, pu_id, rgoc, rgoc_last, rstride_d
 // asm: pu_of_conf2 tcu_id, pu_id, raddr_d, rshape_d
 // asm: pu_w_conf tcu_id, pu_id, kernel_h, kernel_w

@@ -462,7 +462,7 @@ The PU computes a convolution tile into `PSUM_L1` (or straight into ACT0). Every
 | Opcode | asm | Fields | Effect |
 |---|---|---|---|
 | 0x4D (16-bit) | `pu_compute tcu_id, of_shift_mode` | `tcu_id[9:7] of_shift_mode[11:10]` | Stores the output shift mode (0 none, 1 = `<< 4`, otherwise `>> 4`), appends a snapshot of the configuration to `compute_queue_` and runs the compute under the conditions in section 14. |
-| 0x5C | `pu_forward_psum tcu_id, pu_id, raddr, rlen` | `raddr[17:13] rlen[22:18]` | Copies `rlen` words per channel row from `PSUM_L1` (byte offset `gp_reg[raddr]`) into the ACT0 PSUM buffer, then runs ACT0 on it (`Conv2D::Activate`). |
+| 0x5C | `pu_forward_psum tcu_id, pu_id, raddr, rlen` | `raddr[17:13] rlen[22:18]` | Copies `rlen` words per channel row from `PSUM_L1` (byte offset `gp_reg[raddr]`) into the ACT0 PSUM buffer, then runs ACT0 on it (`Conv2D::Activate`). Emitted by the compiler after the last pass of a transposed convolution. On a K230 board it only does this after an accumulating `pu_compute` (`load_psum` 1); after a compute with `load_psum` 0 (with or without `clr_psum`) the PU stays busy on it and the store queued for ACT0 never runs, although the program still reaches `end`. The simulator does not model this and always forwards (`isa_test/asm/conv/conv1x1_accumulate_forward_psum.s` uses the order that works on the board). |
 
 
 ---
@@ -585,6 +585,9 @@ Compute trigger rules (derived from `PuComputeInstruction` / `DmStoreOfInstructi
 * `pu_pdp0_compute` runs when `store_of_queue_` is non-empty; `dm_store_of` with `src_channel = 1` runs the PDP0 whenever
   the queue is not empty.
 * `act0_compute` does not trigger anything by itself.
+* `pu_forward_psum` copies the PSUM into ACT0 and runs ACT0, and with it the queued DM store, right away, whatever the
+  previous `pu_compute` was. A board only does so after an accumulating `pu_compute` (see the `pu_forward_psum` row in
+  the PU table).
 
 ### 14.1 End-of-program invariant
 
@@ -622,8 +625,14 @@ pu_compute ...                            ; (the compute runs here or at dm_stor
 l2_store_conf ...; l2_store ...           ; result GLB -> DDR
 ```
 
-The `rgic`/`rgroups` operands and the `load_psum`/`clr_psum` flags of `pu_compute_conf` suggest that large convolutions
-are split into input-channel groups that accumulate in PSUM; the scalar branches are available to loop over tiles.
+Large convolutions are split into input-channel groups that accumulate in PSUM (`load_psum`, see
+`isa_test/asm/conv/conv1x1_accumulate_groups.s`); the scalar branches are available to loop over tiles.
+
+Transposed convolutions (`pu_compute_conf` mode `pu_mode_deconv`) never send a pass straight to ACT0: the compiler runs
+one `pu_compute` per kernel position (and input-channel group), the first with `clr_psum` 1 and the others with
+`load_psum` 1, all with `dest_target` 0, and hands the PSUM to ACT0 and the store with `pu_forward_psum` after the last
+one. On a board the forward needs that last pass to accumulate, so a deconvolution with a single pass (1x1 kernel)
+writes no output there; the compiler keeps 1x1 transposed convolutions on the CPU for that reason.
 
 ### 15.2 Element-wise / resize / pooling tiles
 
@@ -685,9 +694,11 @@ for scalar instructions also execute), `get_next_pc()` (`pc + 4` or `pc + 2`) an
   `rslice_repeats`, `rleft_repeats` and `rlen` as source/destination addresses in some paths. The mapping between
   operand names and roles is of low-medium confidence.
 * **Instructions not in the dumps.** `auipc`, the `lb/lbu/lh/lhu/sb/sh/sw` family, the branches, `jal/jalr`, `fence`,
-  `fence_i`, `intr`, `mmu_setid`, `mfu_memcpy`, `mfu_memset`, `ai2d_compute`, `extrw/extraw`, `pu_forward_psum`,
+  `fence_i`, `intr`, `mmu_setid`, `mfu_memcpy`, `mfu_memset`, `ai2d_compute`, `extrw/extraw`,
   `dm_conf_broadcast` and all `pu_pdp0_*` were verified only against the simulator binary, not against compiler output.
   Their assembly syntax in this document is by analogy.
+* **Board behaviour not modelled.** `pu_forward_psum` after a `pu_compute` that did not accumulate writes nothing on
+  a board (the PU waits on it) but works here, so the simulator accepts programs that fail on the device.
 * **Missing PDP1 conf id.** `mfu_conf_id = 5` is rejected; it might be a missing `mfu_pdp1_conf5`.
 * **Undefined integer results.** `div/rem` by zero crashes the host in the original; real hardware behaviour is unknown.
 * **Timing.** The model is purely functional. Cycle counts, DMA overlap, GLB bank conflicts and the ordering of
