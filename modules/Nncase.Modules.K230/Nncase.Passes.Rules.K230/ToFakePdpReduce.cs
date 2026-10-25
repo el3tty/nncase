@@ -23,7 +23,11 @@ public class ToFakePdpReduce : RewriteRule<Pattern>
     private Expr? GetReplace(Call call, ReduceWindow2D r, Expr input, int[] filter, int[] stride, int[] padding,
         bool ceilMode, Expr countIncludePad)
     {
-        if (r.ReduceOp == ReduceOp.Prod)
+        // FakePdp always produces float32 (FakePdpEvaluator): an f16 window reduce (e.g. ReduceMax over H and W of an
+        // f16 tensor) is run on float32 and cast back, otherwise the rewritten expression would change its type. Other
+        // types are left alone (the CPU reduce_window2d kernel only handles float32 either).
+        DataType dataType = input.CheckedDataType;
+        if (r.ReduceOp == ReduceOp.Prod || (dataType != DataTypes.Float32 && dataType != DataTypes.Float16))
         {
             return null;
         }
@@ -46,7 +50,14 @@ public class ToFakePdpReduce : RewriteRule<Pattern>
             paddings[1, 1] = (extraPadW > 0) ? (paddings[1, 1] + extraPadW) : paddings[1, 1];
         }
 
-        return Nncase.IR.K230.F.Tensors.FakePdp(r.ReduceOp, input, 0, filter, stride, paddings, countIncludePad);
+        if (dataType == DataTypes.Float32)
+        {
+            return Nncase.IR.K230.F.Tensors.FakePdp(r.ReduceOp, input, 0, filter, stride, paddings, countIncludePad);
+        }
+
+        Expr pdp = Nncase.IR.K230.F.Tensors.FakePdp(r.ReduceOp, Nncase.IR.F.Tensors.Cast(input, DataTypes.Float32), 0,
+            filter, stride, paddings, countIncludePad);
+        return Nncase.IR.F.Tensors.Cast(pdp, dataType);
     }
 
     private float GetPadValue(ReduceOp reduceOp)

@@ -26,6 +26,12 @@ public sealed class ReduceWithDim12ToGlobalReduceWindow : IRewriteRule
     private Expr? GetReplace(Reduce reduce, Call call, Expr input, TensorConst axis, TensorConst initValue,
         Marker inputMarker, Marker outputMarker, Expr inputRange, Expr outputRange)
     {
+        // see ReduceToGlobalReduceWindow: the CPU reduce_window2d kernel only handles float32
+        if (input.CheckedDataType != DataTypes.Float32)
+        {
+            return null;
+        }
+
         int[] inputShape = input.CheckedShape.ToValueArray();
         int[] axes = axis.Value.ToArray<int>();
         if (inputShape.Length == 3 && axes.Length == 1 && (axes[0] == 2 || axes[0] == -1) &&

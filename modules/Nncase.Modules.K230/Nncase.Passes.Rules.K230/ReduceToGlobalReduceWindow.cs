@@ -19,6 +19,13 @@ public sealed class ReduceToGlobalReduceWindow : IRewriteRule
 
     private Expr? GetReplace(Reduce reduce, Call call, Expr input, TensorConst axis, TensorConst initValue)
     {
+        // the CPU reduce_window2d kernel only handles float32; a ReduceWindow2D of another type (e.g. f16) fails at run
+        // time if it is not lowered to the KPU, while the Reduce it replaces works for every type
+        if (input.CheckedDataType != DataTypes.Float32)
+        {
+            return null;
+        }
+
         int[] inputShape = input.CheckedShape.ToValueArray();
         int[] axisValue = axis.Value.ToArray<int>();
         if (!TryMatch(call.CheckedShape.ToValueArray(), inputShape, axisValue) || reduce.ReduceOp == ReduceOp.Prod)
