@@ -47,9 +47,14 @@ public class ToFakeAi2dResize : RewriteRule<Pattern>
 
         MFU_CROP_RESIZE resizeMethod = (MFU_CROP_RESIZE)((resize.ResizeMode == ImageResizeMode.Bilinear) ? 0 : 1);
         int[] outputSize = new int[2] { newSize.Value.ToArray<int>()[2], newSize.Value.ToArray<int>()[3] };
+        // HalfPixel and PytorchHalfPixel both sample at (dst + 0.5) * scale - 0.5 (they only differ for an output
+        // length of 1). Without HalfPixel here, the letterbox resize of the preprocessing (HalfPixel) runs on the AI2D
+        // with asymmetric coordinates: a 2:1 downscale then just takes every second pixel.
+        bool halfPixel = resize.TransformationMode == ImageResizeTransformationMode.HalfPixel ||
+                         resize.TransformationMode == ImageResizeTransformationMode.PytorchHalfPixel;
         return Nncase.IR.K230.F.Tensors.FakeAi2dResize(
             resizeMethod,
-            resize.TransformationMode == ImageResizeTransformationMode.PytorchHalfPixel,
+            halfPixel,
             resize.TransformationMode == ImageResizeTransformationMode.AlignCorners, input, outputSize);
     }
 
