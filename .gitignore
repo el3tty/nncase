@@ -313,3 +313,10 @@ cmake-build-*
 
 # set dotnet version
 global.json
+
+# aux dirs
+build*
+dumps*
+models
+*.bat
+src/Nncase.Cli/Properties
