@@ -87,6 +87,10 @@ result<value_t> k230_runtime_function::invoke_core(
     gnne_init();
 
     std::vector<uint32_t> input_addrs, output_addrs;
+    // device copies of host-only tensors: they must live until the KPU is
+    // done, otherwise their mmz memory is freed (and handed out again, e.g.
+    // to the next device copy) while the KPU still uses its address
+    std::vector<tensor> device_copies;
 
     // --- Stage 1: marshal inputs ---
     for (size_t i = 0; i < input_descs_.size(); i++) {
@@ -99,8 +103,8 @@ result<value_t> k230_runtime_function::invoke_core(
 
         if (!host.has_physical_address()) {
             try_var(t2, alloc_new_device_tensor(t, host));
-            try_var(host2, t2->buffer().as_host());
-            host = host2;
+            try_set(host, t2->buffer().as_host());
+            device_copies.push_back(t2);
         }
         assert(host.has_physical_address());
         try_(host.sync(sync_op_t::sync_write_back, false));
@@ -119,9 +123,8 @@ result<value_t> k230_runtime_function::invoke_core(
 
         if (!host.has_physical_address()) {
             try_var(t2, alloc_new_device_tensor(t, host));
-            try_var(host2, t2->buffer().as_host());
             copy_back_outputs.emplace_back(host, t2);
-            host = host2;
+            try_set(host, t2->buffer().as_host());
         }
         try_(host.sync(sync_op_t::sync_invalidate, true));
         try_var(phys, host.physical_address());
@@ -167,7 +170,17 @@ result<value_t> k230_runtime_function::invoke_core(
     fds.events = POLLIN;
     poll(&fds, 1, -1);
 
-    // --- Stage 5: copy outputs back from their device buffers ---
+    // --- Stage 5: make the KPU results visible to the CPU ---
+    // invalidate every output after the run: lines of an output buffer can be
+    // cached again while the KPU runs (e.g. memory just reused from a freed
+    // device copy), and the CPU would then read the stale data
+    for (size_t i = 0; i < output_descs_.size(); i++) {
+        try_var(t, parameters[input_descs_.size() + i].as<tensor>());
+        try_var(host, t->buffer().as_host());
+        try_(host.sync(sync_op_t::sync_invalidate, true));
+    }
+
+    // --- Stage 6: copy outputs back from their device buffers ---
     for (auto &[orig, dev_tensor] : copy_back_outputs) {
         try_var(dev, dev_tensor->buffer().as_host());
         try_(dev.sync(sync_op_t::sync_invalidate, true));
