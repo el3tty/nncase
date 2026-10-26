@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Nncase.IR;
 using Nncase.Quantization;
@@ -15,8 +16,10 @@ namespace Nncase.Tests.QuantTest;
 /// <summary>
 /// Checks resize mode and channel order of <see cref="ImageCalibrationDatasetProvider"/> on generated lossless images.
 /// The model input is 32x32 float with input range 0..255, so tensor values are the raw 0..255 pixel values.
+/// Each test keeps its generated image (<c>input/image.png</c>) and the produced tensors (<c>.bin</c> raw float32 NCHW,
+/// <c>.png</c> preview with the planes shown as R, G, B) under <c>tests_output/UnitTestImageCalibrationDatasetProvider/&lt;test&gt;</c>.
 /// </summary>
-public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
+public sealed class UnitTestImageCalibrationDatasetProvider : TestClassBase
 {
     private const int Size = 32;
 
@@ -30,24 +33,19 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
 
     private static readonly float[] Gray = { Pad, Pad, Pad };
 
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "nncase_image_calib_" + Guid.NewGuid().ToString("N"));
+    private string _outputDir = string.Empty;
 
-    public UnitTestImageCalibrationDatasetProvider()
-    {
-        Directory.CreateDirectory(_dir);
-    }
-
-    public void Dispose()
-    {
-        Directory.Delete(_dir, true);
-    }
+    // Separate from the outputs: the provider calibrates on every image in this folder.
+    private string _inputDir = string.Empty;
 
     [Fact]
     public async Task TestLetterboxIsCenteredByDefault()
     {
+        SetupDirectories();
+
         // 64x48 -> 32x24, centered: rows 4..27 hold the image, 4 gray rows above and below.
         WriteSplitImage(64, 48);
-        var t = await LoadAsync(new ImageCalibrationDatasetProvider(new[] { CreateInput() }, _dir, new[] { 0f, 255f }));
+        var t = await LoadAsync(new ImageCalibrationDatasetProvider(new[] { CreateInput() }, _inputDir, new[] { 0f, 255f }), "default");
 
         Assert.Equal(Gray, Pixel(t, 16, 0));
         Assert.Equal(Gray, Pixel(t, 16, 3));
@@ -59,8 +57,28 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
     }
 
     [Fact]
+    public async Task TestLetterboxPadsLeftAndRightForPortrait()
+    {
+        SetupDirectories();
+
+        // 48x64 -> 24x32, centered: columns 4..27 hold the image, 4 gray columns left and right.
+        WriteSplitImage(48, 64);
+        var t = await LoadAsync(CalibImageResize.Letterbox, false);
+
+        Assert.Equal(Gray, Pixel(t, 0, 16));
+        Assert.Equal(Gray, Pixel(t, 3, 16));
+        Assert.Equal(Blue, Pixel(t, 5, 1));
+        Assert.Equal(Red, Pixel(t, 8, 16));
+        Assert.Equal(Green, Pixel(t, 24, 16));
+        Assert.Equal(Gray, Pixel(t, 28, 16));
+        Assert.Equal(Gray, Pixel(t, 31, 16));
+    }
+
+    [Fact]
     public async Task TestLetterboxTopLeft()
     {
+        SetupDirectories();
+
         // 64x48 -> 32x24 at the top-left: rows 0..23 hold the image, rows 24..31 are gray.
         WriteSplitImage(64, 48);
         var t = await LoadAsync(CalibImageResize.LetterboxTopLeft, false);
@@ -74,8 +92,28 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
     }
 
     [Fact]
+    public async Task TestLetterboxTopLeftPadsRightForPortrait()
+    {
+        SetupDirectories();
+
+        // 48x64 -> 24x32 at the top-left: columns 0..23 hold the image, columns 24..31 are gray.
+        WriteSplitImage(48, 64);
+        var t = await LoadAsync(CalibImageResize.LetterboxTopLeft, false);
+
+        Assert.Equal(Blue, Pixel(t, 1, 1));
+        Assert.Equal(Red, Pixel(t, 8, 16));
+        Assert.Equal(Green, Pixel(t, 20, 16));
+        Assert.Equal(Red, Pixel(t, 8, 31));
+        Assert.Equal(Gray, Pixel(t, 24, 16));
+        Assert.Equal(Gray, Pixel(t, 31, 0));
+        Assert.Equal(Gray, Pixel(t, 31, 31));
+    }
+
+    [Fact]
     public async Task TestLetterboxTopLeftTruncatesSize()
     {
+        SetupDirectories();
+
         // 100x30 scales by 0.32 to 32x9.6: Letterbox rounds to 10 rows (centered at 11..20),
         // LetterboxTopLeft truncates to 9 rows like YOLOX, so row 9 is already padding.
         WriteSolidImage(100, 30, Red);
@@ -95,6 +133,8 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
     [Fact]
     public async Task TestStretch()
     {
+        SetupDirectories();
+
         // 64x48 -> 32x32 without padding: the whole input is image.
         WriteSplitImage(64, 48);
         var t = await LoadAsync(CalibImageResize.Stretch, false);
@@ -112,6 +152,7 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
     [InlineData(CalibImageResize.Stretch)]
     public async Task TestBGRSwapsChannelPlanes(CalibImageResize resize)
     {
+        SetupDirectories($"{nameof(TestBGRSwapsChannelPlanes)}_{resize}");
         WriteSplitImage(64, 48);
         var rgb = await LoadAsync(resize, false);
         var bgr = await LoadAsync(resize, true);
@@ -130,6 +171,7 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
     [InlineData(CalibImageResize.Stretch)]
     public async Task TestImageAtInputSizeIsUsedAsIs(CalibImageResize resize)
     {
+        SetupDirectories($"{nameof(TestImageAtInputSizeIsUsedAsIs)}_{resize}");
         WriteSplitImage(Size, Size);
         var t = await LoadAsync(resize, false);
 
@@ -167,21 +209,47 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
 
     private static SKColor ToColor(float[] rgb) => new SKColor((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]);
 
-    private static async Task<float[]> LoadAsync(ImageCalibrationDatasetProvider provider)
+    private static void SaveTensorImage(float[] t, string path)
+    {
+        using var bitmap = new SKBitmap(Size, Size, SKColorType.Rgba8888, SKAlphaType.Opaque);
+        for (int y = 0; y < Size; y++)
+        {
+            for (int x = 0; x < Size; x++)
+            {
+                bitmap.SetPixel(x, y, ToColor(Pixel(t, x, y)));
+            }
+        }
+
+        using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+        File.WriteAllBytes(path, data.ToArray());
+    }
+
+    private void SetupDirectories([CallerMemberName] string? methodName = null)
+    {
+        SetupTestMethod(false, methodName: methodName);
+        _outputDir = CompileOptions.DumpDir;
+        _inputDir = Path.Join(_outputDir, "input");
+        Directory.CreateDirectory(_inputDir);
+    }
+
+    private async Task<float[]> LoadAsync(ImageCalibrationDatasetProvider provider, string outputName)
     {
         Assert.Equal(1, provider.Count);
         await foreach (var sample in provider.Samples)
         {
             var tensor = sample.Values.Single().AsTensor();
             Assert.Equal(new[] { 1, 3, Size, Size }, tensor.Shape.ToValueArray());
-            return tensor.ToArray<float>();
+            var values = tensor.ToArray<float>();
+            File.WriteAllBytes(Path.Join(_outputDir, outputName + ".bin"), tensor.BytesBuffer.ToArray());
+            SaveTensorImage(values, Path.Join(_outputDir, outputName + ".png"));
+            return values;
         }
 
         throw new InvalidOperationException("The provider returned no samples.");
     }
 
     private Task<float[]> LoadAsync(CalibImageResize resize, bool isBGR) =>
-        LoadAsync(new ImageCalibrationDatasetProvider(new[] { CreateInput() }, _dir, new[] { 0f, 255f }, resize, isBGR));
+        LoadAsync(new ImageCalibrationDatasetProvider(new[] { CreateInput() }, _inputDir, new[] { 0f, 255f }, resize, isBGR), $"{resize}_{(isBGR ? "bgr" : "rgb")}");
 
     /// <summary>
     /// Writes a PNG with a red left half, a green right half and a blue block (1/8 of the width) at the top-left corner.
@@ -208,6 +276,6 @@ public sealed class UnitTestImageCalibrationDatasetProvider : IDisposable
         }
 
         using var data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
-        File.WriteAllBytes(Path.Combine(_dir, "image.png"), data.ToArray());
+        File.WriteAllBytes(Path.Join(_inputDir, "image.png"), data.ToArray());
     }
 }
