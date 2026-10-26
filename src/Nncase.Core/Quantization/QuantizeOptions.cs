@@ -89,6 +89,27 @@ public enum CalibMethod
 }
 
 /// <summary>
+/// How image calibration samples are fitted to the model input size.
+/// </summary>
+public enum CalibImageResize
+{
+    /// <summary>
+    /// keep the aspect ratio, center the image and pad with gray 114 (Ultralytics YOLO).
+    /// </summary>
+    Letterbox,
+
+    /// <summary>
+    /// keep the aspect ratio, place the image at the top-left and pad right/bottom with gray 114 (YOLOX).
+    /// </summary>
+    LetterboxTopLeft,
+
+    /// <summary>
+    /// resize to the model input size, ignoring the aspect ratio.
+    /// </summary>
+    Stretch,
+}
+
+/// <summary>
 /// quantize options.
 /// </summary>
 public class QuantizeOptions
@@ -172,6 +193,16 @@ public class QuantizeOptions
     /// Gets or sets a value indicating whether dump quant error using symmetric algorithm for signed mode.
     /// </summary>
     public bool DumpQuantErrorSymmetricForSigned { get; set; }
+
+    /// <summary>
+    /// Gets or sets how image calibration samples are resized to the model input.
+    /// </summary>
+    public CalibImageResize CalibImageResize { get; set; } = CalibImageResize.Letterbox;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether image calibration samples use BGR channel order instead of RGB.
+    /// </summary>
+    public bool CalibBGR { get; set; }
 
     /// <summary>
     /// Creates no quantization options.

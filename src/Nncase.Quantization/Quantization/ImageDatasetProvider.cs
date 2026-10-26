@@ -10,8 +10,9 @@ namespace Nncase.Quantization;
 
 /// <summary>
 /// <see cref="ICalibrationDatasetProvider"/> for standard image dataset folders (JPG, PNG, BMP).
-/// Images already at the model input resolution are used as is; others are letterboxed (gray 114 padding).
-/// Output is RGB in NCHW layout, in the element type of the model input:
+/// Images already at the model input resolution are used as is; others are fitted to it as selected by
+/// <see cref="CalibImageResize"/>: letterboxed (gray 114 padding, centered or top-left) or stretched.
+/// Output is RGB (or BGR) in NCHW layout, in the element type of the model input:
 /// <c>uint8</c> input gives raw 0..255 bytes, <c>float32</c> input gives values mapped from 0..255 to the given
 /// input range (default 0..1), so <c>--input-range 0 255</c> keeps raw pixel values.
 /// Decoding and resizing use SkiaSharp (MIT).
@@ -22,7 +23,7 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
 
     private static readonly string[] SupportedExtensions = { ".jpg", ".jpeg", ".png", ".bmp" };
 
-    public ImageCalibrationDatasetProvider(IReadOnlyList<Var> vars, string datasetPath, IReadOnlyList<float>? inputRange = null)
+    public ImageCalibrationDatasetProvider(IReadOnlyList<Var> vars, string datasetPath, IReadOnlyList<float>? inputRange = null, CalibImageResize resize = CalibImageResize.Letterbox, bool isBGR = false)
     {
         float rangeMin = 0f;
         float rangeMax = 1f;
@@ -64,7 +65,7 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
         Samples = imageFiles.Select(filePath =>
         {
             var values = new Dictionary<Var, IValue>();
-            byte[] planar = LoadImageToNchwUInt8(filePath, targetWidth, targetHeight);
+            byte[] planar = LoadImageToNchwUInt8(filePath, targetWidth, targetHeight, resize, isBGR);
 
             Tensor tensor;
             if (isUInt8)
@@ -93,20 +94,36 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
     public IAsyncEnumerable<IReadOnlyDictionary<Var, IValue>> Samples { get; }
 
     /// <summary>
-    /// Loads an image, letterboxes it to the model input size if needed (gray 114 padding),
-    /// and converts it to planar RGB bytes (NCHW, 0..255).
+    /// Loads an image, fits it to the model input size if needed (letterbox with gray 114 padding, or stretch),
+    /// and converts it to planar RGB or BGR bytes (NCHW, 0..255).
     /// </summary>
-    private static byte[] LoadImageToNchwUInt8(string imagePath, int targetWidth, int targetHeight)
+    private static byte[] LoadImageToNchwUInt8(string imagePath, int targetWidth, int targetHeight, CalibImageResize resize, bool isBGR)
     {
         using var source = SKBitmap.Decode(imagePath)
             ?? throw new InvalidOperationException($"Failed to decode image '{imagePath}'.");
 
-        // 1. Calculate Letterbox proportions
-        float scale = Math.Min((float)targetWidth / source.Width, (float)targetHeight / source.Height);
-        int newWidth = Math.Max(1, (int)Math.Round(source.Width * scale));
-        int newHeight = Math.Max(1, (int)Math.Round(source.Height * scale));
-        int padX = (targetWidth - newWidth) / 2;
-        int padY = (targetHeight - newHeight) / 2;
+        // 1. Calculate the placement of the resized image on the canvas
+        int newWidth = targetWidth;
+        int newHeight = targetHeight;
+        int padX = 0;
+        int padY = 0;
+        if (resize != CalibImageResize.Stretch)
+        {
+            float scale = Math.Min((float)targetWidth / source.Width, (float)targetHeight / source.Height);
+            if (resize == CalibImageResize.LetterboxTopLeft)
+            {
+                // YOLOX ValTransform truncates the resized size and pads only on the right/bottom.
+                newWidth = Math.Max(1, (int)(source.Width * scale));
+                newHeight = Math.Max(1, (int)(source.Height * scale));
+            }
+            else
+            {
+                newWidth = Math.Max(1, (int)Math.Round(source.Width * scale));
+                newHeight = Math.Max(1, (int)Math.Round(source.Height * scale));
+                padX = (targetWidth - newWidth) / 2;
+                padY = (targetHeight - newHeight) / 2;
+            }
+        }
 
         // 2. Draw (and resize, if needed) onto an opaque RGBA canvas filled with 114 gray.
         var canvasInfo = new SKImageInfo(targetWidth, targetHeight, SKColorType.Rgba8888, SKAlphaType.Opaque);
@@ -124,11 +141,13 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
             canvas.DrawImage(image, SKRect.Create(padX, padY, newWidth, newHeight), sampling);
         }
 
-        // 3. Convert RGBA bytes to planar bytes (R plane, G plane, B plane).
+        // 3. Convert RGBA bytes to planar bytes (R, G, B planes, or B, G, R planes for BGR).
         ReadOnlySpan<byte> pixels = canvasBitmap.GetPixelSpan();
         int rowBytes = canvasBitmap.RowBytes;
         int planeSize = targetHeight * targetWidth;
         byte[] nchwBuffer = new byte[3 * planeSize];
+        int firstPlane = isBGR ? 2 * planeSize : 0;
+        int lastPlane = isBGR ? 0 : 2 * planeSize;
         for (int y = 0; y < targetHeight; y++)
         {
             int rowOffset = y * rowBytes;
@@ -136,9 +155,9 @@ public sealed class ImageCalibrationDatasetProvider : ICalibrationDatasetProvide
             {
                 int p = rowOffset + (x * 4);
                 int pixelIndex = (y * targetWidth) + x;
-                nchwBuffer[pixelIndex] = pixels[p]; // Red plane
-                nchwBuffer[planeSize + pixelIndex] = pixels[p + 1]; // Green plane
-                nchwBuffer[(2 * planeSize) + pixelIndex] = pixels[p + 2]; // Blue plane
+                nchwBuffer[firstPlane + pixelIndex] = pixels[p]; // Red
+                nchwBuffer[planeSize + pixelIndex] = pixels[p + 1]; // Green
+                nchwBuffer[lastPlane + pixelIndex] = pixels[p + 2]; // Blue
             }
         }
 

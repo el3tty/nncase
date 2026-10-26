@@ -130,7 +130,7 @@ internal partial class Program
             }
             else if (datasetFormat == DatasetFormat.Image)
             {
-                compileOptions.QuantizeOptions.CalibrationDataset = new Quantization.ImageCalibrationDatasetProvider(((IR.Function)module.Entry!).Parameters.ToArray(), dataset, compileOptions.InputRange);
+                compileOptions.QuantizeOptions.CalibrationDataset = new Quantization.ImageCalibrationDatasetProvider(((IR.Function)module.Entry!).Parameters.ToArray(), dataset, compileOptions.InputRange, compileOptions.QuantizeOptions.CalibImageResize, compileOptions.QuantizeOptions.CalibBGR);
             }
             else
             {
@@ -191,6 +191,8 @@ internal partial class Program
             QuantizeOptions = new()
             {
                 CalibrationMethod = context.ParseResult.GetValueForOption(compilecmd.CalibMethod),
+                CalibImageResize = context.ParseResult.GetValueForOption(compilecmd.CalibImageResize),
+                CalibBGR = context.ParseResult.GetValueForOption(compilecmd.CalibBGR),
                 QuantType = context.ParseResult.GetValueForOption(compilecmd.QuantType) switch
                 {
                     QuantType.UInt8 => DataTypes.UInt8,

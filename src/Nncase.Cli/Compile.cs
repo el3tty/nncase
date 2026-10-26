@@ -89,6 +89,14 @@ internal sealed class CompileCommand : Command
           name: "--calib-method",
           description: $"model quant options",
           getDefaultValue: () => Quantization.CalibMethod.Kld);
+        CalibImageResize = new Option<Quantization.CalibImageResize>(
+          name: "--calib-image-resize",
+          description: $"how image calibration samples (--dataset-format Image) are fitted to the model input: Letterbox (centered, pad 114), LetterboxTopLeft (pad right/bottom with 114, YOLOX) or Stretch",
+          getDefaultValue: () => Quantization.CalibImageResize.Letterbox);
+        CalibBGR = new Option<bool>(
+          name: "--calib-bgr",
+          description: $"feed image calibration samples (--dataset-format Image) in BGR channel order instead of RGB",
+          getDefaultValue: () => false);
         ExportQuantSchemePath = new Option<string>(
           name: "--export-quant-scheme-path",
           description: $"model quant scheme export path",
@@ -187,6 +195,8 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(DatasetFormat);
         AddGlobalOption(ModelQuantMode);
         AddGlobalOption(CalibMethod);
+        AddGlobalOption(CalibImageResize);
+        AddGlobalOption(CalibBGR);
         AddGlobalOption(ExportQuantScheme);
         AddGlobalOption(ExportQuantSchemePath);
         AddGlobalOption(QuantScheme);
@@ -232,6 +242,10 @@ internal sealed class CompileCommand : Command
     public Option<ModelQuantMode> ModelQuantMode { get; }
 
     public Option<CalibMethod> CalibMethod { get; }
+
+    public Option<CalibImageResize> CalibImageResize { get; }
+
+    public Option<bool> CalibBGR { get; }
 
     public Option<bool> ExportQuantScheme { get; }
 
