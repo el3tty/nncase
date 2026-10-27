@@ -33,14 +33,17 @@ void dump_by_steam(dump_manager &dump_manager_, nncase::value_t value, F &&f,
         auto value_tensor = value.as<nncase::tensor>().unwrap();
         f(stream, value_tensor);
     } else if (value.is_a<nncase::tuple>()) {
+        // the fields go to the same file one after another, each with its own
+        // type: / shape: header
         auto value_tuple = value.as<nncase::tuple>().unwrap();
         for (auto &field : value_tuple->fields()) {
             dump_by_steam(dump_manager_, field, f, stream);
-            std::cout << std::endl;
         }
+    } else if (value.empty()) {
+        // an omitted optional input (e.g. the roi of resize_image)
+        stream << "none\n";
     } else {
-        std::cout << "unknown in dump" << std::endl;
-        stream << "unknown in dump\n";
+        stream << "unknown value\n";
     }
 }
 
