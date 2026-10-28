@@ -183,16 +183,16 @@
       },
       "libortki": {
         "type": "Transitive",
-        "resolved": "0.0.2",
-        "contentHash": "4bKmzh0iIRpXKtZywW3rbWLRtscFKKn9waL96Obd2+BHLHbWd3vun/QC6wm1rqH0y+AOXgf8kCGxGjbxlYvsaA==",
+        "resolved": "0.0.3",
+        "contentHash": "Iznp76y1eL4UTrKAUTwOmSxJ9qjjkFdGa9HLQcHTL4a3581TkYqDB8PKZseTZE2H1x26UBC0PAhbBSxLc/zHzg==",
         "dependencies": {
-          "libortki-win": "0.0.2"
+          "libortki-win": "0.0.3"
         }
       },
       "libortki-win": {
         "type": "Transitive",
-        "resolved": "0.0.2",
-        "contentHash": "qD9ISj/kyGheUEGNIeYIwQd+OlHo1JgRT2shEsWwY49R00cTy/o2AU1kQc1h0XYoX2u67lB+TJ6TPchXpXlHVQ=="
+        "resolved": "0.0.3",
+        "contentHash": "0/Q64YmLvEMcP6vFgh/FzRf0y/v9CMVinMDhbdDa8GMCQ8PmUYb0R3DSBzyra9g7GMOHGnP8Xpn+JwSKE5CVcA=="
       },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
@@ -867,7 +867,7 @@
         "type": "Project",
         "dependencies": {
           "Nncase.Core": "[1.0.0, )",
-          "OrtKISharp": "[0.0.2, )"
+          "OrtKISharp": "[0.0.3, )"
         }
       },
       "nncase.graph": {
@@ -897,7 +897,7 @@
           "Nncase.IO": "[1.0.0, )",
           "Nncase.Modules.StackVM": "[1.0.0, )",
           "Nncase.Quantization": "[1.0.0, )",
-          "OrtKISharp": "[0.0.2, )"
+          "OrtKISharp": "[0.0.3, )"
         }
       },
       "nncase.modules.stackvm": {
@@ -922,7 +922,7 @@
           "Newtonsoft.Json": "[13.0.3, )",
           "Nncase.Core": "[1.0.0, )",
           "Nncase.Passes": "[1.0.0, )",
-          "OrtKISharp": "[0.0.2, )",
+          "OrtKISharp": "[0.0.3, )",
           "SkiaSharp": "[4.153.0, )",
           "SkiaSharp.NativeAssets.Linux.NoDependencies": "[4.153.0, )",
           "System.Linq.Async": "[6.0.1, )"
@@ -1071,11 +1071,11 @@
       },
       "OrtKISharp": {
         "type": "CentralTransitive",
-        "requested": "[0.0.2, )",
-        "resolved": "0.0.2",
-        "contentHash": "mqegINkyT9LWD9T5KVzMrPBflGBr7qUBFbEzjlxQG3ghcZuXuxU43sBQ5iO8qK6e8xNY7DWG31jjp3NI0vr+4A==",
+        "requested": "[0.0.3, )",
+        "resolved": "0.0.3",
+        "contentHash": "fJUyEQjFs+2dmqbtwNf9LJSYPO6bIRQ0/T0L2dR+JtAN35UhoxDhuthmiKuZgK03JblN/N7PKl3QjD6eQsmGKg==",
         "dependencies": {
-          "libortki": "0.0.2"
+          "libortki": "0.0.3"
         }
       },
       "Singulink.Collections.Weak": {

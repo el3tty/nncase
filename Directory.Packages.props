@@ -54,7 +54,7 @@
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Nncase.FlatBuffers" Version="2.0.0" />
     <PackageVersion Include="NumSharp" Version="0.30.0" />
-    <PackageVersion Include="OrtKISharp" Version="0.0.2" />
+    <PackageVersion Include="OrtKISharp" Version="0.0.3" />
     <PackageVersion Include="RazorLight" Version="2.3.0" />
     <PackageVersion Include="Singulink.Collections.Weak" Version="1.0.2" />
     <PackageVersion Include="SkiaSharp" Version="4.153.0" />
