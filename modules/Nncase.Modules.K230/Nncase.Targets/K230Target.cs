@@ -73,6 +73,14 @@ public class K230Target : ITarget
 
     public void RegisterTargetInDependentPass(IPassManager passManager, CompileOptions options)
     {
+        if (options.QuantizeOptions.ModelQuantMode == ModelQuantMode.UsePTQ)
+        {
+            // activation Q/DQ pairs of a QAT model: their ranges are in the imported quant scheme, the ops themselves
+            // must be gone before AddRangeOfAndMarker so the markers carry the names of the quantized tensors
+            passManager.AddWithName<DataflowPass>("FoldQDQ", Array.Empty<object>()).Configure(
+                delegate(DataflowPass p) { p.Add<Nncase.Passes.Rules.Neutral.FoldQuantDeQuant>(Array.Empty<object>()); });
+        }
+
         passManager.AddWithName<DataflowPass>("TargetDependentNeutralOptimize", Array.Empty<object>()).Configure(
             delegate(DataflowPass p)
             {
@@ -197,8 +205,8 @@ public class K230Target : ITarget
                 p.Add<FoldFakeConv2DTransposeAndFakeActivation>(Array.Empty<object>());
                 p.Add<FoldMaxAndFakeActivation>(Array.Empty<object>());
             });
-        if ((options.QuantizeOptions.QuantScheme != string.Empty && !options.QuantizeOptions.QuantSchemeStrictMode) ||
-            (options.QuantizeOptions.QuantScheme == string.Empty && !options.QuantizeOptions.ExportQuantScheme) ||
+        if ((options.QuantizeOptions.HasQuantScheme && !options.QuantizeOptions.IsQuantSchemeStrict) ||
+            (!options.QuantizeOptions.HasQuantScheme && !options.QuantizeOptions.ExportQuantScheme) ||
             (options.QuantizeOptions.ExportQuantScheme && options.QuantizeOptions.ExportWeightRangeByChannel))
         {
             passManager.AddWithName<DataflowPass>("fake_range_by_channel", Array.Empty<object>()).Configure(

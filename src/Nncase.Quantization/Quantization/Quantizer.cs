@@ -142,7 +142,7 @@ internal partial class Quantizer
 
     public async Task RunAsync(RunPassContext options)
     {
-        bool configExist = _quantizeOptions.QuantScheme != string.Empty;
+        bool configExist = _quantizeOptions.HasQuantScheme;
         bool exportQuantScheme = _quantizeOptions.ExportQuantScheme;
         bool exportWeightRangeByChannel = _quantizeOptions.ExportWeightRangeByChannel;
 
@@ -302,11 +302,11 @@ internal partial class Quantizer
             // AssignByChannelRanges(ranges);
             // AssignDataTypeFromConfig(quantScheme!);
 
-            // load from file
-            using (var r = new StreamReader(readJson))
+            // load from file, or use the scheme the importer derived from the model's Q/DQ pairs
             {
-                string json = r.ReadToEnd();
-                var quantScheme = JsonConvert.DeserializeObject<QuantScheme>(json);
+                var quantScheme = readJson != string.Empty
+                    ? JsonConvert.DeserializeObject<QuantScheme>(File.ReadAllText(readJson))
+                    : _quantizeOptions.ImportedQuantScheme;
                 var ranges = GetRangesFromConfig(quantScheme!);
                 AssignByChannelRanges(ranges);
                 AssignDataTypeFromConfig(quantScheme!);
@@ -457,7 +457,7 @@ internal partial class Quantizer
                 }
             }
 
-            if (getRange == false && _quantizeOptions.QuantScheme != string.Empty && _quantizeOptions.QuantSchemeStrictMode == true)
+            if (getRange == false && _quantizeOptions.IsQuantSchemeStrict)
             {
                 if (((RangeOf)((Call)rangeOf.Expr).Target).IsRangeOfWeight == true)
                 {
@@ -497,7 +497,7 @@ internal partial class Quantizer
                 }
             }
 
-            if (getRange == false && _quantizeOptions.QuantScheme != string.Empty && _quantizeOptions.QuantSchemeStrictMode == true)
+            if (getRange == false && _quantizeOptions.IsQuantSchemeStrict)
             {
                 var markerExpr = (Marker)marker.Expr;
                 markerExpr.MixQuantInfo!.MarkerQuantType = DataTypes.Float16;

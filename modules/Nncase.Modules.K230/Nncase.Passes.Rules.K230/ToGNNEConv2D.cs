@@ -84,20 +84,20 @@ public sealed class ToGNNEConv2D : GNNEQuantRule
         _ = compileOptions.QuantizeOptions.BindQuantMethod;
         MixQuantInfo mixQuantInfo = ((Marker)inputMarker).MixQuantInfo;
         MixQuantInfo mixQuantInfo2 = ((Marker)weightsMarker).MixQuantInfo;
-        DataType quantType = (compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+        DataType quantType = (!compileOptions.QuantizeOptions.HasQuantScheme)
             ? compileOptions.QuantizeOptions.QuantType
             : mixQuantInfo.MarkerQuantType;
-        DataType dataType = (compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+        DataType dataType = (!compileOptions.QuantizeOptions.HasQuantScheme)
             ? compileOptions.QuantizeOptions.WQuantType
             : mixQuantInfo2.MarkerQuantType;
         if (isPdp0DW && compileOptions.QuantizeOptions.QuantType == DataTypes.Int16 &&
-            compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+            !compileOptions.QuantizeOptions.HasQuantScheme)
         {
             quantType = DataTypes.UInt8;
         }
 
         if (isPdp0DW && compileOptions.QuantizeOptions.WQuantType == DataTypes.Int16 &&
-            compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+            !compileOptions.QuantizeOptions.HasQuantScheme)
         {
             dataType = DataTypes.UInt8;
         }

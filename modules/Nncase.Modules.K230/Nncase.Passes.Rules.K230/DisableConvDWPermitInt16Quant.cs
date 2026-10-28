@@ -53,7 +53,7 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
             }
 
             if (quantType != DataTypes.Int16 &&
-                CompileSession.CompileOptions.QuantizeOptions.QuantScheme == string.Empty)
+                !CompileSession.CompileOptions.QuantizeOptions.HasQuantScheme)
             {
                 ((K230Target.K230MixQuantInfo)marker.MixQuantInfo).PermitInt16Quant = false;
             }
@@ -64,7 +64,7 @@ public sealed class DisableConvDWPermitInt16Quant : RewriteRule<Pattern>
             }
 
             if (wQuantType != DataTypes.Int16 &&
-                CompileSession.CompileOptions.QuantizeOptions.QuantScheme == string.Empty)
+                !CompileSession.CompileOptions.QuantizeOptions.HasQuantScheme)
             {
                 ((K230Target.K230MixQuantInfo)markerW.MixQuantInfo).PermitInt16Quant = false;
             }

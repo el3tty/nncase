@@ -179,7 +179,8 @@ public sealed partial class OnnxImporter
         var id = n.Input[index];
         if (_outputTensors!.TryGetValue(id, out var expr))
         {
-            expr.Metadata.OutputNames = new string[] { n.Input[index] };
+            // the output of a Q/DQ pair is named after the quantized tensor (the quant scheme refers to it)
+            expr.Metadata.OutputNames = new string[] { _qdqNames?.GetValueOrDefault(id) ?? id };
             return expr;
         }
 

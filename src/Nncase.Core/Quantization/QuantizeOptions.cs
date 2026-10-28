@@ -170,6 +170,22 @@ public class QuantizeOptions
     public bool QuantSchemeStrictMode { get; set; }
 
     /// <summary>
+    /// Gets or sets the quant scheme the importer derived from the QuantizeLinear/DequantizeLinear pairs of the model.
+    /// It is used when no <see cref="QuantScheme"/> file is given and is always strict.
+    /// </summary>
+    public QuantScheme? ImportedQuantScheme { get; set; }
+
+    /// <summary>
+    /// Gets a value indicating whether ranges come from a quant scheme (file or imported) instead of calibration.
+    /// </summary>
+    public bool HasQuantScheme => QuantScheme != string.Empty || ImportedQuantScheme != null;
+
+    /// <summary>
+    /// Gets a value indicating whether the quant scheme in use is strict.
+    /// </summary>
+    public bool IsQuantSchemeStrict => QuantScheme != string.Empty ? QuantSchemeStrictMode : ImportedQuantScheme != null;
+
+    /// <summary>
     /// Gets or sets a value indicating whether export quant scheme.
     /// </summary>
     public bool ExportQuantScheme { get; set; }

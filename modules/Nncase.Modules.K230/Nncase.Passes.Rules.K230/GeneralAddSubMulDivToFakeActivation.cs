@@ -31,7 +31,7 @@ public class GeneralAddSubMulDivToFakeActivation : RewriteRule<Pattern>
             return null;
         }
 
-        if (CompileSession.CompileOptions.QuantizeOptions.QuantScheme != string.Empty &&
+        if (CompileSession.CompileOptions.QuantizeOptions.HasQuantScheme &&
             (inputMarkerL?.MixQuantInfo?.MarkerQuantType == DataTypes.Float32 ||
              inputMarkerR?.MixQuantInfo?.MarkerQuantType == DataTypes.Float32))
         {

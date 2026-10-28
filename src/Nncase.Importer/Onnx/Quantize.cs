@@ -14,10 +14,16 @@ namespace Nncase.Importer
     {
         private Expr VisitQuantizeLinear(in NodeProto op)
         {
+            if (_qdqFoldedWeights?.TryGetValue(op.Output[0], out var folded) == true)
+            {
+                return Const.FromTensor(folded);
+            }
+
             var (input, scale) = GetInputExprs(op, 0, 1);
             var bias = GetOptionInputExpr(op, 2, 0);
             if (scale is TensorConst scaleConst && bias is TensorConst biasConst)
             {
+                CheckPerTensorQuantParam(op, scaleConst);
                 return Quantize(
                     input,
                     new QuantParam(
@@ -31,10 +37,16 @@ namespace Nncase.Importer
 
         private Expr VisitDequantizeLinear(in NodeProto op)
         {
+            if (_qdqFoldedWeights?.TryGetValue(op.Output[0], out var folded) == true)
+            {
+                return Const.FromTensor(folded);
+            }
+
             var (input, scale) = GetInputExprs(op, 0, 1);
             var bias = GetOptionInputExpr(op, 2, 0);
             if (scale is TensorConst scaleConst && bias is TensorConst biasConst)
             {
+                CheckPerTensorQuantParam(op, scaleConst);
                 var scaleV = scaleConst.Value.ToScalar<float>();
                 var biasV = biasConst.Value.ToScalar<int>();
                 return Dequantize(
@@ -44,6 +56,14 @@ namespace Nncase.Importer
             }
 
             throw new NotImplementedException("Onnx importer not impl for dynamic scale and bias");
+        }
+
+        private static void CheckPerTensorQuantParam(in NodeProto op, TensorConst scale)
+        {
+            if (scale.Value.Length != 1)
+            {
+                throw new NotSupportedException($"{op.OpType} {op.Name}: per-axis quantization is only supported on constant weights.");
+            }
         }
     }
 }

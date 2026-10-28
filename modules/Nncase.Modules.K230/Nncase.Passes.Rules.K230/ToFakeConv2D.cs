@@ -50,14 +50,14 @@ public sealed class ToFakeConv2D : RewriteRule<Pattern>
         }
 
         CompileOptions compileOptions = CompileSession.CompileOptions;
-        if (compileOptions.QuantizeOptions.QuantScheme != string.Empty &&
+        if (compileOptions.QuantizeOptions.HasQuantScheme &&
             weightsMarker?.MixQuantInfo?.MarkerQuantType != DataTypes.Int16 &&
             weightsRange.ToArray().Max() - weightsRange.ToArray().Min() > 255f)
         {
             return null;
         }
 
-        if (compileOptions.QuantizeOptions.QuantScheme != string.Empty &&
+        if (compileOptions.QuantizeOptions.HasQuantScheme &&
             weightsMarker?.MixQuantInfo?.MarkerQuantType != DataTypes.Int8 &&
             weightsMarker?.MixQuantInfo?.MarkerQuantType != DataTypes.UInt8 &&
             weightsMarker?.MixQuantInfo?.MarkerQuantType != DataTypes.Int16)
@@ -66,8 +66,8 @@ public sealed class ToFakeConv2D : RewriteRule<Pattern>
         }
 
         bool splitWeightsToAct = GNNETypePatternUtility.IsDepthWise(input, weights, groups) &&
-                                 (compileOptions.QuantizeOptions.QuantScheme == string.Empty ||
-                                  !compileOptions.QuantizeOptions.QuantSchemeStrictMode);
+                                 (!compileOptions.QuantizeOptions.HasQuantScheme ||
+                                  !compileOptions.QuantizeOptions.IsQuantSchemeStrict);
         float[] weightValues = weights.Value.ToArray<float>();
         ActParam2 fakeConvActParam = ActParam2.GetFakeConvActParam(weights, bias, splitWeightsToAct, weightValues);
         int fixedValue = weights.CheckedShape[0].FixedValue;

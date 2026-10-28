@@ -55,7 +55,7 @@ public class ToGNNEPdpReduce : GNNEQuantRule, IRewriteRule
 
         CompileOptions compileOptions = CompileSession.CompileOptions;
         MixQuantInfo mixQuantInfo = input_marker.MixQuantInfo;
-        DataType dataType = (compileOptions.QuantizeOptions.QuantScheme == string.Empty)
+        DataType dataType = (!compileOptions.QuantizeOptions.HasQuantScheme)
             ? compileOptions.QuantizeOptions.QuantType
             : mixQuantInfo.MarkerQuantType;
         int bits = QuantBits;

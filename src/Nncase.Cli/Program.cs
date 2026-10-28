@@ -118,7 +118,7 @@ internal partial class Program
         // 3. create the calib dataset
         // with an imported quant scheme the ranges come from the file, no calibration data is needed
         if (compileOptions.QuantizeOptions.ModelQuantMode == Quantization.ModelQuantMode.UsePTQ &&
-            string.IsNullOrEmpty(compileOptions.QuantizeOptions.QuantScheme))
+            !compileOptions.QuantizeOptions.HasQuantScheme)
         {
             if (datasetFormat == DatasetFormat.Random)
             {
