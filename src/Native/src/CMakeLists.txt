@@ -20,6 +20,8 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(fmt gsl-lite json)
+# fmt is a static library linked into the shared runtime libraries
+set_property(TARGET fmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if (WIN32)
     FetchContent_Declare(

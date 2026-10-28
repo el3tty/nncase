@@ -79,15 +79,7 @@
       "libortki": {
         "type": "Transitive",
         "resolved": "0.0.3",
-        "contentHash": "Iznp76y1eL4UTrKAUTwOmSxJ9qjjkFdGa9HLQcHTL4a3581TkYqDB8PKZseTZE2H1x26UBC0PAhbBSxLc/zHzg==",
-        "dependencies": {
-          "libortki-win": "0.0.3"
-        }
-      },
-      "libortki-win": {
-        "type": "Transitive",
-        "resolved": "0.0.3",
-        "contentHash": "0/Q64YmLvEMcP6vFgh/FzRf0y/v9CMVinMDhbdDa8GMCQ8PmUYb0R3DSBzyra9g7GMOHGnP8Xpn+JwSKE5CVcA=="
+        "contentHash": "MdmmKFeiocJELosTHRRyKJitaJEa/J2eCaXAoTyzZAw6AA0FV0E58HZ77jds/vu5dyGlvu8sSkC6ENq8u+jpQQ=="
       },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",

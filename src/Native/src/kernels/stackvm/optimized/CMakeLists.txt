@@ -60,3 +60,10 @@ _TARGET_ARCH_FILES(TARGET kernels
 if(NOT MSVC)
     target_compile_options(kernels PRIVATE -Wno-sign-compare)
 endif()
+
+# The x86_64 kernels use AVX intrinsics without runtime dispatch. MSVC accepts them without /arch (and then takes the
+# plain AVX paths of avx_mathfun.h); gcc/clang need -mavx for the same code.
+if(ARCH STREQUAL "x86_64" AND NOT MSVC)
+    file(GLOB X86_64_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/x86_64/*.cpp")
+    set_property(SOURCE ${X86_64_SRCS} TARGET_DIRECTORY kernels APPEND PROPERTY COMPILE_OPTIONS -mavx)
+endif()

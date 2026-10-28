@@ -259,7 +259,7 @@ public class UnitTestEvaluatorNN : TestClassBase
             1,
             kernel_shape: new long[] { 3, 3 },
             output_padding: new long[] { 0, 0 },
-            output_shape: new long[] { 1, 2, 5, 5 },
+            output_shape: new long[] { 5, 5 },
             pads: new long[] { 1, 1, 1, 1 },
             strides: new long[] { 1, 1 });
 
