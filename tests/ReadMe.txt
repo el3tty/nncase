@@ -10,9 +10,10 @@ run_k230_tests.py runs pytest test files for the k230 target:
 
 Every test file runs in its own pytest process, so a compiler crash only loses that file. Results go to
 <output>/<mode>/ (logs/, junit/, tests_output/<test file>/ with --keep-cases); the summary is printed and written to
-<output>/report.txt. The exit code is 1 if anything failed. In board runs the tests listed in BOARD_SKIP
-(k230_test_plugin.py) are skipped, e.g. the random_*_like tests, whose reference cannot match the board; the
-report lists them with the reason.
+<output>/report.txt. The exit code is 1 if anything failed. The tests listed in RANDOM_SKIP
+(k230_test_plugin.py), the random_* tests, are skipped in every mode: their values depend on the C++ standard library
+(MSVC, libstdc++), so neither the golden files nor the onnxruntime reference match across platforms and the board. In
+board runs the tests listed in BOARD_SKIP are skipped too. The report lists skipped tests with the reason.
 
 All commands below are run from this folder (tests/). <path_to> stands for a folder on the PC, <board_path_to>
 for one on the board. On Git Bash, prefix board commands with MSYS_NO_PATHCONV=1, otherwise Git Bash turns

@@ -19,6 +19,8 @@ NNCASE_TEST_DEFAULT_OPSET / NNCASE_TEST_DEFAULT_IR: opset and IR version that on
 NNCASE_TEST_TARGETS: comma separated targets to run (e.g. 'k230'); every other target in config.toml is disabled.
 NNCASE_TEST_ROOT: folder for the case folders (default: tests_output in the current folder).
 
+The tests in RANDOM_SKIP are always skipped: their values come from std::default_random_engine and the std
+distributions, which every C++ standard library implements differently.
 In board runs (<TARGET>_SSH set) the tests in BOARD_SKIP are skipped with the reason given there.
 
 NNCASE_TEST_COMPILE_ONLY=1 (run_k230_tests.py --mode compile): TestRunner.run only compiles the model (no onnxruntime
@@ -40,15 +42,16 @@ import numpy as np
 import pytest
 from onnx import helper
 
-# tests whose reference cannot match a board run, by test function name
 _collected = {}         # test file -> names of the selected tests
 
-BOARD_SKIP = {
-    'test_random_normal_like': 'random values: the board runtime (libstdc++) draws another sequence than the '
-                               'onnxruntime reference (MSVC) for the same seed',
-    'test_random_uniform_like': 'random values: the board runtime (libstdc++) draws another sequence than the '
-                                'onnxruntime reference (MSVC) for the same seed',
-}
+# tests whose values depend on the C++ standard library (MSVC, libstdc++, libc++ draw other sequences for the same
+# seed): neither a golden file nor the onnxruntime reference of one platform matches another, by test function name
+_RANDOM = 'random values: std::default_random_engine and the std distributions differ between C++ standard libraries'
+RANDOM_SKIP = dict.fromkeys(['test_random_normal', 'test_random_normal_like', 'test_random_uniform',
+                             'test_random_uniform_like'], _RANDOM)
+
+# tests whose reference cannot match a board run, by test function name
+BOARD_SKIP = {}
 
 _MAX_ORT_IR = 13
 
@@ -101,12 +104,12 @@ _board_run = any(os.getenv('{0}_SSH'.format(t.upper())) for t in _targets)
 
 
 def pytest_collection_modifyitems(config, items):
-    if not _board_run:
-        return
     for item in items:
-        reason = BOARD_SKIP.get(getattr(item, 'originalname', None) or item.name.split('[')[0])
-        if reason:
-            item.add_marker(pytest.mark.skip(reason='board run: ' + reason))
+        name = getattr(item, 'originalname', None) or item.name.split('[')[0]
+        if name in RANDOM_SKIP:
+            item.add_marker(pytest.mark.skip(reason=RANDOM_SKIP[name]))
+        elif _board_run and name in BOARD_SKIP:
+            item.add_marker(pytest.mark.skip(reason='board run: ' + BOARD_SKIP[name]))
 
 
 # ---- compile mode ----------------------------------------------------------------------------------------------------

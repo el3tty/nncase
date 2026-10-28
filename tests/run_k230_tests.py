@@ -43,6 +43,7 @@ import collections
 import concurrent.futures
 import os
 import posixpath
+import re
 import shutil
 import subprocess
 import sys
@@ -291,8 +292,14 @@ def summarize_file(name, junit, rc, secs, log):
         started = [l.split('::', 1)[1].split()[0] for l in lines if '::' in l and '.py::' in l]
         reason = next((l[l.find(m):].strip() for l in lines for m in ('Unhandled exception', 'Fatal Python error')
                        if m in l), '')
+        if not reason:
+            # e.g. pytest could not load the plugin (a missing python module): the first python exception line
+            reason = next((l.strip() for l in lines if re.match(r'^\w+(\.\w+)*(Error|Exception): ', l)), '')
+        if not reason:
+            # e.g. "python: No module named pytest": the last line the process printed
+            reason = next((l.strip() for l in reversed(lines) if l.strip()), '')
         row['counts']['crashed'] = 1
-        row['first']['crashed'] = f"in {started[-1] if started else '?'}: {reason}"[:300]
+        row['first']['crashed'] = f"in {started[-1] if started else 'no case (before the first one)'}: {reason}"[:300]
         return row
     for tc in ET.parse(junit).getroot().iter('testcase'):
         failure = tc.find('failure')
