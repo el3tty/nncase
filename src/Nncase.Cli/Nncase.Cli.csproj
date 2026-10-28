@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <NuspecProperties>$(NuspecProperties);configuration=$(Configuration)</NuspecProperties>
     <TargetFramework>net9.0</TargetFramework>
+    <!-- use .NET 9 when installed, otherwise a newer major runtime -->
+    <RollForward>Major</RollForward>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 

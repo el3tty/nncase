@@ -6,6 +6,8 @@
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <TargetFramework>net9.0</TargetFramework>
+        <!-- started through hostfxr from _nncase: use .NET 9 when installed, otherwise a newer major runtime -->
+        <RollForward>Major</RollForward>
         <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
