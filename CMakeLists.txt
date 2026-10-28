@@ -41,6 +41,10 @@ if (NOT BUILDING_RUNTIME)
 
     foreach (_target IN LISTS NNCASE_INSTALL_TARGETS)
         if (TARGET ${_target})
+            if (UNIX AND NOT APPLE)
+                # the libraries they need (each other, libnethost.so) are installed next to them
+                set_target_properties(${_target} PROPERTIES INSTALL_RPATH "$ORIGIN")
+            endif ()
             install(TARGETS ${_target}
                     RUNTIME DESTINATION ${NNCASE_INSTALL_DIR}
                     LIBRARY DESTINATION ${NNCASE_INSTALL_DIR})
