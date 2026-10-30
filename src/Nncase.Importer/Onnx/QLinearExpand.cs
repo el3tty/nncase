@@ -136,27 +136,36 @@ public sealed partial class OnnxImporter
                     {
                         // x, x_scale, x_zp, w, w_scale, w_zp, y_scale, y_zp, [B]
                         var x = Dequantize(n.Input[0], n.Input[1], n.Input[2]);
-                        // the int8 weights are dequantized by a DequantizeLinear of the constant, which the quant scheme pass
-                        // folds and takes the weight range from
                         var wq = consts[n.Input[3]];
                         var wScale = Floats(n.Input[4]);
                         var oc = wq.Dims[0];
-                        if (wScale.Length != 1)
-                        {
-                            throw new NotSupportedException($"QLinearConv {n.Name}: per-channel weights are not supported (IR Quantize/Dequantize take one scale and zero point).");
-                        }
-
                         var wdqName = FloatName(n.Input[3]);
-                        Emit("DequantizeLinear", new[] { n.Input[3], n.Input[4], n.Input[5] }, wdqName);
+                        if (wScale.Length == 1)
+                        {
+                            // the int8 weights are dequantized by a DequantizeLinear of the constant, which the quant scheme
+                            // pass folds and takes the weight range from
+                            Emit("DequantizeLinear", new[] { n.Input[3], n.Input[4], n.Input[5] }, wdqName);
+                        }
+                        else
+                        {
+                            // per-channel weights: the IR Quantize/Dequantize take one scale and zero point, so they become
+                            // baked float weights (exactly the dequantized values), and nncase quantizes them again per
+                            // output channel from their min/max, as the baked weights of a QAT export
+                            var wZp = GetTensor(consts[n.Input[5]]).ToArray<int>();
+                            var codes = GetTensor(wq).ToArray<int>();
+                            var inner = codes.Length / oc;
+                            var values = codes.Select((q, i) => (q - wZp[wZp.Length == 1 ? 0 : i / inner]) * wScale[i / inner]).ToArray();
+                            _graph.Initializer.Add(MakeFloatTensor(wdqName, wq.Dims, values));
+                        }
 
                         var inputs = new List<string> { x, wdqName };
                         if (n.Input.Count > 8 && n.Input[8] != string.Empty)
                         {
-                            // int32 bias with scale x_scale * w_scale and zero point 0
+                            // int32 bias with scale x_scale * w_scale (per channel when the weights are) and zero point 0
                             var xScale = Floats(n.Input[1])[0];
                             var bias = GetTensor(consts[n.Input[8]]).ToArray<int>();
                             var b = FloatName(n.Input[8]);
-                            _graph.Initializer.Add(MakeFloatTensor(b, new[] { oc }, bias.Select(v => v * (xScale * wScale[0])).ToArray()));
+                            _graph.Initializer.Add(MakeFloatTensor(b, new[] { oc }, bias.Select((v, c) => v * (xScale * wScale[wScale.Length == 1 ? 0 : c])).ToArray()));
                             inputs.Add(b);
                         }
 
