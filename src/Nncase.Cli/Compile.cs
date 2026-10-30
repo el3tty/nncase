@@ -113,6 +113,10 @@ internal sealed class CompileCommand : Command
           name: "--quant-scheme-strict-mode",
           description: $"strict mode for --quant-scheme: tensors missing in the scheme are not quantized (float16) and weight ranges are not recomputed",
           getDefaultValue: () => false);
+        IgnoreQdqRanges = new Option<bool>(
+          name: "--ignore-qdq-ranges",
+          description: $"calibrate a model with QuantizeLinear/DequantizeLinear pairs like a float model instead of taking the ranges from the pairs",
+          getDefaultValue: () => false);
         FixedVars = new Option<IEnumerable<(string, int)>>(
           name: "--fixed-vars",
           description: $"dynamic shape fixed vars, default is empty. \nset by `n:123`",
@@ -201,6 +205,7 @@ internal sealed class CompileCommand : Command
         AddGlobalOption(ExportQuantSchemePath);
         AddGlobalOption(QuantScheme);
         AddGlobalOption(QuantSchemeStrictMode);
+        AddGlobalOption(IgnoreQdqRanges);
         AddGlobalOption(FixedVars);
         AddGlobalOption(PreProcess);
         AddGlobalOption(InputLayout);
@@ -254,6 +259,8 @@ internal sealed class CompileCommand : Command
     public Option<string> QuantScheme { get; }
 
     public Option<bool> QuantSchemeStrictMode { get; }
+
+    public Option<bool> IgnoreQdqRanges { get; }
 
     public Option<IEnumerable<(string Name, int Value)>> FixedVars { get; }
 

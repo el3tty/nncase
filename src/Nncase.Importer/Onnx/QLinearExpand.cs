@@ -1,4 +1,4 @@
-// Copyright (c) Canaan Inc. All rights reserved.
+﻿// Copyright (c) Canaan Inc. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -19,6 +19,13 @@ namespace Nncase.Importer;
 public sealed partial class OnnxImporter
 {
     private const string QuantizedSuffix = "_quantized";
+
+    // ops that only move values: run on a quantized tensor, their output keeps its params
+    private static readonly HashSet<string> _rangePreservingOps = new()
+    {
+        "Reshape", "Transpose", "Slice", "Squeeze", "Unsqueeze", "Flatten", "Identity", "MaxPool", "Resize",
+        "Upsample", "Split", "Pad", "Gather", "Expand", "Tile",
+    };
 
     private static readonly HashSet<string> _qLinearOps = new()
     {

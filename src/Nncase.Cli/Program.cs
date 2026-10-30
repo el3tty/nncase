@@ -116,7 +116,14 @@ internal partial class Program
         IR.IRModule module = await compiler.ImportModuleAsync(Path.GetExtension(compileOptions.InputFile).Trim('.'), compileOptions.InputFile);
 
         // 3. create the calib dataset
-        // with an imported quant scheme the ranges come from the file, no calibration data is needed
+        // with a quant scheme (a file or the ranges of the model's Q/DQ pairs) no calibration data is needed
+        if (compileOptions.QuantizeOptions.ModelQuantMode == Quantization.ModelQuantMode.UsePTQ &&
+            compileOptions.QuantizeOptions.QuantScheme == string.Empty &&
+            compileOptions.QuantizeOptions.ImportedQuantScheme != null && !string.IsNullOrEmpty(dataset))
+        {
+            Console.WriteLine($"Warning: --dataset {dataset} is not used, the ranges come from the model's Q/DQ pairs (--ignore-qdq-ranges calibrates instead).");
+        }
+
         if (compileOptions.QuantizeOptions.ModelQuantMode == Quantization.ModelQuantMode.UsePTQ &&
             !compileOptions.QuantizeOptions.HasQuantScheme)
         {
@@ -210,6 +217,7 @@ internal partial class Program
                 ModelQuantMode = context.ParseResult.GetValueForOption(compilecmd.ModelQuantMode),
                 QuantScheme = context.ParseResult.GetValueForOption(compilecmd.QuantScheme) ?? string.Empty,
                 QuantSchemeStrictMode = context.ParseResult.GetValueForOption(compilecmd.QuantSchemeStrictMode),
+                IgnoreQdqRanges = context.ParseResult.GetValueForOption(compilecmd.IgnoreQdqRanges),
                 ExportQuantSchemePath = exportQuantSchemePath,
                 ExportQuantScheme = context.ParseResult.GetValueForOption(compilecmd.ExportQuantScheme) ||
                                     !string.IsNullOrEmpty(exportQuantSchemePath),

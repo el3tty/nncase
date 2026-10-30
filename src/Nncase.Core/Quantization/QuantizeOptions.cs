@@ -170,10 +170,16 @@ public class QuantizeOptions
     public bool QuantSchemeStrictMode { get; set; }
 
     /// <summary>
-    /// Gets or sets the quant scheme the importer derived from the QuantizeLinear/DequantizeLinear pairs of the model.
-    /// It is used when no <see cref="QuantScheme"/> file is given and is always strict.
+    /// Gets or sets the quant scheme derived from the Quantize/Dequantize pairs of the model right after import
+    /// (QdqQuantSchemePass). It is used when no <see cref="QuantScheme"/> file is given and is always strict.
     /// </summary>
     public QuantScheme? ImportedQuantScheme { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the ranges of the model's Quantize/Dequantize pairs are ignored, so a QDQ
+    /// model is calibrated like a float one.
+    /// </summary>
+    public bool IgnoreQdqRanges { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether ranges come from a quant scheme (file or imported) instead of calibration.

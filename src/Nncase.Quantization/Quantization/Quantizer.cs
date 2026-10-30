@@ -302,8 +302,13 @@ internal partial class Quantizer
             // AssignByChannelRanges(ranges);
             // AssignDataTypeFromConfig(quantScheme!);
 
-            // load from file, or use the scheme the importer derived from the model's Q/DQ pairs
+            // load from file, or use the scheme derived from the model's Q/DQ pairs (QdqQuantSchemePass)
             {
+                if (readJson == string.Empty && _quantizeOptions.CalibrationDataset != null)
+                {
+                    Console.WriteLine("Warning: the calibration dataset is not used, the ranges come from the model's Q/DQ pairs (IgnoreQdqRanges calibrates instead).");
+                }
+
                 var quantScheme = readJson != string.Empty
                     ? JsonConvert.DeserializeObject<QuantScheme>(File.ReadAllText(readJson))
                     : _quantizeOptions.ImportedQuantScheme;

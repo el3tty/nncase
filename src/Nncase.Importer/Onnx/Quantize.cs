@@ -16,7 +16,7 @@ namespace Nncase.Importer
         {
             if (_qdqFoldedWeights?.TryGetValue(op.Output[0], out var folded) == true)
             {
-                return Const.FromTensor(folded);
+                return Const.FromTensor(folded.Weights);
             }
 
             var (input, scale) = GetInputExprs(op, 0, 1);
@@ -39,7 +39,10 @@ namespace Nncase.Importer
         {
             if (_qdqFoldedWeights?.TryGetValue(op.Output[0], out var folded) == true)
             {
-                return Const.FromTensor(folded);
+                // the weights the consumer sees, with the grid the quant scheme takes their range from
+                var weights = Const.FromTensor(folded.Weights);
+                weights.Metadata.FakeQuantGrid = folded.Grid;
+                return weights;
             }
 
             var (input, scale) = GetInputExprs(op, 0, 1);

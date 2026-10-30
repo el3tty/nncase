@@ -325,6 +325,8 @@ internal class Compiler : ICompiler
 
         var preprocess_option = _compileSession.CompileOptions;
 
+        // first, while the model's Quantize/Dequantize pairs and dequantized constants are as the importer made them
+        await RunPassAsync(pmg => pmg.Add<QdqQuantSchemePass>(), "QdqQuantScheme");
         await RunPassAsync(pmg => BroadcastOutputNamesAfterImportPass(pmg), "BroadcastOutputNamesAfterImport");
         await RunPassAsync(pmg => pmg.Add<ShapeInferPass>(), "ShapeInferAfterImport");
         await RunPassAsync(pmg => AddPreAndPostProcess(pmg), "AddPreAndPostProcessAfterImport");

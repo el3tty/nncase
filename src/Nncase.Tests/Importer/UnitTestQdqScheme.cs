@@ -11,6 +11,7 @@ using Nncase.IR.Math;
 using Nncase.IR.NN;
 using Nncase.Passes;
 using Nncase.Passes.Rules.Neutral;
+using Nncase.Passes.Transforms;
 using Nncase.Quantization;
 using Nncase.Tests.TestFixture;
 using Nncase.Utilities;
@@ -20,7 +21,8 @@ using Xunit;
 namespace Nncase.Tests.ImporterTest;
 
 /// <summary>
-/// Quant scheme inference from QuantizeLinear/DequantizeLinear pairs (src/Nncase.Importer/Onnx/QdqScheme.cs).
+/// Quant scheme inference from Quantize/Dequantize pairs (src/Nncase.Passes/Transforms/QdqQuantSchemePass.cs), with the
+/// importer's folding of Q/DQ on weights (src/Nncase.Importer/Onnx/QdqFolding.cs).
 /// The models are written in the ONNX textual syntax and parsed by onnx's own parser (through OrtKI).
 /// </summary>
 [AutoSetupTestMethod(InitSession = true)]
@@ -53,7 +55,7 @@ public class UnitTestQdqScheme : TestClassBase
 
     public UnitTestQdqScheme()
     {
-        // the scheme is only inferred for PTQ; the report is written to the Import dump directory
+        // the report is written to the pass's dump directory
         CompileOptions.QuantizeOptions.ModelQuantMode = ModelQuantMode.UsePTQ;
         CompileOptions.DumpFlags = DumpFlags.ImportOps;
     }
@@ -314,13 +316,39 @@ public class UnitTestQdqScheme : TestClassBase
     }
 
     [Fact]
-    public void TestNoSchemeWithoutPTQ()
+    public void TestIgnoreQdqRanges()
     {
-        CompileOptions.QuantizeOptions.ModelQuantMode = ModelQuantMode.NoQuant;
+        CompileOptions.QuantizeOptions.IgnoreQdqRanges = true;
         var module = Import(ReluQdqConv);
 
         Assert.Null(CompileOptions.QuantizeOptions.ImportedQuantScheme);
         Assert.Equal(1, Count<Quantize>(module));
+    }
+
+    [Fact]
+    public void TestDequantizedIntegerWeights()
+    {
+        // a DequantizeLinear of int8 weights without a QuantizeLinear (QOperator style) becomes an IR Dequantize of a
+        // constant, folded by the pass: (q - zp) * s with s 0.5, zp 1
+        var module = Import(Header + """
+            g (float[1,2,4,4] x) => (float[1,2,4,4] y)
+            <float s = {0.05}, uint8 zp = {128}, int8[2,2,1,1] wq = {3, 1, -1, 5}, float ws = {0.5}, int8 wzp = {1}>
+            {
+                xq = QuantizeLinear(x, s, zp)
+                xdq = DequantizeLinear(xq, s, zp)
+                w = DequantizeLinear(wq, ws, wzp)
+                y = Conv(xdq, w)
+            }
+            """);
+
+        var conv = Calls<Conv2D>(module).Single();
+        Assert.Equal(new[] { 1f, 0f, -1f, 2f }, ((TensorConst)conv[Conv2D.Weights]).Value.ToArray<float>());
+        // only the activation pair's Dequantize is left
+        Assert.Equal(1, Count<Dequantize>(module));
+
+        var w = Entry("w");
+        Assert.Equal("by_tensor", w.DataRangeMode);
+        AssertRanges(w, (-129 * 0.5f, 126 * 0.5f));
     }
 
     [Fact]
@@ -376,7 +404,12 @@ public class UnitTestQdqScheme : TestClassBase
     private IRModule Import(string text)
     {
         using var stream = new MemoryStream(OrtKI.ParseOnnxText(text));
-        return Importers.ImportOnnx(stream, CompileSession);
+        var module = Importers.ImportOnnx(stream, CompileSession);
+
+        // as Compiler.ImportModuleAsync does right after import
+        var pmgr = CompileSession.CreatePassManager("QdqQuantScheme");
+        pmgr.Add<QdqQuantSchemePass>();
+        return pmgr.RunAsync(module).GetAwaiter().GetResult();
     }
 
     private Output? TryEntry(string name) =>
@@ -384,7 +417,8 @@ public class UnitTestQdqScheme : TestClassBase
 
     private Output Entry(string name) => TryEntry(name) ?? throw new InvalidOperationException($"no scheme entry for {name}");
 
-    private string Report() => File.ReadAllText(Path.Join(CompileOptions.DumpDir, "Import", "ImportedQuantSchemeReport.txt"));
+    private string Report() => File.ReadAllText(Directory.GetFiles(CompileOptions.DumpDir, "ImportedQuantSchemeReport.txt", SearchOption.AllDirectories)
+        .OrderByDescending(File.GetLastWriteTimeUtc).First());
 
     private string[] ReportSection(string title) =>
         Report().Split('#', StringSplitOptions.RemoveEmptyEntries)
