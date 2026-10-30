@@ -14,11 +14,6 @@ namespace Nncase.Importer
     {
         private Expr VisitQuantizeLinear(in NodeProto op)
         {
-            if (_qdqFoldedWeights?.TryGetValue(op.Output[0], out var folded) == true)
-            {
-                return Const.FromTensor(folded.Weights);
-            }
-
             var (input, scale) = GetInputExprs(op, 0, 1);
             var bias = GetOptionInputExpr(op, 2, 0);
             if (scale is TensorConst scaleConst && bias is TensorConst biasConst)
@@ -37,14 +32,6 @@ namespace Nncase.Importer
 
         private Expr VisitDequantizeLinear(in NodeProto op)
         {
-            if (_qdqFoldedWeights?.TryGetValue(op.Output[0], out var folded) == true)
-            {
-                // the weights the consumer sees, with the grid the quant scheme takes their range from
-                var weights = Const.FromTensor(folded.Weights);
-                weights.Metadata.FakeQuantGrid = folded.Grid;
-                return weights;
-            }
-
             var (input, scale) = GetInputExprs(op, 0, 1);
             var bias = GetOptionInputExpr(op, 2, 0);
             if (scale is TensorConst scaleConst && bias is TensorConst biasConst)
@@ -65,7 +52,7 @@ namespace Nncase.Importer
         {
             if (scale.Value.Length != 1)
             {
-                throw new NotSupportedException($"{op.OpType} {op.Name}: per-axis quantization is only supported on constant weights.");
+                throw new NotSupportedException($"{op.OpType} {op.Name}: per-axis quantization is not supported (IR Quantize/Dequantize take one scale and zero point; export the weights baked, without Q/DQ).");
             }
         }
     }

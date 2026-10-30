@@ -13,8 +13,8 @@ namespace Nncase.Importer;
 /// <summary>
 /// Rewrites an onnxruntime QOperator model (QLinearConv, com.microsoft QLinearLeakyRelu/QLinearAdd/QLinearConcat,
 /// MaxPool/Resize on quantized tensors) into the equivalent QDQ model: every quantized op becomes
-/// DequantizeLinear -> float op -> QuantizeLinear. The Q/DQ pairs are then handled like those of a QAT export
-/// (QdqScheme.cs): the weight pairs are folded and the activation pairs give the quant scheme.
+/// DequantizeLinear -> float op -> QuantizeLinear, and the int8 weights a DequantizeLinear of the constant. The
+/// quant scheme pass (QdqQuantSchemePass) then folds the weights and takes the ranges from the pairs, as for a QAT export.
 /// </summary>
 public sealed partial class OnnxImporter
 {
@@ -136,27 +136,18 @@ public sealed partial class OnnxImporter
                     {
                         // x, x_scale, x_zp, w, w_scale, w_zp, y_scale, y_zp, [B]
                         var x = Dequantize(n.Input[0], n.Input[1], n.Input[2]);
+                        // the int8 weights are dequantized by a DequantizeLinear of the constant, which the quant scheme pass
+                        // folds and takes the weight range from
                         var wq = consts[n.Input[3]];
                         var wScale = Floats(n.Input[4]);
-                        var wZp = GetTensor(consts[n.Input[5]]).ToArray<int>();
                         var oc = wq.Dims[0];
-                        var inner = wq.Dims.Skip(1).Aggregate(1L, (a, b) => a * b);
-                        var wValues = GetTensor(wq).ToArray<int>();
-                        var wFloat = new float[wValues.Length];
-                        for (long i = 0; i < wValues.Length; i++)
+                        if (wScale.Length != 1)
                         {
-                            var c = wScale.Length == 1 ? 0 : (int)(i / inner);
-                            wFloat[i] = (wValues[i] - wZp[wZp.Length == 1 ? 0 : c]) * wScale[c];
+                            throw new NotSupportedException($"QLinearConv {n.Name}: per-channel weights are not supported (IR Quantize/Dequantize take one scale and zero point).");
                         }
 
-                        // the weights get their own Q/DQ pair, folded at import, so the scheme carries the exported params
-                        var w = FloatName(n.Input[3]);
-                        _graph.Initializer.Add(MakeFloatTensor(w, wq.Dims, wFloat));
-                        var axis = wScale.Length == 1 ? null : new[] { new AttributeProto { Name = "axis", Type = AttributeProto.Types.AttributeType.Int, I = 0 } };
-                        var wqName = NewName(w + QuantizedSuffix);
-                        var wdqName = NewName(w + "_dequantized");
-                        Emit("QuantizeLinear", new[] { w, n.Input[4], n.Input[5] }, wqName, attributes: axis);
-                        Emit("DequantizeLinear", new[] { wqName, n.Input[4], n.Input[5] }, wdqName, attributes: axis);
+                        var wdqName = FloatName(n.Input[3]);
+                        Emit("DequantizeLinear", new[] { n.Input[3], n.Input[4], n.Input[5] }, wdqName);
 
                         var inputs = new List<string> { x, wdqName };
                         if (n.Input.Count > 8 && n.Input[8] != string.Empty)
@@ -165,7 +156,7 @@ public sealed partial class OnnxImporter
                             var xScale = Floats(n.Input[1])[0];
                             var bias = GetTensor(consts[n.Input[8]]).ToArray<int>();
                             var b = FloatName(n.Input[8]);
-                            _graph.Initializer.Add(MakeFloatTensor(b, new[] { oc }, bias.Select((v, c) => v * (xScale * wScale[wScale.Length == 1 ? 0 : c])).ToArray()));
+                            _graph.Initializer.Add(MakeFloatTensor(b, new[] { oc }, bias.Select(v => v * (xScale * wScale[0])).ToArray()));
                             inputs.Add(b);
                         }
 

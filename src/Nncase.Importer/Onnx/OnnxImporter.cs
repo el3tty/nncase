@@ -69,7 +69,6 @@ public sealed partial class OnnxImporter : BaseImporter
         CompileSession.CompileOptions.ShapeBucketOptions =
             bucketOptions with { VarMap = varMap };
         _outputTensors = createdInputs.ToDictionary(n => n.Name, n => (Expr)n);
-        ProcessQdqPairs();
         return (createdInputs, varMap);
     }
 

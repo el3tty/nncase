@@ -1,4 +1,4 @@
-// Copyright (c) Canaan Inc. All rights reserved.
+﻿// Copyright (c) Canaan Inc. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -24,8 +24,9 @@ namespace Nncase.Passes.Transforms;
 /// It runs right after import, before anything folds constants or moves the pairs:
 /// <list type="bullet">
 /// <item>Dequantize(Quantize(x)): the range of the grid, on x (the pair stays, the target removes it).</item>
-/// <item>A constant folded by the importer from a Q/DQ pair (<see cref="IRMetadata.FakeQuantGrid"/>) or a
-/// Dequantize of an integer constant (folded here): the range of the grid, per channel when the grid is.</item>
+/// <item>Weights: Dequantize of an integer constant (QOperator style) or Dequantize(Quantize(constant)) (QAT export
+/// with weight Q/DQ) is folded here with the ONNX semantics, and the range of its grid goes to the scheme. The IR
+/// Quantize/Dequantize take one scale and zero point, so per-channel weight quantization cannot be expressed.</item>
 /// <item>Conv weights without a grid: per output channel min/max. Graph inputs without a pair: --input-range.</item>
 /// <item>Ops that only move values (Reshape, Transpose, MaxPool, ...): the range of their input.</item>
 /// </list>
@@ -93,17 +94,16 @@ public sealed class QdqQuantSchemePass : ModulePass
             return Task.FromResult(module);
         }
 
+        var found = FoldWeights(ExprCollector.Collect(function));
+
+        // the folds replaced some calls: collect again
         var exprs = ExprCollector.Collect(function);
-        var found = AddGridConstants(exprs);
-        found |= FoldDequantizedConstants(exprs);
         found |= AddActivationPairs(exprs);
         if (!found)
         {
             return Task.FromResult(module);
         }
 
-        // the folds replaced some calls: collect again
-        exprs = ExprCollector.Collect(function);
         AddBakedConvWeights(exprs);
         AddInputs(function);
         PropagateRanges(exprs);
@@ -154,53 +154,48 @@ public sealed class QdqQuantSchemePass : ModulePass
         return range;
     }
 
-    // a per-tensor weight range is "by_tensor": the quantizer repeats it for every output channel
-    private void AddWeights(string name, FakeQuantGrid grid)
-    {
-        var offset = ZeroPointOffset(grid.QuantType, name);
-        var ranges = grid.Scales.Select((s, c) => GetCheckedRange(grid.Scales.Length == 1 ? name : $"{name}[{c}]", s, grid.ZeroPoints[grid.ZeroPoints.Length == 1 ? 0 : c] + offset)).ToArray();
-        Add(name, ranges.Length > 1 ? "by_channel" : "by_tensor", ranges);
-    }
-
     /// <summary>
-    /// Constants the importer folded from a Q/DQ pair.
+    /// Folds the dequantized weights into float constants on their grid; one scale for the whole tensor, so the scheme
+    /// entry is "by_tensor" and the quantizer repeats it for every output channel.
     /// </summary>
-    private bool AddGridConstants(IReadOnlyList<Expr> exprs)
+    private bool FoldWeights(IReadOnlyList<Expr> exprs)
     {
         var found = false;
-        foreach (var c in exprs.OfType<TensorConst>())
+        foreach (var dq in exprs.OfType<Call>().Where(c => c is { Target: Dequantize }).ToArray())
         {
-            if (c.Metadata.FakeQuantGrid is FakeQuantGrid grid && NameOf(c) is string name)
-            {
-                AddWeights(name, grid);
-                found = true;
-            }
-        }
-
-        return found;
-    }
-
-    /// <summary>
-    /// Dequantize of an integer constant (e.g. QLinearConv weights): folded into float constants on the same grid.
-    /// </summary>
-    private bool FoldDequantizedConstants(IReadOnlyList<Expr> exprs)
-    {
-        var found = false;
-        foreach (var dq in exprs.OfType<Call>().Where(c => c is { Target: Dequantize } && c[Dequantize.Input] is TensorConst).ToArray())
-        {
-            var input = (TensorConst)dq[Dequantize.Input];
             var param = ParamOf(dq, Dequantize.DequantParam);
-            var name = NameOf(dq) ?? NameOf(input) ?? throw new InvalidOperationException("Dequantize of an unnamed constant.");
-            var values = input.Value.ToArray<int>().Select(q => (q - param.ZeroPoint) * param.Scale).ToArray();
-            var folded = Const.FromTensor(Tensor.From(values, input.Value.Dimensions));
-            folded.Metadata.OutputNames = new[] { name };
-            var grid = new FakeQuantGrid(input.Value.ElementType, new[] { param.Scale }, new[] { param.ZeroPoint }, 0);
-
-            // an int32 bias is not quantized by the scheme, it only has to become float
-            if (input.Value.ElementType == DataTypes.UInt8 || input.Value.ElementType == DataTypes.Int8)
+            int[] codes;
+            DataType quantType;
+            string? name;
+            switch (dq[Dequantize.Input])
             {
-                folded.Metadata.FakeQuantGrid = grid;
-                AddWeights(name, grid);
+                // integer weights (QOperator style); an int32 bias only has to become float, it gets no scheme entry
+                case TensorConst c when c.Value.ElementType != DataTypes.Float32:
+                    codes = c.Value.ToArray<int>();
+                    quantType = c.Value.ElementType;
+                    name = NameOf(dq) ?? NameOf(c);
+                    break;
+
+                // QuantizeLinear of float weights: round half to even and saturate, as onnxruntime does
+                case Call { Target: Quantize quantize } q when q[Quantize.Input] is TensorConst c
+                    && Passes.Rules.Neutral.FoldQuantDeQuant.AlmostEqual(ParamOf(q, Quantize.QuantParam), param):
+                    var (qMin, qMax) = quantize.TargetType == DataTypes.UInt8 ? (0, 255) : quantize.TargetType == DataTypes.Int8 ? (-128, 127)
+                        : throw new NotSupportedException($"Q/DQ on {NameOf(c)}: quant type {quantize.TargetType} is not supported.");
+                    codes = c.Value.ToArray<float>().Select(v => (int)Math.Clamp(MathF.Round(v / param.Scale) + param.ZeroPoint, qMin, qMax)).ToArray();
+                    quantType = quantize.TargetType;
+                    name = NameOf(c) ?? NameOf(dq);
+                    break;
+                default:
+                    continue;
+            }
+
+            var dims = dq[Dequantize.Input] is TensorConst t ? t.Value.Dimensions : ((TensorConst)((Call)dq[Dequantize.Input])[Quantize.Input]).Value.Dimensions;
+            var folded = Const.FromTensor(Tensor.From(codes.Select(q => (q - param.ZeroPoint) * param.Scale).ToArray(), dims));
+            folded.Metadata.OutputNames = name is null ? null : new[] { name };
+            if (quantType != DataTypes.Int32 && name is not null)
+            {
+                var range = GetCheckedRange(name, param.Scale, param.ZeroPoint + ZeroPointOffset(quantType, name));
+                Add(name, "by_tensor", new[] { range });
                 found = true;
             }
 
@@ -237,11 +232,14 @@ public sealed class QdqQuantSchemePass : ModulePass
                 continue;
             }
 
-            // the pair disappears in the target (FoldQuantDeQuant) and x takes its place: x carries the name
+            // the pair disappears in the target (FoldQuantDeQuant) and x takes its place, and the name the rewrite
+            // keeps may be that of the Dequantize: both carry the name of the quantized tensor
             if (NameOf(x) is null)
             {
                 x.Metadata.OutputNames = new[] { name };
             }
+
+            dq.Metadata.OutputNames = new[] { name };
 
             var range = GetCheckedRange(name, qParam.Scale, qParam.ZeroPoint + ZeroPointOffset(quantize.TargetType, name));
             _ranges[x] = range;
@@ -260,7 +258,7 @@ public sealed class QdqQuantSchemePass : ModulePass
     {
         foreach (var conv in exprs.OfType<Call>())
         {
-            if (ConstWeights(conv) is not var (w, ocAxis) || w.Metadata.FakeQuantGrid != null || NameOf(w) is not string name
+            if (ConstWeights(conv) is not var (w, ocAxis) || NameOf(w) is not string name
                 || _entries.ContainsKey(name) || w.Value.ElementType != DataTypes.Float32)
             {
                 continue;

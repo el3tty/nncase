@@ -22,11 +22,6 @@ public class IRMetadata
     /// Gets or sets outputs names.
     /// </summary>
     public IReadOnlyList<string>? OutputNames { get; set; }
-
-    /// <summary>
-    /// Gets or sets the integer grid of a constant the importer folded from the model's fake quantization.
-    /// </summary>
-    public Quantization.FakeQuantGrid? FakeQuantGrid { get; set; }
 }
 
 /// <summary>

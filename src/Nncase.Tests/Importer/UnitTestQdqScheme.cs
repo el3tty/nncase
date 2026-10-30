@@ -21,8 +21,7 @@ using Xunit;
 namespace Nncase.Tests.ImporterTest;
 
 /// <summary>
-/// Quant scheme inference from Quantize/Dequantize pairs (src/Nncase.Passes/Transforms/QdqQuantSchemePass.cs), with the
-/// importer's folding of Q/DQ on weights (src/Nncase.Importer/Onnx/QdqFolding.cs).
+/// Quant scheme inference from Quantize/Dequantize pairs (src/Nncase.Passes/Transforms/QdqQuantSchemePass.cs).
 /// The models are written in the ONNX textual syntax and parsed by onnx's own parser (through OrtKI).
 /// </summary>
 [AutoSetupTestMethod(InitSession = true)]
@@ -105,34 +104,49 @@ public class UnitTestQdqScheme : TestClassBase
     [Fact]
     public void TestWeightPairIsFolded()
     {
-        // per-channel weight Q/DQ (axis 0) is folded at import with the ONNX semantics:
-        // ch0 (s 0.5, zp 128): 0.25 -> 0.5 rounds to even 0 -> 0; 0.75 -> 1.5 rounds to 2 -> 1
-        // ch1 (s 0.25, zp 100): 100 -> 400 clamps to 255 -> 38.75; -30 -> -120 clamps to 0 -> -25
+        // a per-tensor weight Q/DQ is folded by the pass with the ONNX semantics (s 0.5, zp 128):
+        // 0.25 -> 0.5 rounds to even 0 -> 0; 0.75 -> 1.5 rounds to 2 -> 1; 100 -> 200 clamps to 255 -> 63.5;
+        // -100 -> -200 clamps to 0 -> -64
         var module = Import(Header + """
             g (float[1,2,4,4] x) => (float[1,2,4,4] y)
-            <float s = {0.05}, uint8 zp = {128}, float[2,2,1,1] w = {0.25, 0.75, 100, -30},
-             float[2] ws = {0.5, 0.25}, uint8[2] wzp = {128, 100}>
+            <float s = {0.05}, uint8 zp = {128}, float[2,2,1,1] w = {0.25, 0.75, 100, -100}, float ws = {0.5}, uint8 wzp = {128}>
             {
                 xq = QuantizeLinear(x, s, zp)
                 xdq = DequantizeLinear(xq, s, zp)
-                wq = QuantizeLinear <axis = 0> (w, ws, wzp)
-                wdq = DequantizeLinear <axis = 0> (wq, ws, wzp)
+                wq = QuantizeLinear(w, ws, wzp)
+                wdq = DequantizeLinear(wq, ws, wzp)
                 y = Conv(xdq, wdq)
             }
             """);
 
         var conv = Calls<Conv2D>(module).Single();
         var weights = (TensorConst)conv[Conv2D.Weights];
-        Assert.Equal(new[] { 0f, 1f, 38.75f, -25f }, weights.Value.ToArray<float>());
+        Assert.Equal(new[] { 0f, 1f, 63.5f, -64f }, weights.Value.ToArray<float>());
         Assert.Equal("w", weights.Metadata.OutputNames?[0]);
 
         // only the activation pair is left
         Assert.Equal(1, Count<Quantize>(module));
 
-        // the scheme ranges come from the exported params, not from the folded values
+        // the scheme range comes from the exported params, not from the folded values
         var w = Entry("w");
-        Assert.Equal("by_channel", w.DataRangeMode);
-        AssertRanges(w, (-128 * 0.5f, 127 * 0.5f), (-100 * 0.25f, 155 * 0.25f));
+        Assert.Equal("by_tensor", w.DataRangeMode);
+        AssertRanges(w, (-128 * 0.5f, 127 * 0.5f));
+    }
+
+    [Fact]
+    public void TestPerChannelWeightPairIsRejected()
+    {
+        // IR Quantize/Dequantize take one scale and zero point: export the weights baked instead
+        var e = Assert.Throws<NotSupportedException>(() => Import(Header + """
+            g (float[1,2,4,4] x) => (float[1,2,4,4] y)
+            <float[2,2,1,1] w = {0.25, 0.75, 100, -30}, float[2] ws = {0.5, 0.25}, uint8[2] wzp = {128, 100}>
+            {
+                wq = QuantizeLinear <axis = 0> (w, ws, wzp)
+                wdq = DequantizeLinear <axis = 0> (wq, ws, wzp)
+                y = Conv(x, wdq)
+            }
+            """));
+        Assert.Contains("per-axis", e.Message, StringComparison.Ordinal);
     }
 
     [Fact]
