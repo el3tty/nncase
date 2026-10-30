@@ -316,7 +316,7 @@ internal sealed class ILPrintVisitor : ExprFunctor<string, string>
         var args = expr.Arguments.AsValueEnumerable().Select(Visit).ToArray();
         name = AllocateTempVar(expr);
         _scope.IndWrite($"{name} = {target}({property}{string.Join(", ", args)})");
-        AppendCheckedType(expr.CheckedType);
+        AppendCheckedType(expr.CheckedType, OutputNamesComment(expr));
         return name;
     }
 
@@ -492,7 +492,7 @@ internal sealed class ILPrintVisitor : ExprFunctor<string, string>
         var fields = expr.Fields.AsValueEnumerable().Select(Visit).ToArray();
         name = AllocateTempVar(expr);
         _scope.IndWrite($"{name} = ({string.Join(", ", fields)})");
-        AppendCheckedType(expr.CheckedType);
+        AppendCheckedType(expr.CheckedType, OutputNamesComment(expr));
         _scope.IndWriteLine();
         return name;
     }
@@ -540,7 +540,7 @@ internal sealed class ILPrintVisitor : ExprFunctor<string, string>
         var attr = Visit(expr.Attribute);
         name = AllocateTempVar(expr);
         _scope.IndWrite($"{name} = {target}@({expr.Name} = {attr})");
-        AppendCheckedType(expr.CheckedType);
+        AppendCheckedType(expr.CheckedType, OutputNamesComment(expr));
         return name;
     }
 
@@ -603,6 +603,10 @@ internal sealed class ILPrintVisitor : ExprFunctor<string, string>
         _scope.IndWrite(_scope.Pop());
         return string.Empty;
     }
+
+    // the tensor names of the model (Metadata.OutputNames, e.g. the ONNX output names; the quant scheme refers to them)
+    private static string OutputNamesComment(Expr expr) =>
+        expr.Metadata.OutputNames is { Count: > 0 } names ? $" \"{string.Join("\", \"", names)}\"" : string.Empty;
 
     private string AllocateTempVar(Expr expr)
     {
