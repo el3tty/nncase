@@ -246,10 +246,13 @@ public sealed partial class OnnxImporter
         {
             var x = pair.Input;
             alias[pair.DQ.Output[0]] = x;
-            if (pair.ZeroPointType != TensorProto.Types.DataType.Uint8)
+            // an int8 grid with zero point zp is the uint8 grid with zero point zp + 128: same scale, same values
+            var zpOffset = pair.ZeroPointType switch
             {
-                throw new NotSupportedException($"Q/DQ on {x}: zero point type {pair.ZeroPointType} is not supported, only uint8 quantization can be compiled from a QDQ model.");
-            }
+                TensorProto.Types.DataType.Uint8 => 0,
+                TensorProto.Types.DataType.Int8 => 128,
+                _ => throw new NotSupportedException($"Q/DQ on {x}: zero point type {pair.ZeroPointType} is not supported, only 8-bit quantization can be compiled from a QDQ model."),
+            };
 
             var isWeight = consts.ContainsKey(x);
             if (!isWeight && pair.Scales.Length != 1)
@@ -257,8 +260,9 @@ public sealed partial class OnnxImporter
                 throw new NotSupportedException($"Q/DQ on {x}: per-channel activation quantization is not supported.");
             }
 
-            var ranges = pair.Scales.Select((s, c) => GetCheckedRange(pair.Scales.Length == 1 ? x : $"{x}[{c}]", s, pair.ZeroPoints[c], widened, mismatched));
-            Add(MakeEntry(x, isWeight ? "by_channel" : "by_tensor", ranges));
+            var ranges = pair.Scales.Select((s, c) => GetCheckedRange(pair.Scales.Length == 1 ? x : $"{x}[{c}]", s, pair.ZeroPoints[c] + zpOffset, widened, mismatched));
+            // a per-tensor weight range is "by_tensor": the quantizer repeats it for every output channel
+            Add(MakeEntry(x, pair.Scales.Length > 1 ? "by_channel" : "by_tensor", ranges));
         }
 
         // Conv weights that are plain initializers (weights baked by the QAT export)

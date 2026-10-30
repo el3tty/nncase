@@ -52,6 +52,7 @@ public sealed partial class OnnxImporter : BaseImporter
     {
         var bucketOptions = CompileSession.CompileOptions.ShapeBucketOptions;
         _fixVarMap = bucketOptions.FixVarMap;
+        ExpandQLinearOps();
         _constTensors = _graph.Initializer
             .ToDictionary(tensor => tensor.Name, tensor => tensor);
 

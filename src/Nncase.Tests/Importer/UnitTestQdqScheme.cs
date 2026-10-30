@@ -227,10 +227,57 @@ public class UnitTestQdqScheme : TestClassBase
     }
 
     [Fact]
-    public void TestInt8IsRejected()
+    public void TestInt8IsShiftedToUint8()
     {
-        var e = Assert.Throws<NotSupportedException>(() => Import(ReluQdqConv.Replace("uint8 zp = {128}", "int8 zp = {0}", StringComparison.Ordinal)));
-        Assert.Contains("only uint8", e.Message, StringComparison.Ordinal);
+        // the int8 grid with zero point zp is the uint8 grid with zero point zp + 128
+        Import(ReluQdqConv.Replace("uint8 zp = {128}", "int8 zp = {-28}", StringComparison.Ordinal));
+
+        AssertRanges(Entry("r"), (-100 * 0.05f, 155 * 0.05f));
+        Assert.Empty(ReportSection("mismatched"));
+    }
+
+    [Fact]
+    public void TestQOperatorModel()
+    {
+        // an onnxruntime QOperator model: the quantized ops become DequantizeLinear -> float op -> QuantizeLinear
+        var module = Import("<ir_version: 8, opset_import: [\"\" : 13, \"com.microsoft\" : 1]>\n" + """
+            g (float[1,2,4,4] x) => (float[1,4,2,2] y)
+            <float xs = {0.004}, int8 xzp = {-128}, int8[2,2,1,1] w_quantized = {2, 0, -1, 3}, float ws = {0.25}, int8 wzp = {0},
+             int32[2] b_quantized = {250, -500}, float cs = {0.1}, int8 czp = {-10}, float ls = {0.05}, int8 lzp = {-100},
+             float as = {0.2}, int8 azp = {0}, float ys = {0.3}, int8 yzp = {5}>
+            {
+                x_quantized = QuantizeLinear(x, xs, xzp)
+                c_quantized = QLinearConv(x_quantized, xs, xzp, w_quantized, ws, wzp, cs, czp, b_quantized)
+                l_quantized = com.microsoft.QLinearLeakyRelu <alpha = 0.1> (c_quantized, cs, czp, ls, lzp)
+                a_quantized = com.microsoft.QLinearAdd(c_quantized, cs, czp, l_quantized, ls, lzp, as, azp)
+                p_quantized = MaxPool <kernel_shape = [2, 2], strides = [2, 2]> (a_quantized)
+                q_quantized = com.microsoft.QLinearConcat <axis = 1> (ys, yzp, p_quantized, as, azp, p_quantized, as, azp)
+                y = DequantizeLinear(q_quantized, ys, yzp)
+            }
+            """);
+
+        // the activations are named after the float tensors, the int8 params shifted to uint8
+        AssertRanges(Entry("x"), (0f, 255 * 0.004f));
+        AssertRanges(Entry("c"), (-118 * 0.1f, 137 * 0.1f));
+        AssertRanges(Entry("l"), (-28 * 0.05f, 227 * 0.05f));
+        AssertRanges(Entry("a"), (-128 * 0.2f, 127 * 0.2f));
+        AssertRanges(Entry("p"), (-128 * 0.2f, 127 * 0.2f));
+        AssertRanges(Entry("q"), (-133 * 0.3f, 122 * 0.3f));
+        var w = Entry("w");
+        Assert.Equal("by_tensor", w.DataRangeMode);
+        AssertRanges(w, (-128 * 0.25f, 127 * 0.25f));
+        Assert.Empty(ReportSection("mismatched"));
+        Assert.Empty(ReportSection("missing"));
+
+        // weights and bias are dequantized: bias scale xs * ws
+        var conv = Calls<Conv2D>(module).Single();
+        Assert.Equal(new[] { 0.5f, 0f, -0.25f, 0.75f }, ((TensorConst)conv[Conv2D.Weights]).Value.ToArray<float>());
+        AssertClose(new[] { 0.25f, -0.5f }, ((TensorConst)conv[Conv2D.Bias]).Value.ToArray<float>());
+        Assert.Single(Calls<LeakyRelu>(module));
+
+        // one pair per quantized tensor (x, c, l, a, p, q): c and p are dequantized once for both of their users
+        Assert.Equal(6, Count<Quantize>(module));
+        Assert.Equal(6, Count<Dequantize>(module));
     }
 
     [Fact]
