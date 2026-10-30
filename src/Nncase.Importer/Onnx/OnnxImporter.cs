@@ -52,7 +52,6 @@ public sealed partial class OnnxImporter : BaseImporter
     {
         var bucketOptions = CompileSession.CompileOptions.ShapeBucketOptions;
         _fixVarMap = bucketOptions.FixVarMap;
-        ExpandQLinearOps();
         _constTensors = _graph.Initializer
             .ToDictionary(tensor => tensor.Name, tensor => tensor);
 
@@ -98,7 +97,7 @@ public sealed partial class OnnxImporter : BaseImporter
     private void Visit(NodeProto op)
     {
         AddOpInModel(op.OpType);
-        var output = op.OpType switch
+        var output = IsOnQuantizedTensor(op) ? VisitOnQuantizedTensor(op) : op.OpType switch
         {
             "Abs" => VisitUnary(op, UnaryOp.Abs),
             "Acos" => VisitUnary(op, UnaryOp.Acos),
@@ -174,6 +173,9 @@ public sealed partial class OnnxImporter : BaseImporter
 
             "QuantizeLinear" => VisitQuantizeLinear(op),
             "QLinearConv" => VisitQLinearConv(op),
+            "QLinearLeakyRelu" => VisitQLinearLeakyRelu(op),
+            "QLinearAdd" => VisitQLinearAdd(op),
+            "QLinearConcat" => VisitQLinearConcat(op),
             "QLinearMatmul" => VisitQLinearMatMul(op),
             "RandomNormal" => VisitRandomNormal(op),
             "RandomNormalLike" => VisitRandomNormalLike(op),

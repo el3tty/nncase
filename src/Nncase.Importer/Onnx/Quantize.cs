@@ -19,12 +19,9 @@ namespace Nncase.Importer
             if (scale is TensorConst scaleConst && bias is TensorConst biasConst)
             {
                 CheckPerTensorQuantParam(op, scaleConst);
-                return Quantize(
-                    input,
-                    new QuantParam(
-                        biasConst.Value.ToScalar<int>(),
-                        scaleConst.Value.ToScalar<float>()),
-                    ((TensorConst)bias).CheckedDataType);
+                var param = new QuantParam(biasConst.Value.ToScalar<int>(), scaleConst.Value.ToScalar<float>());
+                _quantizedTensors[op.Output[0]] = (param, biasConst.CheckedDataType);
+                return Quantize(input, param, biasConst.CheckedDataType);
             }
 
             throw new NotImplementedException("Onnx importer not impl for dynamic scale and bias");
