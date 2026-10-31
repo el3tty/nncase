@@ -451,7 +451,9 @@ void DmStoreOfInstruction::operation() {
   if (src_channel_) {
     PDP0 * pdp0 = PDP0::GetPDP0();
     pdp0->store_of_queue_.push_back(store);
-    if (!pdp0->store_of_queue_.empty())
+    // Only release a compute that is already waiting; otherwise the store stays queued until
+    // PuPdp0Compute, which runs the compute once a store is queued.
+    if (!pdp0->compute_queue_.empty())
       pdp0->Compute();
   } else {
     Conv2D * conv = Conv2D::GetConv2D();

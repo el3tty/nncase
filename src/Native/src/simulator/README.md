@@ -582,8 +582,8 @@ Compute trigger rules (derived from `PuComputeInstruction` / `DmStoreOfInstructi
     oldest ACT0 compute does not route to the DM store (`target == 0`). Otherwise the compute waits.
 * `dm_store_of` (PU) enqueues the store and then runs the compute **only if one is waiting** in `compute_queue_`. If no
   compute is waiting the store remains queued for a later `pu_compute`/`act0_compute`.
-* `pu_pdp0_compute` runs when `store_of_queue_` is non-empty; `dm_store_of` with `src_channel = 1` runs the PDP0 whenever
-  the queue is not empty.
+* `pu_pdp0_compute` runs when `store_of_queue_` is non-empty; `dm_store_of` with `src_channel = 1` runs the PDP0 only if
+  a `pu_pdp0_compute` is already waiting in `compute_queue_`. Both orders occur: yolo-fastest emits the store first.
 * `act0_compute` does not trigger anything by itself.
 * `pu_forward_psum` copies the PSUM into ACT0 and runs ACT0, and with it the queued DM store, right away, whatever the
   previous `pu_compute` was. A board only does so after an accumulating `pu_compute` (see the `pu_forward_psum` row in
