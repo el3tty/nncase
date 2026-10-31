@@ -176,7 +176,7 @@ public sealed partial class OnnxImporter : BaseImporter
             "QLinearLeakyRelu" => VisitQLinearLeakyRelu(op),
             "QLinearAdd" => VisitQLinearAdd(op),
             "QLinearConcat" => VisitQLinearConcat(op),
-            "QLinearMatmul" => VisitQLinearMatMul(op),
+            "QLinearMatMul" => VisitQLinearMatMul(op),
             "RandomNormal" => VisitRandomNormal(op),
             "RandomNormalLike" => VisitRandomNormalLike(op),
             "RandomUniform" => VisitRandomUniform(op),
