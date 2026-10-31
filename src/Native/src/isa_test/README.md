@@ -110,7 +110,7 @@ list needs as many values as the shape, nested lists have to match it level by l
 | `asm/scalar` | ALU (incl. edge cases), `mul`, loads / stores, branches, `jal` / `jalr`, `fence_i`, `mmu_*` / `ccr_*` no-ops, 3x3 matrix multiplication |
 | `asm/l2` | `l2_load` / `l2_store`: crops, planes and batches, 16 bit elements, float32 <-> float16; `l2_load_w` weight loads (8/16 bit, f32->f16, packed 4/6 bit, compressed) |
 | `asm/mfu` | `mfu_memset`, `mfu_memcpy`, `mfu_transpose`, PDP1 pooling (min / max / average / sum, padding, u8 quantisation) and ACT1 (add, mul, line fits incl. 16 segments and shifts, broadcast, per channel) |
-| `asm/conv` | DM -> PU -> ACT0 -> DM store convolutions (1x1, 3x3, padding, stride, zero points, output types) accumulation over input channel groups, `pu_forward_psum`, and PDP0 pooling / depthwise |
+| `asm/conv` | DM -> PU -> ACT0 -> DM store convolutions (1x1, 3x3, padding, stride, zero points, output types) accumulation over input channel groups, `pu_forward_psum`, and PDP0 pooling / depthwise (also with `dm_store_of` issued before `pu_pdp0_compute`) |
 | `asm/ai2d` | AI2D (`extrw` / `extraw` then `ai2d_compute` + `fence`), GLB to GLB: copy with pitch, crop / destination offset, nearest and bilinear resize, constant padding, three planes |
 
 The expected values of the engine tests were computed independently with numpy (convolutions, pooling, fp16 rounding), not
