@@ -203,7 +203,11 @@ void CheckPoint::PrintActPsumL1Write(L1Helper & helper, ActOutputType outType) {
 }
 
 // Writes one line: every value masked to `width` hex nibbles, zero padded (stream is in hex mode).
+// Does nothing when the stream is not open (no Open*CheckPoint call): formatting into a closed stream discards the
+// output anyway, and the simulator does this for every PDP0 tap and DM IF pixel.
 void CheckPoint::PrintCheckPoint(std::ofstream & os, std::vector<int> const & values, int width, bool reverse) {
+  if (!os.is_open())
+    return;
   uint32_t mask = 0xFFFFFFFFu;
   if (width <= 7)
     mask = static_cast<uint32_t>((1 << (4 * width)) - 1);
