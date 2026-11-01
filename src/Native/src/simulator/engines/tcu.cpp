@@ -1,9 +1,11 @@
 // TCU dataflow of one convolution (TCU::ComputeConv):
 //   for each kernel row ky:            FillWeight(ky) loads weight[ky][0..kw) into every PE (double buffered)
-//     for each output row oy:          the per-PE input queues are cleared, then
-//       for each output column ox:     FillIf pushes the new IF samples of the sliding window into the PE queues,
-//                                      PECalculate multiplies the kw queued samples with the kw weights, sums
-//                                      over the PE rows (input channels) and writes/accumulates the 32 lanes into PSUM_L1.
+//     for each output row oy:          LoadIfRow fetches the IF samples the row's windows cover (pad value outside), then
+//       for each output column ox:     the kw samples at x = ox * stride_x + tap - pad_left are multiplied with the kw
+//                                      weights, summed over the PE rows (input channels) and written/accumulated into
+//                                      the 32 lanes of PSUM_L1.
+// The hardware (and the original simulator) streams the samples through a sliding-window queue in every PE; the
+// window always holds the samples at those positions, so they are indexed directly here.
 #include "engines/tcu.h"
 #include "globals.h"
 #include <algorithm>
@@ -50,7 +52,7 @@ void TCU::FillWeight(ComputeInfo& info, int kernel_row) {
                         value = static_cast<int>(info.weights_[index]) - static_cast<int>(info.weight_zero_points_[col]);
                     // verified against asm: the self-call in the binary is the compiler's duplicated
                     // (.cold / signed-case) copy of this same loop, lifted as one.
-                    pe_[first_row + r][col].weight_[weight_sel_][kx] = value;
+                    weight_[weight_sel_][first_row + r][kx][col] = value;
                 }
             }
         }
@@ -59,96 +61,25 @@ void TCU::FillWeight(ComputeInfo& info, int kernel_row) {
     weight_sel_ = (weight_sel_ + 1) % 2;
 }
 
-// One output pixel: for every PE column, sum over kernel taps and PE rows of weight * queued IF sample.
-void TCU::PECalculate(ComputeInfo& info, int out_y, int out_x, bool accumulate, bool last_kernel_row) {
-    (void)last_kernel_row;   // passed by ComputeConv but never read by the body
-
-    const int taps = pe_[0][0].taps_;
-    std::vector<std::vector<int32_t>> tap_sum(taps, std::vector<int32_t>(kCols, 0));   // [tap][lane]
-
-    for (int tap = 0; tap < taps; ++tap) {
-        // The original also stored pe[row][0].ifmap[tap] and pe[row][0].weight[prev][tap] of every row into two
-        // scratch arrays that were never read; dropped.
-        for (int row0 = 0; row0 < rows_; row0 += rows_per_group_) {
-            int col = cols_per_group_ * (row0 / rows_per_group_);
-            for (int c = 0; c < cols_per_group_; ++c, ++col) {
-                for (int r = 0; r < rows_per_group_; ++r) {
-                    PE& p = pe_[row0 + r][col];
-                    // NOTE: reads the raw queue storage; the queue holds >= taps samples in normal operation.
-                    const int32_t product = p.weight_[weight_prev_][tap] * p.ifmap_.data()[tap];
-                    if (tap == taps - 1) {
-                        // Slide the window: drop min(pop_count, taps) samples from the front.
-                        const int pops = std::min(p.pop_count_, p.taps_);
-                        for (int i = 0; i < pops; ++i)
-                            if (!p.ifmap_.empty())
-                                p.ifmap_.erase(p.ifmap_.begin());
-                    }
-                    tap_sum[tap][col] += product;
-                }
+// Fetches the IF samples at (y, x .. x+count-1) of every PE row into line[row * count + i]. Positions outside the
+// tensor give info.pad_value.
+void TCU::LoadIfRow(const ComputeInfo& info, int y, int x, int count, int32_t* line) {
+    const L1Tensor& t = info.ifmap_;
+    const bool row_inside = y >= 0 && y < t.height_;
+    for (int row = 0; row < rows_; ++row) {
+        int32_t* dst = line + static_cast<size_t>(row) * count;
+        for (int i = 0; i < count; ++i) {
+            const int xi = x + i;
+            int32_t value = info.pad_value_;
+            if (row_inside && xi >= 0 && xi < t.width_) {
+                int v = static_cast<int8_t>(t.data_[t.base_ + t.row_stride_ * y + t.col_stride_ * xi + t.chan_stride_ * row]);
+                if (!info.if_signed_)
+                    v = static_cast<uint8_t>(v) - static_cast<int>(info.if_zero_points_[row]);
+                value = v;
             }
+            dst[i] = value;
         }
     }
-
-    int32_t* psum = reinterpret_cast<int32_t*>(info.psum_.data_);
-    const L1Tensor& t = info.psum_;
-    auto lane_ptr = [&](int lane) {
-        const int64_t off = static_cast<int64_t>(static_cast<int64_t>(t.chan_stride_) * lane) / 4 +   // (uint64)(stride * lane) >> 2
-                            (static_cast<int64_t>(t.base_) >> 2) +
-                            static_cast<int64_t>(t.col_stride_) * out_x + static_cast<int64_t>(t.row_stride_) * out_y;
-        return psum + static_cast<int32_t>(off);
-    };
-
-    for (int lane = 0; lane < kCols; ++lane) {
-        int32_t sum = 0;
-        for (int tap = 0; tap < taps; ++tap)
-            sum += tap_sum[tap][lane];
-        if (info.shift_mode_ == 1)
-            sum *= 16;
-        else if (info.shift_mode_ != 0)
-            sum >>= 4;
-
-        int32_t* dst = lane_ptr(lane);
-        if (accumulate) {
-            int64_t total = static_cast<int64_t>(*dst) + sum;
-            if (total >= 0x80000000LL) {
-                std::cout << "max int: " << total << std::endl;
-                total = 0x7FFFFFFF;
-            } else if (total <= -0x80000001LL) {
-                std::cout << "min int: " << total << std::endl;
-                total = static_cast<int32_t>(0x80000000u);
-            }
-            *dst = static_cast<int32_t>(total);
-        } else {
-            *dst = sum;
-        }
-    }
-}
-
-// Pushes the IF samples at (y, x .. x+count-1) into the input queue of every PE (all columns of a group get the
-// same sample). Positions outside the tensor feed info.pad_value.
-void TCU::FillIf(ComputeInfo& info, int y, int x, int count) {
-    for (int xi = x; xi < x + count; ++xi) {
-        const bool inside = y >= 0 && xi >= 0 && y < info.ifmap_.height_ && xi < info.ifmap_.width_;
-        const int32_t pad = info.pad_value_;
-        for (int row0 = 0; row0 < rows_; row0 += rows_per_group_) {
-            const int first_col = cols_per_group_ * (row0 / rows_per_group_);
-            for (int r = 0; r < rows_per_group_; ++r) {
-                const int row = row0 + r;
-                int32_t value = pad;
-                if (inside) {
-                    const L1Tensor& t = info.ifmap_;
-                    int v = static_cast<int8_t>(t.data_[t.base_ + t.row_stride_ * y + t.col_stride_ * xi + t.chan_stride_ * row]);
-                    if (!info.if_signed_)
-                        v = static_cast<uint8_t>(v) - static_cast<int>(info.if_zero_points_[row]);
-                    value = v;
-                }
-                for (int c = 0; c < cols_per_group_; ++c)
-                    pe_[row][first_col + c].ifmap_.push_back(value);
-            }
-        }
-    }
-    // verified against asm: JUMPOUT(0x40ABDE) / JUMPOUT(0x40AC3B) land in the .cold copy of the inside-tensor loop body
-    // (movsbl (%r13,%rdi) ... = the same IF load as above); nothing is pushed when cols_per_group <= 0.
 }
 
 void TCU::ComputeConv(ComputeInfo& info) {
@@ -157,40 +88,82 @@ void TCU::ComputeConv(ComputeInfo& info) {
     cols_per_group_ = cols_ / info.groups_;
     rows_per_group_ = rows_ / info.groups_;
 
-    if (rows_ > 0 && cols_ > 0) {
-        for (int r = 0; r < rows_; ++r)
-            for (int c = 0; c < cols_; ++c) {
-                pe_[r][c].pop_count_ = info.stride_x_;
-                // verified against asm @0x46e9cc: pop_count = info+0x70 (stride_x), taps = r11d = info+0x3c (kw).
-                pe_[r][c].taps_ = info.kw_;
-            }
-    }
-
     if (info.kh_ <= 0)
         return;
+
+    const int kw = info.kw_;
+    // The PE queue drops min(stride_x, kw) samples per output pixel and only grows when stride_x > 0, so the window of
+    // output column ox starts at x_first + ox * step.
+    const int step = std::max(info.stride_x_, 0);
+    const int out_w = info.psum_.width_;
+    const int x_first = -info.pad_left_;
+    const int span = out_w > 0 ? std::max((out_w - 1) * step + kw, 0) : 0;   // IF samples covered by one output row
+    std::vector<int32_t> line(static_cast<size_t>(std::max(rows_, 0)) * span);
+
+    int32_t* psum = reinterpret_cast<int32_t*>(info.psum_.data_);
+    const L1Tensor& t = info.psum_;
+    auto lane_ptr = [&](int lane, int out_y, int out_x) {
+        const int64_t off = static_cast<int64_t>(static_cast<int64_t>(t.chan_stride_) * lane) / 4 +   // (uint64)(stride * lane) >> 2
+                            (static_cast<int64_t>(t.base_) >> 2) +
+                            static_cast<int64_t>(t.col_stride_) * out_x + static_cast<int64_t>(t.row_stride_) * out_y;
+        return psum + static_cast<int32_t>(off);
+    };
+
+    // Locals, so the compiler knows the loop bounds are invariant and vectorizes the lane loop.
+    const int rows = rows_;
+    const int rows_per_group = rows_per_group_;
+    const int cols_per_group = cols_per_group_;
 
     FillWeight(info, 0);
     int ky = 0;
     int y_first = -info.pad_top_;
     while (true) {
-        const bool last_ky = (info.kh_ - 1 == ky);
+        const bool accumulate = info.accumulate_ != 0;
+        const int32_t (&weights)[kRows][kTaps][kCols] = weight_[weight_prev_];
         int y = y_first;
         for (int oy = 0; oy < info.psum_.height_; ++oy) {
-            // Reset the sliding window of every PE.
-            for (int r = 0; r < rows_; ++r)
-                for (int c = 0; c < cols_; ++c)
-                    pe_[r][c].ifmap_.clear();
+            if (out_w > 0)
+                LoadIfRow(info, y, x_first, span, line.data());
+            for (int ox = 0; ox < out_w; ++ox) {
+                // For every PE column: sum over kernel taps and PE rows of weight * IF sample.
+                int32_t acc[kCols] = {};
+                for (int row0 = 0; row0 < rows; row0 += rows_per_group) {
+                    const int col0 = cols_per_group * (row0 / rows_per_group);
+                    for (int r = 0; r < rows_per_group; ++r) {
+                        const int row = row0 + r;
+                        const int32_t* in = line.data() + static_cast<size_t>(row) * span + static_cast<size_t>(ox) * step;
+                        for (int tap = 0; tap < kw; ++tap) {
+                            const int32_t v = in[tap];
+                            const int32_t* w = &weights[row][tap][col0];
+                            int32_t* a = acc + col0;
+                            for (int c = 0; c < cols_per_group; ++c)
+                                a[c] += w[c] * v;
+                        }
+                    }
+                }
 
-            const int x_first = -info.pad_left_;
-            if (info.kw_ - info.stride_x_ > 0)
-                FillIf(info, y, x_first, info.kw_ - info.stride_x_);   // prime the window with kw - stride samples
-            const int fresh = std::min(info.kw_, info.stride_x_);       // samples added per output pixel
+                for (int lane = 0; lane < kCols; ++lane) {
+                    int32_t sum = acc[lane];
+                    if (info.shift_mode_ == 1)
+                        sum *= 16;
+                    else if (info.shift_mode_ != 0)
+                        sum >>= 4;
 
-            int x = x_first;
-            for (int ox = 0; ox < info.psum_.width_; ++ox) {
-                FillIf(info, y, x + info.kw_ - fresh, fresh);
-                PECalculate(info, oy, ox, info.accumulate_ != 0, last_ky);
-                x += info.stride_x_;
+                    int32_t* dst = lane_ptr(lane, oy, ox);
+                    if (accumulate) {
+                        int64_t total = static_cast<int64_t>(*dst) + sum;
+                        if (total >= 0x80000000LL) {
+                            std::cout << "max int: " << total << std::endl;
+                            total = 0x7FFFFFFF;
+                        } else if (total <= -0x80000001LL) {
+                            std::cout << "min int: " << total << std::endl;
+                            total = static_cast<int32_t>(0x80000000u);
+                        }
+                        *dst = static_cast<int32_t>(total);
+                    } else {
+                        *dst = sum;
+                    }
+                }
             }
             y += info.stride_y_;
         }
@@ -204,7 +177,7 @@ void TCU::ComputeConv(ComputeInfo& info) {
                         break;
                     for (int j = 0; j < info.kw_; ++j)
                         dump << std::setfill('0') << std::setw(8) << std::hex
-                             << static_cast<unsigned int>(pe_[r][c].weight_[weight_prev_][j]) << std::endl;
+                             << static_cast<unsigned int>(weight_[weight_prev_][r][j][c]) << std::endl;
                 }
             _G.debug_flag = 0;
             dump.close();

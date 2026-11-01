@@ -1,7 +1,7 @@
 #pragma once
 // output (TCU1..TCU4.cpp). Conv2D::Compute fills a TCU::ComputeInfo and calls TCU::ComputeConv,
-// which streams the weights (FillWeight) and the input feature map (FillIf) into the PEs and
-// accumulates the results into the PSUM_L1 tensor (PECalculate).
+// which loads the weights into the PEs (FillWeight) and computes every output pixel directly from the input
+// feature map, accumulating into the PSUM_L1 tensor.
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -53,25 +53,18 @@ struct TCU {
         int32_t  mode_ = 0;              // PuCompute::mode (only used by Conv2D::Compute)
     };
 
-    // One processing element: input queue plus two (double-buffered) rows of weights.
-    struct PE {
-        std::vector<int32_t> ifmap_;     // input values waiting in this PE (sliding window)
-        int32_t weight_[2][kTaps] = {};  // weight[buffer][tap]
-        int32_t pop_count_ = 0;          // inputs removed after the last tap (the smaller of pop_count / taps)
-        int32_t taps_ = 0;               // number of accumulation steps per output (= kernel width)
-    };
-
-    PE      pe_[kRows][kCols];           // (flat PE index = 32 * row + col)
+    // PE weights, double buffered: weight_[buffer][PE row][tap][PE column]. The lane (column) index is innermost so the
+    // PE columns of one row are contiguous.
+    int32_t weight_[2][kRows][kTaps][kCols] = {};
     int32_t weight_sel_ = 0;             // weight buffer FillWeight writes next
-    int32_t weight_prev_ = 0;            // buffer written by the previous FillWeight (read by PECalculate)
+    int32_t weight_prev_ = 0;            // buffer written by the previous FillWeight (read by ComputeConv)
     int32_t rows_ = 0;                   // active PE rows    (ifmap.channels)
     int32_t cols_ = 0;                   // active PE columns (psum.channels)
     int32_t rows_per_group_ = 0;         // rows / groups
     int32_t cols_per_group_ = 0;         // cols / groups
 
     void FillWeight(ComputeInfo& info, int kernel_row);
-    void PECalculate(ComputeInfo& info, int out_y, int out_x, bool accumulate, bool last_kernel_row);
-    void FillIf(ComputeInfo& info, int y, int x, int count);
+    void LoadIfRow(const ComputeInfo& info, int y, int x, int count, int32_t* line);
     void ComputeConv(ComputeInfo& info);
 };
 

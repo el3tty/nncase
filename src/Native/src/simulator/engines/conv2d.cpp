@@ -148,7 +148,7 @@ void Conv2D::Compute() {
     info.accumulate_ = pu.accumulate_;
     info.mode_ = static_cast<int32_t>(pu.mode_);
 
-    // The 24 x 32 PE array is ~72 KiB: heap instead of the original stack frame.
+    // The double-buffered 24 x 32 x 8 PE weights are 48 KiB: heap instead of the original stack frame.
     auto tcu = std::make_unique<TCU>();
     tcu->ComputeConv(info);
 
