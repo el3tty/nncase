@@ -170,10 +170,12 @@ internal partial class Quantizer
                 ranges = GetOptRanges(histograms, ranges, srcBinSize, dstBinSize, _quantizeOptions.CalibrationMethod);
 
                 // 1.3. Assign ranges
+                PinPreDequantizeRanges(ranges);
                 AssignRanges(ranges);
             }
             else
             { // 2. Assign ranges
+                PinPreDequantizeRanges(ranges);
                 AssignRanges(ranges);
             }
 
@@ -313,6 +315,7 @@ internal partial class Quantizer
                     ? JsonConvert.DeserializeObject<QuantScheme>(File.ReadAllText(readJson))
                     : _quantizeOptions.ImportedQuantScheme;
                 var ranges = GetRangesFromConfig(quantScheme!);
+                PinPreDequantizeRanges(ranges);
                 AssignByChannelRanges(ranges);
                 AssignDataTypeFromConfig(quantScheme!);
                 if (_quantizeOptions.DumpQuantError)
@@ -589,6 +592,57 @@ internal partial class Quantizer
         else
         {
             throw new ArgumentException("Invalid calibration method.");
+        }
+    }
+
+    /// <summary>
+    /// The exact range of a tensor produced by the pre-process Dequantize (AddPreProcess, named "*_PreDequantize"):
+    /// the input is already quantized with the --input-range parameters, so its range must not be calibrated (KLD
+    /// narrows it) nor taken from a quant scheme. With any other range the K230 lowering loads the input bytes with the
+    /// Dequantize parameters but scales them (and computes the pad value) with the marker's, i.e. it sees a different image.
+    /// </summary>
+    private static ValueRange<float>? GetPreDequantizeRange(ENode rangeOf)
+    {
+        if (rangeOf.Expr is not Call { Target: RangeOf } rangeOfCall
+            || rangeOfCall.Arguments[0] is not Call { Target: Dequantize } dequantize
+            || dequantize.Metadata.OutputNames?[0]?.EndsWith("_PreDequantize", StringComparison.Ordinal) != true
+            || dequantize.Arguments[Dequantize.DequantParam.Index] is not TensorConst param)
+        {
+            return null;
+        }
+
+        var inputType = dequantize.Arguments[Dequantize.Input.Index].CheckedDataType;
+        (int qMin, int qMax) = inputType == DataTypes.UInt8 ? (0, 255)
+            : inputType == DataTypes.Int8 ? (-128, 127)
+            : (0, 0);
+        if (qMin == qMax)
+        {
+            return null;
+        }
+
+        var qp = param.Value.ToScalar<QuantParam>();
+        return new ValueRange<float>((qMin - qp.ZeroPoint) * qp.Scale, (qMax - qp.ZeroPoint) * qp.Scale);
+    }
+
+    private static void PinPreDequantizeRanges(IDictionary<ENode, ValueRange<float>> ranges)
+    {
+        foreach (var key in ranges.Keys.ToList())
+        {
+            if (GetPreDequantizeRange(key) is ValueRange<float> range)
+            {
+                ranges[key] = range;
+            }
+        }
+    }
+
+    private static void PinPreDequantizeRanges(IDictionary<ENode, ValueRange<float>[]> ranges)
+    {
+        foreach (var key in ranges.Keys.ToList())
+        {
+            if (GetPreDequantizeRange(key) is ValueRange<float> range)
+            {
+                ranges[key] = new[] { range };
+            }
         }
     }
 
