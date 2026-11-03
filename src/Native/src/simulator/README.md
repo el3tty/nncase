@@ -27,7 +27,8 @@ Contents
 14. [Execution model of the asynchronous engines](#14-execution-model-of-the-asynchronous-engines)
 15. [Typical instruction sequences](#15-typical-instruction-sequences)
 16. [Source map](#16-source-map)
-17. [Open questions](#open-questions)
+17. [Debug dumps and check points](#17-debug-dumps-and-check-points)
+18. [Open questions](#open-questions)
 
 ---
 
@@ -680,6 +681,131 @@ end x0
 
 Each instruction class has: the decoded fields as members, a `Simulator::InstParser<I, 16|32>` specialisation (decode;
 for scalar instructions also execute), `get_next_pc()` (`pc + 4` or `pc + 2`) and `operation()` (execute / configure).
+
+---
+
+## 17. Debug dumps and check points
+
+The simulator gives the board's results bit for bit (checked on PP-OCR and Yolo-Fastest kmodels), so a kmodel can be
+debugged on the PC. The Debug runtime dumps the tensors of every stackvm op, including the inputs and outputs of each
+KPU call; with `NNCASE_SIM_CHECKPOINTS` the simulator also dumps what the activation units compute inside a KPU call.
+`tools/ckpt_dump.py` prints all these files in readable form.
+
+### 17.1 Making dumps
+
+* Build the Debug runtime and simulator in `build/`, configured with `ENABLE_DUMP_MANAGER` (the Release build writes
+  no dumps). From a VS developer shell: `ninja -C build install`.
+* Import `nncaseruntime` from `build/install`, set the dump folder before loading the model, and set
+  `NNCASE_SIM_CHECKPOINTS=1` in the environment for the activation dumps:
+
+  ```python
+  import sys; sys.path.insert(0, r"<nncase>/build/install")
+  import nncaseruntime as nn
+  kpu = nn.Interpreter()
+  kpu.set_dump_root("dumps")      # before load_model
+  kpu.load_model(open("model.kmodel", "rb").read())
+  ```
+
+  Dump one input only: every run appends, and one KPU call's check points take a few MB.
+
+The runtime passes its dump path to the simulator as `argv[4]` (unused by the original); the check point streams are
+opened in `<dump path>.ckpt/` and closed by `CheckPoint::Reset()` when the run ends. `dumps/Runtime/` then holds:
+
+| File | Content |
+|---|---|
+| `<n>$<op>` | output of stackvm op number `<n>`: a CPU op (`conv2d`, `lstm`, ...) or a KPU call named after its function (`1_7`) |
+| `<n>$<op>$<arg>` | an input of that op (`arg_0`, `arg_1` for a KPU call) |
+| `<n>$<op>.ckpt/act_dm_write.chk` | one record per activation computed inside KPU call `<n>` (see 17.3) |
+| `<n>$<op>.ckpt/pdp0_pe_*.chk` | PDP0 inputs, weights and products per kernel tap (see 17.4) |
+| `<n>$<op>.ckpt/*.chk` | the other hardware check point streams; most stay empty (their print calls are missing or gated by `_G.debug_flag`) |
+
+A KPU call's inputs and outputs are where the data passes between the KPU and the CPU. A float stackvm build of the
+same model (target `cpu`, `--model-quant-mode NoQuant`) dumps every op and serves as the float reference there; a
+`cpu` build with PTQ is the same file as the float one.
+
+### 17.2 tools/ckpt_dump.py
+
+```
+python tools/ckpt_dump.py 'dumps/Runtime/1$1_7'                                    # KPU call output
+python tools/ckpt_dump.py 'dumps/Runtime/1$1_7.ckpt/act_dm_write.chk' --kind P --record 0
+python tools/ckpt_dump.py 'dumps/Runtime/1$1_7.ckpt/pdp0_pe_out.chk' --lines 10 --sum 9
+```
+
+| Option | Meaning |
+|---|---|
+| `--values N` | values shown per tensor (default 12, 0 = all) |
+| `--kind P\|L\|S\|A` | `act_dm_write.chk`: only records of this kind |
+| `--record S` | `act_dm_write.chk`: only records with this sequence number (each kind has its own numbering) |
+| `--lines N` | PDP0 and raw files: lines shown (default 20, 0 = all) |
+| `--sum K` | `pdp0_pe_out.chk`: also add up every K lines per lane (K = kernel taps, e.g. 9 for 3x3) |
+
+Runtime dumps are printed with element type, shape, statistics and the first values per channel. Put the file names in
+single quotes on the shell: they contain `$`.
+
+### 17.3 Activation records (`act_dm_write.chk`)
+
+Inside a KPU call the PU ([10](#10-pu-convolution-engine)) and PDP0 ([11](#11-pu-pdp0-depthwise--pooling-engine))
+compute integer sums; ACT0 ([12](#12-act0-activation-after-the-pu)) turns them into the layer's output (dequantisation,
+bias, simple activations, requantisation); ACT1 in the MFU ([13.4](#134-act1-element-wise-binaryunary-operations-opcode-0x72))
+applies non-linear activations with a 16-segment table and element-wise add / multiply of two tensors.
+
+Every layer runs in tiles that fit the engines' local buffers (PSUM: 32 lanes x 4 KiB, PSUM_L1: 2048 elements per
+channel), e.g. 2 output rows of a stride-2 3x3 conv, or 31-32 columns with a 1-column overlap for a 3x3 depthwise
+conv. One layer therefore gives several consecutive records with the same parameters. Tiles alternate between two
+halves of PSUM_L1 (double buffering: ACT1 works on tile k while the PU and ACT0 produce tile k+1).
+
+The file has four kinds of records, each numbered separately (`P 0`, `L 0` and `A 0` are three steps of the same
+first tile). Each record is a header line and one or more hex data lines in (channel, row, column) order:
+
+* **`P <seq> shift <s> route <r> type <t> act <C> <H> <W>`: ACT0's input.** Line 1: the 7 fp16 parameters per channel
+  (`slope_lo slope_hi offset_lo offset_hi clamp_lo clamp_hi knee`), line 2: the int32 `PSUM`. The PSUM is the
+  convolution's result: sums of (pixel - zero point) x (weight - zero point), no scale and no bias yet. ACT0 computes
+  for every element of channel c (`Act0::Compute`, `LineFit` in `engines/act0.cpp`):
+
+  ```
+  x = PSUM * 2^-shift                        # int32 -> fp16 (PsumToFp16), mantissa truncated
+  y = (x < knee) ? slope_lo * x + offset_lo   # fp16
+                 : slope_hi * x + offset_hi
+  y = clamp(y, clamp_lo, clamp_hi)
+  out = y (fp16), or round(y) saturated to the output type (uint8, int8, int16)
+  ```
+
+  fp16 cannot hold the int32 sums (65504 at most) nor the small dequantisation factor (input scale x weight scale, e.g.
+  3e-6, below fp16's smallest normal number 6.1e-5). The factor is therefore split: the sum is divided by `2^shift`
+  while it is converted (the shift is subtracted from the exponent, so this costs nothing) and `slope = factor * 2^shift`
+  is an ordinary fp16 number. The compiler chooses the shift per layer. If it is too large, `x` itself falls below
+  6.1e-5 and loses precision as a subnormal (PP-OCR stem conv: shift 30, `x` about 1e-5, 0.2-0.9 % error).
+
+  Two examples from a PP-OCR recognizer:
+
+  | Layer | slope_lo / hi | offset_lo / hi | clamp | Meaning |
+  |---|---|---|---|---|
+  | stem conv, fp16 out | 3212 / 3212 | 2.6484 / 2.6484 | -inf / inf | `y = PSUM * 3.0e-6 + bias`: the float conv output, left for ACT1 (hardswish) |
+  | 1x1 conv + ReLU, uint8 out | 17424 / 17424 | 297.75 / 297.75 | 0 / 255 | the slope also divides by the output scale, offset = bias / output scale + output zero point; the clamp at 0 is the ReLU |
+
+  Equal segments mean a linear step and the knee does not matter. Two different segments are used for Leaky ReLU /
+  PReLU (a smaller slope below the knee); ReLU and ReLU6 are done with the clamps. Check for channel 0 of the stem:
+  PSUM 31557 -> `x = 31557 * 2^-30 = 2.939e-5` -> `y = 3212 * x + 2.6484 = 2.7428`, the first value of `L 0`.
+* **`L <seq> base <hex> act <C> <H> <W> type <t>`: ACT0's output kept in PSUM_L1** at byte offset `base`, for the
+  next engine to read (uint8 or fp16).
+* **`S <seq> bank <b> off <hex> mmu <hex> full ... tile <C> <H> <W> act <C> <H> <W> type <t>`: ACT0's output stored to
+  GLB**: bank, byte offset, the shape of the whole destination tensor (`tile`, C x H x W) and of the stored part
+  (`act`). Element (c, y, x) of the destination is at its start + (c * H + y) * W + x, so the tiles of one tensor can
+  be put together from their offsets.
+* **`A <seq> act <C> <H> <W> fit16 .. fit_shift .. dst_type .. per_channel .. src1_psum .. op_mul .. src2 ..`: ACT1**
+  (`MeshNet::MfuAct1`). Line 1: the fit table (49 fp16 values per parameter set for the 16-segment fit: 15 knees, 16
+  slopes, 16 intercepts, lower and upper clamp; 7 for the 2-segment fit), line 2: the fp16 input of the fit, line 3: the
+  stored output. Input = source 1 (fp16 from PSUM_L1 when `src1_psum` is 1), optionally plus or times source 2. For
+  the PP-OCR stem the table is hardswish written directly as uint8: knees from -3 to 3, 0 below -3, slope 42.19
+  (1 / output scale) and intercept 16 (output zero point) above 3.
+
+### 17.4 PDP0 check points
+
+`pdp0_pe_if_in.chk`, `pdp0_pe_we_in.chk` and `pdp0_pe_out.chk` (written by `PDP0::ComputeDW` and the pooling path) have
+one line per kernel tap of one output pixel (order: output row, output column, kernel row, kernel column) with 32 lanes
+= channels, lane 31 printed first: the input pixel and the weight (12-bit, zero points subtracted) and their product
+(20-bit), or the running min / max when pooling. The sum of the kh x kw lines of a pixel (`--sum K`) is that pixel's
+integer sum, which ACT0 then receives.
 
 ---
 
