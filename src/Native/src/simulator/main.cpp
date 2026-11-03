@@ -8,7 +8,9 @@
 //     argv[1] : shared-memory object mapped as the 2 GiB DDR image            (shared_memory(path, 0x80000000, open))
 //     argv[2] : shared-memory object mapped as the 4 MiB GLB bank 0 region     (shared_memory(path, 0x400000,  open))
 //     argv[3] : start pc, byte offset into DDR (strtol, base 10) -> Simulator::start_pc_ and the initial pc
-//     argv[4] : NOT referenced anywhere in main (verified: argv is only indexed with +8/+0x10/+0x18)
+//     argv[4] : NOT referenced anywhere in the original main (verified: argv is only indexed with +8/+0x10/+0x18).
+//               The runtime passes its dump path here; with NNCASE_SIM_CHECKPOINTS set, the load/store and PU
+//               check point files are written to the folder "<argv[4]>.ckpt" (added, see simulator_run).
 //
 // Fetch/decode/execute loop (main @0x40baa8):
 //   * every iteration first pushes Simulator::bit_offset_ onto Simulator::trace_log (vector<uint32_t>)
@@ -170,6 +172,15 @@ static int simulator_run(int argc, const char ** argv) {
     }
 
     SimulatorInit(ddr_base, banks);     // publishes _G.DDR / _G.GLB
+
+    // Not in the original: nothing opened the check point streams. Open them on request, one folder per run;
+    // CheckPoint::Reset() closes them when the run ends.
+    if (const char * env = std::getenv("NNCASE_SIM_CHECKPOINTS"); env && *env && *argv[4]) {
+        const std::string dir = std::string(argv[4]) + ".ckpt";
+        std::filesystem::create_directories(dir);
+        CheckPoint::GetCheckPoint()->OpenLoadStoreCheckPoint(dir);
+        CheckPoint::GetCheckPoint()->OpenPuCheckPoint(dir);
+    }
 
     // Simulator object is built inline in main (@0x40b90c..0x40ba1d): ddr pointer, copy of the bank table,
     // bit_offset = 0, has_base = 0, empty trace vectors, start_pc = 0.

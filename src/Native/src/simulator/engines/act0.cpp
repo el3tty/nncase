@@ -321,6 +321,99 @@ void Act0::Activate(Matrix4<FP16::fp16> & params_, L1Helper & psum_, Tensor4DHel
   }
 }
 
+// Not in the original: the input of an activation (record "P"), logged before the "S" / "L" record of its output:
+//   "P <seq> shift <s> route <r> type <t> act <C> <H> <W>", a line with the 7 fp16 line-fit parameters of every
+//   channel (4 hex digits each), and a line with the int32 PSUM in (channel, row, column) order (8 hex digits each).
+static void LogPsum(const L1View & in, const Act0Compute & c, const std::vector<uint16_t> & table) {
+  std::ofstream & os = CheckPoint::GetCheckPoint()->Stream(CheckPoint::kActDmWrite);
+  if (!os.is_open())
+    return;
+  static uint64_t seq = 0;
+  os << std::dec << "P " << seq++ << " shift " << c.shift_ << " route " << static_cast<int>(c.out_route_) << " type "
+     << c.out_type_ << " act " << in.channels_ << ' ' << in.height_ << ' ' << in.width_ << '\n';
+  static const char kHex[] = "0123456789abcdef";
+  std::string line;
+  for (uint16_t v : table)
+    for (int shift : {12, 8, 4, 0})
+      line += kHex[(v >> shift) & 15];
+  os << line << '\n';
+  line.clear();
+  for (int ch = 0; ch < in.channels_; ++ch)
+    for (int row = 0; row < in.height_; ++row)
+      for (int col = 0; col < in.width_; ++col) {
+        const uint32_t v = static_cast<uint32_t>(reinterpret_cast<const int32_t*>(in.data_)[PsumWordIndex(in, ch, row, col)]);
+        for (int shift = 28; shift >= 0; shift -= 4)
+          line += kHex[(v >> shift) & 15];
+      }
+  os << line << '\n';
+}
+
+// Not in the original: like Act0::LogDmStore below, for an activation written to PSUM_L1 (record "L"):
+//   "L <seq> base <hex> act <C> <H> <W> type <t>" and the elements in (channel, row, column) order.
+static void LogL1Store(const L1View & out, ActOutputType type) {
+  std::ofstream & os = CheckPoint::GetCheckPoint()->Stream(CheckPoint::kActDmWrite);
+  if (!os.is_open())
+    return;
+  static uint64_t seq = 0;
+  os << std::dec << "L " << seq++ << " base " << std::hex << out.base_ << std::dec << " act " << out.channels_ << ' '
+     << out.height_ << ' ' << out.width_ << " type " << static_cast<int>(type) << '\n';
+  static const char kHex[] = "0123456789abcdef";
+  std::string line;
+  for (int ch = 0; ch < out.channels_; ++ch)
+    for (int row = 0; row < out.height_; ++row)
+      for (int col = 0; col < out.width_; ++col) {
+        if (type == kActFp16) {
+          const uint16_t v = reinterpret_cast<const uint16_t*>(out.data_)[HalfWordIndex(out, ch, row, col)];
+          for (int shift : {12, 8, 4, 0})
+            line += kHex[(v >> shift) & 15];
+        } else {
+          const uint8_t v = out.data_[ch * out.chan_stride_ + out.col_stride_ * col + out.base_ + out.row_stride_ * row];
+          line += kHex[v >> 4];
+          line += kHex[v & 15];
+        }
+      }
+  os << line << '\n';
+}
+
+// Not in the original: when the check point streams are open (NNCASE_SIM_CHECKPOINTS), act_dm_write gets one record
+// per activation stored to the DM, in place of the original's (unreconstructed) lane format:
+//   "S <seq> bank <b> off <hex> mmu <hex> full <C> <H> <W> tile <C> <H> <W> act <C> <H> <W> type <t>"
+// followed by one line with the stored elements in (channel, row, column) order, as hex (2 digits per byte,
+// 4 per element for fp16 / int16).
+void Act0::LogDmStore(const DmStoreOf & store, int channels, int height, int width, ActOutputType type) {
+  std::ofstream & os = CheckPoint::GetCheckPoint()->Stream(CheckPoint::kActDmWrite);
+  if (!os.is_open())
+    return;
+  static uint64_t seq = 0;
+  int bank = -1;
+  size_t offset = 0;
+  for (int b = 0; b < 16; ++b) {
+    if (_G.GLB[b] && store.dst_ >= _G.GLB[b] && store.dst_ < _G.GLB[b] + 0x400000) {
+      bank = b;
+      offset = static_cast<size_t>(store.dst_ - _G.GLB[b]);
+      break;
+    }
+  }
+  const int elem_bytes = (static_cast<unsigned>(type) > 1) ? 2 : 1;
+  os << std::dec << "S " << seq++ << " bank " << bank << " off " << std::hex << offset << " mmu " << store.mmu_addr_
+     << std::dec << " full " << store.full_shape_[0] << ' ' << store.full_shape_[1] << ' ' << store.full_shape_[2]
+     << " tile " << store.tile_shape_[0] << ' ' << store.tile_shape_[1] << ' ' << store.tile_shape_[2]
+     << " act " << channels << ' ' << height << ' ' << width << " type " << static_cast<int>(type) << '\n';
+  static const char kHex[] = "0123456789abcdef";
+  std::string line;
+  for (int ch = 0; ch < channels; ++ch)
+    for (int row = 0; row < height; ++row)
+      for (int col = 0; col < width; ++col) {
+        const int64_t index = col + static_cast<int64_t>(store.tile_shape_[2]) * (row + static_cast<int64_t>(ch) * store.tile_shape_[1]);
+        for (int k = elem_bytes - 1; k >= 0; --k) {
+          const uint8_t v = store.dst_[index * elem_bytes + k];
+          line += kHex[v >> 4];
+          line += kHex[v & 15];
+        }
+      }
+  os << line << '\n';
+}
+
 // Runs the activation for one queued Act0Compute: builds the parameter matrix from the DmLoadAct0
 // table, then activates the PSUM into the DM store tensor and / or into PSUM_L1 depending on out_route.
 void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadAct0> load, std::shared_ptr<DmStoreOf> store) {
@@ -371,6 +464,7 @@ void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadA
 
   auto& matrix = reinterpret_cast<Matrix4<FP16::fp16>&>(params);
   auto& in_helper = reinterpret_cast<L1Helper&>(in);
+  LogPsum(in, c, table);
 
   if (c.out_route_ != 0) {
     // DM store tensor built from the DmStoreOf descriptor.
@@ -379,10 +473,14 @@ void Act0::Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadA
     std::copy(store->full_shape_, store->full_shape_ + 4, out.full_);
     std::copy(store->tile_shape_, store->tile_shape_ + 4, out.tile_);
     Activate(matrix, in_helper, reinterpret_cast<Tensor4DHelper&>(out), c.shift_, type);
-    if (c.out_route_ != 1)
+    LogDmStore(*store, channels, static_cast<int>(c.height_), static_cast<int>(c.width_), type);
+    if (c.out_route_ != 1) {
       Activate(matrix, in_helper, reinterpret_cast<L1Helper&>(psum_l1), c.shift_, type);
+      LogL1Store(psum_l1, type);
+    }
   } else {
     Activate(matrix, in_helper, reinterpret_cast<L1Helper&>(psum_l1), c.shift_, type);
+    LogL1Store(psum_l1, type);
   }
 }
 

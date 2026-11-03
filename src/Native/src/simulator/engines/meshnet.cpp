@@ -10,6 +10,7 @@
 #include "engines/mne.h"
 #include "math/numeric_types.h"
 #include "engines/memaccessor.h"
+#include "engines/checkpoint.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -616,6 +617,33 @@ void MeshNet::MfuAct1() {
   fp16 src1_val = fp16::round_to_fp16(0.0f);       // keeps its value when an operand is not loaded
   fp16 src2_val = fp16::round_to_fp16(0.0f);
 
+  // Not in the original: with the check point streams open (NNCASE_SIM_CHECKPOINTS), act_dm_write gets an "A" record:
+  //   "A <seq> act <C> <H> <W> fit16 <0|1> fit_shift <s> dst_type <t> per_channel <0|1> src1_psum <0|1> op_mul <0|1>
+  //    src2 <0|1>", a line with the fp16 parameter table of every parameter set (49 values per set for the 16-segment
+  //   fit: 15 knees, 16 slopes, 16 intercepts, lower and upper clamp; 7 otherwise), a line with the fp16 input of the
+  //   fit for every element and a line with the stored output (2 hex digits for 8-bit types, 4 otherwise), both in
+  //   (channel, row, column) order.
+  std::ofstream & ckp = CheckPoint::GetCheckPoint()->Stream(CheckPoint::kActDmWrite);
+  const bool log_act1 = ckp.is_open();
+  std::string log_in, log_out;
+  static const char kHex[] = "0123456789abcdef";
+  auto hex16 = [&](std::string & s, uint16_t v) { for (int sh : {12, 8, 4, 0}) s += kHex[(v >> sh) & 15]; };
+  if (log_act1) {
+    static uint64_t seq = 0;
+    ckp << std::dec << "A " << seq++ << " act " << loop.c_ * loop.n_ << ' ' << loop.h_ << ' ' << loop.w_ << " fit16 "
+        << static_cast<int>(a1_use_mfu_fit_) << " fit_shift " << static_cast<int>(static_cast<signed char>(a1_fit_shift_))
+        << " dst_type " << static_cast<int>(a1_dst_type_) << " per_channel " << static_cast<int>(a1_per_channel_)
+        << " src1_psum " << static_cast<int>(a1_src1_psum_) << " op_mul " << static_cast<int>(a1_op_mul_) << " src2 "
+        << static_cast<int>(src2_valid) << '\n';
+    const MemAccessor table(&_G.GLB[a1_fit_addr_ >> 28][a1_fit_addr_ & 0xFFFFFFF]);
+    const uint32_t per_set = a1_use_mfu_fit_ ? 49 : 7;
+    const uint32_t sets = a1_per_channel_ ? loop.c_ : 1;
+    std::string t;
+    for (uint32_t i = 0; i < per_set * sets; ++i)
+      hex16(t, table.MemAt<FP16::fp16>(2 * i).bits_);
+    ckp << t << '\n';
+  }
+
   for (uint32_t n = 0; n < loop.n_; ++n) {
     for (uint32_t c = 0; c < loop.c_; ++c) {
       const uint32_t dst_plane = pitch_w * pitch_h * (c + n * pitch_c);       // element offset of (n, c) in dst
@@ -666,6 +694,19 @@ void MeshNet::MfuAct1() {
           else
             act1_linefit(&sum, &fit, a1_fit_addr_, _G.GLB, param_set);
 
+          if (log_act1) {
+            hex16(log_in, sum.bits_);
+            if (a1_dst_type_ == 1 || a1_dst_type_ == 2) {
+              const uint8_t v = static_cast<uint8_t>(std::max(std::min(HalfToInteger(fit), a1_dst_type_ == 1 ? kUint8Max : kInt8Max),
+                                                              a1_dst_type_ == 1 ? 0 : kInt8Min));
+              log_out += kHex[v >> 4];
+              log_out += kHex[v & 15];
+            } else {
+              hex16(log_out, a1_dst_type_ == 3 ? static_cast<uint16_t>(std::max(std::min(HalfToInteger(fit), kInt16Max), kInt16Min))
+                                               : fit.bits_);
+            }
+          }
+
           // store
           switch (a1_dst_type_) {
             case 1:     // uint8
@@ -686,6 +727,9 @@ void MeshNet::MfuAct1() {
       }
     }
   }
+
+  if (log_act1)
+    ckp << log_in << '\n' << log_out << '\n';
 
   // ---- optional debug dump of the destination bytes (one hex byte per line) ------------------------------------
   if (_G.debug_flag) {

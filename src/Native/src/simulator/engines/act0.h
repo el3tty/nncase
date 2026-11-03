@@ -61,4 +61,5 @@ struct Act0 {
     static void Activate(Matrix4<FP16::fp16> & params, L1Helper & psum, Tensor4DHelper & out, uint32_t shift, ActOutputType type);
     static void Compute(std::shared_ptr<Act0Compute> compute, std::shared_ptr<DmLoadAct0> load, std::shared_ptr<DmStoreOf> store);
     static void PrintDmOfCKP(L1Helper & shape, Tensor4DHelper & out, ActOutputType type, int address);
+    static void LogDmStore(const DmStoreOf & store, int channels, int height, int width, ActOutputType type);
 };
