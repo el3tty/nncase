@@ -81,7 +81,8 @@ result<void> lstm_impl(const T *input, const T *w_xc, const T *w_rc,
 
                         out_mul1[o] += T(input[in_idx]) * T(w_xc[w_idx]);
                     }
-                    auto b_idx1 = d * w_rc_shape[2] + o;
+                    // bias is [num_directions, 8 * hidden]: Wb then Rb per direction
+                    auto b_idx1 = d * 2 * w_rc_shape[2] + o;
                     out_mul1[o] += bias[b_idx1];
 
                     for (size_t i = 0; i < out_shape[3]; i++) {
@@ -91,7 +92,7 @@ result<void> lstm_impl(const T *input, const T *w_xc, const T *w_rc,
                                      d * w_rc_shape[2] * w_rc_shape[3];
                         out_mul2[o] += T(output_h_tmp[in_idx]) * T(w_rc[w_idx]);
                     }
-                    auto b_idx2 = d * w_rc_shape[2] + hidden_size + o;
+                    auto b_idx2 = d * 2 * w_rc_shape[2] + hidden_size + o;
                     out_mul2[o] += bias[b_idx2];
 
                     out_mul1[o] += out_mul2[o];
