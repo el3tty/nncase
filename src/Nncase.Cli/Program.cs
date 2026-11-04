@@ -33,7 +33,9 @@ internal partial class Program
     /// Format: one or more arguments per line, separated by whitespace; double quotes group
     /// an argument that contains spaces; blank lines and lines starting with '#' are ignored;
     /// backslashes are literal, so Windows paths can be written as-is.
-    /// Relative paths in the file are resolved against the current directory, like on the command line.
+    /// Relative paths in the file are resolved against the current directory, like on the command line;
+    /// <c>${here}</c> in an argument stands for the folder of the response file
+    /// (e.g. <c>${here}/../kmodel/model.kmodel</c>).
     /// </summary>
     private static bool TryReadResponseFile(string filePath, out IReadOnlyList<string>? replacementTokens, out string? errorMessage)
     {
@@ -66,7 +68,8 @@ internal partial class Program
             return false;
         }
 
-        replacementTokens = tokens;
+        var here = Path.GetDirectoryName(Path.GetFullPath(filePath))!;
+        replacementTokens = tokens.Select(t => t.Replace("${here}", here, StringComparison.Ordinal)).ToList();
         errorMessage = null;
         return true;
     }
