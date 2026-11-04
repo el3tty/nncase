@@ -161,7 +161,9 @@ internal partial class Program
         foreach (var target in LoadTargets())
         {
             var (targetCmd, targetParser) = target.RegisterCommandAndParser();
-            Action<System.CommandLine.Invocation.InvocationContext> targetHandler = async (System.CommandLine.Invocation.InvocationContext context) =>
+            // a Task-returning handler: an async void one would end the process with a bare "Unhandled exception."
+            // (no message, exit code 0) instead of letting the command line report the exception
+            Func<System.CommandLine.Invocation.InvocationContext, Task> targetHandler = async (System.CommandLine.Invocation.InvocationContext context) =>
             {
                 var options = ParseCompileOptions(context, compile);
                 options.TargetCompileOptions = targetParser(context, targetCmd);

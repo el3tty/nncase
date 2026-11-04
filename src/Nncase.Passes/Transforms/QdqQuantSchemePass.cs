@@ -12,6 +12,7 @@ using Nncase.IR;
 using Nncase.IR.Imaging;
 using Nncase.IR.Math;
 using Nncase.IR.NN;
+using Nncase.IR.RNN;
 using Nncase.IR.Tensors;
 using Nncase.Quantization;
 using Nncase.Utilities;
@@ -27,7 +28,9 @@ namespace Nncase.Passes.Transforms;
 /// <item>Weights: Dequantize of an integer constant (QOperator style) or Dequantize(Quantize(constant)) (QAT export
 /// with weight Q/DQ) is folded here with the ONNX semantics, and the range of its grid goes to the scheme. The IR
 /// Quantize/Dequantize take one scale and zero point, so per-channel weight quantization cannot be expressed.</item>
-/// <item>Conv weights without a grid: per output channel min/max. Graph inputs without a pair: --input-range.</item>
+/// <item>Weights without a grid (baked by the QAT export): conv and MatMul weights per output channel min/max, LSTM W
+/// and R per direction (the KPU lowering takes their quant type from the scheme and recomputes the per-row ranges).
+/// Graph inputs without a pair: --input-range (with --pre-process also the Dequantize output after the input).</item>
 /// <item>Ops that only move values (Reshape, Transpose, MaxPool, ...): the range of their input.</item>
 /// </list>
 /// The scheme refers to tensors by name, so an unnamed x gets the name of its pair.
@@ -75,15 +78,40 @@ public sealed class QdqQuantSchemePass : ModulePass
     private static QuantParam ParamOf(Call call, ParameterInfo parameter) =>
         ((TensorConst)call[parameter]).Value.ToScalar<QuantParam>();
 
-    // the weights of a conv as a constant, looking through the layout Transpose the importer puts on ConvTranspose
-    // weights: the constant, and the axis of the output channels in it
-    private static (TensorConst Weights, int OcAxis)? ConstWeights(Call conv) => conv.Target switch
+    // the weights of a conv, MatMul or LSTM as constants, looking through the Transpose the importer puts on
+    // ConvTranspose weights and on the weights of a Gemm with transB: each constant and the axis of the output
+    // channels in it (LSTM: the direction, as in nncase's own scheme export)
+    private static IEnumerable<(TensorConst Weights, int OcAxis)> ConstWeights(Call call)
     {
-        Conv2D when conv[Conv2D.Weights] is TensorConst w => (w, 0),
-        Conv2DTranspose when conv[Conv2DTranspose.Weights] is TensorConst w => (w, 0),
-        Conv2DTranspose when conv[Conv2DTranspose.Weights] is Call { Target: IR.Tensors.Transpose } t && t[IR.Tensors.Transpose.Input] is TensorConst w => (w, 1),
-        _ => null,
-    };
+        switch (call.Target)
+        {
+            case Conv2D when call[Conv2D.Weights] is TensorConst w:
+                yield return (w, 0);
+                break;
+            case Conv2DTranspose when call[Conv2DTranspose.Weights] is TensorConst w:
+                yield return (w, 0);
+                break;
+            case Conv2DTranspose when call[Conv2DTranspose.Weights] is Call { Target: IR.Tensors.Transpose } t && t[IR.Tensors.Transpose.Input] is TensorConst w:
+                yield return (w, 1);
+                break;
+            case MatMul when call[MatMul.Rhs] is TensorConst w && w.Value.Rank == 2:
+                yield return (w, 1);
+                break;
+            case MatMul when call[MatMul.Rhs] is Call { Target: IR.Tensors.Transpose } t && t[IR.Tensors.Transpose.Input] is TensorConst w && w.Value.Rank == 2:
+                yield return (w, 0);
+                break;
+            case LSTM:
+                foreach (var p in new[] { LSTM.W, LSTM.R })
+                {
+                    if (call[p] is TensorConst lw)
+                    {
+                        yield return (lw, 0);
+                    }
+                }
+
+                break;
+        }
+    }
 
     /// <inheritdoc/>
     protected override Task<IRModule> RunCoreAsync(IRModule module, RunPassContext options)
@@ -104,7 +132,7 @@ public sealed class QdqQuantSchemePass : ModulePass
             return Task.FromResult(module);
         }
 
-        AddBakedConvWeights(exprs);
+        AddBakedWeights(exprs);
         AddInputs(function);
         PropagateRanges(exprs);
 
@@ -252,14 +280,13 @@ public sealed class QdqQuantSchemePass : ModulePass
     }
 
     /// <summary>
-    /// Conv weights that are plain constants (weights baked by the QAT export): per output channel min/max.
+    /// Weights that are plain constants (baked by the QAT export): per output channel min/max (see ConstWeights).
     /// </summary>
-    private void AddBakedConvWeights(IReadOnlyList<Expr> exprs)
+    private void AddBakedWeights(IReadOnlyList<Expr> exprs)
     {
-        foreach (var conv in exprs.OfType<Call>())
+        foreach (var (w, ocAxis) in exprs.OfType<Call>().SelectMany(ConstWeights))
         {
-            if (ConstWeights(conv) is not var (w, ocAxis) || NameOf(w) is not string name
-                || _entries.ContainsKey(name) || w.Value.ElementType != DataTypes.Float32)
+            if (NameOf(w) is not string name || _entries.ContainsKey(name) || w.Value.ElementType != DataTypes.Float32)
             {
                 continue;
             }
@@ -297,6 +324,14 @@ public sealed class QdqQuantSchemePass : ModulePass
                 var range = new ValueRange<float>(inputRange[0], inputRange[1]);
                 _ranges[input] = range;
                 Add(name, "by_tensor", new[] { range });
+
+                // with --pre-process the model reads the output of the Dequantize that AddPreProcess (a later pass)
+                // puts after the input: without an entry it stays float (the first conv on the CPU); the quantizer
+                // pins its range to the grid of that Dequantize (Quantizer.PinPreDequantizeRanges)
+                if (CompileSession.CompileOptions.PreProcess && !_entries.ContainsKey(name + "_PreDequantize"))
+                {
+                    Add(name + "_PreDequantize", "by_tensor", new[] { range });
+                }
             }
         }
     }
