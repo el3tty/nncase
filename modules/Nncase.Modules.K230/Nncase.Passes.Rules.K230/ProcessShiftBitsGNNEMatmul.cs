@@ -34,13 +34,9 @@ public sealed class ProcessShiftBitsGNNEMatmul : IRewriteRule
         sbyte shiftBits = activationParameter.ShiftBits;
         activationParameter.FusedShiftBits(shiftBits);
         Expr expr = Const.FromTensor(activationParameter.ToAct0Data<Half>());
-        try
+        if (result.GetValueOrDefault("expand_shape") is Expr shape)
         {
-            Expr shape = (Expr)result["expand_shape"];
             expr = Nncase.IR.F.Tensors.Expand(expr, shape);
-        }
-        catch (KeyNotFoundException)
-        {
         }
 
         Call call = new Call(dynamicGnneMatMul, text, inputa, inputb, inputabias, inputbbias, expr,

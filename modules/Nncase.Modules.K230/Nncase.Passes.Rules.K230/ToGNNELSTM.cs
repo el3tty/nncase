@@ -270,15 +270,9 @@ public sealed class ToGNNELSTM : IRewriteRule
         int[][] outputShapes = new int[outputSize][];
         for (int i = 0; i < outputSize; i++)
         {
-            try
-            {
-                var shapeConst = (TensorConst)result[$"shapes_{i}"];
-                outputShapes[i] = shapeConst.Value.ToArray<int>();
-            }
-            catch (KeyNotFoundException)
-            {
-                outputShapes[i] = ((Marker)result[$"outputMarker_{i}"]).CheckedShape.ToValueArray();
-            }
+            outputShapes[i] = result.GetValueOrDefault($"shapes_{i}") is TensorConst shapeConst
+                ? shapeConst.Value.ToArray<int>()
+                : ((Marker)result[$"outputMarker_{i}"]).CheckedShape.ToValueArray();
         }
 
         return WrapOutput(gnneLstm, outputSize, outputShapes, conf.QuantType, finalOutputQuantParam);
