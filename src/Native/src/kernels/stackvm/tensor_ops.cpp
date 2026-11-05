@@ -438,10 +438,27 @@ result<value_t> nncase::kernels::stackvm::get_item(
         auto out_shape = slice_infer_shape(in_shape, begin_values, end_values,
                                            strides_values);
         try_output(out_mem, output, input_tensor->dtype(), out_shape);
-        CONTIGUOUS_KERNEL(slice, input_tensor, input_tensor->dtype(), in_mem,
-                          out_mem, in_shape, input_tensor->strides(),
-                          output_tensor->strides(), begin_values, end_values,
-                          strides_values, context);
+        // An item of the leading axes of a contiguous tensor is one block.
+        auto one_block = is_contiguous(input_tensor) &&
+                         is_contiguous(output_tensor) && n <= in_shape.size();
+        size_t block_start = 0;
+        for (size_t i = 0; one_block && i < n; ++i) {
+            one_block = begins_value[i] >= 0 &&
+                        (size_t)begins_value[i] < in_shape[i];
+            block_start +=
+                (size_t)begins_value[i] * input_tensor->strides()[i];
+        }
+        if (one_block) {
+            const auto unit = runtime::get_bytes(input_tensor->dtype());
+            memcpy(out_mem, in_mem + block_start * unit,
+                   compute_size(output_tensor->shape()) * unit);
+        } else {
+            CONTIGUOUS_KERNEL(slice, input_tensor, input_tensor->dtype(),
+                              in_mem, out_mem, in_shape,
+                              input_tensor->strides(),
+                              output_tensor->strides(), begin_values,
+                              end_values, strides_values, context);
+        }
         output = tensor_reshape(output_tensor,
                                 dims_t(out_shape.begin() + n, out_shape.end()));
         KERNEL_FINISH;
