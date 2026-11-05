@@ -33,6 +33,10 @@ private:
 
 class host_buffer_allocator : public buffer_allocator {
 public:
+    // The kernel does not free what a process allocated from /dev/mmz when it exits: without this, everything still
+    // allocated at exit stays lost until a reboot.
+    ~host_buffer_allocator() { kd_mpi_mmz_deinit(); }
+
     result<buffer_t> attach(
         gsl::span<gsl::byte> data,
         const buffer_attach_options &options) noexcept override;

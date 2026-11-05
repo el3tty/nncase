@@ -58,9 +58,11 @@ result<mmz_segment *> mmz_allocator::allocate_segment(size_t pages) noexcept {
     int ret = kd_mpi_sys_mmz_alloc_cached(&phys_addr, (void**)&seg,
                                           "allocate", "anonymous",
                                           (int)byte_size);
-    if (ret != 0) {
+    // a failed allocation returns 0 and physical address 0: the mapping is not usable memory
+    if (ret != 0 || phys_addr == 0) {
         std::cerr << "mmz_allocator.cpp"
-                  << "::" << "allocate_segment" << " failed: ret = " << ret << std::endl;
+                  << "::" << "allocate_segment" << " failed: ret = " << ret << ", " << byte_size
+                  << " bytes, no contiguous memory left (see CmaFree in /proc/meminfo)" << std::endl;
         abort();
     }
 
