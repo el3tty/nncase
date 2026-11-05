@@ -99,6 +99,61 @@ pad_impl(const T *input, T *output, gsl::span<const size_t> in_shape,
     });
 }
 
+/// Reflect padding one row at a time: the same result as pad_impl, without its per-element index work. Takes
+/// paddings that reflect inside the tensor and rows that are contiguous; anything else goes to pad_impl.
+bool can_pad_reflect_rows(gsl::span<const size_t> in_shape,
+                          gsl::span<const size_t> in_strides,
+                          gsl::span<const size_t> out_strides,
+                          const paddings_t &paddings) {
+    const auto rank = in_shape.size();
+    if (rank < 2 || in_strides[rank - 1] != 1 || out_strides[rank - 1] != 1)
+        return false;
+    for (size_t i = 0; i < rank; i++) {
+        const auto &p = paddings[i];
+        if (p.before < 0 || p.after < 0 || (size_t)p.before >= in_shape[i] ||
+            (size_t)p.after >= in_shape[i])
+            return false;
+    }
+    return true;
+}
+
+result<void> pad_reflect_rows(const gsl::byte *input, gsl::byte *output,
+                              size_t unit, gsl::span<const size_t> in_shape,
+                              gsl::span<const size_t> out_shape,
+                              gsl::span<const size_t> in_strides,
+                              gsl::span<const size_t> out_strides,
+                              const paddings_t &paddings) {
+    const auto rank = in_shape.size();
+    const auto width = in_shape[rank - 1];
+    const auto before = (size_t)paddings[rank - 1].before;
+    const auto after = (size_t)paddings[rank - 1].after;
+    dims_t rows(rank - 1);
+    for (size_t i = 0; i + 1 < rank; i++)
+        rows[i] = out_shape[i];
+    return apply(gsl::span<const size_t>(rows.data(), rows.size()),
+                 [&](gsl::span<const size_t> index) -> result<void> {
+                     size_t in_offset = 0, out_offset = 0;
+                     for (size_t i = 0; i + 1 < rank; i++) {
+                         const auto first = (size_t)paddings[i].before;
+                         auto src = index[i] < first ? first - index[i]
+                                                     : index[i] - first;
+                         if (index[i] >= first && src >= in_shape[i])
+                             src = 2 * in_shape[i] - 2 - src;
+                         in_offset += src * in_strides[i];
+                         out_offset += index[i] * out_strides[i];
+                     }
+                     const auto *in = input + in_offset * unit;
+                     auto *out = output + out_offset * unit;
+                     for (size_t i = 0; i < before; i++)
+                         memcpy(out + i * unit, in + (before - i) * unit, unit);
+                     memcpy(out + before * unit, in, width * unit);
+                     for (size_t i = 0; i < after; i++)
+                         memcpy(out + (before + width + i) * unit,
+                                in + (width - 2 - i) * unit, unit);
+                     return ok();
+                 });
+}
+
 template <class T>
 void copy_data_v(T *src, T *dst, int blocks_in, int blocks_out, T value) {
     for (int i = 0; i < blocks_in; ++i) {
@@ -239,6 +294,10 @@ result<void> nncase::kernels::stackvm::reference::pad(
     if (std::all_of(paddings.begin(), paddings.end(),
                     [](const padding &p) { return p.interior == 0; })) {
         auto out_shape = get_padded_shape(in_shape, paddings);
+        if (mode == pad_mode_t::reflect &&
+            can_pad_reflect_rows(in_shape, in_strides, out_strides, paddings))
+            return pad_reflect_rows(input, output, unit, in_shape, out_shape,
+                                    in_strides, out_strides, paddings);
         switch (unit) {
         case 1:
             if (padding_before_is_zero) {
