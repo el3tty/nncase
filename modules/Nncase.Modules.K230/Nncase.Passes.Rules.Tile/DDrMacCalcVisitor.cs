@@ -250,8 +250,8 @@ internal sealed class DDrMacCalcVisitor : ExprVisitor<Unit, Unit>
                                 else
                                 {
                                     ulong outElements = call.CheckedShape.Aggregate(
-                                        0uL,
-                                        (ulong sum, Dimension x) => sum * (ulong)x.FixedValue);
+                                        1uL,
+                                        (ulong product, Dimension x) => product * (ulong)x.FixedValue);
                                     macs = (ulong)call[GNNEMatMul.InputA].CheckedShape[3].FixedValue * outElements;
                                     ulong[] inputAShape = call[GNNEMatMul.InputA].CheckedShape
                                         .Select((Dimension x) => (ulong)x.FixedValue).ToArray();
