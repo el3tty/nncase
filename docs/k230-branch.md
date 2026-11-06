@@ -62,9 +62,10 @@ The branch is 174 commits on top of upstream commit `99431d9db`. It is a persona
 
 ## Where the K230 code came from
 
-Upstream's repository has no source for the K230 plugin, runtime or simulator. Canaan ships them as binaries. The sources
-here were recovered from those binaries, mainly to understand the instruction set and to be able to fix and extend the
-stack:
+Getting Lite-Mono from 527 ms to 61 ms took knowing exactly how the compiler and the KPU behave: which operations stay on
+the NPU, how they get tiled, and what forces a fallback to the CPU. Little of that is documented, and upstream's repository
+has no source for the K230 plugin, runtime or simulator, which Canaan ships as binaries. The sources here were recovered
+from those binaries, so that the stack could be read, checked against a real board, and changed:
 
 * **Compiler plugin:** decompiled from `Nncase.Modules.K230.dll` in the `nncase-kpu` Python package, then cleaned up.
 * **Simulator:** reverse engineered from `nncase.simulator.k230.sc` in the same package, then refactored.
