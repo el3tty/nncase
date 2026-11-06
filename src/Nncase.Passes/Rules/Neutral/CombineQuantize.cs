@@ -1,4 +1,4 @@
-﻿// Copyright (c) Canaan Inc. All rights reserved.
+﻿﻿// Copyright (c) Canaan Inc. All rights reserved.
 // Licensed under the Apache license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -195,5 +195,38 @@ public sealed partial class CombineQuantizeTranspose : RewriteRule<Pattern>
         }
 
         return Transpose(Quantize(input, quantParam, quantize.TargetType), perm);
+    }
+}
+
+/// <summary>
+/// quantize(pad(a)) => pad(quantize(a)) for a reflect pad, which only copies values, so the tensors around it stay in
+/// the small type. Not bit exact on the K230: the quantization then runs in another place, which rounds differently.
+/// </summary>
+[RuleGenerator]
+public sealed partial class CombineQuantizePad : RewriteRule<Pattern>
+{
+    /// <inheritdoc/>
+    public override Pattern Pattern { get; } = IsQuantize(
+        "quantize",
+        _ => true,
+        IsPad(
+            "pad",
+            "padCall",
+            p => p.PadMode == PadMode.Reflect,
+            IsWildcard("input"),
+            IsTensorConst("pads"),
+            IsTensorConst("value")),
+        IsWildcard("quantParam"));
+
+    private Expr? GetReplace(Quantize quantize, Call padCall, Expr input, Expr pads, Expr value, Expr quantParam, RunPassContext options)
+    {
+        if (options.GetAnalysis<IExprUserAnalysisResult>()[padCall].Count() > 1)
+        {
+            return null;
+        }
+
+        // reflect mode does not read the value, but its type has to be the type of the tensor
+        var typedValue = Const.FromValue(IR.F.Tensors.Cast(value, quantize.TargetType).Evaluate());
+        return IR.F.NN.Pad(Quantize(input, quantParam, quantize.TargetType), pads, PadMode.Reflect, typedValue);
     }
 }

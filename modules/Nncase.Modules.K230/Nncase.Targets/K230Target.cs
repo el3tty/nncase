@@ -283,6 +283,7 @@ public class K230Target : ITarget
                 delegate(DataflowPass p)
                 {
                     p.AddAnalysis<IExprUserAnalysisResult>();
+                    p.Add<CombineQuantizePad>(Array.Empty<object>());
                     p.Add<CombineQuantizeConcat>(Array.Empty<object>());
                     p.Add<CombineQuantizeReshape>(new object[1] { true });
                     p.Add<CombineQuantizeTranspose>(Array.Empty<object>());

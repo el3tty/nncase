@@ -142,4 +142,28 @@ public class UnitTestCombineQuantize : TransformTestBase
         var rootPre = new Function(body, input);
         TestNotMatch<CombineQuantizeTranspose>(rootPre);
     }
+
+    [Fact]
+    public void TestCombineQuantizePadReflect()
+    {
+        var input = new Var("input", new TensorType(DataTypes.Float32, new[] { 1, 4, 6, 8 }));
+        var feedDict = new Dictionary<Var, IValue>
+        {
+            { input, IR.F.Random.Uniform(DataTypes.Float32, 1.0f, -1.0f, 1, new[] { 1, 4, 6, 8 }).Evaluate() },
+        };
+        var pads = Tensor.From(new[] { 0, 0, 0, 0, 1, 1, 1, 1 }, new[] { 4, 2 });
+        var pad = NN.Pad(input, pads, PadMode.Reflect, 0.0f);
+        var rootPre = new IR.Function(IR.F.Math.Quantize(pad, new QuantParam(0, 0.0078125f), DataTypes.UInt8), input);
+        TestMatched<CombineQuantizePad>(rootPre, feedDict);
+    }
+
+    [Fact]
+    public void TestCombineQuantizePadConstantStays()
+    {
+        var input = new Var("input", new TensorType(DataTypes.Float32, new[] { 1, 4, 6, 8 }));
+        var pads = Tensor.From(new[] { 0, 0, 0, 0, 1, 1, 1, 1 }, new[] { 4, 2 });
+        var pad = NN.Pad(input, pads, PadMode.Constant, 0.0f);
+        var rootPre = new IR.Function(IR.F.Math.Quantize(pad, new QuantParam(0, 0.0078125f), DataTypes.UInt8), input);
+        TestNotMatch<CombineQuantizePad>(rootPre);
+    }
 }
