@@ -120,7 +120,8 @@ varies by about 0.03 from frame to frame, so treat the two numbers as "close", n
 Each image's depth is scaled by its median against the LiDAR, because a single camera gives no absolute scale. These
 numbers cannot be compared with the table in the Lite-Mono paper. The calibration images come from a different drive,
 but adding zoomed crops to them was an idea that came from looking at this test drive, and it has not been confirmed
-on another drive.
+on another drive. Calibration is also not fully repeatable: one rebuild of the same model differed in 6 bytes of
+quantization parameters and gave 0.1127 instead of 0.1124, at the same speed.
 
 The commands and more detail are in the
 [Lite-Mono section of model_runner](https://github.com/el3tty/model_runner#lite-mono).
@@ -185,10 +186,14 @@ cd build-rel/install/nncaseruntime
 
 It should end with `70 test(s), 70 passed, 0 failed`.
 
-On Linux the same commands configure with clang 22. The configure step and `k230-as` were checked there; the full
-Linux native build was not repeated for this page.
+On Linux the same commands work with clang 22, passed with `-DCMAKE_C_COMPILER` and `-DCMAKE_CXX_COMPILER`. The test
+program there is the same, and gives the same result.
 
 ## Getting the runtime onto the board
+
+To try Lite-Mono on a board without building anything, use the
+[board kit](https://github.com/el3tty/nncase/releases/tag/k230-board-kit-lite-mono): the runtime, the kmodel and the
+scripts, for an SDK image with Python 3.13 and numpy. The rest of this section builds the runtime yourself.
 
 The board runs Linux from the [K230 Linux SDK](https://github.com/kendryte/k230_linux_sdk). The results above used its
 `dev` branch at `856bfe6f` with `k230_canmv_01studio_defconfig`. Other boards need their own defconfig, and that has not
