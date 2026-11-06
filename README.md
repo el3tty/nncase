@@ -2,6 +2,8 @@
 <img src="docs/logo.png" width="400" alt="nncase" />
 </div>
 
+> **This is the `k230` branch of [el3tty/nncase](https://github.com/el3tty/nncase), a personal fork of nncase.** It adds the K230 compiler plugin, runtime and NPU simulator as source. `pip install nncase` installs upstream nncase, without these changes. See [what this branch adds and how to build it](docs/k230-branch.md). The rest of this README is upstream's.
+
 [![GitHub repository](https://img.shields.io/badge/github-repository-blue?logo=github&style=plastic)](https://github.com/kendryte/nncase) [![Gitee repository](https://img.shields.io/badge/gitee-repository-blue?logo=gitee&style=plastic)](https://gitee.com/kendryte/nncase) [![GitHub release](https://img.shields.io/github/v/release/kendryte/nncase?color=brightgreen&display_name=tag&logo=github&style=plastic)](https://github.com/kendryte/nncase/releases)
 
 [切换中文](docs/readme_ZH.md)
