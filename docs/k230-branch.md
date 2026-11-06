@@ -139,21 +139,17 @@ There are three separate builds. The native build and the board build do not nee
 
 ### Compiler
 
-The compiler needs `libortki` and `OrtKISharp` 0.0.3. They are not on nuget.org, and `NuGet.Config` reads them from a
-folder next to this repository, `../OrtKI/CSharp/OrtKISharp/bin/OrtKISharp.csproj`. Without that folder, restore stops
-with `NU1301: The local source ... doesn't exist`.
-
-**No prebuilt packages are published yet.** They have to be built from the `k230` branch of
-[el3tty/OrtKI](https://github.com/el3tty/OrtKI), which links a source build of onnxruntime from a sibling folder. The
-`libortki` package holds both the Windows and the Linux library, so it needs both builds. Neither this repository nor
-OrtKI has an up-to-date recipe for this, so expect to work it out from `cmake/onnxruntimeConfig.cmake` and
-`CSharp/libortki/libortki.nuspec` in OrtKI.
-
-The lock files in this repository record the hash of the original packages. After building your own, update them once:
+The compiler needs `libortki` and `OrtKISharp` 0.0.3, which are not on nuget.org. Download them from the
+[OrtKI release](https://github.com/el3tty/OrtKI/releases/tag/v0.0.3-k230) into the folder `NuGet.Config` reads, next to
+this repository. On Windows, use Git Bash:
 
 ```
-dotnet restore src/Nncase.Cli/Nncase.Cli.csproj --force-evaluate
+mkdir -p ../OrtKI/CSharp/OrtKISharp/bin/OrtKISharp.csproj
+curl -L --output-dir ../OrtKI/CSharp/OrtKISharp/bin/OrtKISharp.csproj -O https://github.com/el3tty/OrtKI/releases/download/v0.0.3-k230/libortki.0.0.3.nupkg -O https://github.com/el3tty/OrtKI/releases/download/v0.0.3-k230/OrtKISharp.0.0.3.nupkg
 ```
+
+Linux needs glibc 2.38 or newer, so Ubuntu 24.04 works and Ubuntu 22.04 does not. Windows needs the Visual C++
+Redistributable. Without that folder, restore stops with `NU1301: The local source ... doesn't exist`.
 
 Then build:
 
@@ -163,6 +159,12 @@ dotnet build src/Nncase.Cli/Nncase.Cli.csproj -c Release
 
 The compiler is `src/Nncase.Cli/bin/Release/net9.0/Nncase.Cli.exe` on Windows. It targets .NET 9, and these steps were
 last checked with SDK 11.0.100-preview.3 on Windows.
+
+To build the packages yourself, use the `k230` branch of [el3tty/OrtKI](https://github.com/el3tty/OrtKI). It links a source
+build of onnxruntime from a sibling folder, and `libortki` holds both the Windows and the Linux library, so it needs both
+builds. There is no up-to-date recipe, so start from `cmake/onnxruntimeConfig.cmake` and
+`CSharp/libortki/libortki.nuspec` there. A rebuilt package has a different hash, so run
+`dotnet restore src/Nncase.Cli/Nncase.Cli.csproj --force-evaluate` once to update the lock files.
 
 ### Native, on the PC
 
