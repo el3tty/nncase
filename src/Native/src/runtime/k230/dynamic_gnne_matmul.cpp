@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #include <nncase/runtime/util.h>
 #include <nncase/runtime/span_reader.h>
 #include <nncase/functional/k230/dynamic_gnne_matmul.h>

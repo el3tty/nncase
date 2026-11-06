@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // ACT0 post-processes the 32-bit PSUM of the PU array. Per channel `ch` it has seven fp16
 // parameters p[0..6] (a Matrix4<fp16> row) and per element it does
 //     x = fp16(psum * 2^-shift)                       (PsumToFp16, truncating)

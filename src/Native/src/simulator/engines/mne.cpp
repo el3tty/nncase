@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // MNE math helpers on bf16 / fp24. Operations inferred from the SSE arithmetic were checked against the
 // machine code (see 'verified against asm' notes).
 #include "engines/mne.h"

@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // asm: lb rd, rs, offset   (by analogy with lw; only lw appears in the dumps)
 // asm: lbu rd, rs, offset   (by analogy with lw; only lw appears in the dumps)

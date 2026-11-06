@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #include "isa/insn_act0.h"
 #include "globals.h"
 #include "engines/conv2d.h"

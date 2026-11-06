@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // NOTE: round_to_fp16 and round_to_fp24(float) are reconstructed from their semantics
 // (fp16_2exp_shift is taken from the asm).
 // fp24 values are 24-bit patterns; they are widened to float with `bits << 8`.

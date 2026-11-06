@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // Provenance: raw dump of .rodata of the original ELF nncase.simulator.k230.sc (little-endian uint16 entries).
 #include "engines/mfu_const.h"
 namespace mfu_const {

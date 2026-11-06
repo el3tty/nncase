@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // TCU dataflow of one convolution (TCU::ComputeConv):
 //   for each kernel row ky:            FillWeight(ky) loads weight[ky][0..kw) into every PE (double buffered)
 //     for each output row oy:          LoadIfRow fetches the IF samples the row's windows cover (pad value outside), then

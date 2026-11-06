@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // MeshNet: the MFU "act1" engine of the K230 NPU C-model.  Two engines live in this class:
 //   * MfuAct1   - element-wise  dst = linefit(src1 (+|*) src2)  over GLB / PSUM_L1 tensors (the Act1 instructions),

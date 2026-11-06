@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // Half-precision (IEEE 754 binary16) helper type used by the K230 NPU C-model.
 // 24-bit float (1 sign, 8 exponent, 15 mantissa bits) used by the reduce units of the K230 NPU C-model.

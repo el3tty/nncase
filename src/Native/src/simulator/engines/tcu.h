@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // output (TCU1..TCU4.cpp). Conv2D::Compute fills a TCU::ComputeInfo and calls TCU::ComputeConv,
 // which loads the weights into the PEs (FillWeight) and computes every output pixel directly from the input

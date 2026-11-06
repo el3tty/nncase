@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // asm: mfu_pdp1_compute raddr_d, raddr_s, rshape
 // asm: mfu_pdp1_conf1 stride_w, stride_h, rstride_s, funct2, rstride_d

@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // mfu_const lookup tables (bf16 bit patterns), 65536 entries each, dumped verbatim from .rodata of
 // nncase.simulator.k230.sc (symbols _ZN9mfu_constL*E; 0x20000 bytes each).
 #pragma once

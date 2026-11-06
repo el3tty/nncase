@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // L2 load (DDR -> GLB) configuration: two packed shapes (e.g. source / destination) and two mode bytes.
 // asm: l2_load_conf rstride_d, rstride_s, l2_datatype, ddr_datatype

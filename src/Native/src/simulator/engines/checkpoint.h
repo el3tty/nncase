@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // CheckPoint: debug trace ("check point") files for the NPU blocks.  The singleton owns 48 std::ofstream
 // streams, one per trace file.

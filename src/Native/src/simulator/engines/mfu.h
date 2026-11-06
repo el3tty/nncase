@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // MFU (matrix function unit: memset / memcpy / transpose / reduce / sample / (de)quantise helpers) of the
 // K230 NPU C-model.

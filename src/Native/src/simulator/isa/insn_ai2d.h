@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // AI2D compute: 16-bit instruction without own operands or operation body in the binary.
 // asm: (not in compiler dumps) ai2d_compute ...

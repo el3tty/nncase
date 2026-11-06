@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // asm: pu_compute tcu_id, of_shift_mode
 // asm: pu_compute_conf tcu_id, pu_id, load_psum, clr_psum, dest_target, release_if, mode

@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 DEFINE_OPCODE(NOP, 0x00, nop) // 无操作
 DEFINE_OPCODE(LDC_I4, 0x01, ldc_i4) // load int32，立即数到栈顶
 DEFINE_OPCODE(LDC_R4, 0x02, ldc_r4) // load float32，立即数到栈顶

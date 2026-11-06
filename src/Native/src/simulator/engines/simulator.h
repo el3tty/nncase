@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // Top-level state of the K230 NPU instruction-set simulator.
 // specialisations that live in the *instruction.cpp files).

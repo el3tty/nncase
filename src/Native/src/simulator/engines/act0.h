@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // ACT0: activation unit (piecewise-linear "line fit" on the PSUM, then quantisation) of the K230 NPU
 #include <cstddef>

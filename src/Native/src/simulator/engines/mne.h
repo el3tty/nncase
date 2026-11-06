@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // MNE: per-lane "mini numeric engine" of the MeshNet MfuAct1 pipeline.
 // Each MNE object (48 bytes, 16 of them inside MeshNet) holds a function pointer to the

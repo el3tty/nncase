@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // DM configuration "broadcast" instruction (16-bit encoding, no operation body in the binary).
 // verified against asm @0x41d820: operation is an empty function (just ret), so the fields have no consumer; they are named after their bit positions.

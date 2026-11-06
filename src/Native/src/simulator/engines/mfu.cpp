@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 // Conventions used by the lifted code
 //  * Tensors are addressed as   element(i, j, k, l) = l + w * (k + h * (j + c * i))   where (c, h, w) are the
 //    three halfwords of a 64-bit "shape" register (MFU::GetCHW) and (i, j, k, l) run over MFU::dim_[0..3].

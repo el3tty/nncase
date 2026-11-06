@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #pragma once
 // ACT0 source-1 configuration: rshape_val + parameter of the activation unit, then selects (creates) the
 // Act0Compute descriptor on Conv2D or PDP0.

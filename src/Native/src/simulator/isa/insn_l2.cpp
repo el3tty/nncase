@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #include <cstring>
 #include "isa/insn_l2.h"
 #include "globals.h"

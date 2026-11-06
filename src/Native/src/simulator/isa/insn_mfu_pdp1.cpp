@@ -1,3 +1,6 @@
+// Copyright (c) Canaan Inc. All rights reserved.
+// Licensed under the Apache license. See LICENSE file in the project root for full license information.
+
 #include <cstring>
 #include "isa/insn_mfu_pdp1.h"
 #include "globals.h"
