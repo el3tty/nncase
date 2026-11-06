@@ -305,9 +305,7 @@ public class TileAct1 : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAct1.cs",
-            249);
+        TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -414,9 +412,7 @@ public class TileAct1 : RewriteRule<Pattern>
 
             CalcInputShape();
             allocateResult = HandleAllocate(o, a, b, pingPongSplit);
-            TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAct1.cs",
-                368);
+            TileUtilities.Assert(allocateResult.IsOk);
             GNNEShape glbShape = new GNNEShape(outN, outC, outH, outW);
             return new TileAct1Glb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
                 allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
@@ -468,9 +464,7 @@ public class TileAct1 : RewriteRule<Pattern>
         }
 
         allocateResult2 = HandleAllocate(k, l, ifmapRows, w, ofmapRows, ofmapCols, nPingPongSplit, isFinal: true);
-        TileUtilities.Assert(allocateResult2.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAct1.cs",
-            437);
+        TileUtilities.Assert(allocateResult2.IsOk);
         GNNEShape glbShape2 = new GNNEShape(k, l, ofmapRows, ofmapCols);
         return new TileAct1Glb(allocateResult2.GlbMap, allocateResult2.Items, glbShape2.Dims, GNNEEnv.NPingPongSplit,
             allocateResult2.GlbMap[ItemName.Ifmap], allocateResult2.GlbMap[ItemName.Ofmap]);

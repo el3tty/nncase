@@ -314,9 +314,7 @@ public static class TileUtilities
 
     public static int GetTcuIndexBits(int tcuIndex)
     {
-        Assert(tcuIndex < 4, "tcuIndex < 4",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            272);
+        Assert(tcuIndex < 4);
         return 1 << tcuIndex;
     }
 
@@ -327,9 +325,7 @@ public static class TileUtilities
 
     public static int GetNTcuIndexBits(int nTcu)
     {
-        Assert(nTcu >= 1 && nTcu <= 4, "nTcu >= 1 && nTcu <= 4",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            283);
+        Assert(nTcu >= 1 && nTcu <= 4);
         return (1 << nTcu) - 1;
     }
 
@@ -365,18 +361,12 @@ public static class TileUtilities
         if (pH.Sum() > 0)
         {
             Assert(
-                System.Math.Ceiling(1f * (float)e / (float)strideH).Equals(h),
-                "System.Math.Ceiling(1.0f * e / strideH).Equals(h)",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-                322);
+                System.Math.Ceiling(1f * (float)e / (float)strideH).Equals(h));
         }
         else
         {
             Assert(
-                System.Math.Ceiling(1f * (float)(e - (r - 1)) / (float)strideH).Equals(h),
-                "System.Math.Ceiling(1.0f * (e - (r - 1)) / strideH).Equals(h)",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-                326);
+                System.Math.Ceiling(1f * (float)(e - (r - 1)) / (float)strideH).Equals(h));
         }
     }
 
@@ -436,9 +426,7 @@ public static class TileUtilities
 
     public static Padding CalPadTopBottom(int paddedH, int h)
     {
-        Assert(paddedH >= h, "paddedH >= h",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            387);
+        Assert(paddedH >= h);
         int before = (paddedH - h) / 2;
         int after = (int)System.Math.Ceiling((double)(paddedH - h) / 2.0);
         return new Padding(before, after);
@@ -451,9 +439,7 @@ public static class TileUtilities
 
     public static (int I, int J) GetStartEndOfMidCrop(int immLen, int destLen)
     {
-        Assert(immLen >= destLen, "immLen >= destLen",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            400);
+        Assert(immLen >= destLen);
         int cropStart = (immLen - destLen) / 2;
         int cropEnd = immLen - (int)System.Math.Ceiling((float)(immLen - destLen) / 2f);
         return (I: cropStart, J: cropEnd);
@@ -462,9 +448,7 @@ public static class TileUtilities
     public static (int I, int J) GetConvTOutputStartEnd(int oriInputLen, int paddedInputLen, int immLen, int destLen,
         Padding pad = null, int outputPadding = 0)
     {
-        Assert(paddedInputLen >= oriInputLen, "paddedInputLen >= oriInputLen",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            408);
+        Assert(paddedInputLen >= oriInputLen);
         if (outputPadding == 0)
         {
             if (oriInputLen == paddedInputLen)
@@ -475,9 +459,7 @@ public static class TileUtilities
             return (I: 0, J: destLen);
         }
 
-        Assert(immLen + outputPadding == destLen + pad.Sum(), "immLen + outputPadding == destLen + pad.Sum()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            419);
+        Assert(immLen + outputPadding == destLen + pad.Sum());
         return (I: pad.Before, J: pad.Before + destLen);
     }
 
@@ -571,9 +553,7 @@ public static class TileUtilities
             bottomPad = 0;
         }
 
-        Assert(rowEnd - rowStart >= 0, "inputRowLength >= 0",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            514);
+        Assert(rowEnd - rowStart >= 0);
         rowStart = System.Math.Min(h - 1, rowStart);
         return new Segment1D(rowStart..rowEnd, new Padding(topPad, bottomPad));
     }
@@ -917,9 +897,7 @@ public static class TileUtilities
         List<float> mInvBias)
     {
         float det = mOriScale[0] * mOriScale[3] - mOriScale[1] * mOriScale[2];
-        Assert(det != 0f, "det != 0",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            970);
+        Assert(det != 0f);
         mInvScale[0] = mOriScale[3] / det;
         mInvScale[3] = mOriScale[0] / det;
         mInvScale[1] = (0f - mOriScale[1]) / det;
@@ -1181,9 +1159,7 @@ public static class TileUtilities
         }
         else
         {
-            Assert(v: false, "false",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-                1277);
+            Assert(v: false);
         }
 
         start = System.Math.Max(System.Math.Min(start, inputEnd - 1), 0);
@@ -1255,9 +1231,7 @@ public static class TileUtilities
         }
         else
         {
-            Assert(v: false, "false",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-                1351);
+            Assert(v: false);
         }
 
         return new List<int>
@@ -1272,9 +1246,7 @@ public static class TileUtilities
 
     private static int[] AlignBroadcastShape(int[] srcShape, int[] destShape)
     {
-        Assert(srcShape.Length == destShape.Length, "srcShape.Length == destShape.Length",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\TileUtilities.cs",
-            1366);
+        Assert(srcShape.Length == destShape.Length);
         int[] nonUnitDims = srcShape.Where((int dim) => dim != 1).ToArray();
         if (nonUnitDims.Length == 0)
         {

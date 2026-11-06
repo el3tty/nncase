@@ -137,9 +137,7 @@ public class TileConcat : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(i, j, k, w, k, width, nPingPongSplit, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConcat.cs",
-            154);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(i, j, k, width);
         return new TileConcatGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
@@ -274,9 +272,7 @@ public class TileConcat : RewriteRule<Pattern>
             }
 
             concatOffset += _inputShapes[inputIndex][_axis];
-            TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConcat.cs",
-                301);
+            TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         }
 
         return actions;

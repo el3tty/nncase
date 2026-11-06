@@ -109,9 +109,7 @@ public class TileLoadStore : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(i, j, k, w, k, width, nPingPongSplit, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLoadStore.cs",
-            123);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(i, j, k, width);
         return new TileLoadStoreGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
@@ -214,9 +212,7 @@ public class TileLoadStore : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLoadStore.cs",
-            250);
+        TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         return actions;
     }
 

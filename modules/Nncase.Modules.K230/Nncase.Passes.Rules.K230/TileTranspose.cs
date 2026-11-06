@@ -84,9 +84,7 @@ public class TileTranspose : RewriteRule<Pattern>
             ifmapIndex = (ifmapIndex + 1) % 2;
         }
 
-        TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileTranspose.cs",
-            86);
+        TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -102,9 +100,7 @@ public class TileTranspose : RewriteRule<Pattern>
         }
 
         AllocateResult allocateResult = HandleAllocate(ld, st, perm, lastOutputShape, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileTranspose.cs",
-            105);
+        TileUtilities.Assert(allocateResult.IsOk);
         return new TileTransposeGlb(allocateResult.GlbMap, allocateResult.Items, lastOutputShape.Dims,
             GNNEEnv.NPingPongSplit, allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
     }

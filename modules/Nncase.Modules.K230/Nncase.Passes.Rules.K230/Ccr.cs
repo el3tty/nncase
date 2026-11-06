@@ -22,9 +22,7 @@ internal class Ccr
 
         set
         {
-            TileUtilities.Assert(_value == 0, "_value == 0",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
-                1240);
+            TileUtilities.Assert(_value == 0);
             if (_value != 0)
             {
                 throw new ArgumentOutOfRangeException($"[Error] in ccr set, ccr id:{_item}");
@@ -52,8 +50,6 @@ internal class Ccr
 
     public void Acquire()
     {
-        TileUtilities.Assert(_value > 0, "_value > 0",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
-            1262);
+        TileUtilities.Assert(_value > 0);
     }
 }

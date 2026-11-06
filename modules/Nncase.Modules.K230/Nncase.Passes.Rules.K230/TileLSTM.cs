@@ -206,10 +206,7 @@ public class TileLSTM : RewriteRule<Pattern>
             foreach (SegmentND weightSlice in weightSlices)
             {
                 TileUtilities.Assert(
-                    sliceOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement,
-                    "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLSTM.cs",
-                    165);
+                    sliceOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement);
                 for (int j = 0; j < bytesPerElement; j++)
                 {
                     for (int k = 0; k < weightSlice[0].Length; k++)
@@ -243,9 +240,7 @@ public class TileLSTM : RewriteRule<Pattern>
     {
         int nPingPongSplit = 1;
         AllocateResult allocateResult = HandleAllocate(nPingPongSplit, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLSTM.cs",
-            201);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(1, 1, 1, _outputShape[3]);
         return new TileLSTMGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, nPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
@@ -884,9 +879,7 @@ public class TileLSTM : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLSTM.cs",
-            665);
+        TileUtilities.Assert(_ccrHandler.CcrSanityCheck());
         return actions;
     }
 

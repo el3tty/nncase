@@ -475,9 +475,7 @@ public class TileConv2D : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-            416);
+        TileUtilities.Assert(_ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -729,9 +727,7 @@ public class TileConv2D : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-            654);
+        TileUtilities.Assert(_ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -956,9 +952,7 @@ public class TileConv2D : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(batch, channels, ifmapRows, ifmapCols, kernelH, kernelW, outChannels, ofmapRows, ofmapCols, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-            921);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(batch, outChannels, ofmapRows, ofmapCols);
         return new TileConv2DGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);
@@ -1359,10 +1353,7 @@ public class TileConv2D : RewriteRule<Pattern>
                                                             Tuple<SegmentND, TensorStat> g2RWSliceRecStat = _g2RWSliceRec[wPp][0];
                                                             _g2RWSliceRec[wPp].RemoveAt(0);
                                                             TileUtilities.Assert(
-                                                                weightSlice == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1,
-                                                                "l2RW == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1",
-                                                                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-                                                                1334);
+                                                                weightSlice == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1);
                                                             if (g2RWSliceRecStat.Item2.IsFirstSlice)
                                                             {
                                                                 int clearWeightFake = (!weightRecStat.Item2.IsFirstSlice &&
@@ -2073,10 +2064,7 @@ public class TileConv2D : RewriteRule<Pattern>
             _outputShape = new GNNEShape(_act1.CheckedShape[0].FixedValue, _act1.CheckedShape[1].FixedValue,
                 _act1.CheckedShape[2].FixedValue, _act1.CheckedShape[3].FixedValue);
             TileUtilities.Assert(
-                _outputShape.Dims.SequenceEqual(_convOutputShape.Dims),
-                "_outputShape.Dims.SequenceEqual(_convOutputShape.Dims)",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-                1942);
+                _outputShape.Dims.SequenceEqual(_convOutputShape.Dims));
         }
 
         _convOutputShape[2] = TileUtilities.GetInputRowSegment(0, _outputShape[2], _convOutputShape[2], _fusedKernelH,
@@ -2314,10 +2302,7 @@ public class TileConv2D : RewriteRule<Pattern>
             foreach (SegmentND weightSlice in weightSlices)
             {
                 TileUtilities.Assert(
-                    expectedOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement,
-                    "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-                    2178);
+                    expectedOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement);
                 for (int byteIndex = 0; byteIndex < bytesPerElement; byteIndex++)
                 {
                     for (int outChannel = 0; outChannel < weightSlice[0].Length; outChannel++)
@@ -2348,10 +2333,7 @@ public class TileConv2D : RewriteRule<Pattern>
             foreach (SegmentND weightSlice in weightSlices)
             {
                 TileUtilities.Assert(
-                    expectedOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement,
-                    "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2d.cs",
-                    2205);
+                    expectedOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement);
                 for (int byteIndex = 0; byteIndex < bytesPerElement; byteIndex++)
                 {
                     for (int outChannel = 0; outChannel < weightSlice[0].Length; outChannel++)

@@ -319,9 +319,7 @@ public class TileMatMul : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileMatMul.cs",
-            309);
+        TileUtilities.Assert(_ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -803,9 +801,7 @@ public class TileMatMul : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(i, j, h, w, r, s, k, ofmapRows, ofmapCols, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileMatMul.cs",
-            820);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(i, k, ofmapRows, ofmapCols);
         return new TileMatMulGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims, GNNEEnv.NPingPongSplit,
             allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);

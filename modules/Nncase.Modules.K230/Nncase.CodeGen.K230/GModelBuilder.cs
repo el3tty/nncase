@@ -328,8 +328,7 @@ public sealed class GModelBuilder : IRTModule
         var output = outputs[0];
 
         string simRoot = Path.GetFullPath(Path.Combine(
-            GetThisFilePath(
-                @"C:\GitLab-Runner\builds\sVHyYdAc\0\software\k80\nncase\nncase-k80\modules\Nncase.Modules.K230\CodeGen\GModelBuilder.cs"),
+            GetThisFilePath(),
             "../../../../../maix3-arch-sim/"));
 
         using var streamWriter = new StreamWriter(
@@ -438,8 +437,7 @@ public sealed class GModelBuilder : IRTModule
             }
 
             text = Path.GetFullPath(Path.Combine(
-                GetThisFilePath(
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\CodeGen\\GModelBuilder.cs"),
+                GetThisFilePath(),
                 "../../../../../maix3-arch-sim/")) + "ic_env/ld-linux-x86-64.so.2";
         }
         else

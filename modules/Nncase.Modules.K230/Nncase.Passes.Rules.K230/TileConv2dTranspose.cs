@@ -381,9 +381,7 @@ public class TileConv2dTranspose : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2dTranspose.cs",
-            291);
+        TileUtilities.Assert(_ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -645,10 +643,7 @@ public class TileConv2dTranspose : RewriteRule<Pattern>
                                                 Tuple<SegmentND, TensorStat> g2RWSliceRecStat = _g2RWSliceRec[wPp][0];
                                                 _g2RWSliceRec[wPp].RemoveAt(0);
                                                 TileUtilities.Assert(
-                                                    weightSegment == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1,
-                                                    "l2RW == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1",
-                                                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2dTranspose.cs",
-                                                    530);
+                                                    weightSegment == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1);
                                                 if (g2RWSliceRecStat.Item2.IsFirstSlice)
                                                 {
                                                     int clearWeightFakeCcr = (!weightRecStat.Item2.IsFirstSlice && g2RWRecStat.Item2.IsFirstSlice)
@@ -818,10 +813,7 @@ public class TileConv2dTranspose : RewriteRule<Pattern>
         foreach (SegmentND weightSlice in weightSlices)
         {
             TileUtilities.Assert(
-                expectedOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement,
-                "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2dTranspose.cs",
-                652);
+                expectedOffset == weightGroup.WeightGroupOffset(weightSlice) * bytesPerElement);
             for (int i = 0; i < bytesPerElement; i++)
             {
                 for (int j = 0; j < weightSlice[0].Length; j++)
@@ -1268,9 +1260,7 @@ public class TileConv2dTranspose : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(i, j, ifmapRows, ifmapCols, kernelH, kernelW, k, ofmapRows, ofmapCols, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileConv2dTranspose.cs",
-            1146);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(i, k, ofmapRows, ofmapCols);
         return new TileConv2dTransposeGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims,
             GNNEEnv.NPingPongSplit, allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);

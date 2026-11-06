@@ -98,9 +98,7 @@ public class TilePdp1 : RewriteRule<Pattern>
             ifmapIndex = (ifmapIndex + 1) % 2;
         }
 
-        TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePdp1.cs",
-            104);
+        TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -266,9 +264,7 @@ public class TilePdp1 : RewriteRule<Pattern>
             ifmapIndex = (ifmapIndex + 1) % 2;
         }
 
-        TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePdp1.cs",
-            270);
+        TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         return actions;
 
         static PDP_FUNCTION PdpFunc(MFU_PDP_OP op)
@@ -321,10 +317,7 @@ public class TilePdp1 : RewriteRule<Pattern>
             ofmapRows = (int)Math.Ceiling(1.0 * (double)filterH / (double)r);
             ofmapCols = (int)Math.Ceiling(1.0 * (double)filterW / (double)s);
             TileUtilities.Assert(
-                ofmapCols <= 64 && ofmapRows <= 16 && ofmapRows * ofmapCols <= 256,
-                "ow <= 64 && oh <= 16 && oh * ow <= 256",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePdp1.cs",
-                308);
+                ofmapCols <= 64 && ofmapRows <= 16 && ofmapRows * ofmapCols <= 256);
         }
 
         AllocateResult allocateResult = new AllocateResult();
@@ -362,9 +355,7 @@ public class TilePdp1 : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(i, j, h, inputHeight, ofmapRows, ofmapCols, inType, outType, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePdp1.cs",
-            358);
+        TileUtilities.Assert(allocateResult.IsOk);
         if (isGlobalPdp)
         {
             ofmapRows = 1;

@@ -95,9 +95,7 @@ public class GnneActionUpdater
 
         foreach (CcrSet ccrSet in ccrsToSet)
         {
-            TileUtilities.Assert(ccrSet.Value > 0, "cs.Value > 0",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\ActionUpdater.cs",
-                85);
+            TileUtilities.Assert(ccrSet.Value > 0);
             Actions.Add(new GnneActionCcrSet(ccrSet.Ccr, ccrSet.Value));
         }
 
@@ -785,9 +783,7 @@ public class GnneActionUpdater
             strideOcSize = System.Math.Max(slice[1].Length, GNNEEnv.WAlignNum) * length;
         }
 
-        TileUtilities.Assert(sliceHeight <= 31 && length <= 31, "kernelH <= 31 && kernelW <= 31",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\ActionUpdater.cs",
-            746);
+        TileUtilities.Assert(sliceHeight <= 31 && length <= 31);
         Gpr strideOc = new Gpr(-1, strideOcSize, needRenewal: false);
         GnneActionDmLoadWConf gnneActionDmLoadWConf = new GnneActionDmLoadWConf(0, 0, 1, sliceHeight, length, strideOc);
         if ((object)_latestConfActions.DmLoadWConf == null || _latestConfActions.DmLoadWConf != gnneActionDmLoadWConf)
@@ -869,9 +865,7 @@ public class GnneActionUpdater
         int length = slice[2].Length;
         int length2 = slice[3].Length;
         int strideOcSize = TileUtilities.GetAlignedNum(tensor[1].Length, GNNEEnv.WAlignNum) * length * length2;
-        TileUtilities.Assert(length == 1 && length2 == 1, "kernelH == 1 && kernelW == 1",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\ActionUpdater.cs",
-            834);
+        TileUtilities.Assert(length == 1 && length2 == 1);
         Gpr strideOc = new Gpr(-1, strideOcSize, needRenewal: false);
         GnneActionDmLoadWConf gnneActionDmLoadWConf = new GnneActionDmLoadWConf(0, 0, 1, length, length2, strideOc);
         if ((object)_latestConfActions.DmLoadWConf == null || _latestConfActions.DmLoadWConf != gnneActionDmLoadWConf)
@@ -1786,9 +1780,7 @@ public class GnneActionUpdater
         Gpr w = _gprHandler.SetGprItem(shape[3]);
         Ssr ssr = _ssRegHandler.SetSsrItem(PackShape(shape[0], shape[1], shape[2], shape[3]));
         Actions.Add(new GnneActionPackShapeReg(n3, c3, h3, w, ssr));
-        TileUtilities.Assert(shape[3] <= stridesS[2] || shape[2] == 1, "shape[3] <= stridesS[2] || shape[2] == 1",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\ActionUpdater.cs",
-            1745);
+        TileUtilities.Assert(shape[3] <= stridesS[2] || shape[2] == 1);
         int id = _glb.GlbMap[name].Mmu.Id;
         int addr = ofPp * _glb.GlbMap[name].AllocatedBytes + offset;
         Gpr addrS = _gprHandler.SetGprItem(ToGlbAddr(id, addr));

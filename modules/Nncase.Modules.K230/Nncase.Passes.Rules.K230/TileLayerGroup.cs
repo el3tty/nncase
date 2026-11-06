@@ -305,15 +305,10 @@ public class TileLayerGroup
             }
 
             TileUtilities.Assert(
-                ifBuffersCopy.Count == 0 && ofBuffersCopy.Count == 0,
-                "ifBuffersCopy.Count == 0 && ofBuffersCopy.Count == 0",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                260);
+                ifBuffersCopy.Count == 0 && ofBuffersCopy.Count == 0);
         }
 
-        TileUtilities.Assert(_ccrHandler.CcrSanityCheck(), "_ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-            263);
+        TileUtilities.Assert(_ccrHandler.CcrSanityCheck());
         List<Nncase.TIR.Buffer> ddrBuffers = fusionInfo.Inputs.Select((Var v) => _ifBufferMap[v]).ToList();
         ddrBuffers.AddRange(ofBuffers);
         ISequentialBuilder<PrimFunction> sequentialBuilder =
@@ -674,9 +669,7 @@ public class TileLayerGroup
 
         if (!weightGroupOnly && (object)_act1 != null && (object)_lif2 != null && _ifmap[1].End == _inputShape[1])
         {
-            TileUtilities.Assert(_if2BufIdx == -1, "_if2BufIdx == -1",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                595);
+            TileUtilities.Assert(_if2BufIdx == -1);
             TensorStat if2Stat = _nodesL2RIf2Rec[_conv][0][0].Item2;
             int ccrValue = (if2Stat != null && if2Stat.IsFirstSlice && if2Stat.IsLastSlice) ? 1 : 2;
             List<CcrSet> ccrsToSet = new List<CcrSet>
@@ -817,10 +810,7 @@ public class TileLayerGroup
         {
             TileUtilities.Assert(
                 _ifmap[0].Start <= _ifmap2[0].Start && _ifmap[1].Start <= _ifmap2[1].Start &&
-                _ifmap[2].Start <= _ifmap2[2].Start && _ifmap[3].Start <= _ifmap2[3].Start,
-                "_ifmap[0].Start <= _ifmap2[0].Start\r\n                && _ifmap[1].Start <= _ifmap2[1].Start\r\n                && _ifmap[2].Start <= _ifmap2[2].Start\r\n                && _ifmap[3].Start <= _ifmap2[3].Start",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                858);
+                _ifmap[2].Start <= _ifmap2[2].Start && _ifmap[3].Start <= _ifmap2[3].Start);
             _ifmapOffset += TileUtilities.GetSliceOffsetInTensor(in _ifmap, in _ifmap2) *
                             TileUtilities.GetBytesPerElement(inputAType);
         }
@@ -829,10 +819,7 @@ public class TileLayerGroup
         {
             TileUtilities.Assert(
                 _ifmap[0].Start >= _ifmap2[0].Start && _ifmap[1].Start >= _ifmap2[1].Start &&
-                _ifmap[2].Start >= _ifmap2[2].Start && _ifmap[3].Start >= _ifmap2[3].Start,
-                "_ifmap[0].Start >= _ifmap2[0].Start\r\n                && _ifmap[1].Start >= _ifmap2[1].Start\r\n                && _ifmap[2].Start >= _ifmap2[2].Start\r\n                && _ifmap[3].Start >= _ifmap2[3].Start",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                866);
+                _ifmap[2].Start >= _ifmap2[2].Start && _ifmap[3].Start >= _ifmap2[3].Start);
             _ifmap2Offset += TileUtilities.GetSliceOffsetInTensor(in _ifmap2, in _ifmap) *
                              TileUtilities.GetBytesPerElement(inputBType);
         }
@@ -1065,9 +1052,7 @@ public class TileLayerGroup
                         Segment1D convInputColSegment;
                         if (Conv1X1(_conv))
                         {
-                            TileUtilities.Assert(psumColSeg.Length == _ofmap[3].Length, "f.Length == _ofmap[3].Length",
-                                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                                1073);
+                            TileUtilities.Assert(psumColSeg.Length == _ofmap[3].Length);
                             int outputRowStart2 = psumColSeg.Start / _ofmapSt[2].Length;
                             int outputRowLength2 = psumColSeg.Length / _ofmapSt[2].Length;
                             convInputColSegment = TileUtilities.GetInputRowSegment(outputRowStart2, outputRowLength2,
@@ -1227,10 +1212,7 @@ public class TileLayerGroup
                                                                 _nodesG2RWSliceRec[_conv][_weightBufIdx][0];
                                                             _nodesG2RWSliceRec[_conv][_weightBufIdx].RemoveAt(0);
                                                             TileUtilities.Assert(
-                                                                w2 == g2rwSliceRec.Item1 && g2rwRec.Item1 == weightRecEntry.Item1,
-                                                                "l2RW == g2RWSliceRecStat.Item1 && g2RWRecStat.Item1 == weightRecStat.Item1",
-                                                                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                                                                1210);
+                                                                w2 == g2rwSliceRec.Item1 && g2rwRec.Item1 == weightRecEntry.Item1);
                                                             if (g2rwSliceRec.Item2.IsFirstSlice)
                                                             {
                                                                 int clearWeightFake = (_nodesQuenesAsW[_weightBufIdx][0].Item2 !=
@@ -1784,10 +1766,7 @@ public class TileLayerGroup
                     }
 
                     TileUtilities.Assert(
-                        slice[3].Start % ofmapColSeg.Length == 0 && slice[3].End % ofmapColSeg.Length == 0,
-                        "slice[3].Start % dim3.Length == 0 && slice[3].End % dim3.Length == 0",
-                        "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                        1746);
+                        slice[3].Start % ofmapColSeg.Length == 0 && slice[3].End % ofmapColSeg.Length == 0);
                     slice[0] = slice[0];
                     slice[1] = new Segment1D(
                         (slice[1].Start * slice[2].Length)..(slice[1].End * slice[2].Length),
@@ -1805,10 +1784,7 @@ public class TileLayerGroup
                     Segment1D ifmapRowSeg = _ifmapLd[2];
                     Segment1D ifmapColSeg = _ifmapLd[3];
                     TileUtilities.Assert(
-                        slice[3].Start % ifmapColSeg.Length == 0 && slice[3].End % ifmapColSeg.Length == 0,
-                        "slice[3].Start % dim3.Length == 0 && slice[3].End % dim3.Length == 0",
-                        "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                        1763);
+                        slice[3].Start % ifmapColSeg.Length == 0 && slice[3].End % ifmapColSeg.Length == 0);
                     slice[0] = slice[0];
                     slice[1] = slice[1];
                     slice[2] = new Segment1D(
@@ -1867,9 +1843,7 @@ public class TileLayerGroup
                 Padding.Zero());
             if (isConv1X1)
             {
-                TileUtilities.Assert(f % _ofmapSt[2].Length == 0, "f % _ofmapSt[2].Length == 0",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                    1814);
+                TileUtilities.Assert(f % _ofmapSt[2].Length == 0);
                 int convCols = f / _ofmapSt[2].Length;
                 wConvOut = SpaceSearcher.GetInputHeight(convCols, originalConvOutputShape[3], _fusedKernelW,
                     _ofmapSt[3].Length, _fusedStrideW, _fusedDilationW, in _fusedPaddingW);
@@ -2161,10 +2135,7 @@ public class TileLayerGroup
             foreach (SegmentND slice in weightSlices)
             {
                 TileUtilities.Assert(
-                    offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement,
-                    "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                    2129);
+                    offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement);
                 for (int byteIdx = 0; byteIdx < bytesPerElement; byteIdx++)
                 {
                     for (int n = 0; n < slice[0].Length; n++)
@@ -2200,10 +2171,7 @@ public class TileLayerGroup
             foreach (SegmentND slice in weightSlices)
             {
                 TileUtilities.Assert(
-                    offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement,
-                    "offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                    2162);
+                    offset == weightGroup.WeightGroupOffset(slice) * bytesPerElement);
                 for (int byteIdx = 0; byteIdx < bytesPerElement; byteIdx++)
                 {
                     for (int n = 0; n < slice[0].Length; n++)
@@ -2825,10 +2793,7 @@ public class TileLayerGroup
             {
                 TileUtilities.Assert(
                     ofBufOffset[fusedNode.Nb.OfBufferIndex] == 0 ||
-                    ofBufOffset[fusedNode.Nb.OfBufferIndex] == fusedNode.Nb.OfmapOffset,
-                    "ofBufOffset[node.Nb.OfBufferIndex] == 0 || ofBufOffset[node.Nb.OfBufferIndex] == node.Nb.OfmapOffset",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                    2294);
+                    ofBufOffset[fusedNode.Nb.OfBufferIndex] == fusedNode.Nb.OfmapOffset);
                 ofBufOffset[fusedNode.Nb.OfBufferIndex] = fusedNode.Nb.OfmapOffset;
             }
 
@@ -2865,10 +2830,7 @@ public class TileLayerGroup
                     TileUtilities.Assert(
                         fusedNode.Nb.WeightOffset == weightBufOffset[0] ||
                         fusedNode.Nb.WeightOffset == weightBufOffset[1] ||
-                        (weightBufOffset[0] == 0 && weightBufOffset[1] == 0),
-                        "node.Nb.WeightOffset == weightBufOffset[0] || node.Nb.WeightOffset == weightBufOffset[1] || (weightBufOffset[0] == 0 && weightBufOffset[1] == 0)",
-                        "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                        2312);
+                        (weightBufOffset[0] == 0 && weightBufOffset[1] == 0));
                     weightBufOffset[(fusedNode.Nb.WeightOffset != 0) ? 1 : 0] = fusedNode.Nb.WeightOffset;
                     convCount++;
                 }
@@ -3248,10 +3210,7 @@ public class TileLayerGroup
                 bool isSingleInput = _act1[GNNEActivation.InputB] == None.Default;
                 _outputShape = _act1.CheckedShape.ToValueArray();
                 TileUtilities.Assert(
-                    _outputShape.SequenceEqual(_convOutputShape),
-                    "_outputShape.SequenceEqual(_convOutputShape)",
-                    "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                    3133);
+                    _outputShape.SequenceEqual(_convOutputShape));
                 _ofmap = sliceInfo[_act1].Ofmap;
                 _ofmapOffset = sliceInfo[_act1].Nb.OfmapOffset;
                 if (!isSingleInput)
@@ -3379,15 +3338,11 @@ public class TileLayerGroup
                         _ofBufIdx = _ni.Nb.OfBufferIndex;
                         _if2Type = inputB.CheckedDataType;
                         _inputType = inputB.CheckedDataType;
-                        TileUtilities.Assert(_ifmap == _ifmapA, "_ifmap == _ifmapA",
-                            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                            3278);
+                        TileUtilities.Assert(_ifmap == _ifmapA);
                     }
                     else
                     {
-                        TileUtilities.Assert(sliceInfo.ContainsKey(inputB), "sliceInfo.ContainsKey(act1LifB!)",
-                            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                            3282);
+                        TileUtilities.Assert(sliceInfo.ContainsKey(inputB));
                         _ifmap = sliceInfo[inputB].Ofmap;
                         _ifmapOffset = sliceInfo[inputB].Nb.OfmapOffset;
                         _lif2 = inputA;
@@ -3397,9 +3352,7 @@ public class TileLayerGroup
                         _ofBufIdx = _ni.Nb.OfBufferIndex;
                         _if2Type = inputA.CheckedDataType;
                         _inputType = inputB.CheckedDataType;
-                        TileUtilities.Assert(_ifmap == _ifmapB, "_ifmap == _ifmapB",
-                            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                            3292);
+                        TileUtilities.Assert(_ifmap == _ifmapB);
                     }
                 }
                 else if (_act1[GNNEActivation.InputA] is Call loadedA2 && loadedA2.Target is GNNELoad &&
@@ -3419,9 +3372,7 @@ public class TileLayerGroup
                     _if2Type = inputA.CheckedDataType;
                     _inputType = inputB.CheckedDataType;
                     _swapAB = true;
-                    TileUtilities.Assert(_ifmap == _ifmapB, "_ifmap == _ifmapB",
-                        "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                        3311);
+                    TileUtilities.Assert(_ifmap == _ifmapB);
                 }
                 else if (_act1[GNNEActivation.InputB] is Call loadedB2 && loadedB2.Target is GNNELoad &&
                          !sliceInfo.ContainsKey((Call)_act1[GNNEActivation.InputB]))
@@ -3439,9 +3390,7 @@ public class TileLayerGroup
                     _ofBufIdx = _ni.Nb.OfBufferIndex;
                     _if2Type = inputB.CheckedDataType;
                     _inputType = inputA.CheckedDataType;
-                    TileUtilities.Assert(_ifmap == _ifmapA, "_ifmap == _ifmapA",
-                        "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                        3328);
+                    TileUtilities.Assert(_ifmap == _ifmapA);
                 }
                 else
                 {
@@ -3457,9 +3406,7 @@ public class TileLayerGroup
                     _ofBufIdx = _ni.Nb.OfBufferIndex;
                     _if2Type = inputB.CheckedDataType;
                     _inputType = inputA.CheckedDataType;
-                    TileUtilities.Assert(_ifmap2.Shape_size > 0, "_ifmap2.Shape_size > 0",
-                        "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                        3347);
+                    TileUtilities.Assert(_ifmap2.Shape_size > 0);
                 }
             }
             else
@@ -3538,9 +3485,7 @@ public class TileLayerGroup
             _ofmap = _ni.Ofmap;
             _ofmapOffset = _ni.Nb.OfmapOffset;
             _ofBufIdx = _ni.Nb.OfBufferIndex;
-            TileUtilities.Assert(_if1BufIdx != _ofBufIdx, "_if1BufIdx != _ofBufIdx",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                3441);
+            TileUtilities.Assert(_if1BufIdx != _ofBufIdx);
         }
 
         op = curNode.Op;
@@ -3599,10 +3544,7 @@ public class TileLayerGroup
         if (Conv1X1(conv))
         {
             TileUtilities.Assert(
-                conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % 24 == 0,
-                "conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % 24 == 0",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-                3504);
+                conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % 24 == 0);
             int channelBlock = 24;
             while (conv[GNNEConv2D.Weights].CheckedShape.ToValueList()[1] % channelBlock != 0)
             {
@@ -4247,10 +4189,7 @@ public class TileLayerGroup
 
         Call op = currNode.Op;
         TileUtilities.Assert(
-            (object)op == null || !(op.Target is GNNEConv2D),
-            "currNode.Op is not { Target: GNNEConv2D }",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileLayerGroup.cs",
-            4100);
+            (object)op == null || !(op.Target is GNNEConv2D));
         bool isStore = (object)op != null && op.Target is GNNEStore;
         bool isLoad = (object)op != null && op.Target is GNNELoad;
         if (isStore)

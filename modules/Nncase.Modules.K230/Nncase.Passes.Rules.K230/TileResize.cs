@@ -50,10 +50,7 @@ public class TileResize : RewriteRule<Pattern>
         CcrHandler ccrHandler = new CcrHandler();
         GnneActionUpdater gnneActionUpdater = new GnneActionUpdater(actions, glb, ccrHandler, gpr, ssr);
         TileUtilities.Assert(
-            !resize.AlignCorners || !resize.HalfPixelCenters,
-            "!(resize.AlignCorners && resize.HalfPixelCenters)",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAi2DResize.cs",
-            51);
+            !resize.AlignCorners || !resize.HalfPixelCenters);
         if (!recStat)
         {
             for (int recIndex = 0; recIndex < _r2GOfRec.Length; recIndex++)
@@ -340,9 +337,7 @@ public class TileResize : RewriteRule<Pattern>
             }
         }
 
-        TileUtilities.Assert(ccrHandler.CcrSanityCheck(), "ccrHandler.CcrSanityCheck()",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAi2DResize.cs",
-            303);
+        TileUtilities.Assert(ccrHandler.CcrSanityCheck());
         return actions;
     }
 
@@ -387,9 +382,7 @@ public class TileResize : RewriteRule<Pattern>
         }
 
         allocateResult = HandleAllocate(ld, st, batch, channels, inputHeight, inputWidth, outHeight, outWidth, isFinal: true);
-        TileUtilities.Assert(allocateResult.IsOk, "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileAi2DResize.cs",
-            359);
+        TileUtilities.Assert(allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(batch, channels, outHeight, outWidth);
         return new TileAi2DResizeGlb(allocateResult.GlbMap, allocateResult.Items, glbShape.Dims,
             GNNEEnv.NPingPongSplit, allocateResult.GlbMap[ItemName.Ifmap], allocateResult.GlbMap[ItemName.Ofmap]);

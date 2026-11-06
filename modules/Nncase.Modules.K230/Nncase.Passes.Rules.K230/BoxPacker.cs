@@ -60,9 +60,7 @@ internal class BoxPacker
 
     public MmuItem Allocate_item(int width, int height)
     {
-        TileUtilities.Assert(width != 0, "width != 0",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TileHelper\\SpaceSearcher.cs",
-            1045);
+        TileUtilities.Assert(width != 0);
         if (height == 0)
         {
             height = 1;

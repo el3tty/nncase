@@ -113,10 +113,7 @@ public class TilePad : RewriteRule<Pattern>
 
         allocateResult = HandleAllocate(batch, channels, height, width, isFinal: true);
         TileUtilities.Assert(
-            allocateResult.IsOk,
-            "allocation.IsOk",
-            "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePad.cs",
-            103);
+            allocateResult.IsOk);
         GNNEShape glbShape = new GNNEShape(batch, channels, height, width);
         return new TileConv2DGlb(
             allocateResult.GlbMap,
@@ -270,10 +267,7 @@ public class TilePad : RewriteRule<Pattern>
             }
 
             TileUtilities.Assert(
-                ccrHandler.CcrSanityCheck(),
-                "ccrHandler.CcrSanityCheck()",
-                "C:\\GitLab-Runner\\builds\\sVHyYdAc\\0\\software\\k80\\nncase\\nncase-k80\\modules\\Nncase.Modules.K230\\Transform\\Rules\\Tile\\TilePad.cs",
-                242);
+                ccrHandler.CcrSanityCheck());
             return actions;
         }
 
