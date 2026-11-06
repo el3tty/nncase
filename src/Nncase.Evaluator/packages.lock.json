@@ -23,7 +23,7 @@
       "libortki": {
         "type": "Transitive",
         "resolved": "0.0.3",
-        "contentHash": "MdmmKFeiocJELosTHRRyKJitaJEa/J2eCaXAoTyzZAw6AA0FV0E58HZ77jds/vu5dyGlvu8sSkC6ENq8u+jpQQ=="
+        "contentHash": "LuDg6xRAPvPdPrGtx2Go6yRJqwYrT9tf5ki5oOhQSJefttc/sYpojsR1Myy93BTVyyE42mlxuw1wDoUbLZ0lAA=="
       },
       "Microsoft.Extensions.Configuration.Abstractions": {
         "type": "Transitive",
