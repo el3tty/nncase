@@ -23,10 +23,10 @@ public sealed class ProcessPdp0ReduceShiftBits : IRewriteRule
         ActParam2 actParam = new ActParam2(pdp.ActParam);
         int shiftBits = actParam.FusedShiftBits();
         Expr expr = GetReplaceHelper.LoadAct0(actParam);
-        Call expr2 = new Call(pdp, (Expr)result["input"], (Expr)result["filter"], (Expr)result["stride"],
+        Call newCall = new Call(pdp, (Expr)result["input"], (Expr)result["filter"], (Expr)result["stride"],
             (Expr)result["padding"], (Expr)result["dequantParam"], (Expr)result["value"], shiftBits,
             (Expr)result["countIncludePad"], expr);
-        return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
+        return GetReplaceHelper.SuppressPattern(options, newCall, Pattern);
     }
 
     public Expr? GetReplace(IMatchResult result, RunPassContext context)

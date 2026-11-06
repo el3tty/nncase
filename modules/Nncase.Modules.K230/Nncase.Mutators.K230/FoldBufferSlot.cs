@@ -19,8 +19,8 @@ internal sealed class FoldBufferSlot : ExprRewriter
     {
         if (expr.SchedResult.IsScheduled)
         {
-            int num = 0;
-            int num2 = 0;
+            int inputCount = 0;
+            int outputCount = 0;
             ReadOnlySpan<Nncase.TIR.Buffer> parameters = expr.Parameters;
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -28,10 +28,10 @@ internal sealed class FoldBufferSlot : ExprRewriter
                 switch (buffer.MemSpan.Location)
                 {
                     case MemoryLocation.Input:
-                        _bufferIndexMap.Add(buffer, num++);
+                        _bufferIndexMap.Add(buffer, inputCount++);
                         break;
                     case MemoryLocation.Output:
-                        _bufferIndexMap.Add(buffer, num + num2++);
+                        _bufferIndexMap.Add(buffer, inputCount + outputCount++);
                         break;
                     default:
                         throw new NotSupportedException();

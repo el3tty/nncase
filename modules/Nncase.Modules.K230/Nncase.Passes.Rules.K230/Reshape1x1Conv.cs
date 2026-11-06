@@ -29,20 +29,20 @@ public sealed class Reshape1x1Conv : RewriteRule<Pattern>
         Expr shiftBits = call[GNNEConv2D.ShiftBits];
         Expr shiftBitsQint = call[GNNEConv2D.ShiftBitsQint8];
         Expr qint8Qp = call[GNNEConv2D.Qint8Qp];
-        Expr expr2 = call[GNNEConv2D.Padding];
-        Expr expr3 = call[GNNEConv2D.Stride];
+        Expr padding = call[GNNEConv2D.Padding];
+        Expr stride = call[GNNEConv2D.Stride];
         Expr dilation = call[GNNEConv2D.Dilation];
-        Expr expr4 = call[GNNEConv2D.Groups];
+        Expr groups = call[GNNEConv2D.Groups];
         Expr is16Quant = call[GNNEConv2D.Is16Quant];
         Expr padValue = call[GNNEConv2D.PadValue];
         Expr weightsQInt = call[GNNEConv2D.WeightsQInt8];
         GNNEConv2D gNNEConv2D = (GNNEConv2D)call.Target;
         Fusion fusion = (Fusion)fusionCall.Target;
         if ((input.CheckedShape[0].FixedValue == 1 || input.CheckedShape[2].FixedValue != 1 ||
-             input.CheckedShape[3].FixedValue != 1) && ((TensorConst)expr4).Value.ToScalar<int>() == 1 &&
-            ((TensorConst)expr3).Value.ToArray<int>().All((int x) => x == 1) &&
+             input.CheckedShape[3].FixedValue != 1) && ((TensorConst)groups).Value.ToScalar<int>() == 1 &&
+            ((TensorConst)stride).Value.ToArray<int>().All((int x) => x == 1) &&
             expr.CheckedShape.ToValueArray()[2..].All((int x) => x == 1) &&
-            ((TensorConst)expr2).Value.ToArray<int>().All((int x) => x == 0) &&
+            ((TensorConst)padding).Value.ToArray<int>().All((int x) => x == 0) &&
             (input.CheckedDataType == DataTypes.UInt8 || input.CheckedDataType == DataTypes.Int8) &&
             ((input.CheckedShape[1].FixedValue == expr.CheckedShape[1].FixedValue &&
               new int[3] { 24, 20, 16 }.Any((int x) =>
@@ -77,8 +77,8 @@ public sealed class Reshape1x1Conv : RewriteRule<Pattern>
             Var var = new Var("input", new TensorType(call2.CheckedDataType, call2.CheckedShape));
             Call input2 = Nncase.IR.K230.F.Tensors.GNNELoad((PrimType)ld.CheckedDataType, var);
             Call input3 = Nncase.IR.K230.F.Tensors.GNNEConv2D(gNNEConv2D.DestType, input2, weights, weightsQInt,
-                weightsBias, weightsBiasQint, act, actQint, deqBias, shiftBits, shiftBitsQint, qint8Qp, expr2, expr3,
-                dilation, expr4, is16Quant, padValue, gNNEConv2D.ActParam, gNNEConv2D.ActParamQInt8);
+                weightsBias, weightsBiasQint, act, actQint, deqBias, shiftBits, shiftBitsQint, qint8Qp, padding, stride,
+                dilation, groups, is16Quant, padValue, gNNEConv2D.ActParam, gNNEConv2D.ActParamQInt8);
             Call body = Nncase.IR.K230.F.Tensors.GNNEStore(st.CheckedDataType, input3);
             return Nncase.IR.F.Tensors.Reshape(
                 new Call(new Fusion(fusion.Name, fusion.ModuleKind, body, var), call2),

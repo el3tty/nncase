@@ -22,10 +22,10 @@ internal sealed class TraceInfoVisitor : ExprVisitor<Unit, Unit>
         writer.WriteLine(
             "from typing import List, Tuple\r\n\r\nclass DataItem:\r\n    number: int\r\n    name: int\r\n    exec_time: float\r\n    type: bool\r\n    begin: float\r\n    end: float\r\n    def __init__(self, number, name, type, begin, end, exec_time) -> None:\r\n        self.number = number\r\n        self.name = name\r\n        self.type = type\r\n        self.begin = begin\r\n        self.end = end\r\n        self.exec_time = exec_time\r\n\r\nclass VersionData:\r\n  name: str\r\n  data: DataItem\r\n\r\n  def __init__(self, name, data) -> None:\r\n    self.name = name\r\n    self.data = data\r\n\r\n  def print(self):\r\n    print(f'| number | name | type | begin | end | exec |')\r\n    print(f'|-|-|-|-|-|-|')\r\n    time = 0\r\n    for p in self.data:\r\n      print(f'| {p.number} | {p.name} | {p.type} | {p.begin} | {p.end} |  {p.exec_time} |')\r\n      time += p.exec_time\r\n    print(f'| total |  | {time} | | |')");
         writer.WriteLine("v0 = VersionData(\"v0\",[");
-        int num = 0;
+        int itemNumber = 0;
         foreach (var (value, value2, _) in _callTragetInfos)
         {
-            writer.WriteLine($"DataItem({num++}, \"{value}\", {value2}, 0.0, 0.0, 0.0),");
+            writer.WriteLine($"DataItem({itemNumber++}, \"{value}\", {value2}, 0.0, 0.0, 0.0),");
         }
 
         writer.WriteLine("])\r\nif __name__ == '__main__':\r\n  v0.print()");
@@ -75,7 +75,7 @@ internal sealed class TraceInfoVisitor : ExprVisitor<Unit, Unit>
             if ((object)target != null)
             {
                 _callTragetInfos.Add((target.Name, false, Metric.Zero));
-                goto IL_00a6;
+                return default(Unit);
             }
         }
 
@@ -83,12 +83,10 @@ internal sealed class TraceInfoVisitor : ExprVisitor<Unit, Unit>
         {
             Metric item = CompilerServices.EvaluateOpMetric(op, new MetricEvaluateContext(expr));
             _callTragetInfos.Add((op.GetType().Name, true, item));
-            goto IL_00a6;
+            return default(Unit);
         }
 
         throw new ArgumentOutOfRangeException("expr", "Target Type " + expr.Target.GetType().Name + " not support!");
-        IL_00a6:
-        return default(Unit);
     }
 
     public TraceInfoVisitor()

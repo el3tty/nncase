@@ -74,41 +74,32 @@ internal sealed class FusionConvertVisitor
 
     public bool TryL1Fuse(Fusion fusion)
     {
-        List<NodeInfo> list;
-        if ((object)_currentFusion == null)
+        if ((object)_currentFusion != null)
         {
-            _currentFusion = fusion;
-            list = new List<NodeInfo>();
-            Visit(fusion.Body, list);
-            if (_containNotSupportedOp)
-            {
-                return false;
-            }
+            throw new InvalidOperationException("Can't Visit More Than One Fusion!");
+        }
 
-            if (list.Count == 4)
-            {
-                Call op = list[1].Op;
-                if ((object)op == null || !(op.Target is GNNEPdp0DW))
-                {
-                    op = list[1].Op;
-                    if ((object)op == null || !(op.Target is GNNEPdp0Reduce))
-                    {
-                        goto IL_009b;
-                    }
-                }
+        _currentFusion = fusion;
+        List<NodeInfo> list = new List<NodeInfo>();
+        Visit(fusion.Body, list);
+        if (_containNotSupportedOp)
+        {
+            return false;
+        }
 
+        if (list.Count == 4)
+        {
+            Call op = list[1].Op;
+            if ((object)op != null && op.Target is GNNEPdp0DW or GNNEPdp0Reduce)
+            {
                 op = list[2].Op;
                 if ((object)op != null && op.Target is GNNEConv2D)
                 {
                     return true;
                 }
             }
-
-            goto IL_009b;
         }
 
-        throw new InvalidOperationException("Can't Visit More Than One Fusion!");
-        IL_009b:
         if (list.Count == 4)
         {
             Call op = list[1].Op;
@@ -149,7 +140,7 @@ internal sealed class FusionConvertVisitor
                 return new AllocateResult { IsOk = false };
             }
 
-            List<NodeInfo> list2 = new List<NodeInfo>();
+            List<NodeInfo> filteredNodes = new List<NodeInfo>();
             for (int i = 0; i < list.Count; i++)
             {
                 Call op = list[i].Op;
@@ -162,11 +153,11 @@ internal sealed class FusionConvertVisitor
 
                 if (((object)op == null || !(op.Target is Reshape)) && ((object)op == null || !(op.Target is Concat)))
                 {
-                    list2.Add(list[i]);
+                    filteredNodes.Add(list[i]);
                 }
             }
 
-            list = list2;
+            list = filteredNodes;
             foreach (NodeInfo item in list.Where(delegate(NodeInfo ni)
                      {
                          Call op2 = ni.Op;
@@ -174,14 +165,11 @@ internal sealed class FusionConvertVisitor
                      }))
             {
                 Expr expr = item.Op[GNNEActivation.InputA];
-                List<NodeInfo> list3 = list;
-                if (expr == list3[list3.Count - 1].Op)
+                if (expr == list[^1].Op)
                 {
-                    List<NodeInfo> list4 = list;
-                    if (!list4[list4.Count - 1].Children.Contains(item))
+                    if (!list[^1].Children.Contains(item))
                     {
-                        List<NodeInfo> list5 = list;
-                        list5[list5.Count - 1].Children.Add(item);
+                        list[^1].Children.Add(item);
                     }
                 }
 
@@ -191,14 +179,11 @@ internal sealed class FusionConvertVisitor
                 }
 
                 Expr expr2 = item.Op[GNNEActivation.InputB];
-                List<NodeInfo> list6 = list;
-                if (expr2 == list6[list6.Count - 1].Op)
+                if (expr2 == list[^1].Op)
                 {
-                    List<NodeInfo> list7 = list;
-                    if (!list7[list7.Count - 1].Children.Contains(item))
+                    if (!list[^1].Children.Contains(item))
                     {
-                        List<NodeInfo> list8 = list;
-                        list8[list8.Count - 1].Children.Add(item);
+                        list[^1].Children.Add(item);
                     }
                 }
             }
@@ -213,87 +198,87 @@ internal sealed class FusionConvertVisitor
                 }) > 1)
                     ? 3
                     : 2);
-            List<int[]> list9 = new List<int[]>();
-            int[] array = fusion.Body.CheckedShape.ToValueArray();
+            List<int[]> tileShapes = new List<int[]>();
+            int[] bodyShape = fusion.Body.CheckedShape.ToValueArray();
             if (fusion.Body is Call call2 && call2.Target is Reshape)
             {
-                array = call2[Reshape.Input].CheckedShape.ToValueArray();
+                bodyShape = call2[Reshape.Input].CheckedShape.ToValueArray();
             }
 
-            int num = Math.Min(GNNEEnv.MultiLayerTilingH, array[2]);
-            int num2 = Math.Min(GNNEEnv.MultiLayerTilingW, array[3]);
+            int tileH = Math.Min(GNNEEnv.MultiLayerTilingH, bodyShape[2]);
+            int tileW = Math.Min(GNNEEnv.MultiLayerTilingW, bodyShape[3]);
             if (fusionType == FusionType.L2IfFullWPp)
             {
-                num = array[2];
-                num2 = array[3];
+                tileH = bodyShape[2];
+                tileW = bodyShape[3];
             }
 
             AllocateResult allocateResult = new AllocateResult { IsOk = false };
-            if ((num == 0 || num2 == 0) &&
+            if ((tileH == 0 || tileW == 0) &&
                 (fusionType == FusionType.L2IfSplitWPp || fusionType == FusionType.L2IfSplitWFull))
             {
-                double num3 = Math.Floor(0.9 * (double)GNNEEnv.GlbSize);
-                if ((double)(array[0] * array[1] * array[2] * array[3] * _ofBufNum *
-                             TileUtilities.GetBytesPerElement(list[0].Op[GNNEStore.Input].CheckedDataType)) < num3)
+                double usableGlbBytes = Math.Floor(0.9 * (double)GNNEEnv.GlbSize);
+                if ((double)(bodyShape[0] * bodyShape[1] * bodyShape[2] * bodyShape[3] * _ofBufNum *
+                             TileUtilities.GetBytesPerElement(list[0].Op[GNNEStore.Input].CheckedDataType)) < usableGlbBytes)
                 {
                     return allocateResult;
                 }
 
-                int num4 = 1;
-                int num5 = 1;
-                while (num4 < array[2] || num5 < array[3])
+                int splitsH = 1;
+                int splitsW = 1;
+                while (splitsH < bodyShape[2] || splitsW < bodyShape[3])
                 {
-                    if ((num4 <= num5 && num4 < array[2]) || num5 == array[3])
+                    if ((splitsH <= splitsW && splitsH < bodyShape[2]) || splitsW == bodyShape[3])
                     {
-                        num4++;
+                        splitsH++;
                     }
                     else
                     {
-                        num5++;
+                        splitsW++;
                     }
 
-                    num = (int)Math.Ceiling(1f * (float)array[2] / (float)num4);
-                    num2 = (int)Math.Ceiling(1f * (float)array[3] / (float)num5);
-                    list9.Add(new int[4] { array[0], array[1], num, num2 });
+                    tileH = (int)Math.Ceiling(1f * (float)bodyShape[2] / (float)splitsH);
+                    tileW = (int)Math.Ceiling(1f * (float)bodyShape[3] / (float)splitsW);
+                    tileShapes.Add(new int[4] { bodyShape[0], bodyShape[1], tileH, tileW });
                 }
             }
             else
             {
-                list9.Add(new int[4] { array[0], array[1], num, num2 });
+                tileShapes.Add(new int[4] { bodyShape[0], bodyShape[1], tileH, tileW });
             }
 
-            for (int num6 = 0; num6 < list9.Count && num6 < 3; num6++)
+            for (int tileIndex = 0; tileIndex < tileShapes.Count && tileIndex < 3; tileIndex++)
             {
-                int[] tileOutShape = list9[num6];
-                List<BoxOnGlb> list10 = new List<BoxOnGlb>();
+                int[] tileOutShape = tileShapes[tileIndex];
+                List<BoxOnGlb> boxes = new List<BoxOnGlb>();
                 GlbItemSize glbItemSize = new GlbItemSize();
                 glbItemSize.BasementSize = TileUtilities.GetAlignedNum(
                     SpaceSearcher.GetBasementSize(),
                     GNNEEnv.GlbWidth * GNNEEnv.GlbBankWidth);
                 List<NodeInfo> nodeInfo = list;
                 Visit(fusionType, tileOutShape, glbItemSize, list);
-                list10.Add(new BoxOnGlb(
+                boxes.Add(new BoxOnGlb(
                     new int[2] { GNNEEnv.GlbWidth, glbItemSize.BasementSize / GNNEEnv.GlbWidth / GNNEEnv.GlbBankWidth },
                     ItemName.Basement));
-                list10.Add(new BoxOnGlb(
+                boxes.Add(new BoxOnGlb(
                     new int[2]
                     {
                         GNNEEnv.OfmapBankWidth,
                         glbItemSize.MaxOfmapSize / GNNEEnv.OfmapBankWidth / GNNEEnv.GlbBankWidth,
                     }, ItemName.Ofmap));
-                list10.Add(new BoxOnGlb(
+                boxes.Add(new BoxOnGlb(
                     new int[2]
                     {
                         GNNEEnv.WBankWidth, glbItemSize.MaxWeightSize / GNNEEnv.WBankWidth / GNNEEnv.GlbBankWidth,
                     }, ItemName.Weight));
-                list10.Add(new BoxOnGlb(
+                boxes.Add(new BoxOnGlb(
                     new int[2]
                     {
                         GNNEEnv.ActBankWidth, glbItemSize.MaxActSize / GNNEEnv.ActBankWidth / GNNEEnv.GlbBankWidth,
                     }, ItemName.Act));
                 if (glbItemSize.MaxDwWeightSize > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.WBankWidth,
@@ -303,7 +288,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxDwActSize > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.ActBankWidth,
@@ -313,7 +298,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxWeightQargSize > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.WQargBankWidth,
@@ -323,7 +308,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxDwWeightQargSize > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.WQargBankWidth,
@@ -333,7 +318,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxPdp0ActSize > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.ActBankWidth,
@@ -343,7 +328,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxIfmap2Size > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.IfmapBankWidth,
@@ -353,7 +338,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxAct1Size > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.ActBankWidth,
@@ -363,7 +348,7 @@ internal sealed class FusionConvertVisitor
 
                 if (glbItemSize.MaxWeightPreloadSize > 0)
                 {
-                    list10.Add(new BoxOnGlb(
+                    boxes.Add(new BoxOnGlb(
                         new int[2]
                         {
                             GNNEEnv.WBankWidth,
@@ -371,8 +356,8 @@ internal sealed class FusionConvertVisitor
                         }, ItemName.WeightPreload));
                 }
 
-                allocateResult = SpaceSearcher.TryAllocate(new BoxPacker(16) { Boxes = list10 });
-                allocateResult.LastOutShape = list9[num6];
+                allocateResult = SpaceSearcher.TryAllocate(new BoxPacker(16) { Boxes = boxes });
+                allocateResult.LastOutShape = tileShapes[tileIndex];
                 int value = (fusionType == FusionType.L2IfFullWPp || fusionType == FusionType.L2IfSplitWPp)
                     ? glbItemSize.MaxWeightSize
                     : 0;
@@ -592,12 +577,12 @@ internal sealed class FusionConvertVisitor
     public List<NodeInfo> GetFusionInfo(Fusion fusion, AllocateResult allocation)
     {
         List<NodeInfo> list = new List<NodeInfo>();
-        List<int> list2 = (_ofBufNum == 2) ? new int[2] { 0, 1 }.ToList() : new int[3] { 0, 1, 2 }.ToList();
+        List<int> freeBufferIndices = (_ofBufNum == 2) ? new int[2] { 0, 1 }.ToList() : new int[3] { 0, 1, 2 }.ToList();
         Dictionary<Call, int> dictionary = new Dictionary<Call, int>();
-        List<NodeInfo> list3 = new List<NodeInfo>();
-        list3.AddRange(allocation.NodeInfo);
-        list3.Reverse();
-        using List<NodeInfo>.Enumerator enumerator = list3.GetEnumerator();
+        List<NodeInfo> reversedNodes = new List<NodeInfo>();
+        reversedNodes.AddRange(allocation.NodeInfo);
+        reversedNodes.Reverse();
+        using List<NodeInfo>.Enumerator enumerator = reversedNodes.GetEnumerator();
         NodeInfo ni;
         for (; enumerator.MoveNext(); list.Add(ni))
         {
@@ -619,12 +604,12 @@ internal sealed class FusionConvertVisitor
                             ((GNNEActivation)ni.Op.Target).InputFromL1.Any((bool x) => x))
                         {
                             op = ni.Op;
-                            int num = ((object)op != null && op.Target is GNNEActivation &&
+                            int l1InputIndex = ((object)op != null && op.Target is GNNEActivation &&
                                         ((GNNEActivation)ni.Op.Target).InputFromL1[1])
                                 ? 1
                                 : 0;
-                            int index = num;
-                            NodeInfo preNi = list3.Find((NodeInfo nI) => nI.Op == ni.Op.Arguments[index]);
+                            int index = l1InputIndex;
+                            NodeInfo preNi = reversedNodes.Find((NodeInfo nI) => nI.Op == ni.Op.Arguments[index]);
                             ni.Nb.OfBufferIndex = preNi.Nb.OfBufferIndex;
                             ni.Nb.OutputsSize = ni.Children.Count;
                             ni.Nb.OfmapOffset = preNi.Nb.OfmapOffset;
@@ -638,24 +623,24 @@ internal sealed class FusionConvertVisitor
                             dictionary[(Call)ni.Op.Arguments[1 - index]]--;
                             if (dictionary[(Call)ni.Op.Arguments[1 - index]] == 0)
                             {
-                                list2.Add(list.Find((NodeInfo nI) => nI.Op == (Call)ni.Op.Arguments[1 - index]).Nb
+                                freeBufferIndices.Add(list.Find((NodeInfo nI) => nI.Op == (Call)ni.Op.Arguments[1 - index]).Nb
                                     .OfBufferIndex);
                             }
 
                             continue;
                         }
 
-                        if (list2.Count == 0)
+                        if (freeBufferIndices.Count == 0)
                         {
                             allocation.IsOk = false;
                             return new List<NodeInfo>();
                         }
 
-                        int num2 = list2[0];
-                        list2.RemoveAt(0);
-                        ni.Nb.OfBufferIndex = num2;
+                        int bufferIndex = freeBufferIndices[0];
+                        freeBufferIndices.RemoveAt(0);
+                        ni.Nb.OfBufferIndex = bufferIndex;
                         ni.Nb.OutputsSize = ni.Children.Count;
-                        ni.Nb.OfmapOffset = num2 * allocation.BufferSize[ItemName.Ofmap];
+                        ni.Nb.OfmapOffset = bufferIndex * allocation.BufferSize[ItemName.Ofmap];
                         dictionary.Add(ni.Op, ni.Nb.OutputsSize);
                         op = ni.Op;
                         if (((object)op == null || !(op.Target is GNNELoad)) &&
@@ -664,7 +649,7 @@ internal sealed class FusionConvertVisitor
                             dictionary[(Call)ni.Op.Arguments[0]]--;
                             if (dictionary[(Call)ni.Op.Arguments[0]] == 0)
                             {
-                                list2.Add(
+                                freeBufferIndices.Add(
                                     list.Find((NodeInfo nI) => nI.Op == (Call)ni.Op.Arguments[0]).Nb.OfBufferIndex);
                             }
                         }
@@ -680,7 +665,7 @@ internal sealed class FusionConvertVisitor
                         dictionary[(Call)ni.Op.Arguments[1]]--;
                         if (dictionary[(Call)ni.Op.Arguments[1]] == 0)
                         {
-                            list2.Add(list.Find((NodeInfo nI) => nI.Op == (Call)ni.Op.Arguments[1]).Nb.OfBufferIndex);
+                            freeBufferIndices.Add(list.Find((NodeInfo nI) => nI.Op == (Call)ni.Op.Arguments[1]).Nb.OfBufferIndex);
                         }
 
                         continue;
@@ -688,7 +673,7 @@ internal sealed class FusionConvertVisitor
                 }
             }
 
-            NodeInfo preNi2 = list3.Find((NodeInfo nI) => nI.Op == ni.Op.Arguments[0]);
+            NodeInfo preNi2 = reversedNodes.Find((NodeInfo nI) => nI.Op == ni.Op.Arguments[0]);
             ni.Nb.OfBufferIndex = preNi2.Nb.OfBufferIndex;
             ni.Nb.OutputsSize = ni.Children.Count;
             ni.Nb.OfmapOffset = preNi2.Nb.OfmapOffset;
@@ -743,18 +728,11 @@ internal sealed class FusionConvertVisitor
             }
 
             Call op = ni.Op;
-            if ((object)op == null || !(op.Target is GNNEPdp1))
+            if ((object)op != null && op.Target is GNNEPdp1 or GNNETranspose)
             {
-                op = ni.Op;
-                if ((object)op == null || !(op.Target is GNNETranspose))
-                {
-                    goto IL_01a7;
-                }
+                ni.Nb.AlignType = AlignedType.FAligned;
             }
 
-            ni.Nb.AlignType = AlignedType.FAligned;
-            goto IL_01a7;
-            IL_01a7:
             if (ni.Children.Exists(delegate(NodeInfo subNi)
                 {
                     Call op2 = subNi.Op;
@@ -779,11 +757,11 @@ internal sealed class FusionConvertVisitor
 
     private void UpdateNodeInfo(List<NodeInfo> nodeInfos, Call call, NodeInfo currNode = null)
     {
-        int num = nodeInfos.FindIndex((NodeInfo ni) => ni.Op == call);
-        if (num >= 0)
+        int nodeIndex = nodeInfos.FindIndex((NodeInfo ni) => ni.Op == call);
+        if (nodeIndex >= 0)
         {
-            NodeInfo nodeInfo = nodeInfos[num];
-            nodeInfos.RemoveAt(num);
+            NodeInfo nodeInfo = nodeInfos[nodeIndex];
+            nodeInfos.RemoveAt(nodeIndex);
             if (currNode != null && !nodeInfo.Children.Contains(currNode))
             {
                 nodeInfo.Children.Add(currNode);
@@ -821,17 +799,17 @@ internal sealed class FusionConvertVisitor
 
     private void LowerGNNEConv2D(Call call, List<NodeInfo> nodeInfos)
     {
-        int[] array = call[GNNEConv2D.Input].CheckedShape.ToValueArray();
-        int[] array2 = call.CheckedShape.ToValueArray();
-        int[] array3 = call[GNNEConv2D.Weights].CheckedShape.ToValueArray();
+        int[] inputShape = call[GNNEConv2D.Input].CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int[] weightsShape = call[GNNEConv2D.Weights].CheckedShape.ToValueArray();
         int[] source = ((TensorConst)call[GNNEConv2D.Padding]).Value.ToArray<int>();
-        int num = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
-        int num2 = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
-        int num3 = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
-        int num4 = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
-        int num5 = ((TensorConst)call[GNNEConv2D.Groups]).Value.ToScalar<int>();
-        if (array[0] > 1 && array2[2] == 1 && array2[3] == 1 && array[2] == 1 && array[3] == 1 && array3[2] == 1 &&
-            array3[3] == 1 && num == 1 && num2 == 1 && num3 == 1 && num4 == 1 && source.Sum() == 0 && num5 == 1)
+        int strideH = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
+        int strideW = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
+        int dilationH = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
+        int dilationW = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
+        int groups = ((TensorConst)call[GNNEConv2D.Groups]).Value.ToScalar<int>();
+        if (inputShape[0] > 1 && outputShape[2] == 1 && outputShape[3] == 1 && inputShape[2] == 1 && inputShape[3] == 1 && weightsShape[2] == 1 &&
+            weightsShape[3] == 1 && strideH == 1 && strideW == 1 && dilationH == 1 && dilationW == 1 && source.Sum() == 0 && groups == 1)
         {
             _containNotSupportedOp = true;
         }
@@ -877,11 +855,11 @@ internal sealed class FusionConvertVisitor
     {
         UpdateNodeInfo(nodeInfos, call);
         NodeInfo currNode = nodeInfos[nodeInfos.Count - 1];
-        bool flag = false;
+        bool visitedInputB = false;
         if (call[GNNEActivation.InputB] != None.Default && call[GNNEActivation.InputB] is Call call2 &&
             call2.Target is GNNEConv2D && ((GNNEActivation)call.Target).InputFromL1[1])
         {
-            flag = true;
+            visitedInputB = true;
             UpdateNodeInfo(nodeInfos, call[GNNEActivation.InputB] as Call, currNode);
             Visit(call[GNNEActivation.InputB], nodeInfos);
         }
@@ -896,7 +874,7 @@ internal sealed class FusionConvertVisitor
             Visit(call[GNNEActivation.InputA], nodeInfos);
         }
 
-        if (!flag && call[GNNEActivation.InputB] != None.Default && (!(call[GNNEActivation.InputB] is Call call6) ||
+        if (!visitedInputB && call[GNNEActivation.InputB] != None.Default && (!(call[GNNEActivation.InputB] is Call call6) ||
                                                                      !(call6.Target is GNNELoad) ||
                                                                      (((Call)call[GNNEActivation.InputB])[
                                                                           GNNELoad.Input] is Var &&
@@ -927,21 +905,21 @@ internal sealed class FusionConvertVisitor
         int[] tileOutShape = currNode.OutShape;
         if (!(call[GNNELoad.Input] is TensorConst))
         {
-            int[] array = tileOutShape;
-            int num = array[2];
-            int num2 = array[3];
+            int[] tileShape = tileOutShape;
+            int tileH = tileShape[2];
+            int tileW = tileShape[3];
             int alignmentFactor = (TileUtilities.GetBytesPerElement(call.CheckedDataType) == 1) ? 32 : 16;
             if (currNode.Nb.AlignType == AlignedType.EAligned)
             {
-                num = TileUtilities.GetAlignedNum(num, alignmentFactor);
+                tileH = TileUtilities.GetAlignedNum(tileH, alignmentFactor);
             }
 
             if (currNode.Nb.AlignType == AlignedType.FAligned)
             {
-                num2 = TileUtilities.GetAlignedNum(num2, alignmentFactor);
+                tileW = TileUtilities.GetAlignedNum(tileW, alignmentFactor);
             }
 
-            int allocatedBytes = new TensorOnGlb(new int[4] { array[0], array[1], num, num2 }, call.CheckedDataType, 0)
+            int allocatedBytes = new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileH, tileW }, call.CheckedDataType, 0)
                 .AllocatedBytes;
             allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
             allocatedBytes *= _ofBufNum;
@@ -961,11 +939,11 @@ internal sealed class FusionConvertVisitor
         GlbItemSize maxSizes, NodeInfo currNode)
     {
         int[] tileOutShape = currNode.OutShape;
-        int[] array = tileOutShape;
-        int num = array[2];
-        int num2 = array[3];
+        int[] tileShape = tileOutShape;
+        int tileH = tileShape[2];
+        int tileW = tileShape[3];
         int allocatedBytes =
-            new TensorOnGlb(new int[4] { array[0], array[1], num, num2 }, call[GNNEStore.Input].CheckedDataType, 0)
+            new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileH, tileW }, call[GNNEStore.Input].CheckedDataType, 0)
                 .AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
@@ -984,58 +962,58 @@ internal sealed class FusionConvertVisitor
         GlbItemSize maxSizes, NodeInfo currNode)
     {
         int[] outShape = currNode.OutShape;
-        int[] array = call[GNNEPdp1.Input].CheckedShape.ToValueArray();
-        int[] array2 = call.CheckedShape.ToValueArray();
-        int[] array3 = ((TensorConst)call[GNNEPdp1.Padding]).Value.ToArray<int>();
-        int[] array4 = new int[2] { array3[0], array3[1] };
-        int[] array5 = new int[2] { array3[2], array3[3] };
+        int[] inputShape = call[GNNEPdp1.Input].CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int[] padding = ((TensorConst)call[GNNEPdp1.Padding]).Value.ToArray<int>();
+        int[] paddingH = new int[2] { padding[0], padding[1] };
+        int[] paddingW = new int[2] { padding[2], padding[3] };
         int uh = ((TensorConst)call[GNNEPdp1.Stride]).Value.ToArray<int>()[0];
         int uh2 = ((TensorConst)call[GNNEPdp1.Stride]).Value.ToArray<int>()[1];
         int dh = 1;
         int dh2 = 1;
-        int num = ((TensorConst)call[GNNEPdp1.Filter]).Value.ToArray<int>()[0];
-        int num2 = ((TensorConst)call[GNNEPdp1.Filter]).Value.ToArray<int>()[1];
+        int filterH = ((TensorConst)call[GNNEPdp1.Filter]).Value.ToArray<int>()[0];
+        int filterW = ((TensorConst)call[GNNEPdp1.Filter]).Value.ToArray<int>()[1];
         _ = call[GNNEPdp1.Input].CheckedDataType;
         DataType checkedDataType = call.CheckedDataType;
-        int r = num;
-        int r2 = num2;
-        bool flag = array[2] == num && array[3] == num2 &&
-                    (array[2] > 16 || array[3] > 64 || array[2] * array[3] > 256);
-        if (fusionType != FusionType.L2IfFullWPp && flag)
+        int r = filterH;
+        int r2 = filterW;
+        bool isGlobalPool = inputShape[2] == filterH && inputShape[3] == filterW &&
+                    (inputShape[2] > 16 || inputShape[3] > 64 || inputShape[2] * inputShape[3] > 256);
+        if (fusionType != FusionType.L2IfFullWPp && isGlobalPool)
         {
             maxSizes.MaxOfmapSize = GNNEEnv.GlbSize;
         }
 
-        int[] array6 = outShape;
-        int num3 = array6[2];
-        if (flag)
+        int[] tileShape = outShape;
+        int tileH = tileShape[2];
+        if (isGlobalPool)
         {
-            int num4 = (num > 16) ? 16 : num;
-            num3 = (int)Math.Ceiling(1f * (float)array[2] / (float)num4);
+            int cappedFilterH = (filterH > 16) ? 16 : filterH;
+            tileH = (int)Math.Ceiling(1f * (float)inputShape[2] / (float)cappedFilterH);
         }
 
-        int num5 = array6[3];
-        int alignmentFactor = (TileUtilities.GetBytesPerElement(flag ? DataTypes.Float16 : checkedDataType) == 1)
+        int tileW = tileShape[3];
+        int alignmentFactor = (TileUtilities.GetBytesPerElement(isGlobalPool ? DataTypes.Float16 : checkedDataType) == 1)
             ? 32
             : 16;
-        int alignedNum = TileUtilities.GetAlignedNum(num5, alignmentFactor);
+        int alignedNum = TileUtilities.GetAlignedNum(tileW, alignmentFactor);
         int allocatedBytes = new TensorOnGlb(
-            new int[4] { array6[0], array6[1], num3, alignedNum },
-            flag ? DataTypes.Float16 : checkedDataType, 0).AllocatedBytes;
+            new int[4] { tileShape[0], tileShape[1], tileH, alignedNum },
+            isGlobalPool ? DataTypes.Float16 : checkedDataType, 0).AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
-        int num6 = SpaceSearcher.GetInputHeight(num3, array[2], r, array2[2], uh, dh,
-            new Padding(array4[0], array4[1]));
-        int num7 = SpaceSearcher.GetInputHeight(num5, array[3], r2, array2[3], uh2, dh2,
-            new Padding(array5[0], array5[1]));
+        int tileInH = SpaceSearcher.GetInputHeight(tileH, inputShape[2], r, outputShape[2], uh, dh,
+            new Padding(paddingH[0], paddingH[1]));
+        int tileInW = SpaceSearcher.GetInputHeight(tileW, inputShape[3], r2, outputShape[3], uh2, dh2,
+            new Padding(paddingW[0], paddingW[1]));
         if (fusionType == FusionType.L2IfFullWPp)
         {
-            int num8 = Math.Min(num6, array[2]);
-            num7 = Math.Min(num7, array[3]);
-            num6 = num8;
+            int clampedInH = Math.Min(tileInH, inputShape[2]);
+            tileInW = Math.Min(tileInW, inputShape[3]);
+            tileInH = clampedInH;
         }
 
-        int[] currentInputShape = new int[4] { array[0], array[1], num6, num7 };
+        int[] currentInputShape = new int[4] { inputShape[0], inputShape[1], tileInH, tileInW };
         if (allocatedBytes > maxSizes.MaxOfmapSize)
         {
             maxSizes.MaxOfmapSize = allocatedBytes;
@@ -1055,53 +1033,53 @@ internal sealed class FusionConvertVisitor
         GlbItemSize maxSizes, NodeInfo currNode)
     {
         int[] outShape = currNode.OutShape;
-        int[] array = call[GNNEPdp0Reduce.Input].CheckedShape.ToValueArray();
-        int[] array2 = call.CheckedShape.ToValueArray();
-        int[] array3 = ((TensorConst)call[GNNEPdp0Reduce.Padding]).Value.ToArray<int>();
-        int[] array4 = new int[2] { array3[0], array3[1] };
-        int[] array5 = new int[2] { array3[2], array3[3] };
+        int[] inputShape = call[GNNEPdp0Reduce.Input].CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int[] padding = ((TensorConst)call[GNNEPdp0Reduce.Padding]).Value.ToArray<int>();
+        int[] paddingH = new int[2] { padding[0], padding[1] };
+        int[] paddingW = new int[2] { padding[2], padding[3] };
         int uh = ((TensorConst)call[GNNEPdp0Reduce.Stride]).Value.ToArray<int>()[0];
         int uh2 = ((TensorConst)call[GNNEPdp0Reduce.Stride]).Value.ToArray<int>()[1];
         int dh = 1;
         int dh2 = 1;
-        int num = ((TensorConst)call[GNNEPdp0Reduce.Filter]).Value.ToArray<int>()[0];
-        int num2 = ((TensorConst)call[GNNEPdp0Reduce.Filter]).Value.ToArray<int>()[1];
+        int filterH = ((TensorConst)call[GNNEPdp0Reduce.Filter]).Value.ToArray<int>()[0];
+        int filterW = ((TensorConst)call[GNNEPdp0Reduce.Filter]).Value.ToArray<int>()[1];
         _ = call[GNNEPdp0Reduce.Input].CheckedDataType;
         DataType checkedDataType = call.CheckedDataType;
-        int num3 = array2[1];
-        int r = num;
-        int r2 = num2;
-        int c = num3;
-        int[] array6 = outShape;
+        int outChannels = outputShape[1];
+        int r = filterH;
+        int r2 = filterW;
+        int c = outChannels;
+        int[] tileShape = outShape;
         int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
-        int num4 = array6[2];
+        int tileH = tileShape[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
-            num4 = TileUtilities.GetAlignedNum(num4, alignmentFactor);
+            tileH = TileUtilities.GetAlignedNum(tileH, alignmentFactor);
         }
 
-        int num5 = array6[3];
+        int tileW = tileShape[3];
         if (currNode.Nb.AlignType == AlignedType.FAligned)
         {
-            num5 = TileUtilities.GetAlignedNum(num5, alignmentFactor);
+            tileW = TileUtilities.GetAlignedNum(tileW, alignmentFactor);
         }
 
-        int allocatedBytes = new TensorOnGlb(new int[4] { array6[0], array6[1], num4, num5 }, checkedDataType, 0)
+        int allocatedBytes = new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileH, tileW }, checkedDataType, 0)
             .AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
-        int num6 = SpaceSearcher.GetInputHeight(array6[2], array[2], r, array2[2], uh, dh,
-            new Padding(array4[0], array4[1]));
-        int num7 = SpaceSearcher.GetInputHeight(array6[3], array[3], r2, array2[3], uh2, dh2,
-            new Padding(array5[0], array5[1]));
+        int tileInH = SpaceSearcher.GetInputHeight(tileShape[2], inputShape[2], r, outputShape[2], uh, dh,
+            new Padding(paddingH[0], paddingH[1]));
+        int tileInW = SpaceSearcher.GetInputHeight(tileShape[3], inputShape[3], r2, outputShape[3], uh2, dh2,
+            new Padding(paddingW[0], paddingW[1]));
         if (fusionType == FusionType.L2IfFullWPp)
         {
-            int num8 = Math.Min(num6, array[2]);
-            num7 = Math.Min(num7, array[3]);
-            num6 = num8;
+            int clampedInH = Math.Min(tileInH, inputShape[2]);
+            tileInW = Math.Min(tileInW, inputShape[3]);
+            tileInH = clampedInH;
         }
 
-        int[] currentInputShape = new int[4] { array[0], array[1], num6, num7 };
+        int[] currentInputShape = new int[4] { inputShape[0], inputShape[1], tileInH, tileInW };
         if (allocatedBytes > maxSizes.MaxOfmapSize)
         {
             maxSizes.MaxOfmapSize = allocatedBytes;
@@ -1129,89 +1107,76 @@ internal sealed class FusionConvertVisitor
         GlbItemSize maxSizes, NodeInfo currNode)
     {
         int[] outShape = currNode.OutShape;
-        int[] array = call[GNNEConv2D.Input].CheckedShape.ToValueArray();
-        int[] array2 = call.CheckedShape.ToValueArray();
-        int[] array3 = call[GNNEConv2D.Weights].CheckedShape.ToValueArray();
-        int[] array4 = ((TensorConst)call[GNNEConv2D.Padding]).Value.ToArray<int>();
-        int[] source = new int[2] { array4[0], array4[1] };
-        _ = new int[2] { array4[2], array4[3] };
+        int[] inputShape = call[GNNEConv2D.Input].CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int[] weightsShape = call[GNNEConv2D.Weights].CheckedShape.ToValueArray();
+        int[] padding = ((TensorConst)call[GNNEConv2D.Padding]).Value.ToArray<int>();
+        int[] source = new int[2] { padding[0], padding[1] };
+        _ = new int[2] { padding[2], padding[3] };
         int uh = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
         int uh2 = ((TensorConst)call[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
         int dh = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
         int dh2 = ((TensorConst)call[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
-        int num = ((TensorConst)call[GNNEConv2D.Groups]).Value.ToScalar<int>();
+        int groups = ((TensorConst)call[GNNEConv2D.Groups]).Value.ToScalar<int>();
         DataType checkedDataType = call.CheckedDataType;
         DataType checkedDataType2 = call[GNNEConv2D.Weights].CheckedDataType;
-        int num2 = array3[0];
-        int num3 = array3[1];
-        int num4 = array3[2];
-        int num5 = array3[3];
-        int num6 = num2;
-        int[] array5 = outShape;
+        int weightsOutChannels = weightsShape[0];
+        int weightsInChannels = weightsShape[1];
+        int kernelH = weightsShape[2];
+        int kernelW = weightsShape[3];
+        int actChannels = weightsOutChannels;
+        int[] tileShape = outShape;
         int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
-        int num7 = array5[2];
+        int tileH = tileShape[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
-            num7 = TileUtilities.GetAlignedNum(num7, alignmentFactor);
+            tileH = TileUtilities.GetAlignedNum(tileH, alignmentFactor);
         }
 
-        int num8 = array5[3];
+        int tileW = tileShape[3];
         if (currNode.Nb.AlignType == AlignedType.FAligned)
         {
-            num8 = TileUtilities.GetAlignedNum(num8, alignmentFactor);
+            tileW = TileUtilities.GetAlignedNum(tileW, alignmentFactor);
         }
 
-        int allocatedBytes = new TensorOnGlb(new int[4] { array5[0], array5[1], num7, num8 }, checkedDataType, 0)
+        int allocatedBytes = new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileH, tileW }, checkedDataType, 0)
             .AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
-        int num9 = SpaceSearcher.GetInputHeight(array5[2], array[2], num4, array2[2], uh, dh, new Padding(0, 0));
-        if (array3[1] * array3[2] <= GNNEEnv.PuHeight && array3[2] != 1)
+        int tileInH = SpaceSearcher.GetInputHeight(tileShape[2], inputShape[2], kernelH, outputShape[2], uh, dh, new Padding(0, 0));
+        if (weightsShape[1] * weightsShape[2] <= GNNEEnv.PuHeight && weightsShape[2] != 1)
         {
-            num9 += source.Sum();
+            tileInH += source.Sum();
         }
 
-        int num10 = SpaceSearcher.GetInputHeight(array5[3], array[3], num5, array2[3], uh2, dh2, new Padding(0, 0));
+        int tileInW = SpaceSearcher.GetInputHeight(tileShape[3], inputShape[3], kernelW, outputShape[3], uh2, dh2, new Padding(0, 0));
         if (fusionType == FusionType.L2IfFullWPp)
         {
-            int num11 = Math.Min(num9, array[2]);
-            num10 = Math.Min(num10, array[3]);
-            num9 = num11;
+            int clampedInH = Math.Min(tileInH, inputShape[2]);
+            tileInW = Math.Min(tileInW, inputShape[3]);
+            tileInH = clampedInH;
         }
 
-        int[] currentInputShape = new int[4] { array[0], (num == 1) ? array3[1] : array[1], num9, num10 };
+        int[] currentInputShape = new int[4] { inputShape[0], (groups == 1) ? weightsShape[1] : inputShape[1], tileInH, tileInW };
         NodeBuffer nb = currNode.Nb;
-        Call op2;
-        if (currNode.Children.Count == 1)
+        Call op2 = currNode.Children[0].Op;
+        bool feedsActivationFromL1 = currNode.Children.Count == 1 &&
+            (object)op2 != null && op2.Target is GNNEActivation &&
+            ((((GNNEActivation)currNode.Children[0].Op.Target).InputFromL1[0] &&
+              currNode.Children[0].Op[GNNEActivation.InputA] == call) ||
+             (((GNNEActivation)currNode.Children[0].Op.Target).InputFromL1[1] &&
+              currNode.Children[0].Op[GNNEActivation.InputB] == call));
+        bool feedsPdp0 = (object)op2 != null && op2.Target is GNNEPdp0DW or GNNEPdp0Reduce;
+        if (!feedsActivationFromL1 && !feedsPdp0 && allocatedBytes > maxSizes.MaxOfmapSize)
         {
-            op2 = currNode.Children[0].Op;
-            if ((object)op2 != null && op2.Target is GNNEActivation &&
-                ((((GNNEActivation)currNode.Children[0].Op.Target).InputFromL1[0] &&
-                  currNode.Children[0].Op[GNNEActivation.InputA] == call) ||
-                 (((GNNEActivation)currNode.Children[0].Op.Target).InputFromL1[1] &&
-                  currNode.Children[0].Op[GNNEActivation.InputB] == call)))
-            {
-                goto IL_044e;
-            }
+            maxSizes.MaxOfmapSize = allocatedBytes;
         }
 
-        op2 = currNode.Children[0].Op;
-        if ((object)op2 == null || !(op2.Target is GNNEPdp0DW))
-        {
-            op2 = currNode.Children[0].Op;
-            if (((object)op2 == null || !(op2.Target is GNNEPdp0Reduce)) && allocatedBytes > maxSizes.MaxOfmapSize)
-            {
-                maxSizes.MaxOfmapSize = allocatedBytes;
-            }
-        }
-
-        goto IL_044e;
-        IL_044e:
-        _ = new TensorOnGlb(new int[4] { num4, num5, num3, num2 }, checkedDataType2, 0);
+        _ = new TensorOnGlb(new int[4] { kernelH, kernelW, weightsInChannels, weightsOutChannels }, checkedDataType2, 0);
         if (fusionType == FusionType.L2IfFullWPp || fusionType == FusionType.L2IfSplitWPp)
         {
             int alignedNum = TileUtilities.GetAlignedNum(
-                SpaceSearcher.GetWeightSize(num4, num5, num3, num2, TileUtilities.GetBytesPerElement(checkedDataType2)),
+                SpaceSearcher.GetWeightSize(kernelH, kernelW, weightsInChannels, weightsOutChannels, TileUtilities.GetBytesPerElement(checkedDataType2)),
                 GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
             if (alignedNum > maxSizes.MaxWeightSize)
             {
@@ -1222,14 +1187,14 @@ internal sealed class FusionConvertVisitor
         {
             nb.WeightOffset = maxSizes.MaxWeightSize;
             int alignedNum2 = TileUtilities.GetAlignedNum(
-                SpaceSearcher.GetWeightSize(num4, num5, num3, num2, TileUtilities.GetBytesPerElement(checkedDataType2)),
+                SpaceSearcher.GetWeightSize(kernelH, kernelW, weightsInChannels, weightsOutChannels, TileUtilities.GetBytesPerElement(checkedDataType2)),
                 GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
             maxSizes.MaxWeightSize += alignedNum2;
         }
 
         nb.ActOffset = maxSizes.MaxActSize;
         int alignedNum3 = TileUtilities.GetAlignedNum(
-            SpaceSearcher.GetActSize(num6, GNNEEnv.ActNumPerChan, 2),
+            SpaceSearcher.GetActSize(actChannels, GNNEEnv.ActNumPerChan, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxActSize += alignedNum3;
         if (checkedDataType2 == DataTypes.UInt8 || checkedDataType2 == DataTypes.Int16)
@@ -1237,7 +1202,7 @@ internal sealed class FusionConvertVisitor
             nb.WeightQargOffset = maxSizes.MaxWeightQargSize;
             int alignedNum4 = TileUtilities.GetAlignedNum(
                 SpaceSearcher.GetWQargSize(
-                    (int)Math.Ceiling((double)num6 * 1.0 / (double)GNNEEnv.PuHeight) * GNNEEnv.PuWidth, 1),
+                    (int)Math.Ceiling((double)actChannels * 1.0 / (double)GNNEEnv.PuHeight) * GNNEEnv.PuWidth, 1),
                 GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
             maxSizes.MaxWeightQargSize += alignedNum4;
         }
@@ -1257,81 +1222,81 @@ internal sealed class FusionConvertVisitor
         GlbItemSize maxSizes, NodeInfo currNode)
     {
         int[] outShape = currNode.OutShape;
-        int[] array = call[GNNEPdp0DW.Input].CheckedShape.ToValueArray();
-        int[] array2 = call.CheckedShape.ToValueArray();
-        int[] array3 = call[GNNEPdp0DW.Weights].CheckedShape.ToValueArray();
-        int[] array4 = ((TensorConst)call[GNNEPdp0DW.Padding]).Value.ToArray<int>();
-        int[] source = new int[2] { array4[0], array4[1] };
-        _ = new int[2] { array4[2], array4[3] };
+        int[] inputShape = call[GNNEPdp0DW.Input].CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
+        int[] weightsShape = call[GNNEPdp0DW.Weights].CheckedShape.ToValueArray();
+        int[] padding = ((TensorConst)call[GNNEPdp0DW.Padding]).Value.ToArray<int>();
+        int[] source = new int[2] { padding[0], padding[1] };
+        _ = new int[2] { padding[2], padding[3] };
         int uh = ((TensorConst)call[GNNEPdp0DW.Stride]).Value.ToArray<int>()[0];
         int uh2 = ((TensorConst)call[GNNEPdp0DW.Stride]).Value.ToArray<int>()[1];
         int dh = ((TensorConst)call[GNNEPdp0DW.Dilation]).Value.ToArray<int>()[0];
         int dh2 = ((TensorConst)call[GNNEPdp0DW.Dilation]).Value.ToArray<int>()[1];
-        int num = ((TensorConst)call[GNNEPdp0DW.Groups]).Value.ToScalar<int>();
+        int groups = ((TensorConst)call[GNNEPdp0DW.Groups]).Value.ToScalar<int>();
         DataType checkedDataType = call.CheckedDataType;
         DataType checkedDataType2 = call[GNNEPdp0DW.Weights].CheckedDataType;
-        array3[0] /= array[1];
-        array3[1] = TileUtilities.GetAlignedNum(array[1], GNNEEnv.PuWidth);
-        int num2 = array3[0];
-        int num3 = array3[1];
-        int num4 = array3[2];
-        int num5 = array3[3];
-        int num6 = num3 * num2;
-        int[] array5 = outShape;
+        weightsShape[0] /= inputShape[1];
+        weightsShape[1] = TileUtilities.GetAlignedNum(inputShape[1], GNNEEnv.PuWidth);
+        int weightsOutChannels = weightsShape[0];
+        int weightsInChannels = weightsShape[1];
+        int kernelH = weightsShape[2];
+        int kernelW = weightsShape[3];
+        int actChannels = weightsInChannels * weightsOutChannels;
+        int[] tileShape = outShape;
         int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
-        int num7 = array5[2];
+        int tileH = tileShape[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
-            num7 = TileUtilities.GetAlignedNum(num7, alignmentFactor);
+            tileH = TileUtilities.GetAlignedNum(tileH, alignmentFactor);
         }
 
-        int num8 = array5[3];
+        int tileW = tileShape[3];
         if (currNode.Nb.AlignType == AlignedType.FAligned)
         {
-            num8 = TileUtilities.GetAlignedNum(num8, alignmentFactor);
+            tileW = TileUtilities.GetAlignedNum(tileW, alignmentFactor);
         }
 
-        int allocatedBytes = new TensorOnGlb(new int[4] { array5[0], array5[1], num7, num8 }, checkedDataType, 0)
+        int allocatedBytes = new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileH, tileW }, checkedDataType, 0)
             .AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
-        int num9 = SpaceSearcher.GetInputHeight(array5[2], array[2], num4, array2[2], uh, dh, new Padding(0, 0));
-        if (array3[1] * array3[2] <= GNNEEnv.PuHeight && array3[2] != 1)
+        int tileInH = SpaceSearcher.GetInputHeight(tileShape[2], inputShape[2], kernelH, outputShape[2], uh, dh, new Padding(0, 0));
+        if (weightsShape[1] * weightsShape[2] <= GNNEEnv.PuHeight && weightsShape[2] != 1)
         {
-            num9 += source.Sum();
+            tileInH += source.Sum();
         }
 
-        int num10 = SpaceSearcher.GetInputHeight(array5[3], array[3], num5, array2[3], uh2, dh2, new Padding(0, 0));
+        int tileInW = SpaceSearcher.GetInputHeight(tileShape[3], inputShape[3], kernelW, outputShape[3], uh2, dh2, new Padding(0, 0));
         if (fusionType == FusionType.L2IfFullWPp)
         {
-            int num11 = Math.Min(num9, array[2]);
-            num10 = Math.Min(num10, array[3]);
-            num9 = num11;
+            int clampedInH = Math.Min(tileInH, inputShape[2]);
+            tileInW = Math.Min(tileInW, inputShape[3]);
+            tileInH = clampedInH;
         }
 
-        int[] currentInputShape = new int[4] { array[0], (num == 1) ? array3[1] : array[1], num9, num10 };
+        int[] currentInputShape = new int[4] { inputShape[0], (groups == 1) ? weightsShape[1] : inputShape[1], tileInH, tileInW };
         NodeBuffer nb = currNode.Nb;
         if (allocatedBytes > maxSizes.MaxOfmapSize)
         {
             maxSizes.MaxOfmapSize = allocatedBytes;
         }
 
-        _ = new TensorOnGlb(new int[4] { num4, num5, num3, num2 }, checkedDataType2, 0);
+        _ = new TensorOnGlb(new int[4] { kernelH, kernelW, weightsInChannels, weightsOutChannels }, checkedDataType2, 0);
         nb.DwWeightOffset = maxSizes.MaxDwWeightSize;
         int alignedNum = TileUtilities.GetAlignedNum(
-            SpaceSearcher.GetWeightSize(num4, num5, TileUtilities.GetAlignedNum(num3, GNNEEnv.PuWidth), num2,
+            SpaceSearcher.GetWeightSize(kernelH, kernelW, TileUtilities.GetAlignedNum(weightsInChannels, GNNEEnv.PuWidth), weightsOutChannels,
                 TileUtilities.GetBytesPerElement(checkedDataType2)), GNNEEnv.WBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxDwWeightSize += alignedNum;
         nb.DwActOffset = maxSizes.MaxDwActSize;
         int alignedNum2 = TileUtilities.GetAlignedNum(
-            SpaceSearcher.GetActSize(num6, GNNEEnv.ActNumPerChan, 2),
+            SpaceSearcher.GetActSize(actChannels, GNNEEnv.ActNumPerChan, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxDwActSize += alignedNum2;
         if (checkedDataType2 == DataTypes.UInt8 || checkedDataType2 == DataTypes.Int16)
         {
             nb.DwWeightQargOffset = maxSizes.MaxDwWeightQargSize;
             int alignedNum3 = TileUtilities.GetAlignedNum(
-                SpaceSearcher.GetWQargSize(num6, 1),
+                SpaceSearcher.GetWQargSize(actChannels, 1),
                 GNNEEnv.WQargBankWidth * GNNEEnv.GlbBankWidth);
             maxSizes.MaxDwWeightQargSize += alignedNum3;
         }
@@ -1358,17 +1323,17 @@ internal sealed class FusionConvertVisitor
 
         _ = call[GNNETranspose.Input].CheckedDataType;
         DataType checkedDataType = call.CheckedDataType;
-        int[] array = outShape;
-        int value = array[3];
+        int[] tileShape = outShape;
+        int value = tileShape[3];
         int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType) == 1) ? 32 : 16;
         int alignedNum = TileUtilities.GetAlignedNum(value, alignmentFactor);
         int allocatedBytes =
-            new TensorOnGlb(new int[4] { array[0], array[1], array[2], alignedNum }, checkedDataType, 0).AllocatedBytes;
+            new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileShape[2], alignedNum }, checkedDataType, 0).AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
         MFU_TRANS_PERMUTE perm = op.Perm;
-        int[] array2 = GetInputShapes(array[0], array[1], array[2], array[3], perm);
-        int[] currentInputShape = new int[4] { array2[0], array2[1], array2[2], array2[3] };
+        int[] tileInShape = GetInputShapes(tileShape[0], tileShape[1], tileShape[2], tileShape[3], perm);
+        int[] currentInputShape = new int[4] { tileInShape[0], tileInShape[1], tileInShape[2], tileInShape[3] };
         if (allocatedBytes > maxSizes.MaxOfmapSize)
         {
             maxSizes.MaxOfmapSize = allocatedBytes;
@@ -1427,51 +1392,51 @@ internal sealed class FusionConvertVisitor
         GlbItemSize maxSizes, NodeInfo currNode)
     {
         int[] outShape = currNode.OutShape;
-        bool flag = call[GNNEActivation.InputB] == None.Default;
-        int[] array = call[GNNEActivation.InputA].CheckedShape.ToValueArray();
-        int[] array2 = array;
-        if (!flag)
+        bool isUnary = call[GNNEActivation.InputB] == None.Default;
+        int[] inputAShape = call[GNNEActivation.InputA].CheckedShape.ToValueArray();
+        int[] inputBShape = inputAShape;
+        if (!isUnary)
         {
-            array2 = call[GNNEActivation.InputB].CheckedShape.ToValueArray();
+            inputBShape = call[GNNEActivation.InputB].CheckedShape.ToValueArray();
         }
 
-        int[] array3 = call.CheckedShape.ToValueArray();
+        int[] outputShape = call.CheckedShape.ToValueArray();
         if ((fusionType == FusionType.L2IfSplitWPp || fusionType == FusionType.L2IfSplitWFull) &&
-            (!array.SequenceEqual(array3) || !array2.SequenceEqual(array3)))
+            (!inputAShape.SequenceEqual(outputShape) || !inputBShape.SequenceEqual(outputShape)))
         {
             maxSizes.MaxOfmapSize = GNNEEnv.GlbSize;
         }
 
         DataType checkedDataType = call[GNNEActivation.InputA].CheckedDataType;
         DataType dataType = checkedDataType;
-        if (!flag)
+        if (!isUnary)
         {
             dataType = call[GNNEActivation.InputB].CheckedDataType;
         }
 
         DataType checkedDataType2 = call.CheckedDataType;
-        int num = array3[1];
-        int[] array4 = outShape;
+        int outChannels = outputShape[1];
+        int[] tileShape = outShape;
         int alignmentFactor = (TileUtilities.GetBytesPerElement(checkedDataType2) == 1) ? 32 : 16;
-        int num2 = array4[2];
+        int tileH = tileShape[2];
         if (currNode.Nb.AlignType == AlignedType.EAligned)
         {
-            num2 = TileUtilities.GetAlignedNum(num2, alignmentFactor);
+            tileH = TileUtilities.GetAlignedNum(tileH, alignmentFactor);
         }
 
-        int num3 = array4[3];
+        int tileW = tileShape[3];
         if (currNode.Nb.AlignType == AlignedType.FAligned)
         {
-            num3 = TileUtilities.GetAlignedNum(num3, alignmentFactor);
+            tileW = TileUtilities.GetAlignedNum(tileW, alignmentFactor);
         }
 
-        int allocatedBytes = new TensorOnGlb(new int[4] { array4[0], array4[1], num2, num3 }, checkedDataType2, 0)
+        int allocatedBytes = new TensorOnGlb(new int[4] { tileShape[0], tileShape[1], tileH, tileW }, checkedDataType2, 0)
             .AllocatedBytes;
         allocatedBytes = TileUtilities.GetAlignedNum(allocatedBytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         allocatedBytes *= _ofBufNum;
-        int num4 = array4[2];
-        int num5 = array4[3];
-        int[] currentInputShape = new int[4] { array3[0], array3[1], num4, num5 };
+        int tileInH = tileShape[2];
+        int tileInW = tileShape[3];
+        int[] currentInputShape = new int[4] { outputShape[0], outputShape[1], tileInH, tileInW };
         NodeBuffer nb = currNode.Nb;
         if (allocatedBytes > maxSizes.MaxOfmapSize)
         {
@@ -1479,40 +1444,40 @@ internal sealed class FusionConvertVisitor
         }
 
         nb.Ifmap2Offset = maxSizes.MaxIfmap2Size;
-        int num6 = 0;
-        if (!flag && call[GNNEActivation.InputA] is Call call2 && call2.Target is GNNELoad &&
+        int ifmap2Bytes = 0;
+        if (!isUnary && call[GNNEActivation.InputA] is Call call2 && call2.Target is GNNELoad &&
             nodesInfo.Find((NodeInfo ni) => ni.Op == call[GNNEActivation.InputA]) == null)
         {
-            num4 = array[2];
-            num5 = array[3];
-            num6 = new TensorOnGlb(
-                new int[4] { array[0], array[1], TileUtilities.GetAlignedNum(num4, 32), num5 },
+            tileInH = inputAShape[2];
+            tileInW = inputAShape[3];
+            ifmap2Bytes = new TensorOnGlb(
+                new int[4] { inputAShape[0], inputAShape[1], TileUtilities.GetAlignedNum(tileInH, 32), tileInW },
                 checkedDataType, 0).AllocatedBytes;
-            num6 = TileUtilities.GetAlignedNum(num6, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
+            ifmap2Bytes = TileUtilities.GetAlignedNum(ifmap2Bytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         }
 
-        if (!flag && call[GNNEActivation.InputB] is Call call3 && call3.Target is GNNELoad &&
+        if (!isUnary && call[GNNEActivation.InputB] is Call call3 && call3.Target is GNNELoad &&
             nodesInfo.Find((NodeInfo ni) => ni.Op == call[GNNEActivation.InputB]) == null)
         {
-            num4 = array2[2];
-            num5 = array2[3];
-            num6 = new TensorOnGlb(
-                new int[4] { array2[0], array2[1], TileUtilities.GetAlignedNum(num4, 32), num5 },
+            tileInH = inputBShape[2];
+            tileInW = inputBShape[3];
+            ifmap2Bytes = new TensorOnGlb(
+                new int[4] { inputBShape[0], inputBShape[1], TileUtilities.GetAlignedNum(tileInH, 32), tileInW },
                 dataType, 0).AllocatedBytes;
-            num6 = TileUtilities.GetAlignedNum(num6, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
+            ifmap2Bytes = TileUtilities.GetAlignedNum(ifmap2Bytes, GNNEEnv.IfmapBankWidth * GNNEEnv.GlbBankWidth);
         }
 
-        maxSizes.MaxIfmap2Size += num6;
+        maxSizes.MaxIfmap2Size += ifmap2Bytes;
         nb.Act1Offset = maxSizes.MaxAct1Size;
-        bool num7 = ((TensorConst)call[GNNEActivation.Is16Segments]).Value.ToScalar<bool>();
-        int c = num7 ? 1 : num;
-        int nActParam = num7 ? 49 : GNNEEnv.ActNumPerChan;
+        bool is16Segments = ((TensorConst)call[GNNEActivation.Is16Segments]).Value.ToScalar<bool>();
+        int c = is16Segments ? 1 : outChannels;
+        int nActParam = is16Segments ? 49 : GNNEEnv.ActNumPerChan;
         int alignedNum = TileUtilities.GetAlignedNum(
             SpaceSearcher.GetActSize(c, nActParam, 2),
             GNNEEnv.ActBankWidth * GNNEEnv.GlbBankWidth);
         maxSizes.MaxAct1Size += alignedNum;
         currNode.Nb = nb;
-        if (fusionType != FusionType.L2IfFullWPp && !array.SequenceEqual(array2))
+        if (fusionType != FusionType.L2IfFullWPp && !inputAShape.SequenceEqual(inputBShape))
         {
             maxSizes.MaxOfmapSize = GNNEEnv.GlbSize;
         }
@@ -1526,7 +1491,7 @@ internal sealed class FusionConvertVisitor
                         ? currentInputShape
                         : node.OutShape;
             });
-        if (flag)
+        if (isUnary)
         {
             return;
         }

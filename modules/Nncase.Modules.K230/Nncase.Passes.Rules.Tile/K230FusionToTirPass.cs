@@ -81,7 +81,7 @@ public sealed class K230FusionToTirPass : ModulePass
                     DumpScope.Current.DumpIR(expr, $"l1_fuse{j}");
                 }
 
-                Function expr2 = (Function)dataFlowMergeRewriter.Rewrite(
+                Function mergedFunction = (Function)dataFlowMergeRewriter.Rewrite(
                     expr,
                     new IMergeRewriteRule[7]
                     {
@@ -99,14 +99,14 @@ public sealed class K230FusionToTirPass : ModulePass
                     });
                 CheckedConvertMutator checkedConvertMutator =
                     new CheckedConvertMutator(dictionary, _fusionMacsMap, fusionCheckCache, options);
-                expr2 = (Function)CompilerServices.Rewrite(
-                    expr2,
+                mergedFunction = (Function)CompilerServices.Rewrite(
+                    mergedFunction,
                     new IRewriteRule[6]
                     {
                         new Reshape1x1Conv(), new OptConcat(), new ConcatFusion(), new SplitFusion(),
                         new FoldTwoReshapes(), new FoldNopReshape(),
                     }, new RunPassContext());
-                Function function2 = (Function)checkedConvertMutator.Rewrite(expr2);
+                Function function2 = (Function)checkedConvertMutator.Rewrite(mergedFunction);
                 function2.InferenceType();
                 if (checkedConvertMutator.IsMutated)
                 {

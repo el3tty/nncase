@@ -138,13 +138,13 @@ public static class GNNETypePatternUtility
 
     public static long AlignDiv(long numerator, long denorminator)
     {
-        long num = numerator / denorminator;
+        long quotient = numerator / denorminator;
         if (numerator % denorminator == 0L)
         {
-            return num;
+            return quotient;
         }
 
-        return num + 1;
+        return quotient + 1;
     }
 
     public static QuantizeParam[] GNNEGetQuantParams(int c, QuantParam quantParam)
@@ -184,36 +184,36 @@ public static class GNNETypePatternUtility
             throw new InvalidOperationException($"applyPerm need Rank4, but get {v.Length}");
         }
 
-        T val = v[0];
-        T val2 = v[1];
-        T val3 = v[2];
-        T val4 = v[3];
+        T dim0 = v[0];
+        T dim1 = v[1];
+        T dim2 = v[2];
+        T dim3 = v[3];
         return perm switch
         {
-            MFU_TRANS_PERMUTE.NCHW => new T[4] { val, val2, val3, val4 },
-            MFU_TRANS_PERMUTE.NCWH => new T[4] { val, val2, val4, val3 },
-            MFU_TRANS_PERMUTE.NHCW => new T[4] { val, val3, val2, val4 },
-            MFU_TRANS_PERMUTE.NHWC => new T[4] { val, val3, val4, val2 },
-            MFU_TRANS_PERMUTE.NWCH => new T[4] { val, val4, val2, val3 },
-            MFU_TRANS_PERMUTE.NWHC => new T[4] { val, val4, val3, val2 },
-            MFU_TRANS_PERMUTE.CNHW => new T[4] { val2, val, val3, val4 },
-            MFU_TRANS_PERMUTE.CNWH => new T[4] { val2, val, val4, val3 },
-            MFU_TRANS_PERMUTE.CHNW => new T[4] { val2, val3, val, val4 },
-            MFU_TRANS_PERMUTE.CHWN => new T[4] { val2, val3, val4, val },
-            MFU_TRANS_PERMUTE.CWNH => new T[4] { val2, val4, val, val3 },
-            MFU_TRANS_PERMUTE.CWHN => new T[4] { val2, val4, val3, val },
-            MFU_TRANS_PERMUTE.HNCW => new T[4] { val3, val, val2, val4 },
-            MFU_TRANS_PERMUTE.HNWC => new T[4] { val3, val, val4, val2 },
-            MFU_TRANS_PERMUTE.HCNW => new T[4] { val3, val2, val, val4 },
-            MFU_TRANS_PERMUTE.HCWN => new T[4] { val3, val2, val4, val },
-            MFU_TRANS_PERMUTE.HWNC => new T[4] { val3, val4, val, val2 },
-            MFU_TRANS_PERMUTE.HWCN => new T[4] { val3, val4, val2, val },
-            MFU_TRANS_PERMUTE.WNCH => new T[4] { val4, val, val2, val3 },
-            MFU_TRANS_PERMUTE.WNHC => new T[4] { val4, val, val3, val2 },
-            MFU_TRANS_PERMUTE.WCNH => new T[4] { val4, val2, val, val3 },
-            MFU_TRANS_PERMUTE.WCHN => new T[4] { val4, val2, val3, val },
-            MFU_TRANS_PERMUTE.WHNC => new T[4] { val4, val3, val, val2 },
-            MFU_TRANS_PERMUTE.WHCN => new T[4] { val4, val3, val2, val },
+            MFU_TRANS_PERMUTE.NCHW => new T[4] { dim0, dim1, dim2, dim3 },
+            MFU_TRANS_PERMUTE.NCWH => new T[4] { dim0, dim1, dim3, dim2 },
+            MFU_TRANS_PERMUTE.NHCW => new T[4] { dim0, dim2, dim1, dim3 },
+            MFU_TRANS_PERMUTE.NHWC => new T[4] { dim0, dim2, dim3, dim1 },
+            MFU_TRANS_PERMUTE.NWCH => new T[4] { dim0, dim3, dim1, dim2 },
+            MFU_TRANS_PERMUTE.NWHC => new T[4] { dim0, dim3, dim2, dim1 },
+            MFU_TRANS_PERMUTE.CNHW => new T[4] { dim1, dim0, dim2, dim3 },
+            MFU_TRANS_PERMUTE.CNWH => new T[4] { dim1, dim0, dim3, dim2 },
+            MFU_TRANS_PERMUTE.CHNW => new T[4] { dim1, dim2, dim0, dim3 },
+            MFU_TRANS_PERMUTE.CHWN => new T[4] { dim1, dim2, dim3, dim0 },
+            MFU_TRANS_PERMUTE.CWNH => new T[4] { dim1, dim3, dim0, dim2 },
+            MFU_TRANS_PERMUTE.CWHN => new T[4] { dim1, dim3, dim2, dim0 },
+            MFU_TRANS_PERMUTE.HNCW => new T[4] { dim2, dim0, dim1, dim3 },
+            MFU_TRANS_PERMUTE.HNWC => new T[4] { dim2, dim0, dim3, dim1 },
+            MFU_TRANS_PERMUTE.HCNW => new T[4] { dim2, dim1, dim0, dim3 },
+            MFU_TRANS_PERMUTE.HCWN => new T[4] { dim2, dim1, dim3, dim0 },
+            MFU_TRANS_PERMUTE.HWNC => new T[4] { dim2, dim3, dim0, dim1 },
+            MFU_TRANS_PERMUTE.HWCN => new T[4] { dim2, dim3, dim1, dim0 },
+            MFU_TRANS_PERMUTE.WNCH => new T[4] { dim3, dim0, dim1, dim2 },
+            MFU_TRANS_PERMUTE.WNHC => new T[4] { dim3, dim0, dim2, dim1 },
+            MFU_TRANS_PERMUTE.WCNH => new T[4] { dim3, dim1, dim0, dim2 },
+            MFU_TRANS_PERMUTE.WCHN => new T[4] { dim3, dim1, dim2, dim0 },
+            MFU_TRANS_PERMUTE.WHNC => new T[4] { dim3, dim2, dim0, dim1 },
+            MFU_TRANS_PERMUTE.WHCN => new T[4] { dim3, dim2, dim1, dim0 },
             _ => throw new ArgumentOutOfRangeException("perm", perm, null),
         };
     }

@@ -100,14 +100,14 @@ public sealed class CSourceGModelBuilder : IRTModule
         {
             Func<string, string, string, string> func = (fileName, indent, old_path) =>
             {
-                string text = Path.Join(dumpDirPath, indent, fileName + Path.GetExtension(old_path));
-                if (File.Exists(text))
+                string dumpPath = Path.Join(dumpDirPath, indent, fileName + Path.GetExtension(old_path));
+                if (File.Exists(dumpPath))
                 {
-                    File.Delete(text);
+                    File.Delete(dumpPath);
                 }
 
-                File.Copy(old_path, text);
-                return text;
+                File.Copy(old_path, dumpPath);
+                return dumpPath;
             };
             AsmFilePath = func(name, string.Empty, AsmFilePath);
             AsmOutFilePath = func(name, string.Empty, AsmOutFilePath);
@@ -121,13 +121,13 @@ public sealed class CSourceGModelBuilder : IRTModule
         string environmentVariable = Environment.GetEnvironmentVariable("PATH");
         if (environmentVariable != null)
         {
-            string[] array = environmentVariable.Split(OperatingSystem.IsWindows() ? ';' : ':');
-            for (int i = 0; i < array.Length; i++)
+            string[] searchPaths = environmentVariable.Split(OperatingSystem.IsWindows() ? ';' : ':');
+            for (int i = 0; i < searchPaths.Length; i++)
             {
-                string text = Path.Combine(array[i], exe_name);
-                if (File.Exists(text))
+                string candidate = Path.Combine(searchPaths[i], exe_name);
+                if (File.Exists(candidate))
                 {
-                    return text;
+                    return candidate;
                 }
             }
         }

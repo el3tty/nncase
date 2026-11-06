@@ -30,31 +30,31 @@ public sealed class AssemblyParser
 
     public void OverrideGlbParams(IReadOnlyList<int> args)
     {
-        string[] array = File.ReadAllLines(AsmOutPath);
-        int num = 0;
-        for (int i = 0; i < array.Length; i++)
+        string[] lines = File.ReadAllLines(AsmOutPath);
+        int glbStartLine = 0;
+        for (int i = 0; i < lines.Length; i++)
         {
-            if (array[i].StartsWith("gnne_start:"))
+            if (lines[i].StartsWith("gnne_start:"))
             {
-                num = i;
+                glbStartLine = i;
                 break;
             }
         }
 
-        num += 6;
-        int num2 = 1;
+        glbStartLine += 6;
+        int lineOffset = 1;
         Regex regex = new Regex("(^\\d{8}\\s\\sI.ADDI\\(R.rax,R.r0,)(0)(\\))");
-        foreach (byte[] item in args.Select(BitConverter.GetBytes))
+        foreach (byte[] argBytes in args.Select(BitConverter.GetBytes))
         {
-            for (int num3 = 3; num3 >= 0; num3--)
+            for (int byteIndex = 3; byteIndex >= 0; byteIndex--)
             {
-                byte value = item[num3];
-                array[num + num2] = regex.Replace(array[num + num2], $"${{1}}{value}$3");
-                num2 += 2;
+                byte value = argBytes[byteIndex];
+                lines[glbStartLine + lineOffset] = regex.Replace(lines[glbStartLine + lineOffset], $"${{1}}{value}$3");
+                lineOffset += 2;
             }
         }
 
-        File.WriteAllLines(AsmOutPath, array);
+        File.WriteAllLines(AsmOutPath, lines);
     }
 
     public IEnumerable<Expr> ParserInst()
@@ -72,17 +72,17 @@ public sealed class AssemblyParser
                 .Select<(string, System.Reflection.ParameterInfo), Expression>(
                     delegate((string, System.Reflection.ParameterInfo) t)
                     {
-                        string text = t.Item1.Trim();
-                        if (text.StartsWith("R."))
+                        string operand = t.Item1.Trim();
+                        if (operand.StartsWith("R."))
                         {
                             Type? typeFromHandle = typeof(R);
-                            string text2 = text;
+                            string operandText = operand;
                             return Expression.Field(
                                 null,
-                                typeFromHandle.GetField(text2.Substring(2, text2.Length - 2)));
+                                typeFromHandle.GetField(operandText.Substring(2, operandText.Length - 2)));
                         }
 
-                        string value2 = text;
+                        string value2 = operand;
                         if (t.Item2.ParameterType == typeof(Expr))
                         {
                             return Expression.Convert(
@@ -90,7 +90,7 @@ public sealed class AssemblyParser
                                 typeof(Expr));
                         }
 
-                        string value3 = text;
+                        string value3 = operand;
                         if (!t.Item2.ParameterType.IsEnum)
                         {
                             throw new ArgumentOutOfRangeException();

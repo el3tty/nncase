@@ -108,18 +108,18 @@ public sealed class GModelBuilder : IRTModule
         {
             Func<string, bool, string> func = (old_path, copy) =>
             {
-                string text = Path.Join(dumpDirPath, name + Path.GetExtension(old_path));
-                if (File.Exists(text))
+                string dumpPath = Path.Join(dumpDirPath, name + Path.GetExtension(old_path));
+                if (File.Exists(dumpPath))
                 {
-                    File.Delete(text);
+                    File.Delete(dumpPath);
                 }
 
                 if (copy)
                 {
-                    File.Copy(old_path, text);
+                    File.Copy(old_path, dumpPath);
                 }
 
-                return text;
+                return dumpPath;
             };
             BinFilePath = func(BinFilePath, arg2: true);
             if (!OnlyInstructions)
@@ -141,7 +141,7 @@ public sealed class GModelBuilder : IRTModule
     private void WriteBin()
     {
         using BinaryWriter binaryWriter = new BinaryWriter(File.OpenWrite(BinFilePath));
-        uint num = 0u;
+        uint dataSize = 0u;
         StartInfo.Input = 0u;
         binaryWriter.Position(StartInfo.Input + _entry.Parameters.InputBufferOf().ToArray().Aggregate(
             0L,
@@ -153,7 +153,7 @@ public sealed class GModelBuilder : IRTModule
         StartInfo.Text = (uint)binaryWriter.Position();
         WriteInstText(binaryWriter);
         StartInfo.Data = (uint)binaryWriter.Position();
-        StartInfo.Output = StartInfo.Data + num;
+        StartInfo.Output = StartInfo.Data + dataSize;
     }
 
     private void WriteInstText(BinaryWriter gw)
@@ -164,26 +164,26 @@ public sealed class GModelBuilder : IRTModule
     private void AllocateBuffer()
     {
         List<(uint, uint, uint)> list = new List<(uint, uint, uint)>();
-        uint num = 0u;
-        uint num2 = 0u;
+        uint baseOffset = 0u;
+        uint inputOffset = 0u;
         WhereEnumerator<Nncase.TIR.Buffer, FunctionWrapper<Nncase.TIR.Buffer, bool>> enumerator =
             _entry.Parameters.InputBufferOf().GetEnumerator();
         while (enumerator.MoveNext())
         {
             Nncase.TIR.Buffer current = enumerator.Current;
-            list.Add((num2 - num + StartInfo.Input, num2, (uint)current.Size()));
+            list.Add((inputOffset - baseOffset + StartInfo.Input, inputOffset, (uint)current.Size()));
             _allocation.Add(current, list.Last());
-            num2 += (uint)current.Size();
+            inputOffset += (uint)current.Size();
         }
 
-        uint num3 = 0u;
+        uint outputOffset = 0u;
         enumerator = _entry.Parameters.OutputOf().GetEnumerator();
         while (enumerator.MoveNext())
         {
             Nncase.TIR.Buffer current2 = enumerator.Current;
-            list.Add((num3 - num + StartInfo.Output, num3, (uint)current2.Size()));
+            list.Add((outputOffset - baseOffset + StartInfo.Output, outputOffset, (uint)current2.Size()));
             _allocation.Add(current2, list.Last());
-            num3 += (uint)current2.Size();
+            outputOffset += (uint)current2.Size();
         }
 
         list.Add((StartInfo.Rdata, 0u, 0u));
@@ -211,27 +211,27 @@ public sealed class GModelBuilder : IRTModule
 
         Dictionary<Nncase.TIR.Buffer, (uint, uint, uint)> dictionary2 =
             new Dictionary<Nncase.TIR.Buffer, (uint, uint, uint)>(_allocation, ReferenceEqualityComparer.Instance);
-        foreach (Nncase.TIR.Buffer item2 in dictionary2.Keys.Where((Nncase.TIR.Buffer b) =>
+        foreach (Nncase.TIR.Buffer buffer in dictionary2.Keys.Where((Nncase.TIR.Buffer b) =>
                      b.MemSpan.Location == MemoryLocation.Output))
         {
-            (uint, uint, uint) tuple = dictionary2[item2];
-            dictionary2[item2] = (tuple.Item1 - StartInfo.Output, tuple.Item2, tuple.Item3);
+            (uint, uint, uint) tuple = dictionary2[buffer];
+            dictionary2[buffer] = (tuple.Item1 - StartInfo.Output, tuple.Item2, tuple.Item3);
         }
 
         List<int> source = CodeGenUtil.ToStackArgs(_entry.Parameters.ToArray(), dictionary2, dictionary);
-        int num = StackSize - 16;
-        foreach (string[] item3 in source.Select((int a) => $"{a:X8}").Chunk(4))
+        int stackAddress = StackSize - 16;
+        foreach (string[] chunk in source.Select((int a) => $"{a:X8}").Chunk(4))
         {
-            string text = string.Empty;
-            for (int num2 = 0; num2 < 4; num2++)
+            string line = string.Empty;
+            for (int wordIndex = 0; wordIndex < 4; wordIndex++)
             {
-                string text2 = (num2 < item3.Length) ? item3[num2] : $"{0:X8}";
-                text += text2;
+                string word = (wordIndex < chunk.Length) ? chunk[wordIndex] : $"{0:X8}";
+                line += word;
             }
 
-            streamWriter.Write($"{num:X8} ");
-            streamWriter.WriteLine(text);
-            num -= 16;
+            streamWriter.Write($"{stackAddress:X8} ");
+            streamWriter.WriteLine(line);
+            stackAddress -= 16;
         }
 
         streamWriter.WriteLine($"00000000 {0:X8}{StartInfo.Output:X8}{0:X8}{0:X8}");
@@ -248,18 +248,18 @@ public sealed class GModelBuilder : IRTModule
         while (enumerator.MoveNext())
         {
             Nncase.TIR.Buffer current = enumerator.Current;
-            int[] array = current.Shape();
+            int[] inputShape = current.Shape();
             streamWriter.WriteLine(
-                $"{current.ElemType.GetDisplayName()} ({array[0]}, {array[1]}, {array[2]}, {array[3]})");
+                $"{current.ElemType.GetDisplayName()} ({inputShape[0]}, {inputShape[1]}, {inputShape[2]}, {inputShape[3]})");
         }
 
         enumerator = _entry.Parameters.OutputOf().GetEnumerator();
         while (enumerator.MoveNext())
         {
             Nncase.TIR.Buffer current2 = enumerator.Current;
-            int[] array2 = current2.Shape();
+            int[] outputShape = current2.Shape();
             streamWriter.WriteLine(
-                $"{current2.ElemType.GetDisplayName()} ({array2[0]}, {array2[1]}, {array2[2]}, {array2[3]})");
+                $"{current2.ElemType.GetDisplayName()} ({outputShape[0]}, {outputShape[1]}, {outputShape[2]}, {outputShape[3]})");
         }
 
         enumerator = _entry.Parameters.InputBufferOf().GetEnumerator();
@@ -303,8 +303,8 @@ public sealed class GModelBuilder : IRTModule
 
     private static string JoinOrZero<T>(IEnumerable<T> values)
     {
-        var text = string.Join(",", values);
-        return string.IsNullOrEmpty(text) ? "0" : text;
+        var joined = string.Join(",", values);
+        return string.IsNullOrEmpty(joined) ? "0" : joined;
     }
 
     private void WriteVdutGLBCtrl()
@@ -397,15 +397,15 @@ public sealed class GModelBuilder : IRTModule
         }
 
         using BinaryWriter binaryWriter = new BinaryWriter(File.OpenWrite(BinFilePath));
-        foreach (var item3 in from p in inputs.Zip(_entry.Parameters.ToArray())
+        foreach (var pair in from p in inputs.Zip(_entry.Parameters.ToArray())
                  where p.First.Rank != 0
                  select p)
         {
-            Tensor item = item3.First;
-            Nncase.TIR.Buffer item2 = item3.Second;
-            Tensor tensor = item;
-            binaryWriter.Position(_allocation[item2].Start);
-            if (tensor.BytesBuffer.Length != item2.Size())
+            Tensor input = pair.First;
+            Nncase.TIR.Buffer buffer = pair.Second;
+            Tensor tensor = input;
+            binaryWriter.Position(_allocation[buffer].Start);
+            if (tensor.BytesBuffer.Length != buffer.Size())
             {
                 throw new InvalidOperationException("The Input Tensor Is Not Equal The Input Buffer!");
             }

@@ -124,9 +124,9 @@ public class BinaryToFakeActivation : RewriteRule<Pattern>
         else
         {
             float[] v3 = tensorConst.Value.ToArray<float>();
-            actParam.ForEachChannel(delegate(ActParam2 act, int num2)
+            actParam.ForEachChannel(delegate(ActParam2 act, int channel)
             {
-                ProcessActParam(act, isConstRHS, num2, v3[num2]);
+                ProcessActParam(act, isConstRHS, channel, v3[channel]);
             });
         }
 

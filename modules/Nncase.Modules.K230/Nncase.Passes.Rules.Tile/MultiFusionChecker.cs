@@ -23,10 +23,10 @@ internal sealed class MultiFusionChecker : IFusionChecker
 
     public bool Check(Fusion fusion, RunPassContext passOptions)
     {
-        FusionType[] obj = new FusionType[2] { FusionType.L2IfFullWPp, FusionType.L2IfSplitWPp };
+        FusionType[] fusionTypes = new FusionType[2] { FusionType.L2IfFullWPp, FusionType.L2IfSplitWPp };
         AllocateResult allocateResult = new AllocateResult { IsOk = false };
-        FusionType[] array = obj;
-        foreach (FusionType fusionType in array)
+        FusionType[] typesToTry = fusionTypes;
+        foreach (FusionType fusionType in typesToTry)
         {
             FusionConvertVisitor fusionConvertVisitor =
                 new FusionConvertVisitor(passOptions, new TileOptions(Array.Empty<int>()));

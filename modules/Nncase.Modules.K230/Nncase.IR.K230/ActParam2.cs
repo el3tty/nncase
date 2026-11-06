@@ -49,39 +49,39 @@ public class ActParam2 : ActParamBase
         ActParam2 defaultConvActParam = GetDefaultConvActParam(fixedValue, bias);
         if (splitWeightsToAct)
         {
-            float[] array = new float[weights.CheckedShape[0].FixedValue];
+            float[] channelMaxAbs = new float[weights.CheckedShape[0].FixedValue];
             ReadOnlySpan<float> readOnlySpan = weights.Value.ToArray<float>();
-            float num = 0f;
-            int num2 = weights.CheckedShape[1].FixedValue * weights.CheckedShape[2].FixedValue *
+            float maxAbs = 0f;
+            int valuesPerChannel = weights.CheckedShape[1].FixedValue * weights.CheckedShape[2].FixedValue *
                        weights.CheckedShape[3].FixedValue;
             for (int i = 0; i < readOnlySpan.Length; i++)
             {
-                if (System.Math.Abs(readOnlySpan[i]) > num)
+                if (System.Math.Abs(readOnlySpan[i]) > maxAbs)
                 {
-                    num = System.Math.Abs(readOnlySpan[i]);
+                    maxAbs = System.Math.Abs(readOnlySpan[i]);
                 }
 
-                if ((i + 1) % num2 == 0)
+                if ((i + 1) % valuesPerChannel == 0)
                 {
-                    if (num < 1f)
+                    if (maxAbs < 1f)
                     {
-                        num = 1f;
+                        maxAbs = 1f;
                     }
 
-                    array[i / num2] = num;
-                    num = 0f;
+                    channelMaxAbs[i / valuesPerChannel] = maxAbs;
+                    maxAbs = 0f;
                 }
             }
 
             for (int j = 0; j < fixedValue; j++)
             {
-                defaultConvActParam.Ks[0, j] *= array[j];
-                defaultConvActParam.Ks[1, j] *= array[j];
+                defaultConvActParam.Ks[0, j] *= channelMaxAbs[j];
+                defaultConvActParam.Ks[1, j] *= channelMaxAbs[j];
             }
 
             for (int k = 0; k < readOnlySpan.Length; k++)
             {
-                newWeights[k] /= array[k / num2];
+                newWeights[k] /= channelMaxAbs[k / valuesPerChannel];
             }
         }
 

@@ -24,8 +24,8 @@ internal sealed class GNNEPreFusionGroupMutator : FusionGroupMutator
     public override bool MergedFusionCheckCallBack(Fusion mergedFusion, HashSet<Fusion> candidateFusions)
     {
         L1FusionChecker l1FusionChecker = new L1FusionChecker();
-        bool flag = l1FusionChecker.Check(mergedFusion, PassOptions);
-        if (flag)
+        bool isMergeable = l1FusionChecker.Check(mergedFusion, PassOptions);
+        if (isMergeable)
         {
             _fusioncheckerCache.Add(mergedFusion, l1FusionChecker);
             foreach (Fusion candidateFusion in candidateFusions)
@@ -34,7 +34,7 @@ internal sealed class GNNEPreFusionGroupMutator : FusionGroupMutator
             }
         }
 
-        return flag;
+        return isMergeable;
     }
 
     public override Expr MergedFusionRewriteCallBack(Expr mergedFusionBody)

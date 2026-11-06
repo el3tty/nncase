@@ -18,10 +18,10 @@ public static class CodeGenUtil
         IReadOnlyDictionary<Nncase.TIR.Buffer, int>? constBufferMap = null)
     {
         List<int> list = new List<int>();
-        foreach (var item2 in parameters.Reverse().Select((Nncase.TIR.Buffer p, int i) => (p: p, i: i)))
+        foreach (var indexedParam in parameters.Reverse().Select((Nncase.TIR.Buffer p, int i) => (p: p, i: i)))
         {
-            Nncase.TIR.Buffer item = item2.p;
-            List<int> list2 = new List<int>();
+            Nncase.TIR.Buffer item = indexedParam.p;
+            List<int> dims = new List<int>();
             if (item.CheckedShape.IsScalar)
             {
                 if (constBufferMap != null)
@@ -31,26 +31,26 @@ public static class CodeGenUtil
                         throw new InvalidDataException("The K230 Dynamic function Only accept Int32 Params");
                     }
 
-                    list2.Add(constBufferMap[item]);
+                    dims.Add(constBufferMap[item]);
                 }
                 else
                 {
-                    list2.Add(0);
+                    dims.Add(0);
                 }
             }
             else
             {
-                foreach (Dimension item3 in item.CheckedShape)
+                foreach (Dimension dim in item.CheckedShape)
                 {
-                    list2.Add(item3.FixedValue);
+                    dims.Add(dim.FixedValue);
                 }
 
-                list2.Add((int)(allocation?[item].Start ?? 0));
-                list2.Add(item.ElemType.ToNncaseTypeCode());
+                dims.Add((int)(allocation?[item].Start ?? 0));
+                dims.Add(item.ElemType.ToNncaseTypeCode());
             }
 
-            list2.Reverse();
-            list.AddRange(list2);
+            dims.Reverse();
+            list.AddRange(dims);
         }
 
         return list;

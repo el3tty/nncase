@@ -93,9 +93,9 @@ internal class FunctionBuilder : IDisposable
         foreach (KeyValuePair<Const, ValueRange<long>> rdata in function.SchedResult.Rdatas)
         {
             rdata.Deconstruct(out var key, out var value4);
-            Const obj = key;
+            Const constant = key;
             ValueRange<long> valueRange = value4;
-            Span<byte> bytesBuffer = ((TensorConst)obj).Value.BytesBuffer;
+            Span<byte> bytesBuffer = ((TensorConst)constant).Value.BytesBuffer;
             if ((uint)bytesBuffer.Length != valueRange.Max - valueRange.Min)
             {
                 throw new InvalidDataException("The Buffer Szie Not Equal!");

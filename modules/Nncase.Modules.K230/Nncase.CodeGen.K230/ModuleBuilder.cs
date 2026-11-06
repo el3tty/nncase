@@ -31,19 +31,19 @@ public sealed class ModuleBuilder : IModuleBuilder, IDisposable
 
     public ILinkableModule Build(IReadOnlyList<BaseFunction> functions)
     {
-        LinkableFunction[] array = functions.OfType<PrimFunction>()
+        LinkableFunction[] linkableFunctions = functions.OfType<PrimFunction>()
             .Select((PrimFunction f, int i) => new FunctionBuilder((uint)i, _rdataWriter).Build(f)).ToArray();
         _rdataWriter.Flush();
         if (CompileOptions.DumpFlags.HasFlag(DumpFlags.CodeGen))
         {
             string dump_root = Path.Join(CompileOptions.DumpDir, ModuleKind);
-            foreach (LinkableFunction item in array.OfType<LinkableFunction>())
+            foreach (LinkableFunction item in linkableFunctions.OfType<LinkableFunction>())
             {
                 DumpAsm(dump_root, item);
             }
         }
 
-        return new LinkableModule(_sectionManager.GetContent(".rdata"), array);
+        return new LinkableModule(_sectionManager.GetContent(".rdata"), linkableFunctions);
     }
 
     public void Dispose()
@@ -53,15 +53,15 @@ public sealed class ModuleBuilder : IModuleBuilder, IDisposable
 
     private void DumpAsm(string dump_root, LinkableFunction function)
     {
-        string text = Path.Join(dump_root, function.SourceFunction.Name);
-        if (!Directory.Exists(text))
+        string functionDumpDir = Path.Join(dump_root, function.SourceFunction.Name);
+        if (!Directory.Exists(functionDumpDir))
         {
-            Directory.CreateDirectory(text);
+            Directory.CreateDirectory(functionDumpDir);
         }
 
-        using FileStream stream = File.OpenWrite(Path.Join(text, "compile.text.asm"));
-        using FileStream stream2 = File.OpenWrite(Path.Join(text, "ddr_bandwidth.csv"));
-        using FileStream streamDesc = File.OpenWrite(Path.Join(text, "desc.txt"));
+        using FileStream stream = File.OpenWrite(Path.Join(functionDumpDir, "compile.text.asm"));
+        using FileStream stream2 = File.OpenWrite(Path.Join(functionDumpDir, "ddr_bandwidth.csv"));
+        using FileStream streamDesc = File.OpenWrite(Path.Join(functionDumpDir, "desc.txt"));
         using StreamWriter asmWriter = new StreamWriter(stream);
         using StreamWriter bwWriter = new StreamWriter(stream2);
         using StreamWriter descWriter = new StreamWriter(streamDesc);

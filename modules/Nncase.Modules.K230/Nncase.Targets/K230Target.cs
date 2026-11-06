@@ -443,9 +443,9 @@ public class K230Target : ITarget
                 continue;
             }
 
-            List<Tuple<List<DataType>, List<List<QuantParam>>, float>> list2 =
+            List<Tuple<List<DataType>, List<List<QuantParam>>, float>> allSampleResults =
                 new List<Tuple<List<DataType>, List<List<QuantParam>>, float>>();
-            int num = 0;
+            int sampleIndex = 0;
             foreach (IReadOnlyDictionary<Var, IValue> sample2 in samples)
             {
                 IReadOnlyDictionary<ENode, Tensor> readOnlyDictionary;
@@ -455,53 +455,53 @@ public class K230Target : ITarget
                     readOnlyDictionary = calibrationEvaluator2.Evaluate();
                 }
 
-                IReadOnlyDictionary<ENode, Tensor> readOnlyDictionary2 = list[num++];
-                List<Tuple<List<DataType>, List<List<QuantParam>>, float>> list3 =
+                IReadOnlyDictionary<ENode, Tensor> readOnlyDictionary2 = list[sampleIndex++];
+                List<Tuple<List<DataType>, List<List<QuantParam>>, float>> sampleResults =
                     new List<Tuple<List<DataType>, List<List<QuantParam>>, float>>();
                 MarkerPattern markerPattern =
                     Nncase.PatternMatch.Utility.IsRangeOfMarker(
                         Nncase.PatternMatch.Utility.IsWildcard(),
                         Nncase.PatternMatch.Utility.IsWildcard());
-                List<Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>> list4 =
+                List<Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>> inputInfos =
                     new List<Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>>();
                 for (int i = 1; i < childrenOfRangeOf.Children.Count; i++)
                 {
-                    List<ENode> list5 = new List<ENode>();
-                    ENode item2 = childrenOfRangeOf.Children[i].Nodes[0];
-                    list5.Add(item2);
+                    List<ENode> inputNodes = new List<ENode>();
+                    ENode inputNode = childrenOfRangeOf.Children[i].Nodes[0];
+                    inputNodes.Add(inputNode);
                     using (new DumpScope("eval_input"))
                     {
-                        IReadOnlyDictionary<ENode, Tensor> item3 = new CalibrationEvaluator(sample2, list5).Evaluate();
-                        bool flag = markerPattern.MatchLeaf(childrenOfRangeOf.Children[i].Nodes[0].Expr);
-                        if (flag)
+                        IReadOnlyDictionary<ENode, Tensor> inputValues = new CalibrationEvaluator(sample2, inputNodes).Evaluate();
+                        bool isRangeOfMarker = markerPattern.MatchLeaf(childrenOfRangeOf.Children[i].Nodes[0].Expr);
+                        if (isRangeOfMarker)
                         {
-                            Tensor item4 =
+                            Tensor inputRange =
                                 readOnlyDictionary[childrenOfRangeOf.Children[i].Nodes[0].Children[1].Nodes[0]];
-                            list4.Add(new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(item3, item4, flag));
+                            inputInfos.Add(new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(inputValues, inputRange, isRangeOfMarker));
                         }
                         else
                         {
-                            list4.Add(new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(item3, null, flag));
+                            inputInfos.Add(new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(inputValues, null, isRangeOfMarker));
                         }
                     }
                 }
 
-                bool flag2 = false;
-                int num2 = 0;
-                for (int j = 0; j < list4.Count; j++)
+                bool hasQuantizedInput = false;
+                int markerCount = 0;
+                for (int j = 0; j < inputInfos.Count; j++)
                 {
-                    if (list4[j].Item3)
+                    if (inputInfos[j].Item3)
                     {
-                        num2++;
+                        markerCount++;
                     }
                 }
 
-                Trace.Assert(num2 == 0 || num2 == 1 || num2 == 2);
-                List<List<DataType>> list6 = new List<List<DataType>>();
-                switch (num2)
+                Trace.Assert(markerCount == 0 || markerCount == 1 || markerCount == 2);
+                List<List<DataType>> typeCandidates = new List<List<DataType>>();
+                switch (markerCount)
                 {
                     case 1:
-                        list6.AddRange(new List<List<DataType>>
+                        typeCandidates.AddRange(new List<List<DataType>>
                         {
                             new List<DataType> { DataTypes.UInt8 },
                             new List<DataType> { DataTypes.Int8 },
@@ -510,7 +510,7 @@ public class K230Target : ITarget
                         });
                         break;
                     case 2:
-                        list6.AddRange(new List<List<DataType>>
+                        typeCandidates.AddRange(new List<List<DataType>>
                         {
                             new List<DataType> { DataTypes.UInt8, DataTypes.UInt8 },
                             new List<DataType> { DataTypes.Int8, DataTypes.Int8 },
@@ -521,218 +521,218 @@ public class K230Target : ITarget
                         break;
                 }
 
-                for (int k = 0; k < list6.Count; k++)
+                for (int k = 0; k < typeCandidates.Count; k++)
                 {
                     Trace.Assert(Nncase.PatternMatch.Utility
                         .IsCall(Nncase.PatternMatch.Utility.IsWildcard(), Nncase.PatternMatch.Utility.IsWildcard())
                         .MatchLeaf(childrenOfRangeOf.Expr));
-                    K230MixQuantInfo obj =
+                    K230MixQuantInfo firstQuantInfo =
                         (K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[1].Nodes[0].Expr).MixQuantInfo;
-                    if ((obj != null && !obj.PermitInt16Quant && list6[k][0] == DataTypes.Int16) || (num2 == 1 &&
+                    if ((firstQuantInfo != null && !firstQuantInfo.PermitInt16Quant && typeCandidates[k][0] == DataTypes.Int16) || (markerCount == 1 &&
                             ((((Call)childrenOfRangeOf.Expr).Target is FakeActivation &&
-                              list6[k][0] == DataTypes.Int16) ||
+                              typeCandidates[k][0] == DataTypes.Int16) ||
                              (!(((Call)childrenOfRangeOf.Expr).Target is FakeActivation) &&
-                              list6[k][0] == DataTypes.Float16))))
+                              typeCandidates[k][0] == DataTypes.Float16))))
                     {
                         continue;
                     }
 
-                    if (num2 == 2)
+                    if (markerCount == 2)
                     {
-                        K230MixQuantInfo obj2 =
+                        K230MixQuantInfo secondQuantInfo =
                             (K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[2].Nodes[0].Expr).MixQuantInfo;
-                        if ((obj2 != null && !obj2.PermitInt16Quant && list6[k][1] == DataTypes.Int16) ||
+                        if ((secondQuantInfo != null && !secondQuantInfo.PermitInt16Quant && typeCandidates[k][1] == DataTypes.Int16) ||
                             (((Call)childrenOfRangeOf.Expr).Target is FakeActivation &&
-                             list6[k][1] == DataTypes.Int16) ||
+                             typeCandidates[k][1] == DataTypes.Int16) ||
                             (!(((Call)childrenOfRangeOf.Expr).Target is FakeActivation) &&
-                             list6[k][0] == DataTypes.Float16 && list6[k][1] == DataTypes.Float16))
+                             typeCandidates[k][0] == DataTypes.Float16 && typeCandidates[k][1] == DataTypes.Float16))
                         {
                             continue;
                         }
                     }
 
-                    List<Expr> list7 = new List<Expr>();
-                    List<List<QuantParam>> list8 = new List<List<QuantParam>>();
-                    List<Memory<float>> list9 = new List<Memory<float>>();
-                    for (int l = 0; l < list4.Count; l++)
+                    List<Expr> newArgs = new List<Expr>();
+                    List<List<QuantParam>> quantParamLists = new List<List<QuantParam>>();
+                    List<Memory<float>> savedInputs = new List<Memory<float>>();
+                    for (int l = 0; l < inputInfos.Count; l++)
                     {
                         if (quantizeOptions.UseSquant)
                         {
-                            Tensor item5 = list4[l].Item2;
-                            if (item5 != null && item5.Rank == 2)
+                            Tensor rangeTensor = inputInfos[l].Item2;
+                            if (rangeTensor != null && rangeTensor.Rank == 2)
                             {
-                                Tensor item6 = list4[l].Item2;
-                                if (list6[k][1] == DataTypes.UInt8)
+                                Tensor perChannelRange = inputInfos[l].Item2;
+                                if (typeCandidates[k][1] == DataTypes.UInt8)
                                 {
                                     Dictionary<ENode, Tensor> dictionary2 = new Dictionary<ENode, Tensor>();
                                     dictionary2.Add(
-                                        list4[l].Item1.Keys.First(),
+                                        inputInfos[l].Item1.Keys.First(),
                                         ((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo.U8FineTunedWeights.Value);
                                     if (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
                                         ?.U8FineTunedWeightsRangesByChannel != null)
                                     {
-                                        item6 = (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
+                                        perChannelRange = (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
                                             ?.U8FineTunedWeightsRangesByChannel).Value;
                                     }
 
-                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
+                                    inputInfos[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
                                         dictionary2,
-                                        item6, list4[l].Item3);
+                                        perChannelRange, inputInfos[l].Item3);
                                 }
 
-                                if (list6[k][1] == DataTypes.Int8)
+                                if (typeCandidates[k][1] == DataTypes.Int8)
                                 {
                                     Dictionary<ENode, Tensor> dictionary3 = new Dictionary<ENode, Tensor>();
                                     dictionary3.Add(
-                                        list4[l].Item1.Keys.First(),
+                                        inputInfos[l].Item1.Keys.First(),
                                         (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo?.I8FineTunedWeights).Value);
                                     if (((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
                                         ?.I8FineTunedWeightsRangesByChannel != null)
                                     {
-                                        item6 = ((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
+                                        perChannelRange = ((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo
                                             .I8FineTunedWeightsRangesByChannel.Value;
                                     }
 
-                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
+                                    inputInfos[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
                                         dictionary3,
-                                        item6, list4[l].Item3);
+                                        perChannelRange, inputInfos[l].Item3);
                                 }
 
-                                if (list6[k][1] == DataTypes.Int16)
+                                if (typeCandidates[k][1] == DataTypes.Int16)
                                 {
                                     Dictionary<ENode, Tensor> dictionary4 = new Dictionary<ENode, Tensor>();
                                     dictionary4.Add(
-                                        list4[l].Item1.Keys.First(),
+                                        inputInfos[l].Item1.Keys.First(),
                                         ((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr).MixQuantInfo).I16FineTunedWeights.Value);
                                     if (((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0].Expr)
                                             .MixQuantInfo)?.I16FineTunedWeightsRangesByChannel != null)
                                     {
-                                        item6 = ((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0]
+                                        perChannelRange = ((K230MixQuantInfo)((Marker)childrenOfRangeOf.Children[l + 1].Nodes[0]
                                             .Expr).MixQuantInfo).I16FineTunedWeightsRangesByChannel.Value;
                                     }
 
-                                    list4[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
+                                    inputInfos[l] = new Tuple<IReadOnlyDictionary<ENode, Tensor>, Tensor, bool>(
                                         dictionary4,
-                                        item6, list4[l].Item3);
+                                        perChannelRange, inputInfos[l].Item3);
                                 }
                             }
                         }
 
-                        Expr item7 = new TensorConst(list4[l].Item1.Values.ToArray()[0]);
-                        List<QuantParam> list10 = new List<QuantParam>();
-                        list10.Add(new QuantParam(0, 1f));
-                        if (list4[l].Item3)
+                        Expr constInput = new TensorConst(inputInfos[l].Item1.Values.ToArray()[0]);
+                        List<QuantParam> quantParams = new List<QuantParam>();
+                        quantParams.Add(new QuantParam(0, 1f));
+                        if (inputInfos[l].Item3)
                         {
-                            DataType dataType = list6[k][l];
-                            flag2 = true;
+                            DataType dataType = typeCandidates[k][l];
+                            hasQuantizedInput = true;
                             Span<float> span =
-                                MemoryMarshal.Cast<byte, float>(list4[l].Item1.Values.ToArray()[0].BytesBuffer);
-                            list9.Add(span.ToArray());
+                                MemoryMarshal.Cast<byte, float>(inputInfos[l].Item1.Values.ToArray()[0].BytesBuffer);
+                            savedInputs.Add(span.ToArray());
                             QuantMode quantMode = (!(dataType == DataTypes.UInt8))
                                 ? QuantMode.SignedSymmetricMode
                                 : QuantMode.UnsignedMode;
                             int bits = (dataType == DataTypes.Int16) ? 12 : 8;
-                            if (list4[l].Item2.Shape.Rank == 1)
+                            if (inputInfos[l].Item2.Shape.Rank == 1)
                             {
                                 if (!(((Call)childrenOfRangeOf.Expr).Target is FakeActivation) ||
                                     !(dataType == DataTypes.Float16))
                                 {
-                                    list10[0] = QuantUtility.GetQuantParam(
+                                    quantParams[0] = QuantUtility.GetQuantParam(
                                         new ValueRange<float>(
-                                            (float)list4[l].Item2[new int[1]],
-                                            (float)list4[l].Item2[new int[1] { 1 }]), bits, quantMode);
+                                            (float)inputInfos[l].Item2[new int[1]],
+                                            (float)inputInfos[l].Item2[new int[1] { 1 }]), bits, quantMode);
                                     for (int m = 0; m < span.Length; m++)
                                     {
-                                        double num3 =
-                                            (double)((float)Math.Round((double)span[m] / (double)list10[0].Scale +
-                                                                       (double)list10[0].ZeroPoint) -
-                                                     (float)list10[0].ZeroPoint) * (double)list10[0].Scale;
-                                        span[m] = (float)num3;
+                                        double fakeQuantValue =
+                                            (double)((float)Math.Round((double)span[m] / (double)quantParams[0].Scale +
+                                                                       (double)quantParams[0].ZeroPoint) -
+                                                     (float)quantParams[0].ZeroPoint) * (double)quantParams[0].Scale;
+                                        span[m] = (float)fakeQuantValue;
                                     }
                                 }
                             }
                             else
                             {
-                                if (list4[l].Item2.Shape.Rank != 2)
+                                if (inputInfos[l].Item2.Shape.Rank != 2)
                                 {
                                     throw new AggregateException("Invalid range values");
                                 }
 
-                                list10.Clear();
-                                int fixedValue = list4[l].Item2.Shape[0].FixedValue;
-                                int num4 = span.Length / fixedValue;
+                                quantParams.Clear();
+                                int fixedValue = inputInfos[l].Item2.Shape[0].FixedValue;
+                                int valuesPerChannel = span.Length / fixedValue;
                                 for (int n = 0; n < fixedValue; n++)
                                 {
-                                    list10.Add(QuantUtility.GetQuantParam(
+                                    quantParams.Add(QuantUtility.GetQuantParam(
                                         new ValueRange<float>(
-                                            (float)list4[l].Item2[new int[2] { n, 0 }],
-                                            (float)list4[l].Item2[new int[2] { n, 1 }]), bits, quantMode));
+                                            (float)inputInfos[l].Item2[new int[2] { n, 0 }],
+                                            (float)inputInfos[l].Item2[new int[2] { n, 1 }]), bits, quantMode));
                                 }
 
-                                for (int num5 = 0; num5 < span.Length; num5++)
+                                for (int valueIndex = 0; valueIndex < span.Length; valueIndex++)
                                 {
-                                    double num6 =
+                                    double fakeQuantValue =
                                         (double)((float)Math.Round(
-                                                     (double)span[num5] / (double)list10[num5 / num4].Scale +
-                                                     (double)list10[num5 / num4].ZeroPoint) -
-                                                 (float)list10[num5 / num4].ZeroPoint) *
-                                        (double)list10[num5 / num4].Scale;
-                                    span[num5] = (float)num6;
+                                                     (double)span[valueIndex] / (double)quantParams[valueIndex / valuesPerChannel].Scale +
+                                                     (double)quantParams[valueIndex / valuesPerChannel].ZeroPoint) -
+                                                 (float)quantParams[valueIndex / valuesPerChannel].ZeroPoint) *
+                                        (double)quantParams[valueIndex / valuesPerChannel].Scale;
+                                    span[valueIndex] = (float)fakeQuantValue;
                                 }
                             }
 
-                            list7.Add(item7);
+                            newArgs.Add(constInput);
                         }
                         else
                         {
-                            list7.Add(item7);
+                            newArgs.Add(constInput);
                         }
 
-                        list8.Add(list10);
+                        quantParamLists.Add(quantParams);
                     }
 
-                    if (!flag2)
+                    if (!hasQuantizedInput)
                     {
                         continue;
                     }
 
                     EGraph eGraph = new EGraph();
-                    Call expr = new Call(childrenOfRangeOf.Children[0].Nodes[0].Expr, list7.ToArray());
+                    Call expr = new Call(childrenOfRangeOf.Children[0].Nodes[0].Expr, newArgs.ToArray());
                     eGraph.Add(expr);
-                    List<ENode> list11 = new List<ENode>();
-                    for (int num7 = 0; num7 < eGraph.Nodes.ToList().Count; num7++)
+                    List<ENode> simNodes = new List<ENode>();
+                    for (int nodeIndex = 0; nodeIndex < eGraph.Nodes.ToList().Count; nodeIndex++)
                     {
-                        ENode eNode = eGraph.Nodes.ToArray()[num7];
+                        ENode eNode = eGraph.Nodes.ToArray()[nodeIndex];
                         if (eNode.Children.Count != 0)
                         {
-                            list11.Add(eNode);
+                            simNodes.Add(eNode);
                         }
                     }
 
                     DumpScope dumpScope = new DumpScope("eval_sim");
                     try
                     {
-                        using CalibrationEvaluator calibrationEvaluator3 = new CalibrationEvaluator(null, list11);
+                        using CalibrationEvaluator calibrationEvaluator3 = new CalibrationEvaluator(null, simNodes);
                         Span<float> v =
                             MemoryMarshal.Cast<byte, float>(calibrationEvaluator3.Evaluate().Values.ToArray()[0]
                                 .BytesBuffer);
                         Span<float> v2 =
                             MemoryMarshal.Cast<byte, float>(readOnlyDictionary2[childrenOfRangeOf].BytesBuffer);
                         float cosineSimilarity = Nncase.Quantization.Utility.GetCosineSimilarity(v, v2);
-                        list3.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(list6[k], list8,
+                        sampleResults.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(typeCandidates[k], quantParamLists,
                             cosineSimilarity));
-                        list2.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(list6[k], list8,
+                        allSampleResults.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(typeCandidates[k], quantParamLists,
                             cosineSimilarity));
-                        for (int num8 = 0; num8 < list4.Count; num8++)
+                        for (int inputIndex = 0; inputIndex < inputInfos.Count; inputIndex++)
                         {
-                            if (list4[num8].Item3)
+                            if (inputInfos[inputIndex].Item3)
                             {
                                 Span<float> span2 =
-                                    MemoryMarshal.Cast<byte, float>(list4[num8].Item1.Values.ToArray()[0].BytesBuffer);
-                                float[] array = list9[num8].ToArray();
-                                for (int num9 = 0; num9 < span2.Length; num9++)
+                                    MemoryMarshal.Cast<byte, float>(inputInfos[inputIndex].Item1.Values.ToArray()[0].BytesBuffer);
+                                float[] savedValues = savedInputs[inputIndex].ToArray();
+                                for (int valueIndex = 0; valueIndex < span2.Length; valueIndex++)
                                 {
-                                    span2[num9] = array[num9];
+                                    span2[valueIndex] = savedValues[valueIndex];
                                 }
                             }
                         }
@@ -744,93 +744,93 @@ public class K230Target : ITarget
                 }
             }
 
-            List<Tuple<List<DataType>, List<List<QuantParam>>, float>> list12 =
+            List<Tuple<List<DataType>, List<List<QuantParam>>, float>> averagedResults =
                 new List<Tuple<List<DataType>, List<List<QuantParam>>, float>>();
-            int num10 = list2.Count / samples.Count;
-            List<float> list13 = new List<float>(new float[num10]);
-            for (int num11 = 0; num11 < list2.Count; num11++)
+            int candidateCount = allSampleResults.Count / samples.Count;
+            List<float> similaritySums = new List<float>(new float[candidateCount]);
+            for (int resultIndex = 0; resultIndex < allSampleResults.Count; resultIndex++)
             {
-                list13[num11 % num10] += list2[num11].Item3;
+                similaritySums[resultIndex % candidateCount] += allSampleResults[resultIndex].Item3;
             }
 
-            for (int num12 = 0; num12 < num10; num12++)
+            for (int candidateIndex = 0; candidateIndex < candidateCount; candidateIndex++)
             {
-                list12.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(
-                    list2[num12].Item1,
-                    list2[num12].Item2, list13[num12] / (float)samples.Count));
+                averagedResults.Add(new Tuple<List<DataType>, List<List<QuantParam>>, float>(
+                    allSampleResults[candidateIndex].Item1,
+                    allSampleResults[candidateIndex].Item2, similaritySums[candidateIndex] / (float)samples.Count));
             }
 
-            if (list12.Count == 0)
+            if (averagedResults.Count == 0)
             {
                 continue;
             }
 
-            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple2;
-            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple3;
-            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple = tuple2 = tuple3 =
+            Tuple<List<DataType>, List<List<QuantParam>>, float> bestOverall;
+            Tuple<List<DataType>, List<List<QuantParam>>, float> bestLowPrecision;
+            Tuple<List<DataType>, List<List<QuantParam>>, float> bestWithInt16 = bestOverall = bestLowPrecision =
                 new Tuple<List<DataType>, List<List<QuantParam>>, float>(
                     new List<DataType>(),
                     new List<List<QuantParam>>(), 0f);
-            for (int num13 = 0; num13 < list12.Count; num13++)
+            for (int candidateIndex = 0; candidateIndex < averagedResults.Count; candidateIndex++)
             {
-                if ((list12[num13].Item1.Count != 1 || (!(list12[num13].Item1[0] == DataTypes.Int16) &&
-                                                        !(list12[num13].Item1[0] == DataTypes.Float16))) &&
-                    (list12[num13].Item1.Count != 2 || (!(list12[num13].Item1[0] == DataTypes.Int16) &&
-                                                        !(list12[num13].Item1[1] == DataTypes.Int16) &&
-                                                        (!(list12[num13].Item1[0] == DataTypes.Float16) ||
-                                                         !(list12[num13].Item1[1] == DataTypes.Float16)))) &&
-                    list12[num13].Item3 > tuple3.Item3)
+                if ((averagedResults[candidateIndex].Item1.Count != 1 || (!(averagedResults[candidateIndex].Item1[0] == DataTypes.Int16) &&
+                                                        !(averagedResults[candidateIndex].Item1[0] == DataTypes.Float16))) &&
+                    (averagedResults[candidateIndex].Item1.Count != 2 || (!(averagedResults[candidateIndex].Item1[0] == DataTypes.Int16) &&
+                                                        !(averagedResults[candidateIndex].Item1[1] == DataTypes.Int16) &&
+                                                        (!(averagedResults[candidateIndex].Item1[0] == DataTypes.Float16) ||
+                                                         !(averagedResults[candidateIndex].Item1[1] == DataTypes.Float16)))) &&
+                    averagedResults[candidateIndex].Item3 > bestLowPrecision.Item3)
                 {
-                    tuple3 = list12[num13];
+                    bestLowPrecision = averagedResults[candidateIndex];
                 }
             }
 
-            for (int num14 = 0; num14 < list12.Count; num14++)
+            for (int candidateIndex = 0; candidateIndex < averagedResults.Count; candidateIndex++)
             {
-                if (list12[num14].Item3 > tuple2.Item3)
+                if (averagedResults[candidateIndex].Item3 > bestOverall.Item3)
                 {
-                    tuple2 = list12[num14];
+                    bestOverall = averagedResults[candidateIndex];
                 }
             }
 
-            for (int num15 = 0; num15 < list12.Count; num15++)
+            for (int candidateIndex = 0; candidateIndex < averagedResults.Count; candidateIndex++)
             {
-                if ((list12[num15].Item1.Count != 1 || !(list12[num15].Item1[0] != DataTypes.Int16)) &&
-                    (list12[num15].Item1.Count != 2 || !(list12[num15].Item1[0] != DataTypes.Int16) ||
-                     !(list12[num15].Item1[1] != DataTypes.Int16)) && list12[num15].Item3 > tuple.Item3)
+                if ((averagedResults[candidateIndex].Item1.Count != 1 || !(averagedResults[candidateIndex].Item1[0] != DataTypes.Int16)) &&
+                    (averagedResults[candidateIndex].Item1.Count != 2 || !(averagedResults[candidateIndex].Item1[0] != DataTypes.Int16) ||
+                     !(averagedResults[candidateIndex].Item1[1] != DataTypes.Int16)) && averagedResults[candidateIndex].Item3 > bestWithInt16.Item3)
                 {
-                    tuple = list12[num15];
+                    bestWithInt16 = averagedResults[candidateIndex];
                 }
             }
 
-            float num16 = 0.99f;
-            Tuple<List<DataType>, List<List<QuantParam>>, float> tuple4 = (!(tuple3.Item3 < num16 * tuple2.Item3))
-                ? tuple3
-                : ((!(tuple.Item3 < num16 * tuple2.Item3)) ? tuple : tuple2);
-            ((Call)childrenOfRangeOf.Expr).EnodeQuantConfigWithCosine = list12;
-            ((Call)childrenOfRangeOf.Expr).EnodeBestQuantConfigWithCosine = tuple4;
-            int num17 = 0;
-            for (int num18 = 0; num18 < childrenOfRangeOf.Children.Count; num18++)
+            float similarityThreshold = 0.99f;
+            Tuple<List<DataType>, List<List<QuantParam>>, float> chosenConfig = (!(bestLowPrecision.Item3 < similarityThreshold * bestOverall.Item3))
+                ? bestLowPrecision
+                : ((!(bestWithInt16.Item3 < similarityThreshold * bestOverall.Item3)) ? bestWithInt16 : bestOverall);
+            ((Call)childrenOfRangeOf.Expr).EnodeQuantConfigWithCosine = averagedResults;
+            ((Call)childrenOfRangeOf.Expr).EnodeBestQuantConfigWithCosine = chosenConfig;
+            int markerIndex = 0;
+            for (int childIndex = 0; childIndex < childrenOfRangeOf.Children.Count; childIndex++)
             {
                 if (Nncase.PatternMatch.Utility
                     .IsRangeOfMarker(Nncase.PatternMatch.Utility.IsWildcard(), Nncase.PatternMatch.Utility.IsWildcard())
-                    .MatchLeaf(childrenOfRangeOf.Children[num18].Nodes[0].Expr))
+                    .MatchLeaf(childrenOfRangeOf.Children[childIndex].Nodes[0].Expr))
                 {
-                    if (((Marker)childrenOfRangeOf.Children[num18].Nodes[0].Expr).MixQuantInfo == null)
+                    if (((Marker)childrenOfRangeOf.Children[childIndex].Nodes[0].Expr).MixQuantInfo == null)
                     {
-                        ((Marker)childrenOfRangeOf.Children[num18].Nodes[0].Expr).MixQuantInfo = new K230MixQuantInfo();
+                        ((Marker)childrenOfRangeOf.Children[childIndex].Nodes[0].Expr).MixQuantInfo = new K230MixQuantInfo();
                     }
 
-                    ((Marker)childrenOfRangeOf.Children[num18].Nodes[0].Expr).MixQuantInfo.HasBindedMixQuantInfo = true;
-                    ((Marker)childrenOfRangeOf.Children[num18].Nodes[0].Expr).MixQuantInfo.MarkerQuantType =
-                        tuple4.Item1[num17];
-                    ((Marker)childrenOfRangeOf.Children[num18].Nodes[0].Expr).MixQuantInfo.QuantParameter =
-                        tuple4.Item2[num17];
-                    num17++;
+                    ((Marker)childrenOfRangeOf.Children[childIndex].Nodes[0].Expr).MixQuantInfo.HasBindedMixQuantInfo = true;
+                    ((Marker)childrenOfRangeOf.Children[childIndex].Nodes[0].Expr).MixQuantInfo.MarkerQuantType =
+                        chosenConfig.Item1[markerIndex];
+                    ((Marker)childrenOfRangeOf.Children[childIndex].Nodes[0].Expr).MixQuantInfo.QuantParameter =
+                        chosenConfig.Item2[markerIndex];
+                    markerIndex++;
                 }
             }
 
-            dictionary.Add(childrenOfRangeOf, list12);
+            dictionary.Add(childrenOfRangeOf, averagedResults);
         }
 
         return dictionary;

@@ -162,12 +162,12 @@ public sealed class ActivationParameter<T>
                 return (T)(object)(Half)((float)half * scale);
             }
 
-            if (!(k is float num))
+            if (!(k is float floatK))
             {
                 throw new NotSupportedException();
             }
 
-            return (T)(object)(num * scale);
+            return (T)(object)(floatK * scale);
         });
     }
 
@@ -203,22 +203,22 @@ public sealed class ActivationParameter<T>
 
     private sbyte ComputeShiftBits(T scale)
     {
-        float num2;
+        float scaleValue;
         if (!(scale is Half half))
         {
-            if (!(scale is float num))
+            if (!(scale is float floatScale))
             {
                 throw new NotSupportedException();
             }
 
-            num2 = num;
+            scaleValue = floatScale;
         }
         else
         {
-            num2 = (float)half;
+            scaleValue = (float)half;
         }
 
-        float value = num2;
+        float value = scaleValue;
         if ((double)Math.Abs(value) <= 1E-30)
         {
             return 30;
@@ -236,12 +236,12 @@ public sealed class ActivationParameter<T>
                 return (T)(object)(Half)((float)half / scale);
             }
 
-            if (!(f is float num))
+            if (!(f is float floatF))
             {
                 throw new NotSupportedException();
             }
 
-            return (T)(object)(num / scale);
+            return (T)(object)(floatF / scale);
         });
     }
 }

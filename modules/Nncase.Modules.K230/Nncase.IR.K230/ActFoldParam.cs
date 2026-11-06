@@ -59,11 +59,11 @@ public class ActFoldParam
         Xs = new float[1, channels];
         Ks = new float[2, channels];
         Bs = new float[2, channels];
-        for (int num = 0; num < 2; num++)
+        for (int segment = 0; segment < 2; segment++)
         {
-            for (int num2 = 0; num2 < channels; num2++)
+            for (int channel = 0; channel < channels; channel++)
             {
-                Ks[num, num2] = 1f;
+                Ks[segment, channel] = 1f;
             }
         }
 

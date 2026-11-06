@@ -31,20 +31,20 @@ public sealed class ProcessLstmShiftBits : IRewriteRule
     {
         ActParam2 actParam = new ActParam2(lstm.ActivationParamXc);
         int xcShiftBits = actParam.FusedShiftBits();
-        Expr expr = GetReplaceHelper.LoadAct0(actParam);
+        Expr act0 = GetReplaceHelper.LoadAct0(actParam);
         ActParam2 actParam2 = new ActParam2(lstm.ActivationParamRc0);
         int rc0ShiftBits = actParam2.FusedShiftBits();
-        Expr expr2 = GetReplaceHelper.LoadAct0(actParam2);
+        Expr act1 = GetReplaceHelper.LoadAct0(actParam2);
         ActParam2 actParam3 = new ActParam2(lstm.ActivationParamRc1);
         int rc1ShiftBits = actParam3.FusedShiftBits();
-        Expr expr3 = GetReplaceHelper.LoadAct0(actParam3);
-        Call expr4 = new Call(lstm, (Expr)result["input"], (Expr)result["wXc"], expr, (Expr)result["wRc"], expr2, expr3,
+        Expr act2 = GetReplaceHelper.LoadAct0(actParam3);
+        Call newCall = new Call(lstm, (Expr)result["input"], (Expr)result["wXc"], act0, (Expr)result["wRc"], act1, act2,
             (Expr)result["initH"], (Expr)result["initC"], (Expr)result["segFittingParamFt"],
             (Expr)result["segFittingParamGt"], (Expr)result["wXcQarg"], (Expr)result["wRcQarg"], (Expr)result["actBin"],
             (Expr)result["actBinQ"], (Expr)result["ifDeqBias"], xcShiftBits, (Expr)result["hDeqBias0"],
             (Expr)result["hDeqBias1"], (Expr)result["cShiftBits"], rc0ShiftBits, rc1ShiftBits, (Expr)result["outHShiftBits"],
             (Expr)result["outCShiftBits"], (Expr)result["hasStatic"], (Expr)result["outputSize"]);
-        return GetReplaceHelper.SuppressPattern(options, expr4, Pattern);
+        return GetReplaceHelper.SuppressPattern(options, newCall, Pattern);
     }
 
     public Expr? GetReplace(IMatchResult result, RunPassContext context)

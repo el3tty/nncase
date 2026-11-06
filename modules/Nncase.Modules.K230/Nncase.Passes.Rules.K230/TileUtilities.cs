@@ -306,9 +306,9 @@ public static class TileUtilities
 
         return new List<SegmentND> { ifmapSegment, ofmapSegment };
 
-        static int FillZero(int num13, int interval)
+        static int FillZero(int size, int interval)
         {
-            return (num13 - 1) * interval + 1;
+            return (size - 1) * interval + 1;
         }
     }
 

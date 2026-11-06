@@ -104,7 +104,7 @@ public class K230DeSerializerVisitor
     private string visit_lui(ref BitReader reader, ref ulong pc_offset)
     {
         GP_REGISTER gP_REGISTER = (GP_REGISTER)reader.Read<uint>(5uL);
-        int num = reader.Read<int>(20uL);
+        int imm = reader.Read<int>(20uL);
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("inst lui");
         stringBuilder.AppendLine("    opcode : lui");
@@ -119,10 +119,10 @@ public class K230DeSerializerVisitor
         StringBuilder stringBuilder4 = stringBuilder2;
         handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
         handler.AppendLiteral("    imm : ");
-        handler.AppendFormatted(num);
+        handler.AppendFormatted(imm);
         stringBuilder4.AppendLine(ref handler);
         pc_offset += 32uL;
-        _gp_regs[(uint)gP_REGISTER] = (uint)((num << 12) | 0);
+        _gp_regs[(uint)gP_REGISTER] = (uint)((imm << 12) | 0);
         return stringBuilder.ToString();
     }
 
@@ -155,7 +155,7 @@ public class K230DeSerializerVisitor
         GP_REGISTER gP_REGISTER = (GP_REGISTER)reader.Read<uint>(5uL);
         GP_REGISTER gP_REGISTER2 = (GP_REGISTER)reader.Read<uint>(5uL);
         reader.Read<uint>(3uL);
-        int num = reader.Read<int>(12uL);
+        int imm = reader.Read<int>(12uL);
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.AppendLine("inst addi");
         stringBuilder.AppendLine("    opcode : arithm_imm");
@@ -176,12 +176,12 @@ public class K230DeSerializerVisitor
         StringBuilder stringBuilder5 = stringBuilder2;
         handler = new StringBuilder.AppendInterpolatedStringHandler(10, 1, stringBuilder2);
         handler.AppendLiteral("    imm : ");
-        handler.AppendFormatted(num);
+        handler.AppendFormatted(imm);
         stringBuilder5.AppendLine(ref handler);
         pc_offset += 32uL;
-        uint num2 = _gp_regs[(uint)gP_REGISTER2];
-        int num3 = (((num >> 11) & 1) == 1) ? (num - 4096) : num;
-        _gp_regs[(uint)gP_REGISTER] = (uint)num3 + num2;
+        uint rsValue = _gp_regs[(uint)gP_REGISTER2];
+        int signedImm = (((imm >> 11) & 1) == 1) ? (imm - 4096) : imm;
+        _gp_regs[(uint)gP_REGISTER] = (uint)signedImm + rsValue;
         return stringBuilder.ToString();
     }
 
@@ -218,9 +218,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER9);
                     stringBuilder29.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num13 = _gp_regs[(uint)gP_REGISTER2];
-                    uint num14 = _gp_regs[(uint)gP_REGISTER9];
-                    _gp_regs[(uint)gP_REGISTER] = num13 + num14;
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER9];
+                    _gp_regs[(uint)gP_REGISTER] = lhs + rhs;
                     return stringBuilder26.ToString();
                 }
 
@@ -251,9 +251,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER8);
                     stringBuilder25.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num11 = _gp_regs[(uint)gP_REGISTER2];
-                    uint num12 = _gp_regs[(uint)gP_REGISTER8];
-                    _gp_regs[(uint)gP_REGISTER] = num11 - num12;
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER8];
+                    _gp_regs[(uint)gP_REGISTER] = lhs - rhs;
                     return stringBuilder22.ToString();
                 }
 
@@ -284,9 +284,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER7);
                     stringBuilder21.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num9 = _gp_regs[(uint)gP_REGISTER2];
-                    uint num10 = _gp_regs[(uint)gP_REGISTER7];
-                    _gp_regs[(uint)gP_REGISTER] = num9 * num10;
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER7];
+                    _gp_regs[(uint)gP_REGISTER] = lhs * rhs;
                     return stringBuilder18.ToString();
                 }
 
@@ -317,9 +317,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER6);
                     stringBuilder17.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num7 = _gp_regs[(uint)gP_REGISTER2];
-                    uint num8 = _gp_regs[(uint)gP_REGISTER6];
-                    _gp_regs[(uint)gP_REGISTER] = (uint)((int)num7 / (int)num8);
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER6];
+                    _gp_regs[(uint)gP_REGISTER] = (uint)((int)lhs / (int)rhs);
                     return stringBuilder14.ToString();
                 }
 
@@ -350,9 +350,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER5);
                     stringBuilder13.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num5 = _gp_regs[(uint)gP_REGISTER2];
-                    uint num6 = _gp_regs[(uint)gP_REGISTER5];
-                    _gp_regs[(uint)gP_REGISTER] = num5 / num6;
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER5];
+                    _gp_regs[(uint)gP_REGISTER] = lhs / rhs;
                     return stringBuilder10.ToString();
                 }
 
@@ -383,9 +383,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER4);
                     stringBuilder9.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num3 = _gp_regs[(uint)gP_REGISTER2];
-                    uint num4 = _gp_regs[(uint)gP_REGISTER4];
-                    _gp_regs[(uint)gP_REGISTER] = (uint)((int)num3 % (int)num4);
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER4];
+                    _gp_regs[(uint)gP_REGISTER] = (uint)((int)lhs % (int)rhs);
                     return stringBuilder6.ToString();
                 }
 
@@ -416,9 +416,9 @@ public class K230DeSerializerVisitor
                     handler.AppendFormatted(gP_REGISTER3);
                     stringBuilder5.AppendLine(ref handler);
                     pc_offset += 32uL;
-                    uint num = _gp_regs[(uint)gP_REGISTER2];
-                    uint num2 = _gp_regs[(uint)gP_REGISTER3];
-                    _gp_regs[(uint)gP_REGISTER] = num % num2;
+                    uint lhs = _gp_regs[(uint)gP_REGISTER2];
+                    uint rhs = _gp_regs[(uint)gP_REGISTER3];
+                    _gp_regs[(uint)gP_REGISTER] = lhs % rhs;
                     return stringBuilder.ToString();
                 }
 

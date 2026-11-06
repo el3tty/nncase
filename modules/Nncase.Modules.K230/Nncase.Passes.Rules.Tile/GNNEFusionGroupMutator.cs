@@ -26,12 +26,12 @@ internal sealed class GNNEFusionGroupMutator : FusionGroupMutator
 
     public override bool MergedFusionCheckCallBack(Fusion mergedFusion, HashSet<Fusion> candidateFusions)
     {
-        bool flag = false;
+        bool isMergeable = false;
         if (!_checked)
         {
             MultiFusionChecker multiFusionChecker = new MultiFusionChecker();
-            flag = multiFusionChecker.Check(mergedFusion, PassOptions);
-            if (flag)
+            isMergeable = multiFusionChecker.Check(mergedFusion, PassOptions);
+            if (isMergeable)
             {
                 _checked = true;
                 _fusioncheckerCache.Add(mergedFusion, multiFusionChecker);
@@ -42,7 +42,7 @@ internal sealed class GNNEFusionGroupMutator : FusionGroupMutator
             }
         }
 
-        return flag;
+        return isMergeable;
     }
 
     public override Expr MergedFusionRewriteCallBack(Expr mergedFusionBody)

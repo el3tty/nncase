@@ -72,27 +72,27 @@ internal sealed class CheckedConvertMutator : ExprRewriter
             PrimFunctionWrapper primFunctionWrapper;
             if (baseFunction is PrimFunction primFunction)
             {
-                bool flag = true;
-                int num = 0;
+                bool inInputs = true;
+                int inputCount = 0;
                 ReadOnlySpan<Nncase.TIR.Buffer> parameters = primFunction.Parameters;
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     if (parameters[i].MemSpan.Location == MemoryLocation.Input)
                     {
-                        if (!flag)
+                        if (!inInputs)
                         {
                             throw new InvalidOperationException("The output buffer must behind the input buffer");
                         }
 
-                        num++;
+                        inputCount++;
                     }
                     else
                     {
-                        flag = false;
+                        inInputs = false;
                     }
                 }
 
-                primFunctionWrapper = new PrimFunctionWrapper(primFunction, num);
+                primFunctionWrapper = new PrimFunctionWrapper(primFunction, inputCount);
                 _fusionConertedCache[fusion] = primFunctionWrapper;
             }
             else

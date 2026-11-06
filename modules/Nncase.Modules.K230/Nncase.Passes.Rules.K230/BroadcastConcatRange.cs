@@ -27,11 +27,11 @@ public sealed class BroadcastConcatRange : RewriteRule<Pattern>
             Expr expr = analysis[marker].First((Expr u) => u is Nncase.IR.Tuple);
             if (analysis[expr].Count((Expr u) => u is Call call && call.Target is Concat) == 1)
             {
-                Call expr2 = analysis[expr].First((Expr u) => u is Call call && call.Target is Concat) as Call;
-                if (analysis[expr2].Count((Expr u) => u is Marker marker2 && marker2.Name == "RangeOf") == 1)
+                Call concatCall = analysis[expr].First((Expr u) => u is Call call && call.Target is Concat) as Call;
+                if (analysis[concatCall].Count((Expr u) => u is Marker marker2 && marker2.Name == "RangeOf") == 1)
                 {
                     Tensor<float> tensor =
-                        ((TensorConst)(analysis[expr2]
+                        ((TensorConst)(analysis[concatCall]
                             .First((Expr u) => u is Marker marker2 && marker2.Name == "RangeOf") as Marker).Attribute)
                         .Value.Cast<float>();
                     if (!range.Equals(tensor) && System.Math.Abs(new float[4]

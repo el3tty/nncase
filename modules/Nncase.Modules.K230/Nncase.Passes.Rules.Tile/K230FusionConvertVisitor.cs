@@ -42,20 +42,20 @@ public sealed class K230FusionConvertVisitor : ExprRewriter
         }
         else if (fusion.Name.StartsWith("TileConv2dCase"))
         {
-            Call obj = ((Call)fusion.Body)[GNNEStore.Input] as Call;
-            int[] array = obj[GNNEConv2D.Input].CheckedShape.ToValueArray();
-            int[] array2 = obj.CheckedShape.ToValueArray();
-            int[] array3 = obj[GNNEConv2D.Weights].CheckedShape.ToValueArray();
-            int[] source = ((TensorConst)obj[GNNEConv2D.Padding]).Value.ToArray<int>();
-            int num = ((TensorConst)obj[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
-            int num2 = ((TensorConst)obj[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
-            int num3 = ((TensorConst)obj[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
-            int num4 = ((TensorConst)obj[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
-            int num5 = ((TensorConst)obj[GNNEConv2D.Groups]).Value.ToScalar<int>();
+            Call conv = ((Call)fusion.Body)[GNNEStore.Input] as Call;
+            int[] inputShape = conv[GNNEConv2D.Input].CheckedShape.ToValueArray();
+            int[] outputShape = conv.CheckedShape.ToValueArray();
+            int[] weightsShape = conv[GNNEConv2D.Weights].CheckedShape.ToValueArray();
+            int[] source = ((TensorConst)conv[GNNEConv2D.Padding]).Value.ToArray<int>();
+            int strideH = ((TensorConst)conv[GNNEConv2D.Stride]).Value.ToArray<int>()[0];
+            int strideW = ((TensorConst)conv[GNNEConv2D.Stride]).Value.ToArray<int>()[1];
+            int dilationH = ((TensorConst)conv[GNNEConv2D.Dilation]).Value.ToArray<int>()[0];
+            int dilationW = ((TensorConst)conv[GNNEConv2D.Dilation]).Value.ToArray<int>()[1];
+            int groups = ((TensorConst)conv[GNNEConv2D.Groups]).Value.ToScalar<int>();
             rewriteRule =
-                (array[0] <= 1 || array2[2] != 1 || array2[3] != 1 || array[2] != 1 || array[3] != 1 ||
-                  array3[2] != 1 || array3[3] != 1 || num != 1 || num2 != 1 || num3 != 1 || num4 != 1 ||
-                  source.Sum() != 0 || num5 != 1)
+                (inputShape[0] <= 1 || outputShape[2] != 1 || outputShape[3] != 1 || inputShape[2] != 1 || inputShape[3] != 1 ||
+                  weightsShape[2] != 1 || weightsShape[3] != 1 || strideH != 1 || strideW != 1 || dilationH != 1 || dilationW != 1 ||
+                  source.Sum() != 0 || groups != 1)
                     ? ((RewriteRule<Pattern>)new TileConv2D())
                     : ((RewriteRule<Pattern>)new TileTransposeMatmul());
         }

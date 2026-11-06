@@ -22,9 +22,9 @@ public sealed class ProcessMatmulShiftBits : IRewriteRule
         ActParam2 actParam = new ActParam2(mm.ActParam);
         int shiftBits = actParam.FusedShiftBits();
         Expr expr = GetReplaceHelper.LoadAct0(actParam);
-        Call expr2 = new Call(mm, (Expr)result["inputA"], (Expr)result["inputB"], expr, (Expr)result["inputABias"],
+        Call newCall = new Call(mm, (Expr)result["inputA"], (Expr)result["inputB"], expr, (Expr)result["inputABias"],
             (Expr)result["inputAShiftbits"], (Expr)result["inputBShiftbits"], shiftBits, (Expr)result["deqBBias"]);
-        return GetReplaceHelper.SuppressPattern(options, expr2, Pattern);
+        return GetReplaceHelper.SuppressPattern(options, newCall, Pattern);
     }
 
     public Expr? GetReplace(IMatchResult result, RunPassContext context)

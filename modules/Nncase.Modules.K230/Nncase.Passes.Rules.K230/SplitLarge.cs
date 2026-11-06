@@ -16,7 +16,7 @@ internal static class SplitLarge
         Func<(int Count, int ChunkSize, int CurrentSize, int Index, int Axis), (int NewBegin, int NewEnd, Padding Pads)>
             computeNewInputSize, Func<Expr, Padding, int, Expr> callMaker)
     {
-        (int, int)[] splitAxes = (from pair in splitShape.Select((int dim, int item2) => (dim: dim, axis: item2))
+        (int, int)[] splitAxes = (from pair in splitShape.Select((int dim, int axis) => (dim: dim, axis: axis))
             where pair.dim > 65535
             select pair).ToArray();
         if (splitAxes.Length != 1)
@@ -51,23 +51,23 @@ internal static class SplitLarge
             int newW = newInputInfo.Item1;
             int newWEnd = newInputInfo.Item2;
             Padding newPadding = newInputInfo.Item3;
-            int[] sliceBegin = (from num3 in Enumerable.Range(0, 4)
-                select (num3 == axis) ? newW : 0).ToArray();
-            int[] sliceSize = (from num3 in Enumerable.Range(0, 4)
-                select (num3 != axis) ? inShape[num3] : newWEnd).ToArray();
+            int[] sliceBegin = (from dimIndex in Enumerable.Range(0, 4)
+                select (dimIndex == axis) ? newW : 0).ToArray();
+            int[] sliceSize = (from dimIndex in Enumerable.Range(0, 4)
+                select (dimIndex != axis) ? inShape[dimIndex] : newWEnd).ToArray();
             Expr expr = Tensors.Slice(input, sliceBegin, sliceSize, 4);
             if (input is Marker marker)
             {
                 expr = marker.With(null, expr);
             }
 
-            Expr expr2 = callMaker(expr, newPadding, axis);
+            Expr splitCall = callMaker(expr, newPadding, axis);
             if (call.Users.Count != 0 && call.Users.First() is Marker marker2)
             {
-                expr2 = marker2.With(null, expr2);
+                splitCall = marker2.With(null, splitCall);
             }
 
-            return expr2;
+            return splitCall;
         }).ToArray()), getConcatAxis(axis));
         if (!call2.CheckedShape.ToValueArray().SequenceEqual(call.CheckedShape.ToValueArray()))
         {

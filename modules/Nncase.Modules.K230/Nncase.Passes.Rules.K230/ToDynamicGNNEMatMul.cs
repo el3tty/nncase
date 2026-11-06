@@ -74,7 +74,7 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
         Call call3 = LoadQuantInB(inputB, inputBRange.AsValueRange(), inputBDataType);
         Expr expr = LoadAct(actParam, inputARange.AsValueRange(), inputBRange.AsValueRange(), dataType, inputBDataType);
         Shape checkedShape = inputA.CheckedShape;
-        Expr expr2;
+        Expr biasExpr;
         if (checkedShape[checkedShape.Count - 2].IsFixed)
         {
             Shape checkedShape2 = inputA.CheckedShape;
@@ -83,14 +83,14 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
             int[] biasShape = new int[4] { 1, 1, 1, 0 };
             Shape checkedShape3 = inputA.CheckedShape;
             biasShape[3] = checkedShape3[checkedShape3.Count - 2].FixedValue;
-            expr2 = new TensorConst(Tensor.From(biasBytes, biasShape));
+            biasExpr = new TensorConst(Tensor.From(biasBytes, biasShape));
         }
         else
         {
             byte[] biasBytes2 = LoadInABias(1, inputARange.AsValueRange(), dataType);
             Call call4 = Nncase.IR.F.Tensors.Slice(Nncase.IR.F.Tensors.ShapeOf(inputA), new int[1] { -2 },
                 new int[1] { -1 }, 1);
-            expr2 = Nncase.IR.F.Tensors.Reshape(
+            biasExpr = Nncase.IR.F.Tensors.Reshape(
                 Nncase.IR.F.Tensors.Tile(new TensorConst(Tensor.From(biasBytes2, new int[1] { 1 })), call4),
                 Nncase.IR.F.Tensors.Concat(new Nncase.IR.Tuple(new long[3] { 1L, 1L, 1L }, call4), 0));
         }
@@ -98,7 +98,7 @@ public sealed class ToDynamicGNNEMatMul : RewriteRule<Pattern>
         int inputBZeroPoint = checked((byte)NonConstQuantManager.GetInBQuantParam(inputBDataType, inputBRange.AsValueRange()).ZeroPoint);
         Const instructions = GetInstructions(options);
         Call call5 = Nncase.IR.F.NN.CustomCall(new DynamicGNNEMatMul((PrimType)call.CheckedDataType), instructions,
-            call2, call3, expr2, inputBZeroPoint, expr, 0, Convert.ToInt32(fakeMatmul.DynamicChannel));
+            call2, call3, biasExpr, inputBZeroPoint, expr, 0, Convert.ToInt32(fakeMatmul.DynamicChannel));
         int missingRank = 4 - call.CheckedShape.Rank;
         if (missingRank > 0)
         {

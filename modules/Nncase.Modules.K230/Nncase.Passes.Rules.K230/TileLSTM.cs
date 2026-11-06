@@ -1234,11 +1234,11 @@ public class TileLSTM : RewriteRule<Pattern>
         int ofmapCols = 1;
         int length3 = weight[2].Length;
         int length4 = weight[3].Length;
-        int val = 1;
-        int val2 = 1;
+        int minOfmapRows = 1;
+        int minOfmapCols = 1;
         int psumPingPangSplit = 1;
         int bytesPerElement = TileUtilities.GetBytesPerElement(type);
-        if (!HandleL1Allocate(length, length2, Math.Max(ofmapRows, val), Math.Max(ofmapCols, val2), psumPingPangSplit,
+        if (!HandleL1Allocate(length, length2, Math.Max(ofmapRows, minOfmapRows), Math.Max(ofmapCols, minOfmapCols), psumPingPangSplit,
                 bytesPerElement))
         {
             throw new NotSupportedException("exceeds L1 size");

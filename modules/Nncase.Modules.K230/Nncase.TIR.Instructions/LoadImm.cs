@@ -16,20 +16,20 @@ public sealed class LoadImm : InstructionOp, ISerializeInst, IEquatable<LoadImm?
 
     public void Serialize(BinaryWriter writer, Call call)
     {
-        uint num = ((TensorConst)call[Value]).Value.ToScalar<uint>();
+        uint imm = ((TensorConst)call[Value]).Value.ToScalar<uint>();
         if (Rd != GP_REGISTER.x0 && Rd != GP_REGISTER.invalid)
         {
-            if (num < 2048 && num != 0)
+            if (imm < 2048 && imm != 0)
             {
-                Call call2 = I.ADDI(Rd, R.r0, num & 0x7FF);
+                Call call2 = I.ADDI(Rd, R.r0, imm & 0x7FF);
                 ((ADDI)call2.Target).Serialize(writer, call2);
                 return;
             }
 
-            uint num2 = ((num >> 12) + ((num >> 11) & 1)) & 0xFFFFF;
-            uint num3 = num & 0xFFF;
-            Call call3 = I.LUI(Rd, num2);
-            Call call4 = I.ADDI(Rd, Rd, num3);
+            uint high = ((imm >> 12) + ((imm >> 11) & 1)) & 0xFFFFF;
+            uint low = imm & 0xFFF;
+            Call call3 = I.LUI(Rd, high);
+            Call call4 = I.ADDI(Rd, Rd, low);
             ((LUI)call3.Target).Serialize(writer, call3);
             ((ADDI)call4.Target).Serialize(writer, call4);
         }

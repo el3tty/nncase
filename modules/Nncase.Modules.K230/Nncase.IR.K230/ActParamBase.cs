@@ -344,21 +344,21 @@ public abstract class ActParamBase
         HashCode hashCode = default(HashCode);
         hashCode.Add(Qp);
         float[,] xs = Xs;
-        foreach (float num in xs)
+        foreach (float value in xs)
         {
-            hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(num));
+            hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(value));
         }
 
         xs = Ks;
-        foreach (float num2 in xs)
+        foreach (float value in xs)
         {
-            hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(num2));
+            hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(value));
         }
 
         xs = Bs;
-        foreach (float num3 in xs)
+        foreach (float value in xs)
         {
-            hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(num3));
+            hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(value));
         }
 
         hashCode.Add(StructuralComparisons.StructuralEqualityComparer.GetHashCode(FusedClamp));
